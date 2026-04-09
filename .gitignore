@@ -1,0 +1,40 @@
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# macOS metadata
+._*
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+
+# Vim
+*.swp
+*.swo
+*.swn
+*.swm
+*~
+
+# Emacs
+\#*\#
+.\#*
+
+# Generic editor temp files
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+
+# VS Code / JetBrains
+.vscode/
+.idea/
+*.iml
+
+# Local environment or ad hoc notes
+.env
+.env.*
+notes/
+
+# Logs
+*.log
