@@ -64,8 +64,7 @@ h2 {
 }
 
 .tadl-brandband .container,
-.tadl-main-nav .container,
-#footer .container {
+.tadl-main-nav .container {
     width: auto;
     max-width: 1680px;
     padding-left: 40px;
@@ -427,6 +426,12 @@ h2 {
 }
 
 .tadl-footer-shell {
+    width: min(1460px, calc(100% - 96px));
+    max-width: none !important;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
     background: transparent;
 }
 
@@ -550,6 +555,10 @@ h2 {
     .tadl-footer-inner {
         grid-template-columns: 1fr;
     }
+
+    .tadl-footer-shell {
+        width: calc(100% - 56px);
+    }
 }
 
 @media (min-width: 768px) and (max-width: 1199px) {
@@ -672,5 +681,9 @@ h2 {
         font-size: 18px;
         line-height: 1.3;
         padding: 10px 12px;
+    }
+
+    .tadl-footer-shell {
+        width: calc(100% - 40px);
     }
 }
