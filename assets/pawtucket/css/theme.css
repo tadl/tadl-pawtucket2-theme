@@ -304,7 +304,7 @@ h2 {
     height: 54px;
     border: 0;
     border-radius: 4px;
-    background: rgba(11, 47, 87, 0.38);
+    background: rgba(0, 0, 0, 0.36);
     color: #fff;
     font-size: 40px;
     line-height: 1;
@@ -313,7 +313,7 @@ h2 {
 
 .front .tadl-hero-control:hover,
 .front .tadl-hero-control:focus {
-    background: rgba(11, 47, 87, 0.62);
+    background: rgba(0, 0, 0, 0.56);
 }
 
 .front .tadl-hero-control-prev {
@@ -644,27 +644,6 @@ h2 {
     .tadl-menu-items > li > a {
         padding: 12px 0;
         font-size: 16px;
-    }
-
-    .tadl-mobile-user-link {
-        display: list-item !important;
-    }
-
-    .tadl-mobile-user-link .dropdown-header,
-    .tadl-mobile-user-link .divider {
-        display: none;
-    }
-
-    .tadl-mobile-user-link > a {
-        padding: 12px 0 !important;
-        font-size: 16px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-    }
-
-    .tadl-user-nav.hidden-xs {
-        display: none !important;
     }
 
     #pageArea {

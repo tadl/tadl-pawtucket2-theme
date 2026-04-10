@@ -41,17 +41,16 @@
 					<div>
 						<h2 class="tadl-footer-title">Visit</h2>
 						<ul class="tadl-footer-links">
-							<li><a href="https://www.tadl.org/about/locations" target="_blank" rel="noopener">Library locations</a></li>
-							<li><a href="https://www.tadl.org/about/hours" target="_blank" rel="noopener">Hours and services</a></li>
-							<li><a href="https://www.tadl.org/events" target="_blank" rel="noopener">Programs and events</a></li>
-							<li><?= caNavLink($this->request, _t("Contact digital collections"), "", "", "Contact", "Form"); ?></li>
+							<li><a href="https://www.tadl.org/about/locations-hours" target="_blank" rel="noopener">Library Locations and Hours</a></li>
+							<li><a href="https://www.tadl.org/events/month?program_types%5B110%5D=110" target="_blank" rel="noopener">Programs and Events</a></li>
+							<li><?= caNavLink($this->request, _t("Contact Digital Collections"), "", "", "Contact", "Form"); ?></li>
 						</ul>
 					</div>
 					<div>
 						<h2 class="tadl-footer-title">Explore</h2>
 						<ul class="tadl-footer-links">
-							<li><?= caNavLink($this->request, _t("Browse collections"), "", "", "Collections", "Index"); ?></li>
-							<li><?= caNavLink($this->request, _t("Advanced search"), "", "", "Search", "advanced/objects"); ?></li>
+							<li><?= caNavLink($this->request, _t("Browse Collections"), "", "", "Collections", "Index"); ?></li>
+							<li><?= caNavLink($this->request, _t("Advanced Search"), "", "", "Search", "advanced/objects"); ?></li>
 							<li><?= caNavLink($this->request, _t("Gallery"), "", "", "Gallery", "Index"); ?></li>
 							<li><a href="https://www.tadl.org" target="_blank" rel="noopener">Main TADL website</a></li>
 						</ul>
@@ -60,7 +59,7 @@
 				<div class="tadl-footer-bottom">
 					<ul class="list-inline">
 						<?= ((CookieOptionsManager::cookieManagerEnabled()) ? "<li>".caNavLink($this->request, _t("Manage Cookies"), "", "", "Cookies", "manage")."</li>" : ""); ?>
-						<li><a href="https://www.tadl.org/privacy-policy" target="_blank" rel="noopener">Privacy policy</a></li>
+						<li><a href="https://www.tadl.org/policies" target="_blank" rel="noopener">Policies</a></li>
 						<li><a href="https://www.tadl.org/contact" target="_blank" rel="noopener">Contact TADL</a></li>
 					</ul>
 				</div>

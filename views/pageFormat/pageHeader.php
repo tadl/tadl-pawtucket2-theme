@@ -112,17 +112,8 @@ $has_user_links = (sizeof($user_links) > 0);
 					<li <?= ($this->request->getController() == "Contact") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Contact"), "", "", "Contact", "Form"); ?></li>
 <?php
 	if ($has_user_links) {
-		foreach ($user_links as $vs_user_link) {
 ?>
-					<li class="tadl-mobile-user-link visible-xs"><?= $vs_user_link; ?></li>
-<?php
-		}
-	}
-?>
-<?php
-	if ($has_user_links) {
-?>
-					<li class="dropdown tadl-user-nav hidden-xs" style="position:relative;">
+					<li class="dropdown tadl-user-nav" style="position:relative;">
 						<a href="#" class="dropdown-toggle icon" data-toggle="dropdown"><span class="glyphicon glyphicon-user" aria-label="<?= _t("User options"); ?>"></span></a>
 						<ul class="dropdown-menu" role="list"><?= join("\n", $user_links); ?></ul>
 					</li>

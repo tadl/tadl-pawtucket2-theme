@@ -9,8 +9,11 @@
 	</div>
 	<div class="row">
 		<div class="col-sm-8">
-			<h2>Contact The Archives</h2>
-			<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras nec ligula erat. Pellentesque nibh leo, pharetra et posuere vel, accumsan vitae sapien. Phasellus a tortor id felis scelerisque blandit. Curabitur a tristique tortor. Morbi non tortor eget dui blandit laoreet. Quisque lacus quam, auctor sit amet volutpat dictum, scelerisque sit amet neque. Vivamus non massa finibus, ultrices nunc vel, scelerisque dui. Aliquam commodo, quam eget fringilla finibus, enim diam sodales ligula, sollicitudin faucibus ligula lorem vitae arcu. Sed efficitur nisi sit amet lobortis malesuada. Ut quis imperdiet elit. Mauris blandit suscipit leo, non tristique est ultrices eu.</p>
+			<h2>About the Local History Collection</h2>
+			<h3>Archival Context Statement</h3>
+			<p>The Local History Collection at TADL is responsible for preserving and maintaining access to the permanent, historical records of Grand Traverse County.</p>
+			<p>This website and the archival records it describes may include content and language that is upsetting or offensive. Records reflect the language and attitudes of the historical period in which they were created.</p>
+			<p>This can include images or language that is racist, sexist, ableist, homophobic, and otherwise offensive or discriminatory. These materials are preserved for their historical significance and views that may be expressed within them are not endorsed by either the Traverse Area District Library (TADL) or the Local History Collection.</p>
 		</div>
 		<div class="col-sm-3 col-sm-offset-1">
 			<address>Archives<br>			100 Second Avenue, 2nd floor<br>			New York, NY 10010</address>
