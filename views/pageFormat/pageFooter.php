@@ -52,7 +52,6 @@
 							<li><?= caNavLink($this->request, _t("Browse Collections"), "", "", "Collections", "Index"); ?></li>
 							<li><?= caNavLink($this->request, _t("Advanced Search"), "", "", "Search", "advanced/objects"); ?></li>
 							<li><?= caNavLink($this->request, _t("Gallery"), "", "", "Gallery", "Index"); ?></li>
-							<li><a href="https://www.tadl.org" target="_blank" rel="noopener">Main TADL website</a></li>
 						</ul>
 					</div>
 				</div>
