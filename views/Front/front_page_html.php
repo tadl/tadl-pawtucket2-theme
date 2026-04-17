@@ -65,10 +65,10 @@
 							<div class="tadl-feature-image">
 								<img src="https://www.tadl.org/sites/default/files/styles/linked_image/public/2025-05/DigitalCollection.jpg?itok=H8KvYS6y" alt="Vintage photo of a family at the beach">
 							</div>
-							<div class="tadl-feature-kicker">Start Online</div>
-							<h3 class="tadl-feature-title">Digital Collection</h3>
-							<p class="tadl-feature-copy">Move directly into the public Local History digital collection for photographs, records, and descriptive metadata available online.</p>
-							<a class="tadl-feature-action" href="https://localhistory.tadl.org/">Open the Digital Collection</a>
+							<div class="tadl-feature-kicker">Start Here</div>
+							<h3 class="tadl-feature-title">Browse the Digital Archive</h3>
+							<p class="tadl-feature-copy">Use this site as the primary entry point for photographs, records, and descriptive metadata from TADL’s Local History Collection.</p>
+							<a class="tadl-feature-action" href="<?= caNavUrl($this->request, '', 'Collections', 'Index'); ?>">Browse Collections</a>
 						</div>
 						<div class="tadl-feature-stack">
 							<a class="tadl-resource-card" href="https://www.tadl.org/research?title=&amp;field_db_type_target_id%5B238%5D=238">
