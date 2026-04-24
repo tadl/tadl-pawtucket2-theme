@@ -33,18 +33,27 @@ if (is_array($va_item_ids) && sizeof($va_item_ids)) {
 }
 
 if (sizeof($va_slides)) {
+	$va_slide_pages = array_chunk($va_slides, 3);
 ?>
 	<div class="tadl-hero-slider" data-tadl-slider>
 		<div class="tadl-hero-slides">
 <?php
-	foreach ($va_slides as $vn_index => $va_slide) {
+	foreach ($va_slide_pages as $vn_page_index => $va_slide_page) {
 ?>
-			<div class="tadl-hero-slide<?= ($vn_index === 0) ? ' is-active' : ''; ?>" data-tadl-slide="<?= $vn_index; ?>">
-				<div class="tadl-hero-image"><?= $va_slide['media']; ?></div>
+			<div class="tadl-hero-page tadl-hero-page-count-<?= sizeof($va_slide_page); ?><?= ($vn_page_index === 0) ? ' is-active' : ''; ?>" data-tadl-page="<?= $vn_page_index; ?>">
 <?php
-		if ($va_slide['caption']) {
+		foreach ($va_slide_page as $va_slide) {
 ?>
-				<div class="tadl-hero-caption"><?= $va_slide['caption']; ?></div>
+				<div class="tadl-hero-card">
+					<div class="tadl-hero-image"><?= $va_slide['media']; ?></div>
+<?php
+			if ($va_slide['caption']) {
+?>
+					<div class="tadl-hero-caption"><?= $va_slide['caption']; ?></div>
+<?php
+			}
+?>
+				</div>
 <?php
 		}
 ?>
@@ -54,7 +63,7 @@ if (sizeof($va_slides)) {
 ?>
 		</div>
 <?php
-	if (sizeof($va_slides) > 1) {
+	if (sizeof($va_slide_pages) > 1) {
 ?>
 		<button class="tadl-hero-control tadl-hero-control-prev" type="button" data-tadl-prev aria-label="<?= _t("Previous"); ?>">
 			<i class="fa fa-angle-left" aria-hidden="true"></i>
@@ -73,24 +82,25 @@ if (sizeof($va_slides)) {
 
 			$slider.each(function() {
 				var $root = $(this);
-				var $slides = $root.find('[data-tadl-slide]');
+				var $pages = $root.find('[data-tadl-page]');
 				var current = 0;
 
-				function showSlide(index) {
-					if (!$slides.length) { return; }
-					current = (index + $slides.length) % $slides.length;
-					$slides.removeClass('is-active').eq(current).addClass('is-active');
+				function showPage(index) {
+					if (!$pages.length) { return; }
+					current = (index + $pages.length) % $pages.length;
+					$pages.removeClass('is-active').attr('aria-hidden', 'true');
+					$pages.eq(current).addClass('is-active').attr('aria-hidden', 'false');
 				}
 
 				$root.find('[data-tadl-prev]').on('click', function() {
-					showSlide(current - 1);
+					showPage(current - 1);
 				});
 
 				$root.find('[data-tadl-next]').on('click', function() {
-					showSlide(current + 1);
+					showPage(current + 1);
 				});
 
-				showSlide(0);
+				showPage(0);
 			});
 		});
 	</script>
