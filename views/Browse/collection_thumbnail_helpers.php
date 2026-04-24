@@ -33,7 +33,7 @@ if (!function_exists('tadlGetDescendantCollectionImages')) {
 		$t_collection = new ca_collections();
 		$o_db = $t_collection->getDb();
 		$qr_res = $o_db->query("
-			SELECT DISTINCT
+			SELECT
 				p.collection_id parent_collection_id,
 				pl.name collection_label,
 				orep.media
