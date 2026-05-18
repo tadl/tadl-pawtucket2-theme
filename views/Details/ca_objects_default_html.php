@@ -94,15 +94,29 @@
 				print tadlDetailField($this->request, $t_object, 'Publisher', '<unit relativeTo="ca_entities" restrictToRelationshipTypes="publisher" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l></unit>');
 				print tadlDetailField($this->request, $t_object, 'Description', '<span class="trimText">^ca_objects.description</span>');
 				print tadlDetailField($this->request, $t_object, 'Source of description', '^ca_objects.description_source');
-				print tadlDetailField($this->request, $t_object, 'Languages', '^ca_objects.language');
+				print tadlDetailFirstAvailableField($this->request, $t_object, 'Languages', [
+					'<unit relativeTo="ca_objects.language" delimiter="<br/>">^ca_objects.language</unit>',
+					'^ca_objects.language'
+				], ['skipAccessCheck' => true]);
 				print tadlDetailField($this->request, $t_object, 'Dimensions', '<unit relativeTo="ca_objects.dimensions" delimiter="<br/>"><ifdef code="ca_objects.dimensions.dimensions_height">^ca_objects.dimensions.dimensions_height H</ifdef><ifdef code="ca_objects.dimensions.dimensions_width"> x ^ca_objects.dimensions.dimensions_width W</ifdef><ifdef code="ca_objects.dimensions.dimensions_depth"> x ^ca_objects.dimensions.dimensions_depth D</ifdef><ifdef code="ca_objects.dimensions.dimensions_diameter"> x ^ca_objects.dimensions.dimensions_diameter diameter</ifdef><ifdef code="ca_objects.dimensions.dimensions_weight">; ^ca_objects.dimensions.dimensions_weight</ifdef><ifdef code="ca_objects.dimensions.dimensions_type"> (^ca_objects.dimensions.dimensions_type)</ifdef></unit>');
 				print tadlDetailField($this->request, $t_object, 'Inscriptions/marks', '^ca_objects.inscriptions_marks');
-				print tadlDetailField($this->request, $t_object, 'Materials and techniques', '<ifdef code="ca_objects.text_format">^ca_objects.text_format</ifdef><ifdef code="ca_objects.list_materials"><br/>^ca_objects.list_materials</ifdef>');
+				print tadlDetailFirstAvailableField($this->request, $t_object, 'Materials and techniques', [
+					'<unit relativeTo="ca_objects.materials_techniques" delimiter="<br/>">^ca_objects.materials_techniques</unit>',
+					'<unit relativeTo="ca_objects.materials_and_techniques" delimiter="<br/>">^ca_objects.materials_and_techniques</unit>',
+					'<unit relativeTo="ca_objects.list_materials" delimiter="<br/>">^ca_objects.list_materials</unit>',
+					'<unit relativeTo="ca_objects.materials" delimiter="<br/>">^ca_objects.materials</unit>',
+					'<unit relativeTo="ca_objects.techniques" delimiter="<br/>">^ca_objects.techniques</unit>',
+					'<unit relativeTo="ca_objects.technique" delimiter="<br/>">^ca_objects.technique</unit>',
+					'^ca_objects.text_format',
+					'^ca_objects.image_format',
+					'^ca_objects.formatNotes'
+				], ['skipAccessCheck' => true]);
 				print tadlDetailField($this->request, $t_object, 'Art and Architecture terms', '<unit relativeTo="ca_objects.art_architecture_authority" delimiter="<br/>">^ca_objects.art_architecture_authority</unit>');
 				print tadlDetailField($this->request, $t_object, 'Thesaurus terms', '<unit relativeTo="ca_objects.lctgm" delimiter="<br/>">^ca_objects.lctgm</unit>');
 				print tadlDetailField($this->request, $t_object, 'Library of Congress subject headings', '<unit relativeTo="ca_objects.lcsh_terms" delimiter="<br/>">^ca_objects.lcsh_terms</unit>');
 				print tadlDetailField($this->request, $t_object, 'Rights', '^ca_objects.rights.rightsText');
 				print tadlDetailField($this->request, $t_object, 'Copyright statement', '^ca_objects.rights.copyrightStatement');
+				print tadlObjectRepresentationCaptions($this->request, $t_object);
 				print tadlDetailField($this->request, $t_object, 'External links', '<unit relativeTo="ca_objects.external_link" delimiter="<br/>"><ifdef code="ca_objects.external_link.url_source">^ca_objects.external_link.url_source: </ifdef><a href="^ca_objects.external_link.url_entry">^ca_objects.external_link.url_entry</a></unit>');
 ?>
 			

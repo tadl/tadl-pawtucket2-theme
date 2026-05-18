@@ -48,6 +48,116 @@ if($this->request->isLoggedIn()){
 }
 $has_user_links = (sizeof($user_links) > 0);
 
+if (!function_exists('tadlMetaClean')) {
+	function tadlMetaClean($value, $limit = 220) {
+		$value = html_entity_decode(strip_tags((string)$value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		$value = trim(preg_replace('/\s+/', ' ', $value));
+		if (($limit > 0) && (mb_strlen($value) > $limit)) {
+			$value = rtrim(mb_substr($value, 0, $limit - 1)).'...';
+		}
+		return $value;
+	}
+}
+
+if (!function_exists('tadlMetaAbsoluteUrl')) {
+	function tadlMetaAbsoluteUrl($request, $url) {
+		$url = trim((string)$url);
+		if (!$url) { return ''; }
+		if (preg_match('!^https?://!i', $url)) { return $url; }
+
+		$scheme = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? null;
+		if (!$scheme) { $scheme = (!empty($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] !== 'off')) ? 'https' : 'http'; }
+		$scheme = preg_replace('/[^a-z]/i', '', explode(',', $scheme)[0]);
+		if (!$scheme) { $scheme = 'https'; }
+
+		$host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? ($_SERVER['HTTP_HOST'] ?? '');
+		$host = trim(explode(',', $host)[0]);
+		if (!$host && defined('__CA_SITE_HOSTNAME__')) { $host = __CA_SITE_HOSTNAME__; }
+		if (!$host) { return $url; }
+
+		if (substr($url, 0, 2) === '//') { return "{$scheme}:{$url}"; }
+		if ($url[0] !== '/') { $url = '/'.$url; }
+		return "{$scheme}://{$host}{$url}";
+	}
+}
+
+if (!function_exists('tadlMetaDescriptionForItem')) {
+	function tadlMetaDescriptionForItem($request, $item) {
+		if (!$item || !method_exists($item, 'tableName')) { return ''; }
+
+		$table = $item->tableName();
+		$templates_by_table = [
+			'ca_objects' => ['^ca_objects.description', '^ca_objects.coverageNotes', '^ca_objects.provenance'],
+			'ca_collections' => ['^ca_collections.collection_scope_content', '^ca_collections.description'],
+			'ca_entities' => ['^ca_entities.description'],
+			'ca_occurrences' => ['^ca_occurrences.description'],
+			'ca_places' => ['^ca_places.description']
+		];
+		$templates = $templates_by_table[$table] ?? [];
+
+		foreach ($templates as $template) {
+			$value = tadlMetaClean($item->getWithTemplate($template, [
+				'checkAccess' => caGetUserAccessValues($request),
+				'convertCodesToDisplayText' => true
+			]));
+			if ($value) { return $value; }
+		}
+
+		return '';
+	}
+}
+
+if (!function_exists('tadlMetaImageForItem')) {
+	function tadlMetaImageForItem($request, $item) {
+		if (!$item || !method_exists($item, 'getRepresentations')) { return ''; }
+
+		$representations = $item->getRepresentations(['mediumlarge', 'large', 'preview170'], null, [
+			'primaryOnly' => true,
+			'checkAccess' => caGetUserAccessValues($request)
+		]);
+		if (!is_array($representations)) { return ''; }
+
+		foreach ($representations as $representation) {
+			foreach (['mediumlarge', 'large', 'preview170'] as $version) {
+				$url = $representation['urls'][$version] ?? null;
+				if ($url) { return tadlMetaAbsoluteUrl($request, $url); }
+			}
+		}
+
+		return '';
+	}
+}
+
+$site_name = 'TADL Local History Collection';
+$default_description = 'Explore photographs, documents, and community memory preserved by Traverse Area District Library.';
+$meta_item = $this->getVar('item');
+$meta_title = tadlMetaClean(($meta_item && method_exists($meta_item, 'getLabelForDisplay')) ? $meta_item->getLabelForDisplay() : MetaTagManager::getWindowTitle(), 120);
+if (!$meta_title) { $meta_title = $site_name; }
+$meta_description = tadlMetaDescriptionForItem($this->request, $meta_item);
+if (!$meta_description) { $meta_description = $default_description; }
+$meta_url = tadlMetaAbsoluteUrl($this->request, $_SERVER['REQUEST_URI'] ?? $this->request->getRequestUrl());
+$meta_image = tadlMetaImageForItem($this->request, $meta_item);
+if (!$meta_image) { $meta_image = tadlMetaAbsoluteUrl($this->request, $this->request->getThemeUrlPath().'/assets/pawtucket/graphics/og-fallback.png'); }
+$meta_type = ($meta_item && method_exists($meta_item, 'tableName')) ? 'article' : 'website';
+
+MetaTagManager::addMeta('description', $meta_description);
+MetaTagManager::addMetaProperty('og:site_name', $site_name);
+MetaTagManager::addMetaProperty('og:type', $meta_type);
+MetaTagManager::addMetaProperty('og:title', $meta_title);
+MetaTagManager::addMetaProperty('og:description', $meta_description);
+MetaTagManager::addMetaProperty('og:url', $meta_url);
+MetaTagManager::addMetaProperty('og:image', $meta_image);
+MetaTagManager::addMetaProperty('og:image:alt', $meta_title);
+MetaTagManager::addMetaProperty('og:image:width', '1025');
+MetaTagManager::addMetaProperty('og:image:height', '1024');
+MetaTagManager::addMeta('twitter:card', 'summary_large_image');
+MetaTagManager::addMeta('twitter:title', $meta_title);
+MetaTagManager::addMeta('twitter:description', $meta_description);
+MetaTagManager::addMeta('twitter:image', $meta_image);
+
+$window_title = $meta_title;
+if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$site_name; }
+
 ?><!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -56,7 +166,7 @@ $has_user_links = (sizeof($user_links) > 0);
 	<?= MetaTagManager::getHTML(); ?>
 	<?= AssetLoadManager::getLoadHTML($this->request); ?>
 
-	<title><?= (MetaTagManager::getWindowTitle()) ? MetaTagManager::getWindowTitle() : $this->request->config->get("app_display_name"); ?></title>
+	<title><?= htmlspecialchars($window_title ?: $site_name, ENT_QUOTES, 'UTF-8'); ?></title>
 	
 	<script type="text/javascript">
 		jQuery(document).ready(function() {
