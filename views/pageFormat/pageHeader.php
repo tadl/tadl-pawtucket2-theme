@@ -128,9 +128,39 @@ if (!function_exists('tadlMetaImageForItem')) {
 	}
 }
 
+if (!function_exists('tadlMetaCurrentDetailItem')) {
+	function tadlMetaCurrentDetailItem($request, $view_item = null) {
+		if ($view_item && method_exists($view_item, 'tableName')) { return $view_item; }
+		if (!method_exists($request, 'getController') || ($request->getController() !== 'Detail')) { return null; }
+
+		$table_by_action = [
+			'objects' => 'ca_objects',
+			'collections' => 'ca_collections',
+			'entities' => 'ca_entities',
+			'events' => 'ca_occurrences',
+			'occurrences' => 'ca_occurrences',
+			'places' => 'ca_places',
+			'object_representations' => 'ca_object_representations'
+		];
+		$table = $table_by_action[$request->getAction()] ?? null;
+		if (!$table || !class_exists('Datamodel')) { return null; }
+
+		$id = (int)$request->getActionExtra();
+		if (!$id && ($instance = Datamodel::getInstance($table, true))) {
+			$id = (int)$request->getParameter($instance->primaryKey(), pInteger);
+		}
+		if (!$id || !($item = Datamodel::getInstance($table, true)) || !$item->load($id)) { return null; }
+
+		if (method_exists($item, 'hasField') && $item->hasField('access') && !in_array($item->get('access'), caGetUserAccessValues($request))) {
+			return null;
+		}
+		return $item;
+	}
+}
+
 $site_name = 'TADL Local History Collection';
 $default_description = 'Explore photographs, documents, and community memory preserved by Traverse Area District Library.';
-$meta_item = $this->getVar('item');
+$meta_item = tadlMetaCurrentDetailItem($this->request, $this->getVar('item'));
 $meta_title = tadlMetaClean(($meta_item && method_exists($meta_item, 'getLabelForDisplay')) ? $meta_item->getLabelForDisplay() : MetaTagManager::getWindowTitle(), 120);
 if (!$meta_title) { $meta_title = $site_name; }
 $meta_description = tadlMetaDescriptionForItem($this->request, $meta_item);
