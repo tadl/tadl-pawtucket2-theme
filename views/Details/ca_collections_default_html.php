@@ -90,10 +90,19 @@
 					print tadlDetailField($this->request, $t_item, 'Source of description', '^ca_collections.description_source');
 					print tadlDetailField($this->request, $t_item, 'Creators', '<unit relativeTo="ca_entities" restrictToRelationshipTypes="creator" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l></unit>');
 					print tadlDetailField($this->request, $t_item, 'Dates', '^ca_collections.date.dates_value');
-					print tadlDetailField($this->request, $t_item, 'Extent', '^ca_collections.extent');
+					print tadlDetailFirstAvailableField($this->request, $t_item, 'Extent', [
+						'^ca_collections.extent_text',
+						'^ca_collections.extent'
+					]);
 					print tadlDetailField($this->request, $t_item, 'Scope and content', '^ca_collections.collection_scope_content');
-					print tadlDetailField($this->request, $t_item, 'Language', '^ca_collections.language');
-					print tadlDetailField($this->request, $t_item, 'Vocabulary terms', '<unit relativeTo="ca_list_items" delimiter="<br/>"><l>^ca_list_items.preferred_labels.name_plural</l> (^relationship_typename)</unit>');
+					print tadlDetailFirstAvailableField($this->request, $t_item, 'Language', [
+						'<unit relativeTo="ca_collections.language" delimiter="<br/>">^ca_collections.language</unit>',
+						'^ca_collections.language'
+					], ['skipAccessCheck' => true]);
+					print tadlDetailFirstAvailableField($this->request, $t_item, 'Vocabulary terms', [
+						'<unit relativeTo="ca_list_items" delimiter="<br/>"><l>^ca_list_items.preferred_labels.name_singular</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>',
+						'<unit relativeTo="ca_list_items" delimiter="<br/>"><l>^ca_list_items.preferred_labels.name_plural</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>'
+					], ['skipAccessCheck' => true]);
 					print tadlDetailField($this->request, $t_item, 'Library of Congress subject headings', '<unit relativeTo="ca_collections.lcsh_terms" delimiter="<br/>">^ca_collections.lcsh_terms</unit>');
 					print tadlDetailField($this->request, $t_item, 'Rights', '^ca_collections.rights.rightsText');
 					print tadlDetailField($this->request, $t_item, 'Copyright statement', '^ca_collections.rights.copyrightStatement');
@@ -127,8 +136,8 @@
 					{{{<ifcount code="ca_entities" min="2"><label>Related people</label></ifcount>}}}
 					{{{<unit relativeTo="ca_entities" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l> (^relationship_typename)</unit>}}}
 					
-					{{{<ifcount code="ca_occurrences" min="1" max="1"><label>Related occurrence</label></ifcount>}}}
-					{{{<ifcount code="ca_occurrences" min="2"><label>Related occurrences</label></ifcount>}}}
+					{{{<ifcount code="ca_occurrences" min="1" max="1"><label>Related event</label></ifcount>}}}
+					{{{<ifcount code="ca_occurrences" min="2"><label>Related events</label></ifcount>}}}
 					{{{<unit relativeTo="ca_occurrences" delimiter="<br/>"><l>^ca_occurrences.preferred_labels.name</l> (^relationship_typename)</unit>}}}
 					
 					{{{<ifcount code="ca_places" min="1" max="1"><label>Related place</label></ifcount>}}}

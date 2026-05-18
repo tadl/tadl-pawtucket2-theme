@@ -53,7 +53,11 @@
 			<div class="row">			
 				<div class='col-sm-6 col-md-6 col-lg-6'>
 <?php
-					print tadlDetailField($this->request, $t_item, 'Dates', '^ca_occurrences.date.dates_value');
+					print tadlDetailFirstAvailableField($this->request, $t_item, 'Dates', [
+						'^ca_occurrences.occurrence_dates.dates_value',
+						'^ca_occurrences.occurrence_dates',
+						'^ca_occurrences.date.dates_value'
+					]);
 					print tadlDetailField($this->request, $t_item, 'Description', '^ca_occurrences.description');
 					print tadlDetailField($this->request, $t_item, 'Source of description', '^ca_occurrences.description_source');
 ?>

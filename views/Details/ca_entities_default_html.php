@@ -76,9 +76,19 @@
 <?php
 					print tadlDetailField($this->request, $t_item, 'Full preferred name', '^ca_entities.preferred_labels.displayname');
 					print tadlDetailField($this->request, $t_item, 'Alternate names', '<unit relativeTo="ca_entities.nonpreferred_labels" delimiter="<br/>">^ca_entities.nonpreferred_labels.displayname<ifdef code="ca_entities.nonpreferred_labels.type_id"> (^ca_entities.nonpreferred_labels.type_id)</ifdef><ifdef code="ca_entities.nonpreferred_labels.effective_date">, ^ca_entities.nonpreferred_labels.effective_date</ifdef></unit>');
-					print tadlDetailField($this->request, $t_item, 'Dates', '^ca_entities.date.dates_value');
-					print tadlDetailField($this->request, $t_item, 'Description', '^ca_entities.description');
-					print tadlDetailField($this->request, $t_item, 'Source of description', '^ca_entities.description_source');
+					print tadlDetailFirstAvailableField($this->request, $t_item, 'Dates', [
+						'^ca_entities.individual_dates.dates_value',
+						'^ca_entities.individual_dates',
+						'^ca_entities.date.dates_value'
+					]);
+					print tadlDetailFirstAvailableField($this->request, $t_item, 'Description', [
+						'^ca_entities.biography',
+						'^ca_entities.description'
+					]);
+					print tadlDetailFirstAvailableField($this->request, $t_item, 'Source of description', [
+						'^ca_entities.biography_source',
+						'^ca_entities.description_source'
+					]);
 					print tadlDetailField($this->request, $t_item, 'External links', '<unit relativeTo="ca_entities.external_link" delimiter="<br/>"><ifdef code="ca_entities.external_link.url_source">^ca_entities.external_link.url_source: </ifdef><a href="^ca_entities.external_link.url_entry">^ca_entities.external_link.url_entry</a></unit>');
 ?>
 					
