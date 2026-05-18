@@ -26,6 +26,8 @@
  * ----------------------------------------------------------------------
  */
  
+	require_once(__DIR__.'/detail_field_helpers.php');
+
 	$t_item = $this->getVar("item");
 	$va_comments = $this->getVar("comments");
 	$vn_comments_enabled = 	$this->getVar("commentsEnabled");
@@ -71,7 +73,14 @@
 					
 				</div><!-- end col -->
 				<div class='col-sm-6 col-md-6 col-lg-6'>
-					{{{<ifdef code="ca_entities.description"><div class='unit'><label>Biography</label>^ca_entities.description</div></ifdef>}}}
+<?php
+					print tadlDetailField($this->request, $t_item, 'Full preferred name', '^ca_entities.preferred_labels.displayname');
+					print tadlDetailField($this->request, $t_item, 'Alternate names', '<unit relativeTo="ca_entities.nonpreferred_labels" delimiter="<br/>">^ca_entities.nonpreferred_labels.displayname<ifdef code="ca_entities.nonpreferred_labels.type_id"> (^ca_entities.nonpreferred_labels.type_id)</ifdef><ifdef code="ca_entities.nonpreferred_labels.effective_date">, ^ca_entities.nonpreferred_labels.effective_date</ifdef></unit>');
+					print tadlDetailField($this->request, $t_item, 'Dates', '^ca_entities.date.dates_value');
+					print tadlDetailField($this->request, $t_item, 'Description', '^ca_entities.description');
+					print tadlDetailField($this->request, $t_item, 'Source of description', '^ca_entities.description_source');
+					print tadlDetailField($this->request, $t_item, 'External links', '<unit relativeTo="ca_entities.external_link" delimiter="<br/>"><ifdef code="ca_entities.external_link.url_source">^ca_entities.external_link.url_source: </ifdef><a href="^ca_entities.external_link.url_entry">^ca_entities.external_link.url_entry</a></unit>');
+?>
 					
 					{{{<ifcount code="ca_collections" min="1" max="1"><label>Related collection</label></ifcount>}}}
 					{{{<ifcount code="ca_collections" min="2"><label>Related collections</label></ifcount>}}}
@@ -82,8 +91,8 @@
 					{{{<ifcount code="ca_entities.related" min="2"><label>Related people</label></ifcount>}}}
 					{{{<unit relativeTo="ca_entities.related" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l> (^relationship_typename)</unit>}}}
 					
-					{{{<ifcount code="ca_occurrences" min="1" max="1"><label>Related occurrence</label></ifcount>}}}
-					{{{<ifcount code="ca_occurrences" min="2"><label>Related occurrences</label></ifcount>}}}
+					{{{<ifcount code="ca_occurrences" min="1" max="1"><label>Related event</label></ifcount>}}}
+					{{{<ifcount code="ca_occurrences" min="2"><label>Related events</label></ifcount>}}}
 					{{{<unit relativeTo="ca_occurrences" delimiter="<br/>"><l>^ca_occurrences.preferred_labels.name</l> (^relationship_typename)</unit>}}}
 					
 					{{{<ifcount code="ca_places" min="1" max="1"><label>Related place</label></ifcount>}}}

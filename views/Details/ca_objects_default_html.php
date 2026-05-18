@@ -26,6 +26,8 @@
  * ----------------------------------------------------------------------
  */
  
+	require_once(__DIR__.'/detail_field_helpers.php');
+
 	$t_object = 			$this->getVar("item");
 	$va_comments = 			$this->getVar("comments");
 	$va_tags = 				$this->getVar("tags_array");
@@ -85,23 +87,36 @@
 				
 				{{{<ifdef code="ca_objects.idno"><div class="unit"><label>Identifier</label>^ca_objects.idno</div></ifdef>}}}
 				{{{<ifdef code="ca_objects.containerID"><div class="unit"><label>Box/series</label>^ca_objects.containerID</div></ifdef>}}}				
-				
-				{{{<ifdef code="ca_objects.description">
-					<div class='unit'><label>Description</label>
-						<span class="trimText">^ca_objects.description</span>
-					</div>
-				</ifdef>}}}
-				
-				
-				{{{<ifdef code="ca_objects.dateSet.setDisplayValue"><div class="unit"><label>Date</label>^ca_objects.dateSet.setDisplayValue</div></ifdef>}}}
+<?php
+				print tadlDetailField($this->request, $t_object, 'Alternate title', '<unit relativeTo="ca_objects.nonpreferred_labels" delimiter="<br/>">^ca_objects.nonpreferred_labels.name</unit>');
+				print tadlDetailField($this->request, $t_object, 'Date', '^ca_objects.date.dates_value');
+				print tadlDetailField($this->request, $t_object, 'Creators', '<unit relativeTo="ca_entities" restrictToRelationshipTypes="creator" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l></unit>');
+				print tadlDetailField($this->request, $t_object, 'Publisher', '<unit relativeTo="ca_entities" restrictToRelationshipTypes="publisher" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l></unit>');
+				print tadlDetailField($this->request, $t_object, 'Description', '<span class="trimText">^ca_objects.description</span>');
+				print tadlDetailField($this->request, $t_object, 'Source of description', '^ca_objects.description_source');
+				print tadlDetailField($this->request, $t_object, 'Languages', '^ca_objects.language');
+				print tadlDetailField($this->request, $t_object, 'Dimensions', '<unit relativeTo="ca_objects.dimensions" delimiter="<br/>"><ifdef code="ca_objects.dimensions.dimensions_height">^ca_objects.dimensions.dimensions_height H</ifdef><ifdef code="ca_objects.dimensions.dimensions_width"> x ^ca_objects.dimensions.dimensions_width W</ifdef><ifdef code="ca_objects.dimensions.dimensions_depth"> x ^ca_objects.dimensions.dimensions_depth D</ifdef><ifdef code="ca_objects.dimensions.dimensions_diameter"> x ^ca_objects.dimensions.dimensions_diameter diameter</ifdef><ifdef code="ca_objects.dimensions.dimensions_weight">; ^ca_objects.dimensions.dimensions_weight</ifdef><ifdef code="ca_objects.dimensions.dimensions_type"> (^ca_objects.dimensions.dimensions_type)</ifdef></unit>');
+				print tadlDetailField($this->request, $t_object, 'Inscriptions/marks', '^ca_objects.inscriptions_marks');
+				print tadlDetailField($this->request, $t_object, 'Materials and techniques', '<ifdef code="ca_objects.text_format">^ca_objects.text_format</ifdef><ifdef code="ca_objects.list_materials"><br/>^ca_objects.list_materials</ifdef>');
+				print tadlDetailField($this->request, $t_object, 'Art and Architecture terms', '<unit relativeTo="ca_objects.art_architecture_authority" delimiter="<br/>">^ca_objects.art_architecture_authority</unit>');
+				print tadlDetailField($this->request, $t_object, 'Thesaurus terms', '<unit relativeTo="ca_objects.lctgm" delimiter="<br/>">^ca_objects.lctgm</unit>');
+				print tadlDetailField($this->request, $t_object, 'Library of Congress subject headings', '<unit relativeTo="ca_objects.lcsh_terms" delimiter="<br/>">^ca_objects.lcsh_terms</unit>');
+				print tadlDetailField($this->request, $t_object, 'Rights', '^ca_objects.rights.rightsText');
+				print tadlDetailField($this->request, $t_object, 'Copyright statement', '^ca_objects.rights.copyrightStatement');
+				print tadlDetailField($this->request, $t_object, 'External links', '<unit relativeTo="ca_objects.external_link" delimiter="<br/>"><ifdef code="ca_objects.external_link.url_source">^ca_objects.external_link.url_source: </ifdef><a href="^ca_objects.external_link.url_entry">^ca_objects.external_link.url_entry</a></unit>');
+?>
 			
 				<hr></hr>
 					<div class="row">
 						<div class="col-sm-6">		
-							{{{<ifcount code="ca_entities" min="1"><div class="unit">
-								<ifcount code="ca_entities" min="1" max="1"><label>Related person</label></ifcount>
-								<ifcount code="ca_entities" min="2"><label>Related people</label></ifcount>
-								<unit relativeTo="ca_entities" delimiter="<br/>"><l>^ca_entities.preferred_labels</l> (^relationship_typename)</unit>
+<?php
+							print tadlDetailField($this->request, $t_object, 'Related people/organizations', '<unit relativeTo="ca_entities" delimiter="<br/>" excludeRelationshipTypes="creator,publisher"><l>^ca_entities.preferred_labels</l> (^relationship_typename)</unit>');
+?>
+
+							{{{<ifcount code="ca_objects.related" min="1"><div class="unit">
+								<ifcount code="ca_objects.related" min="1" max="1"><label>Related object</label></ifcount>
+								<ifcount code="ca_objects.related" min="2"><label>Related objects</label></ifcount>
+								<unit relativeTo="ca_objects.related" delimiter="<br/>"><l>^ca_objects.related.preferred_labels.name</l> (^relationship_typename)</unit>
 							</div></ifcount>}}}
 							
 							{{{<ifcount code="ca_occurrences" min="1"><div class="unit">

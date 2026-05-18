@@ -26,6 +26,8 @@
  * ----------------------------------------------------------------------
  */
  
+	require_once(__DIR__.'/detail_field_helpers.php');
+
 	$t_item = $this->getVar("item");
 	$va_comments = $this->getVar("comments");
 	$vn_comments_enabled = 	$this->getVar("commentsEnabled");
@@ -50,7 +52,11 @@
 			</div><!-- end row -->
 			<div class="row">			
 				<div class='col-sm-6 col-md-6 col-lg-6'>
-					{{{<ifdef code="ca_occurrences.description"><label>About</label>^ca_occurrences.description<br/></ifdef>}}}
+<?php
+					print tadlDetailField($this->request, $t_item, 'Dates', '^ca_occurrences.date.dates_value');
+					print tadlDetailField($this->request, $t_item, 'Description', '^ca_occurrences.description');
+					print tadlDetailField($this->request, $t_item, 'Source of description', '^ca_occurrences.description_source');
+?>
 					{{{<ifcount code="ca_objects" min="1" max="1"><div class='unit'><unit relativeTo="ca_objects" delimiter=" "><l>^ca_object_representations.media.large</l><div class='caption'>Related Object: <l>^ca_objects.preferred_labels.name</l></div></unit></div></ifcount>}}}
 
 <?php
@@ -81,8 +87,8 @@
 					{{{<ifcount code="ca_entities" min="2"><label>Related people</label></ifcount>}}}
 					{{{<unit relativeTo="ca_entities" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l> (^relationship_typename)</unit>}}}
 					
-					{{{<ifcount code="ca_occurrences.related" min="1" max="1"><label>Related occurrence</label></ifcount>}}}
-					{{{<ifcount code="ca_occurrences.related" min="2"><label>Related occurrences</label></ifcount>}}}
+					{{{<ifcount code="ca_occurrences.related" min="1" max="1"><label>Related event</label></ifcount>}}}
+					{{{<ifcount code="ca_occurrences.related" min="2"><label>Related events</label></ifcount>}}}
 					{{{<unit relativeTo="ca_occurrences.related" delimiter="<br/>"><l>^ca_occurrences.related.preferred_labels.name</l> (^relationship_typename)</unit>}}}
 					
 					{{{<ifcount code="ca_places" min="1" max="1"><label>Related place</label></ifcount>}}}
