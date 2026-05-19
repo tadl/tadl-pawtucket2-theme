@@ -136,7 +136,7 @@ print tadlPdfField('Related places', tadlPdfValue($t_item, '<unit relativeTo="ca
 print tadlPdfField('Related objects', tadlPdfValue($t_item, '<unit relativeTo="ca_objects.related" delimiter="<br/>">^ca_objects.related.preferred_labels.name (^relationship_typename)</unit>'));
 ?>
 		<div class="footer">
-			Generated from <?= htmlspecialchars($this->request->config->get('app_display_name'), ENT_QUOTES, 'UTF-8'); ?>.
+			Generated from TADL Local History Collection.
 		</div>
 	</body>
 </html>
