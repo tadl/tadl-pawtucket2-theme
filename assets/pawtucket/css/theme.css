@@ -758,6 +758,318 @@ h6 {
     min-height: 420px;
 }
 
+.tadl-collections-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.tadl-collections-tools {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 0 0 auto;
+    margin-top: 8px;
+}
+
+.tadl-collections-count {
+    color: #565656;
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.tadl-collections-view-buttons {
+    display: inline-flex;
+    border: 1px solid rgba(13, 49, 83, 0.18);
+}
+
+.tadl-collection-view-toggle,
+.tadl-collection-view-toggle.btn {
+    border: 0;
+    border-radius: 0;
+    color: #0d3153;
+    font-size: 15px;
+    font-weight: 800;
+    background: #fff;
+}
+
+.tadl-collection-view-toggle.active,
+.tadl-collection-view-toggle.active:hover,
+.tadl-collection-view-toggle.active:focus {
+    color: #fff;
+    background: #0d3153;
+    box-shadow: none;
+}
+
+.tadl-collections-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+    margin-top: 20px;
+}
+
+.collectionsList .collectionTile.tadl-collection-card {
+    position: relative;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    min-height: 0;
+    border: 1px solid rgba(13, 49, 83, 0.14);
+    border-radius: 2px;
+    background: #fff;
+    box-shadow: 0 14px 32px rgba(13, 49, 83, 0.1);
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.collectionsList .collectionTile.tadl-collection-card:hover,
+.collectionsList .collectionTile.tadl-collection-card:focus-within {
+    transform: translateY(-3px);
+    border-color: rgba(62, 126, 14, 0.45);
+    box-shadow: 0 20px 44px rgba(13, 49, 83, 0.16);
+}
+
+.tadl-collection-card-link,
+.collectionsList .tadl-collection-card-link {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    color: inherit;
+    text-decoration: none;
+}
+
+.tadl-collection-card-link:hover,
+.tadl-collection-card-link:focus {
+    color: inherit;
+    text-decoration: none;
+}
+
+.tadl-collection-thumb {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+    min-height: 0;
+    background: linear-gradient(135deg, #0d3153, #315a83);
+}
+
+.tadl-collection-thumb img {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: cover;
+    filter: saturate(0.85) contrast(1.02);
+    transition: transform 220ms ease;
+}
+
+.tadl-collection-card:hover .tadl-collection-thumb img,
+.tadl-collection-card:focus-within .tadl-collection-thumb img {
+    transform: scale(1.04);
+}
+
+.tadl-collection-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    color: rgba(255, 255, 255, 0.86);
+    background:
+        linear-gradient(135deg, rgba(13, 49, 83, 0.9), rgba(49, 90, 131, 0.78)),
+        url("../graphics/header-bg.jpg") center/cover no-repeat;
+}
+
+.tadl-collection-placeholder .glyphicon {
+    font-size: 38px;
+}
+
+.tadl-collection-content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    padding: 18px 18px 20px;
+}
+
+.collectionsList .collectionTile .title {
+    padding: 0;
+    color: #0d3153;
+    font-family: "Lato", sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+.tadl-collection-summary {
+    display: -webkit-box;
+    overflow: hidden;
+    margin-top: 12px;
+    color: #444;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
+.tadl-collection-summary p:last-child {
+    margin-bottom: 0;
+}
+
+.tadl-collection-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: auto;
+    padding-top: 16px;
+    color: #3e7e0e;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.tadl-collections-grid[data-collection-view="list"] {
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.collectionsList .tadl-collections-grid[data-collection-view="list"] .collectionTile.tadl-collection-card {
+    box-shadow: none;
+}
+
+.tadl-collections-grid[data-collection-view="list"] .tadl-collection-card-link,
+.collectionsList .tadl-collections-grid[data-collection-view="list"] .tadl-collection-card-link {
+    display: grid;
+    grid-template-columns: 54px minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: 58px;
+}
+
+.tadl-collections-grid[data-collection-view="list"] .tadl-collection-thumb {
+    width: 54px;
+    height: 54px;
+    aspect-ratio: 1;
+}
+
+.tadl-collections-grid[data-collection-view="list"] .tadl-collection-placeholder .glyphicon {
+    font-size: 20px;
+}
+
+.tadl-collections-grid[data-collection-view="list"] .tadl-collection-content {
+    display: grid;
+    grid-column: 2 / 4;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    min-height: 0;
+    padding: 10px 14px;
+}
+
+.tadl-collections-grid[data-collection-view="list"] .tadl-collection-summary {
+    display: none;
+}
+
+.tadl-collections-grid[data-collection-view="list"] .collectionTile .title {
+    overflow: hidden;
+    font-size: 16px;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tadl-collections-grid[data-collection-view="list"] .tadl-collection-action {
+    margin-top: 0;
+    padding-top: 0;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.tadl-collections-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 30px;
+}
+
+.tadl-collections-page.btn {
+    min-width: 38px;
+    border: 1px solid rgba(13, 49, 83, 0.22);
+    border-radius: 2px;
+    color: #0d3153;
+    font-weight: 800;
+    background: #fff;
+}
+
+.tadl-collections-page.btn.active,
+.tadl-collections-page.btn.active:hover,
+.tadl-collections-page.btn.active:focus {
+    color: #fff;
+    background: #0d3153;
+    box-shadow: none;
+}
+
+.tadl-collections-page.btn:disabled {
+    color: #777;
+    background: #f1f4f7;
+}
+
+.tadl-collections-page-gap {
+    padding: 0 3px;
+    color: #777;
+    font-weight: 800;
+}
+
+@media (max-width: 1100px) {
+    .tadl-collections-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 720px) {
+    .tadl-collections-header,
+    .tadl-collections-tools {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .tadl-collections-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .tadl-collections-view-buttons {
+        width: 100%;
+    }
+
+    .tadl-collection-view-toggle,
+    .tadl-collection-view-toggle.btn {
+        flex: 1 1 50%;
+    }
+
+    .tadl-collections-grid[data-collection-view="list"] .tadl-collection-card-link,
+    .collectionsList .tadl-collections-grid[data-collection-view="list"] .tadl-collection-card-link {
+        grid-template-columns: 46px minmax(0, 1fr);
+    }
+
+    .tadl-collections-grid[data-collection-view="list"] .tadl-collection-thumb {
+        width: 46px;
+        height: 46px;
+    }
+
+    .tadl-collections-grid[data-collection-view="list"] .tadl-collection-content {
+        grid-column: 2;
+        grid-template-columns: 1fr;
+        gap: 3px;
+        padding: 8px 10px;
+    }
+
+    .tadl-collections-grid[data-collection-view="list"] .tadl-collection-action {
+        font-size: 11px;
+    }
+}
+
 @media (max-width: 991px) {
     .tadl-brandband-inner {
         flex-direction: column;

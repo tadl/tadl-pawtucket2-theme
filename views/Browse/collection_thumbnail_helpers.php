@@ -40,8 +40,8 @@ if (!function_exists('tadlGetDescendantCollectionImages')) {
 			FROM ca_collections p
 			INNER JOIN ca_collections c ON
 				c.hier_collection_id = p.hier_collection_id
-				AND c.hier_left > p.hier_left
-				AND c.hier_right < p.hier_right
+				AND c.hier_left >= p.hier_left
+				AND c.hier_right <= p.hier_right
 			INNER JOIN ca_objects_x_collections oxc ON oxc.collection_id = c.collection_id
 			INNER JOIN ca_objects o ON o.object_id = oxc.object_id
 			INNER JOIN ca_objects_x_object_representations oxor ON
