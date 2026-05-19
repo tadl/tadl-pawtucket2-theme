@@ -81,13 +81,13 @@
 					{{{<ifcount code="ca_entities" min="2"><label>Related people</label></ifcount>}}}
 					{{{<unit relativeTo="ca_entities" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l> (^relationship_typename)</unit>}}}
 					
-					{{{<ifcount code="ca_occurrences" min="1" max="1"><label>Related occurrence</label></ifcount>}}}
-					{{{<ifcount code="ca_occurrences" min="2"><label>Related occurrences</label></ifcount>}}}
+					{{{<ifcount code="ca_occurrences" min="1" max="1"><label>Related event</label></ifcount>}}}
+					{{{<ifcount code="ca_occurrences" min="2"><label>Related events</label></ifcount>}}}
 					{{{<unit relativeTo="ca_occurrences" delimiter="<br/>"><l>^ca_occurrences.preferred_labels.name</l> (^relationship_typename)</unit>}}}
 					
 					{{{<ifcount code="ca_places.related" min="1" max="1"><label>Related place</label></ifcount>}}}
 					{{{<ifcount code="ca_places.related" min="2"><label>Related places</label></ifcount>}}}
-					{{{<unit relativeTo="ca_places" delimiter="<br/>"><l>^ca_places.related.preferred_labels.name</l>< (^relationship_typename)/unit>}}}				
+					{{{<unit relativeTo="ca_places.related" delimiter="<br/>"><l>^ca_places.related.preferred_labels.name</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>}}}
 				</div><!-- end col -->
 			</div><!-- end row -->
 {{{<ifcount code="ca_objects" min="2">
