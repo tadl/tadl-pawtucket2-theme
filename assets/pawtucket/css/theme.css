@@ -1737,6 +1737,10 @@ h6 {
     color: #fff;
 }
 
+#bViewButtons .tadl-result-view-toggle.active .glyphicon {
+    color: #fff;
+}
+
 @media (max-width: 1100px) {
     .tadl-resource-panel .tadl-resource-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
