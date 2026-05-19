@@ -45,7 +45,7 @@
 			<div class="row">
 				<div class='col-md-12 col-lg-12'>
 					<H1>{{{^ca_places.preferred_labels.name}}}</H1>
-					<H2>{{{^ca_places.type_id}}}{{{<ifdef code="ca_places.idno">, ^ca_places.idno</ifdef>}}}</H2>
+					<H2>{{{^ca_places.type_id}}}</H2>
 				</div><!-- end col -->
 			</div><!-- end row -->
 			<div class="row">			
