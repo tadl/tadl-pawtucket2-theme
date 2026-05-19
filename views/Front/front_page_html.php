@@ -144,7 +144,7 @@
 					<p>The Local History Digital Collection can be viewed at any time. In-person access to closed archival materials is available by request; TADL asks for 72 hours' notice so staff can prepare materials and secure appropriate research space.</p>
 				</div>
 				<div class="tadl-access-actions">
-					<a class="tadl-feature-action" href="https://live-traversearea.pantheonsite.io/sites/default/files/2022-12/lhc_researcherform_RE.pdf">Research Request Form</a>
+					<a class="tadl-feature-action" href="https://www.tadl.org/sites/default/files/2022-12/lhc_researcherform_RE.pdf">Research Request Form</a>
 					<a class="tadl-feature-action tadl-feature-action-secondary" href="mailto:ask@tadl.org">Ask a Question</a>
 				</div>
 			</section>

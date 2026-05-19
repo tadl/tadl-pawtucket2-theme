@@ -17,7 +17,7 @@
 
 			<h3>Accessing the Collection</h3>
 			<p>The Local History Digital Collection can be viewed online at any time. The physical Local History Collection is a closed archive, and in-person access is available by request.</p>
-			<p>To view materials in person, please <a href="https://live-traversearea.pantheonsite.io/sites/default/files/2022-12/lhc_researcherform_RE.pdf">download the research request form</a>. TADL asks for 72 hours' notice so staff can prepare materials and secure appropriate space for viewing and research.</p>
+			<p>To view materials in person, please <a href="https://www.tadl.org/sites/default/files/2022-12/lhc_researcherform_RE.pdf">download the research request form</a>. TADL asks for 72 hours' notice so staff can prepare materials and secure appropriate space for viewing and research.</p>
 			<p>For questions about accessing items in the collection, contact the Reference Desk in person, by phone at <a href="tel:2319328502">231.932.8502</a>, or by email at <a href="mailto:ask@tadl.org">ask@tadl.org</a>.</p>
 
 			<h3>Research in Special Collections at the Traverse Area District Library</h3>
