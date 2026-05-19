@@ -58,12 +58,16 @@
 				<h2><?php _p('People, Collections, and Context'); ?></h2>
 				<p><?php _p('Useful when you know who created something, where it belongs, or how it was described.'); ?></p>
 			</div>
-			<div class="row">
+			<div class="row tadl-advanced-balanced-row">
 <?php
 				tadlAdvancedField(_t('Collection'), _t('Search records within a particular collection.'), 'ca_collections_preferred_labels', '{{{ca_collections.preferred_labels%restrictToTypes=collection&width=200px&height=40px&label=Collection}}}');
 				tadlAdvancedField(_t('People / organizations'), _t('Search related people and organizations.'), 'ca_entities_preferred_labels_displayname', '{{{ca_entities.preferred_labels.displayname%width=220px&label=People_organizations}}}');
 				tadlAdvancedField(_t('Creators'), _t('Search people or organizations related as creators.'), 'ca_entities_preferred_labels_displayname_creator', '{{{ca_entities.preferred_labels.displayname%restrictToRelationshipTypes=creator&width=220px&label=Creators}}}');
 				tadlAdvancedField(_t('Publisher'), _t('Search people or organizations related as publishers.'), 'ca_entities_preferred_labels_displayname_publisher', '{{{ca_entities.preferred_labels.displayname%restrictToRelationshipTypes=publisher&width=220px&label=Publisher}}}');
+?>
+			</div>
+			<div class="row">
+<?php
 				tadlAdvancedField(_t('Description'), _t('Search public descriptive notes.'), 'ca_objects_description', '{{{ca_objects.description%width=220px&height=80px&label=Description}}}', 'col-sm-12');
 				tadlAdvancedField(_t('Source of description'), _t('Search notes about where the description came from.'), 'ca_objects_description_source', '{{{ca_objects.description_source%width=220px&label=Source_of_description}}}', 'col-sm-12');
 ?>

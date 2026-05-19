@@ -1320,6 +1320,20 @@ h6 {
     margin-bottom: 18px;
 }
 
+.tadl-advanced-balanced-row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.tadl-advanced-balanced-row::before,
+.tadl-advanced-balanced-row::after {
+    display: none;
+}
+
+.tadl-advanced-balanced-row .advancedSearchField {
+    float: none;
+}
+
 .tadl-advanced-search .advancedSearchField .formLabel {
     display: block;
     margin-bottom: 7px;
