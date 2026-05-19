@@ -217,7 +217,11 @@ $meta_description = tadlMetaDescriptionForItem($this->request, $meta_item);
 if (!$meta_description) { $meta_description = $default_description; }
 $meta_url = tadlMetaAbsoluteUrl($this->request, $_SERVER['REQUEST_URI'] ?? $this->request->getRequestUrl());
 $meta_image = tadlMetaImageForItem($this->request, $meta_item);
-if (!$meta_image) { $meta_image = tadlMetaAbsoluteUrl($this->request, $this->request->getThemeUrlPath().'/assets/pawtucket/graphics/og-fallback.png'); }
+$meta_image_is_fallback = false;
+if (!$meta_image) {
+	$meta_image = tadlMetaAbsoluteUrl($this->request, $this->request->getThemeUrlPath().'/assets/pawtucket/graphics/lhc_2023logo.png');
+	$meta_image_is_fallback = true;
+}
 $meta_type = ($meta_item && method_exists($meta_item, 'tableName')) ? 'article' : 'website';
 
 MetaTagManager::addMeta('description', $meta_description);
@@ -228,8 +232,10 @@ MetaTagManager::addMetaProperty('og:description', $meta_description);
 MetaTagManager::addMetaProperty('og:url', $meta_url);
 MetaTagManager::addMetaProperty('og:image', $meta_image);
 MetaTagManager::addMetaProperty('og:image:alt', $meta_title);
-MetaTagManager::addMetaProperty('og:image:width', '1025');
-MetaTagManager::addMetaProperty('og:image:height', '1024');
+if ($meta_image_is_fallback) {
+	MetaTagManager::addMetaProperty('og:image:width', '500');
+	MetaTagManager::addMetaProperty('og:image:height', '247');
+}
 MetaTagManager::addMeta('twitter:card', 'summary_large_image');
 MetaTagManager::addMeta('twitter:title', $meta_title);
 MetaTagManager::addMeta('twitter:description', $meta_description);
