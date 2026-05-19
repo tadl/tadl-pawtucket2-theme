@@ -158,10 +158,60 @@ if (!function_exists('tadlMetaCurrentDetailItem')) {
 	}
 }
 
+if (!function_exists('tadlRouteTitle')) {
+	function tadlRouteTitle($request) {
+		$controller = method_exists($request, 'getController') ? (string)$request->getController() : '';
+		$action = method_exists($request, 'getAction') ? (string)$request->getAction() : '';
+
+		$labels = [
+			'objects' => 'Objects',
+			'collections' => 'Collections',
+			'entities' => 'Entities',
+			'people' => 'People',
+			'organizations' => 'Organizations',
+			'occurrences' => 'Events',
+			'events' => 'Events',
+			'places' => 'Places'
+		];
+
+		if ($controller === 'Front') { return 'Home'; }
+		if ($controller === 'About') { return 'About'; }
+		if ($controller === 'Collections') { return 'Collections'; }
+		if ($controller === 'Gallery') { return 'Gallery'; }
+		if ($controller === 'Contact') { return 'Contact'; }
+		if ($controller === 'MultiSearch') { return 'Search'; }
+		if ($controller === 'Browse') { return 'Browse '.($labels[$action] ?? caUcFirstUTF8Safe($action)); }
+		if ($controller === 'Search') {
+			if ($action === 'advanced') { return 'Advanced Search'; }
+			return 'Search '.($labels[$action] ?? caUcFirstUTF8Safe($action));
+		}
+
+		return $controller ? caUcFirstUTF8Safe($controller) : '';
+	}
+}
+
+if (!function_exists('tadlNormalizeWindowTitle')) {
+	function tadlNormalizeWindowTitle($request, $title, $site_name) {
+		$title = tadlMetaClean($title, 120);
+		$app_name = tadlMetaClean($request->config->get('app_display_name'), 120);
+
+		foreach (array_filter([$app_name, 'TADL CollectiveAccess', 'CollectiveAccess']) as $prefix) {
+			if ($title === $prefix) { $title = ''; break; }
+			$title = preg_replace('/^'.preg_quote($prefix, '/').'\s*(?:[:|\\-]\s*)?/i', '', $title);
+		}
+
+		$title = preg_replace('/\s*\|\s*'.preg_quote($site_name, '/').'$/i', '', $title);
+		$title = trim($title, " \t\n\r\0\x0B:|-");
+
+		if (!$title || ($title === $site_name)) { $title = tadlRouteTitle($request); }
+		return $title ?: $site_name;
+	}
+}
+
 $site_name = 'TADL Local History Collection';
 $default_description = 'Explore photographs, documents, and community memory preserved by Traverse Area District Library.';
 $meta_item = tadlMetaCurrentDetailItem($this->request, $this->getVar('item'));
-$meta_title = tadlMetaClean(($meta_item && method_exists($meta_item, 'getLabelForDisplay')) ? $meta_item->getLabelForDisplay() : MetaTagManager::getWindowTitle(), 120);
+$meta_title = ($meta_item && method_exists($meta_item, 'getLabelForDisplay')) ? tadlMetaClean($meta_item->getLabelForDisplay(), 120) : tadlNormalizeWindowTitle($this->request, MetaTagManager::getWindowTitle(), $site_name);
 if (!$meta_title) { $meta_title = $site_name; }
 $meta_description = tadlMetaDescriptionForItem($this->request, $meta_item);
 if (!$meta_description) { $meta_description = $default_description; }
