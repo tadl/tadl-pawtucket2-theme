@@ -31,7 +31,7 @@
 				tadlAdvancedField(_t('Creators'), _t('Search creators related to collections.'), 'ca_entities_preferred_labels_displayname_creator', '{{{ca_entities.preferred_labels.displayname%restrictToRelationshipTypes=creator&width=220px&label=Creators}}}');
 				tadlAdvancedField(_t('Source of description'), _t('Search description source notes.'), 'ca_collections_description_source', '{{{ca_collections.description_source%width=220px&label=Source_of_description}}}');
 				tadlAdvancedField(_t('Extent'), _t('Search extent statements.'), 'ca_collections_extent_text', '{{{ca_collections.extent_text%width=220px&label=Extent}}}');
-				tadlAdvancedField(_t('Language'), _t('Search language metadata.'), 'ca_collections_language', '{{{ca_collections.language%width=220px&label=Language}}}');
+				tadlAdvancedManualTextField(_t('Language'), _t('Search language metadata.'), 'ca_collections_language', 'ca_collections_language', '{{{ca_collections.language%width=220px&label=Language}}}');
 				tadlAdvancedField(_t('Scope and content'), _t('Search scope and content notes.'), 'ca_collections_collection_scope_content', '{{{ca_collections.collection_scope_content%width=220px&height=80px&label=Scope_and_content}}}', 'col-sm-12');
 				tadlAdvancedField(_t('Vocabulary terms'), _t('Search related vocabulary terms.'), 'ca_list_items_preferred_labels_name_singular', '{{{ca_list_items.preferred_labels.name_singular%width=220px&label=Vocabulary_terms}}}');
 				tadlAdvancedField(_t('LOC heading'), _t('Search Library of Congress subject headings.'), 'ca_collections_lcsh_terms', '{{{ca_collections.lcsh_terms%width=220px&label=LOC_heading}}}');
@@ -52,6 +52,7 @@
 
 <script>
 	jQuery(document).ready(function() {
-		$('.advancedSearchField .formLabel').popover();
+		$('.advancedSearchField .formLabel').popover({container: 'body', placement: 'top', viewport: {selector: 'body', padding: 12}});
+		$('.tadl-generated-search-field').find(':input').prop('disabled', true).attr('tabindex', '-1');
 	});
 </script>

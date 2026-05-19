@@ -442,7 +442,7 @@ h6 {
 .tadl-quicklink {
     display: block;
     border: 1px solid var(--tadl-border);
-    border-left: 6px solid var(--tadl-green);
+    border-left: 6px solid var(--tadl-primary-dark);
     background: #fff;
     color: var(--tadl-primary-dark);
     padding: 16px 18px;
@@ -675,7 +675,7 @@ h6 {
 .tadl-contact-card {
     padding: 18px 20px;
     background: #eef4f8;
-    border-left: 6px solid var(--tadl-green);
+    border-left: 6px solid var(--tadl-primary-dark);
     color: #14323d;
     font-size: 16px;
     line-height: 1.6;
@@ -709,7 +709,7 @@ h6 {
 }
 
 .tadl-resource-panel .tadl-resource-card-primary {
-    border-left: 6px solid var(--tadl-green);
+    border-left: 6px solid var(--tadl-primary-dark);
 }
 
 .tadl-resource-panel .tadl-resource-image {
@@ -1219,7 +1219,7 @@ h6 {
     margin-bottom: 24px;
     padding: 26px 30px;
     border: 1px solid var(--tadl-border);
-    border-left: 6px solid var(--tadl-green);
+    border-left: 6px solid var(--tadl-primary-dark);
     background: rgba(255, 255, 255, 0.96);
     box-shadow: 0 16px 32px rgba(11, 47, 87, 0.08);
 }
@@ -1249,7 +1249,6 @@ h6 {
     min-height: 40px;
     padding: 8px 14px;
     border: 1px solid var(--tadl-border);
-    border-left: 4px solid transparent;
     border-radius: 4px;
     background: #fff;
     color: var(--tadl-primary-dark);
@@ -1259,11 +1258,24 @@ h6 {
 }
 
 .tadl-advanced-tabs a:hover,
-.tadl-advanced-tabs a:focus,
-.tadl-advanced-tabs a.active {
-    border-left-color: var(--tadl-green);
+.tadl-advanced-tabs a:focus {
+    border-color: rgba(11, 47, 87, 0.35);
     background: #f6f9fc;
     color: var(--tadl-primary-dark);
+    text-decoration: none;
+}
+
+.tadl-advanced-tabs a.active {
+    border-color: var(--tadl-primary-dark);
+    background: var(--tadl-primary-dark);
+    color: #fff;
+    text-decoration: none;
+}
+
+.tadl-advanced-tabs a.active:hover,
+.tadl-advanced-tabs a.active:focus {
+    background: var(--tadl-primary-dark);
+    color: #fff;
     text-decoration: none;
 }
 

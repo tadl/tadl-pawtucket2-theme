@@ -49,6 +49,6 @@
 
 <script>
 	jQuery(document).ready(function() {
-		$('.advancedSearchField .formLabel').popover();
+		$('.advancedSearchField .formLabel').popover({container: 'body', placement: 'top', viewport: {selector: 'body', padding: 12}});
 	});
 </script>

@@ -31,7 +31,7 @@
 				tadlAdvancedField(_t('Identifier'), _t('Search object identifiers and accession numbers.'), 'ca_objects_idno', '{{{ca_objects.idno%width=210px&label=Identifier}}}');
 ?>
 				<div class="advancedSearchField col-sm-6">
-					<label for="ca_objects_type_id" class="formLabel" data-toggle="popover" data-trigger="hover" data-content="<?php _p('Limit results to a specific object type.'); ?>"><?php _p('Type'); ?></label>
+					<label for="ca_objects_type_id" class="formLabel" data-toggle="popover" data-trigger="hover focus" data-container="body" data-placement="top" data-content="<?php _p('Limit results to a specific object type.'); ?>"><?php _p('Type'); ?></label>
 					<select name="ca_objects_type_id[]" id="ca_objects_type_id" class="form-control">
 						<option value=""><?php _p('Any type'); ?></option>
 <?php
@@ -77,7 +77,7 @@
 			</div>
 			<div class="row">
 <?php
-				tadlAdvancedField(_t('Languages'), _t('Search language metadata.'), 'ca_objects_language', '{{{ca_objects.language%width=220px&label=Languages}}}');
+				tadlAdvancedManualTextField(_t('Languages'), _t('Search language metadata.'), 'ca_objects_language', 'ca_objects_language', '{{{ca_objects.language%width=220px&label=Languages}}}');
 				tadlAdvancedField(_t('Materials and techniques'), _t('Search materials and technique notes.'), 'ca_objects_materials_techniques', '{{{ca_objects.materials_techniques%width=220px&label=Materials_and_techniques}}}');
 				tadlAdvancedField(_t('Inscriptions / marks'), _t('Search inscriptions, markings, and annotations.'), 'ca_objects_inscriptions_marks', '{{{ca_objects.inscriptions_marks%width=220px&label=Inscriptions_marks}}}');
 				tadlAdvancedField(_t('Subject headings'), _t('Search Library of Congress or other subject terms.'), 'ca_objects_lcsh_terms', '{{{ca_objects.lcsh_terms%width=220px&label=Subject_headings}}}');
@@ -100,7 +100,7 @@
 
 <script>
 	jQuery(document).ready(function() {
-		$('.advancedSearchField .formLabel').popover();
+		$('.advancedSearchField .formLabel').popover({container: 'body', placement: 'top', viewport: {selector: 'body', padding: 12}});
 		$('.tadl-generated-search-field').find(':input').prop('disabled', true).attr('tabindex', '-1');
 	});
 </script>
