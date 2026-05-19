@@ -638,6 +638,173 @@ h6 {
     margin-top: 18px;
 }
 
+.tadl-resource-panel .tadl-resource-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+    gap: 28px;
+    align-items: start;
+    margin-bottom: 26px;
+}
+
+.tadl-contact-card {
+    padding: 18px 20px;
+    background: #eef4f8;
+    border-left: 6px solid var(--tadl-green);
+    color: #14323d;
+    font-size: 16px;
+    line-height: 1.6;
+    border-radius: 3px;
+}
+
+.tadl-contact-card strong,
+.tadl-contact-card span {
+    display: block;
+}
+
+.tadl-contact-card a {
+    color: var(--tadl-primary-dark);
+    font-weight: 800;
+}
+
+.tadl-resource-panel .tadl-resource-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    margin: 0;
+}
+
+.tadl-resource-panel .tadl-resource-card {
+    display: grid;
+    grid-template-rows: 150px auto 1fr;
+    min-height: 315px;
+    padding: 0;
+    overflow: hidden;
+    border-top: 0;
+}
+
+.tadl-resource-panel .tadl-resource-card-primary {
+    border-left: 6px solid var(--tadl-green);
+}
+
+.tadl-resource-panel .tadl-resource-image {
+    height: auto;
+    margin: 0;
+    border-radius: 0;
+}
+
+.tadl-resource-panel .tadl-resource-title {
+    margin: 16px 18px 6px;
+}
+
+.tadl-resource-panel .tadl-resource-copy {
+    margin: 0 18px 18px;
+    font-size: 15px;
+}
+
+.tadl-home-section {
+    margin-top: 26px;
+    padding: 28px 30px;
+    background: #fff;
+    border: 1px solid var(--tadl-border);
+    border-radius: 4px;
+    box-shadow: 0 14px 30px rgba(15, 37, 48, 0.08);
+}
+
+.tadl-section-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 22px;
+    margin-bottom: 20px;
+}
+
+.tadl-section-link {
+    color: var(--tadl-primary-dark);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.tadl-blog-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.tadl-blog-card {
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr);
+    align-items: center;
+    gap: 18px;
+    min-height: 130px;
+    padding: 14px;
+    color: var(--tadl-primary-dark);
+    background: #f8fafc;
+    border: 1px solid var(--tadl-border);
+    border-radius: 4px;
+    text-decoration: none;
+}
+
+.tadl-blog-card:hover,
+.tadl-blog-card:focus {
+    color: var(--tadl-primary);
+    background: #f2f6f9;
+    text-decoration: none;
+}
+
+.tadl-blog-image {
+    display: block;
+    height: 112px;
+    overflow: hidden;
+    background: #d7dee6;
+    border-radius: 3px;
+}
+
+.tadl-blog-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tadl-blog-title {
+    font-family: "Merriweather Sans", "Open Sans", Arial, sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.tadl-access-section {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 24px;
+    align-items: center;
+}
+
+.tadl-access-card p {
+    margin: 0;
+    color: var(--tadl-muted);
+    font-size: 17px;
+    line-height: 1.7;
+}
+
+.tadl-access-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.tadl-feature-action-secondary {
+    background: var(--tadl-green);
+}
+
+.tadl-feature-action-secondary:hover,
+.tadl-feature-action-secondary:focus {
+    background: #2f670a;
+}
+
 #footer {
     background:
         linear-gradient(rgba(11, 47, 87, 0.42), rgba(73, 104, 142, 0.42)),
@@ -1023,12 +1190,40 @@ h6 {
 }
 
 @media (max-width: 1100px) {
+    .tadl-resource-panel .tadl-resource-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .tadl-collections-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @media (max-width: 720px) {
+    .tadl-resource-panel .tadl-resource-header,
+    .tadl-resource-panel .tadl-resource-grid,
+    .tadl-blog-grid,
+    .tadl-access-section {
+        grid-template-columns: 1fr;
+    }
+
+    .tadl-section-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .tadl-blog-card {
+        grid-template-columns: 1fr;
+    }
+
+    .tadl-blog-image {
+        height: 160px;
+    }
+
+    .tadl-access-actions {
+        justify-content: flex-start;
+    }
+
     .tadl-collections-header,
     .tadl-collections-tools {
         align-items: stretch;
