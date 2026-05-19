@@ -1320,6 +1320,10 @@ h6 {
     margin-bottom: 18px;
 }
 
+.tadl-advanced-search .advancedSearchField.col-sm-12 {
+    clear: both;
+}
+
 .tadl-advanced-balanced-row {
     display: flex;
     flex-wrap: wrap;
@@ -1347,12 +1351,26 @@ h6 {
 .tadl-advanced-search .advancedSearchField input,
 .tadl-advanced-search .advancedSearchField textarea,
 .tadl-advanced-search .advancedSearchField select {
+    width: 100% !important;
     min-height: 42px;
+    height: auto !important;
     border-color: var(--tadl-border);
     border-radius: 4px;
+    background: #fff;
     color: var(--tadl-ink);
     font-size: 16px;
+    opacity: 1;
     box-shadow: none;
+}
+
+.tadl-advanced-search .advancedSearchField table,
+.tadl-advanced-search .advancedSearchField tbody,
+.tadl-advanced-search .advancedSearchField tr,
+.tadl-advanced-search .advancedSearchField td,
+.tadl-advanced-search .advancedSearchField .attributeListItem,
+.tadl-advanced-search .advancedSearchField .searchFormLineModeElementSubLabel {
+    display: block;
+    width: 100%;
 }
 
 .tadl-advanced-search .advancedSearchField textarea {
@@ -1374,6 +1392,20 @@ h6 {
     min-width: 112px;
     border-radius: 4px;
     font-weight: 800;
+}
+
+.tadl-advanced-actions .btn a,
+.tadl-advanced-actions .btn a:hover,
+.tadl-advanced-actions .btn a:focus {
+    color: inherit;
+    text-decoration: none;
+}
+
+.tadl-advanced-actions .btn-primary,
+.tadl-advanced-actions .btn-primary a,
+.tadl-advanced-actions .btn-primary a:hover,
+.tadl-advanced-actions .btn-primary a:focus {
+    color: #fff;
 }
 
 #browseResultsContainer {
