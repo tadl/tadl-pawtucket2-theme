@@ -130,19 +130,19 @@
 				<div class='col-md-6 col-lg-6'>
 					{{{<ifcount code="ca_collections.related" min="1" max="1"><label>Related collection</label></ifcount>}}}
 					{{{<ifcount code="ca_collections.related" min="2"><label>Related collections</label></ifcount>}}}
-					{{{<unit relativeTo="ca_collections" delimiter="<br/>"><l>^ca_collections.related.preferred_labels.name</l> (^relationship_typename)</unit>}}}
+					{{{<ifcount code="ca_collections.related" min="1"><unit relativeTo="ca_collections.related" delimiter="<br/>"><l>^ca_collections.related.preferred_labels.name</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit></ifcount>}}}
 					
 					{{{<ifcount code="ca_entities" min="1" max="1"><label>Related person</label></ifcount>}}}
 					{{{<ifcount code="ca_entities" min="2"><label>Related people</label></ifcount>}}}
-					{{{<unit relativeTo="ca_entities" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l> (^relationship_typename)</unit>}}}
+					{{{<ifcount code="ca_entities" min="1"><unit relativeTo="ca_entities" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit></ifcount>}}}
 					
 					{{{<ifcount code="ca_occurrences" min="1" max="1"><label>Related event</label></ifcount>}}}
 					{{{<ifcount code="ca_occurrences" min="2"><label>Related events</label></ifcount>}}}
-					{{{<unit relativeTo="ca_occurrences" delimiter="<br/>"><l>^ca_occurrences.preferred_labels.name</l> (^relationship_typename)</unit>}}}
+					{{{<ifcount code="ca_occurrences" min="1"><unit relativeTo="ca_occurrences" delimiter="<br/>"><l>^ca_occurrences.preferred_labels.name</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit></ifcount>}}}
 					
 					{{{<ifcount code="ca_places" min="1" max="1"><label>Related place</label></ifcount>}}}
 					{{{<ifcount code="ca_places" min="2"><label>Related places</label></ifcount>}}}
-					{{{<unit relativeTo="ca_places" delimiter="<br/>"><l>^ca_places.preferred_labels.name</l> (^relationship_typename)</unit>}}}					
+					{{{<ifcount code="ca_places" min="1"><unit relativeTo="ca_places" delimiter="<br/>"><l>^ca_places.preferred_labels.name</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit></ifcount>}}}
 				</div><!-- end col -->
 			</div><!-- end row -->
 {{{<ifcount code="ca_objects" min="2">
