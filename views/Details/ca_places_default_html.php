@@ -30,6 +30,7 @@
 	$va_comments = $this->getVar("comments");
 	$vn_comments_enabled = 	$this->getVar("commentsEnabled");
 	$vn_share_enabled = 	$this->getVar("shareEnabled");	
+	require_once(__DIR__.'/detail_field_helpers.php');
 ?>
 <div class="row">
 	<div class='col-xs-12 navTop'><!--- only shown at small screen size -->
@@ -50,7 +51,14 @@
 			</div><!-- end row -->
 			<div class="row">			
 				<div class='col-md-6 col-lg-6'>
-					{{{<ifdef code="ca_places.description"><label>About</label>^ca_places.description<br/></ifdef>}}}
+<?php
+					print tadlDetailField($this->request, $t_item, 'About', '^ca_places.description');
+					print tadlDetailField($this->request, $t_item, 'Alternate names', '<unit relativeTo="ca_places.nonpreferred_labels" delimiter="<br/>">^ca_places.nonpreferred_labels.name<ifdef code="ca_places.nonpreferred_labels.type_id"> (^ca_places.nonpreferred_labels.type_id)</ifdef></unit>');
+					print tadlDetailField($this->request, $t_item, 'Place hierarchy', '<unit relativeTo="ca_places.hierarchy" delimiter=" &gt; "><l>^ca_places.preferred_labels.name</l></unit>');
+					print tadlDetailField($this->request, $t_item, 'Source', '^ca_places.source_id');
+					print tadlDetailField($this->request, $t_item, 'Coordinates', '^ca_places.georeference');
+					print tadlDetailField($this->request, $t_item, 'Vocabulary terms', '<unit relativeTo="ca_list_items" delimiter="<br/>"><l>^ca_list_items.preferred_labels.name_singular</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>');
+?>
 					{{{<ifcount code="ca_objects" min="1" max="1"><div class='unit'><unit relativeTo="ca_objects" delimiter=" "><l>^ca_object_representations.media.large</l><div class='caption'>Related Object: <l>^ca_objects.preferred_labels.name</l></div></unit></div></ifcount>}}}
 
 <?php
