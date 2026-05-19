@@ -198,7 +198,13 @@ h6 {
     margin: 0 auto;
 }
 
+.tadl-menu-items > li {
+    position: relative;
+}
+
 .tadl-menu-items > li > a {
+    position: relative;
+    z-index: 2;
     padding: 18px 13px;
     font-size: 18px;
     font-weight: 700;
@@ -236,11 +242,6 @@ h6 {
     opacity: 1 !important;
 }
 
-.tadl-user-nav > a {
-    padding-left: 14px !important;
-    padding-right: 8px !important;
-}
-
 .navbar .navbar-nav > .active > a,
 .navbar-default .navbar-nav > .open > a,
 .navbar-default .navbar-nav > .open > a:hover,
@@ -249,6 +250,28 @@ h6 {
 .navbar-default .navbar-nav > .active > a:focus {
     background-color: #eef2f6;
     color: var(--tadl-primary-dark);
+}
+
+@media (min-width: 768px) {
+    .tadl-menu-items > li::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 10px;
+        right: 10px;
+        height: 0;
+        z-index: 1;
+        background: var(--tadl-green);
+        border-radius: 0 0 3px 3px;
+        transition: height 160ms ease;
+    }
+
+    .tadl-menu-items > li:hover::before,
+    .tadl-menu-items > li:focus-within::before,
+    .tadl-menu-items > li.open::before,
+    .tadl-menu-items > li.active::before {
+        height: 8px;
+    }
 }
 
 .tadl-content-shell {

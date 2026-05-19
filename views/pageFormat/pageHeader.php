@@ -300,16 +300,6 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
 					<li <?= ($this->request->getController() == "Gallery") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Gallery"), "", "", "Gallery", "Index"); ?></li>
 					<li <?= ($this->request->getController() == "Collections") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Collections"), "", "", "Collections", "index"); ?></li>					
 					<li <?= ($this->request->getController() == "Contact") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Contact"), "", "", "Contact", "Form"); ?></li>
-<?php
-	if ($has_user_links) {
-?>
-					<li class="dropdown tadl-user-nav" style="position:relative;">
-						<a href="#" class="dropdown-toggle icon" data-toggle="dropdown"><span class="glyphicon glyphicon-user" aria-label="<?= _t("User options"); ?>"></span></a>
-						<ul class="dropdown-menu" role="list"><?= join("\n", $user_links); ?></ul>
-					</li>
-<?php
-	}
-?>
 				</ul>
 			</div><!-- /.navbar-collapse -->
 		</div><!-- end container -->
