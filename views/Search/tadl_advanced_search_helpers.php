@@ -39,20 +39,3 @@ if (!function_exists('tadlAdvancedField')) {
 <?php
 	}
 }
-
-if (!function_exists('tadlAdvancedManualTextField')) {
-	function tadlAdvancedManualTextField($ps_label, $ps_help, $ps_field_id, $ps_name, $ps_generated_tag, $ps_class = 'col-sm-6') {
-		$vm_value = $_REQUEST[$ps_name] ?? null;
-		if (is_array($vm_value)) { $vm_value = array_shift($vm_value); }
-?>
-		<div class="advancedSearchField <?= $ps_class; ?>">
-			<label for="<?= htmlspecialchars($ps_field_id, ENT_QUOTES, 'UTF-8'); ?>" class="formLabel" data-toggle="popover" data-trigger="hover focus" data-container="body" data-placement="top" data-content="<?= htmlspecialchars($ps_help, ENT_QUOTES, 'UTF-8'); ?>"><?= $ps_label; ?></label>
-			<input type="text" name="<?= htmlspecialchars($ps_name, ENT_QUOTES, 'UTF-8'); ?>" id="<?= htmlspecialchars($ps_field_id, ENT_QUOTES, 'UTF-8'); ?>" value="<?= htmlspecialchars((string)$vm_value, ENT_QUOTES, 'UTF-8'); ?>" class="form-control" />
-			<input name="<?= htmlspecialchars($ps_name, ENT_QUOTES, 'UTF-8'); ?>_label" value="<?= htmlspecialchars($ps_label, ENT_QUOTES, 'UTF-8'); ?>" type="hidden"/>
-			<div class="tadl-generated-search-field" aria-hidden="true">
-				<?= $ps_generated_tag; ?>
-			</div>
-		</div>
-<?php
-	}
-}

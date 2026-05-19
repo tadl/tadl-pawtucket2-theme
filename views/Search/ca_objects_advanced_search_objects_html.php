@@ -43,9 +43,6 @@
 ?>
 					</select>
 					<input name="ca_objects_type_id_label" value="<?php _p('Type'); ?>" type="hidden"/>
-					<div class="tadl-generated-search-field" aria-hidden="true">
-						{{{ca_objects.type_id%height=30px&id=ca_objects_type_id_generated&label=Type}}}
-					</div>
 				</div>
 <?php
 				tadlAdvancedField(_t('Date or date range'), _t('Search records for a particular date or date range, such as 1910 or 1910-1920.'), 'ca_objects_date_dates_value', '{{{ca_objects.date.dates_value%width=200px&height=40px&useDatePicker=0&label=Date}}}');
@@ -81,7 +78,6 @@
 			</div>
 			<div class="row">
 <?php
-				tadlAdvancedManualTextField(_t('Languages'), _t('Search language metadata.'), 'ca_objects_language', 'ca_objects_language', '{{{ca_objects.language%width=220px&label=Languages}}}');
 				tadlAdvancedField(_t('Materials and techniques'), _t('Search materials and technique notes.'), 'ca_objects_materials_techniques', '{{{ca_objects.materials_techniques%width=220px&label=Materials_and_techniques}}}');
 				tadlAdvancedField(_t('Inscriptions / marks'), _t('Search inscriptions, markings, and annotations.'), 'ca_objects_inscriptions_marks', '{{{ca_objects.inscriptions_marks%width=220px&label=Inscriptions_marks}}}');
 				tadlAdvancedField(_t('Subject headings'), _t('Search Library of Congress or other subject terms.'), 'ca_objects_lcsh_terms', '{{{ca_objects.lcsh_terms%width=220px&label=Subject_headings}}}');
@@ -105,6 +101,9 @@
 <script>
 	jQuery(document).ready(function() {
 		$('.advancedSearchField .formLabel').popover({container: 'body', placement: 'top', viewport: {selector: 'body', padding: 12}});
-		$('.tadl-generated-search-field').find(':input').prop('disabled', true).attr('tabindex', '-1');
+		var $formElements = $('input[name="_formElements"]');
+		if ($formElements.length && $formElements.val().split('|').indexOf('ca_objects.type_id') === -1) {
+			$formElements.val($formElements.val() + '|ca_objects.type_id');
+		}
 	});
 </script>
