@@ -43,6 +43,7 @@
 	$vs_current_view	= $this->getVar('view');
 	$va_view_icons		= $this->getVar('viewIcons');
 	$vs_current_sort	= $this->getVar('sort');
+	$vs_sort_dir		= $this->getVar('sort_direction');
 	
 	$t_instance			= $this->getVar('t_instance');
 	$vs_table 			= $this->getVar('table');
@@ -54,6 +55,7 @@
 	$vs_extended_info_template = caGetOption('extendedInformationTemplate', $va_options, null);
 
 	$vb_ajax			= (bool)$this->request->isAjax();
+	$vn_page_size = 9;
 	
 
 	$va_add_to_set_link_info = caGetAddToSetInfo($this->request);
@@ -66,14 +68,15 @@
 	$vs_default_placeholder_tag = "<div class='bResultItemImgPlaceholder'>".$vs_default_placeholder."</div>";
 		
 
-		$vn_col_span = 3;
-		$vn_col_span_sm = 4;
+		$vn_col_span = 4;
+		$vn_col_span_sm = 6;
+		$vn_col_span_xs = 12;
 		$vb_refine = false;
 		if(is_array($va_facets) && sizeof($va_facets)){
 			$vb_refine = true;
-			$vn_col_span = 3;
+			$vn_col_span = 4;
 			$vn_col_span_sm = 6;
-			$vn_col_span_xs = 6;
+			$vn_col_span_xs = 12;
 		}
 		if ($vn_start < $qr_res->numHits()) {
 			$vn_c = 0;
@@ -82,7 +85,7 @@
 			
 			if ($vs_table != 'ca_objects') {
 				$va_ids = array();
-				while($qr_res->nextHit() && ($vn_c < $vn_hits_per_block)) {
+				while($qr_res->nextHit() && ($vn_c < $vn_page_size)) {
 					$va_ids[] = $qr_res->get("{$vs_table}.{$vs_pk}") ?: $qr_res->get($vs_pk);
 					$vn_c++;
 				}
@@ -103,7 +106,7 @@
 			
 			$t_list_item = new ca_list_items();
 			while($qr_res->nextHit()) {
-				if($vn_c == $vn_hits_per_block){
+				if($vn_c == $vn_page_size){
 					if($vb_row_id_loaded){
 						break;
 					}else{
@@ -174,7 +177,9 @@
 				$vn_results_output++;
 			}
 			
-			print "<div style='clear:both'></div>".caNavLink($this->request, _t('Next %1', $vn_hits_per_block), 'jscroll-next', '*', '*', '*', array('s' => $vn_start + $vn_results_output, 'key' => $vs_browse_key, 'view' => $vs_current_view, 'sort' => $vs_current_sort, '_advanced' => $this->getVar('is_advanced') ? 1  : 0));
+			require_once(__DIR__.'/tadl_result_helpers.php');
+			print "<div style='clear:both'></div>";
+			print tadlBrowseResultPager($this->request, $qr_res->numHits(), $vn_start, $vn_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $this->getVar('is_advanced') ? true : false);
 		}
 ?>
 <script type="text/javascript">

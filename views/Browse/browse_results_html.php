@@ -246,12 +246,6 @@ if (!$vb_ajax) {	// !ajax
 
 <script type="text/javascript">
 	jQuery(document).ready(function() {
-		jQuery('#browseResultsContainer').jscroll({
-			autoTrigger: true,
-			loadingHtml: "<?php print caBusyIndicatorIcon($this->request).' '.addslashes(_t('Loading...')); ?>",
-			padding: 800,
-			nextSelector: 'a.jscroll-next'
-		});
 <?php
 		if($vn_row_id){
 ?>
