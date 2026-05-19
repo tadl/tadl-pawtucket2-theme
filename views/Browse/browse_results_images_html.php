@@ -55,7 +55,8 @@
 	$vs_extended_info_template = caGetOption('extendedInformationTemplate', $va_options, null);
 
 	$vb_ajax			= (bool)$this->request->isAjax();
-	$vn_page_size = 9;
+	require_once(__DIR__.'/tadl_result_helpers.php');
+	$vn_page_size = tadlBrowseResultPageSize('images');
 	
 
 	$va_add_to_set_link_info = caGetAddToSetInfo($this->request);
@@ -120,7 +121,7 @@
 				
 				# --- check if this result has been cached
 				# --- key is MD5 of table, id, list, refine(vb_refine)
-				$vs_cache_key = md5($vs_table.$vn_id."images".$vb_refine);
+				$vs_cache_key = md5('tadl_images_v2'.$vs_table.$vn_id."images".$vb_refine);
 				if(($o_config->get("cache_timeout") > 0) && ExternalCache::contains($vs_cache_key,'browse_result')){
 					print ExternalCache::fetch($vs_cache_key, 'browse_result');
 				}else{			
@@ -177,7 +178,6 @@
 				$vn_results_output++;
 			}
 			
-			require_once(__DIR__.'/tadl_result_helpers.php');
 			print "<div style='clear:both'></div>";
 			print tadlBrowseResultPager($this->request, $qr_res->numHits(), $vn_start, $vn_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $this->getVar('is_advanced') ? true : false);
 		}

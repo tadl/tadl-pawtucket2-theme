@@ -1637,11 +1637,15 @@ h6 {
 .tadl-results-pagination {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
     flex-wrap: wrap;
     gap: 8px;
     margin: 12px 0 34px;
     clear: both;
+}
+
+.tadl-results-top-pager .tadl-results-pagination {
+    margin: 0 0 18px;
 }
 
 .tadl-results-page-status {
@@ -1655,13 +1659,24 @@ h6 {
     min-width: 38px;
     border-color: var(--tadl-border);
     border-radius: 4px;
+    background: #fff;
     color: var(--tadl-primary-dark);
     font-weight: 800;
+    text-transform: none;
+}
+
+.tadl-results-page.btn:hover,
+.tadl-results-page.btn:focus {
+    border-color: var(--tadl-primary-dark);
+    background: #fff;
+    color: var(--tadl-primary-dark);
+    text-decoration: none;
 }
 
 .tadl-results-page.active,
 .tadl-results-page.active:hover,
 .tadl-results-page.active:focus {
+    border-color: var(--tadl-primary-dark);
     color: #fff;
     background: var(--tadl-primary-dark);
 }
@@ -1675,6 +1690,51 @@ h6 {
 .tadl-results-page-gap {
     color: #777;
     font-weight: 800;
+}
+
+#bViewButtons {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0;
+    margin-bottom: 16px;
+}
+
+#bViewButtons .tadl-result-view-toggle.btn {
+    border: 1px solid var(--tadl-border);
+    border-radius: 0;
+    background: #fff;
+    color: var(--tadl-primary-dark);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    box-shadow: none;
+}
+
+#bViewButtons .tadl-result-view-toggle.btn + .tadl-result-view-toggle.btn {
+    margin-left: -1px;
+}
+
+#bViewButtons .tadl-result-view-toggle.btn:hover,
+#bViewButtons .tadl-result-view-toggle.btn:focus {
+    position: relative;
+    z-index: 1;
+    border-color: var(--tadl-primary-dark);
+    background: #fff;
+    color: var(--tadl-primary-dark);
+    text-decoration: none;
+}
+
+#bViewButtons .tadl-result-view-toggle.active,
+#bViewButtons .tadl-result-view-toggle.active:hover,
+#bViewButtons .tadl-result-view-toggle.active:focus {
+    position: relative;
+    z-index: 2;
+    border-color: var(--tadl-primary-dark);
+    background: var(--tadl-primary-dark);
+    color: #fff;
 }
 
 @media (max-width: 1100px) {

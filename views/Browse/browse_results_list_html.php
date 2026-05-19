@@ -54,7 +54,8 @@
 	$vs_extended_info_template = caGetOption('extendedInformationTemplate', $va_options, null);
 
 	$vb_ajax			= (bool)$this->request->isAjax();
-	$vn_page_size = 24;
+	require_once(__DIR__.'/tadl_result_helpers.php');
+	$vn_page_size = tadlBrowseResultPageSize('list');
 
 	$o_icons_conf = caGetIconsConfig();
 	$va_object_type_specific_icons = $o_icons_conf->getAssoc("placeholders");
@@ -118,7 +119,7 @@
 				}
 				# --- check if this result has been cached
 				# --- key is MD5 of table, id, view, refine(vb_refine)
-				$vs_cache_key = md5($vs_table.$vn_id."list".$vb_refine);
+				$vs_cache_key = md5('tadl_list_v2'.$vs_table.$vn_id."list".$vb_refine);
 				if(($o_config->get("cache_timeout") > 0) && ExternalCache::contains($vs_cache_key,'browse_result')){
 					print ExternalCache::fetch($vs_cache_key, 'browse_result');
 				}else{
@@ -174,7 +175,6 @@
 				$vn_results_output++;
 			}
 			
-			require_once(__DIR__.'/tadl_result_helpers.php');
 			print "<div style='clear:both'></div>";
 			print tadlBrowseResultPager($this->request, $qr_res->numHits(), $vn_start, $vn_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $this->getVar('is_advanced') ? true : false);
 		}

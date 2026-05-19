@@ -54,3 +54,16 @@ if (!function_exists('tadlBrowseResultPager')) {
 		return $vs_output."</nav>";
 	}
 }
+
+if (!function_exists('tadlBrowseResultPageSize')) {
+	function tadlBrowseResultPageSize($ps_view) {
+		switch($ps_view) {
+			case 'images':
+				return 9;
+			case 'list':
+				return 24;
+			default:
+				return null;
+		}
+	}
+}
