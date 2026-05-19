@@ -37,6 +37,7 @@ if (sizeof($va_slides)) {
 ?>
 	<div class="tadl-hero-slider" data-tadl-slider>
 		<div class="tadl-hero-slides">
+			<div class="tadl-hero-track" data-tadl-track>
 <?php
 	foreach ($va_slide_pages as $vn_page_index => $va_slide_page) {
 ?>
@@ -61,6 +62,7 @@ if (sizeof($va_slides)) {
 <?php
 	}
 ?>
+			</div>
 		</div>
 <?php
 	if (sizeof($va_slide_pages) > 1) {
@@ -82,14 +84,16 @@ if (sizeof($va_slides)) {
 
 			$slider.each(function() {
 				var $root = $(this);
+				var $track = $root.find('[data-tadl-track]');
 				var $pages = $root.find('[data-tadl-page]');
 				var current = 0;
 
 				function showPage(index) {
 					if (!$pages.length) { return; }
 					current = (index + $pages.length) % $pages.length;
-					$pages.removeClass('is-active').attr('aria-hidden', 'true');
-					$pages.eq(current).addClass('is-active').attr('aria-hidden', 'false');
+					$pages.removeClass('is-active').attr('aria-hidden', 'true').find('a, button').attr('tabindex', '-1');
+					$pages.eq(current).addClass('is-active').attr('aria-hidden', 'false').find('a, button').removeAttr('tabindex');
+					$track.css('transform', 'translate3d(' + (-100 * current) + '%, 0, 0)');
 				}
 
 				$root.find('[data-tadl-prev]').on('click', function() {
