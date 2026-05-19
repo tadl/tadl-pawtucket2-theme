@@ -1,6 +1,6 @@
 <?php require_once(__DIR__.'/tadl_advanced_search_helpers.php'); ?>
 <div class="tadl-advanced-search">
-	<?php tadlAdvancedSearchHero($this->request, 'places', _t('Places Advanced Search'), _t('Search place names, descriptions, coordinates, source information, and related records.')); ?>
+	<?php tadlAdvancedSearchHero($this->request, 'places', _t('Places Advanced Search'), _t('Search place names, descriptions, and related records.')); ?>
 
 	{{{form}}}
 
@@ -8,7 +8,7 @@
 		<section class="tadl-advanced-section">
 			<div class="tadl-advanced-section-heading">
 				<h2><?php _p('Place'); ?></h2>
-				<p><?php _p('Find places by name, type, source, description, and coordinates.'); ?></p>
+				<p><?php _p('Find places by name, identifier, and description.'); ?></p>
 			</div>
 			<div class="row">
 <?php
@@ -16,10 +16,7 @@
 				tadlAdvancedField(_t('Place name'), _t('Search preferred place names.'), 'ca_places_preferred_labels_name', '{{{ca_places.preferred_labels.name%width=220px&label=Place_name}}}');
 				tadlAdvancedField(_t('Alternate names'), _t('Search alternate place names.'), 'ca_places_nonpreferred_labels_name', '{{{ca_places.nonpreferred_labels.name%width=220px&label=Alternate_names}}}');
 				tadlAdvancedField(_t('Identifier'), _t('Search place identifiers.'), 'ca_places_idno', '{{{ca_places.idno%width=220px&label=Identifier}}}');
-				tadlAdvancedField(_t('Type'), _t('Limit results to a place type.'), 'ca_places_type_id', '{{{ca_places.type_id%height=30px&id=ca_places_type_id&label=Type}}}');
 				tadlAdvancedField(_t('Description'), _t('Search place descriptions.'), 'ca_places_description', '{{{ca_places.description%width=220px&height=80px&label=Description}}}', 'col-sm-12');
-				tadlAdvancedField(_t('Source'), _t('Search place source values.'), 'ca_places_source_id', '{{{ca_places.source_id%height=30px&id=ca_places_source_id&label=Source}}}');
-				tadlAdvancedField(_t('Coordinates'), _t('Search coordinate values.'), 'ca_places_georeference', '{{{ca_places.georeference%width=220px&label=Coordinates}}}');
 ?>
 			</div>
 		</section>

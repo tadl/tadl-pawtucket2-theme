@@ -15,7 +15,6 @@
 				tadlAdvancedField(_t('Keyword'), _t('Search across all indexed event fields.'), '_fulltext', '{{{_fulltext%width=220px&height=1&label=Keyword}}}', 'col-sm-12');
 				tadlAdvancedField(_t('Event name'), _t('Search event names.'), 'ca_occurrences_preferred_labels_name', '{{{ca_occurrences.preferred_labels.name%width=220px&label=Event_name}}}');
 				tadlAdvancedField(_t('Identifier'), _t('Search event identifiers.'), 'ca_occurrences_idno', '{{{ca_occurrences.idno%width=220px&label=Identifier}}}');
-				tadlAdvancedField(_t('Type'), _t('Limit results to an event type.'), 'ca_occurrences_type_id', '{{{ca_occurrences.type_id%height=30px&id=ca_occurrences_type_id&label=Type}}}');
 				tadlAdvancedField(_t('Dates'), _t('Search event dates.'), 'ca_occurrences_occurrence_dates_dates_value', '{{{ca_occurrences.occurrence_dates.dates_value%width=220px&height=40px&useDatePicker=0&label=Dates}}}');
 				tadlAdvancedField(_t('Description'), _t('Search event descriptions.'), 'ca_occurrences_description', '{{{ca_occurrences.description%width=220px&height=80px&label=Description}}}', 'col-sm-12');
 				tadlAdvancedField(_t('Source of description'), _t('Search source notes.'), 'ca_occurrences_description_source', '{{{ca_occurrences.description_source%width=220px&label=Source_of_description}}}', 'col-sm-12');

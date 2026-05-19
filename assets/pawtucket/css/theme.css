@@ -1390,21 +1390,52 @@ h6 {
 
 .tadl-advanced-actions .btn {
     min-width: 112px;
+    padding: 9px 18px;
     border-radius: 4px;
     font-weight: 800;
+    letter-spacing: normal;
+    line-height: 1.35;
+    text-transform: none;
+    box-shadow: none;
 }
 
 .tadl-advanced-actions .btn a,
 .tadl-advanced-actions .btn a:hover,
 .tadl-advanced-actions .btn a:focus {
+    display: block;
     color: inherit;
     text-decoration: none;
+    text-transform: none;
 }
 
-.tadl-advanced-actions .btn-primary,
+.tadl-advanced-actions .btn-default {
+    border: 1px solid var(--tadl-border);
+    background: #fff;
+    color: var(--tadl-primary-dark);
+}
+
+.tadl-advanced-actions .btn-default:hover,
+.tadl-advanced-actions .btn-default:focus,
+.tadl-advanced-actions .btn-default:active {
+    border-color: var(--tadl-primary-dark);
+    background: #fff;
+    color: var(--tadl-primary-dark);
+}
+
+.tadl-advanced-actions .btn-primary {
+    border: 1px solid var(--tadl-primary-dark);
+    background: var(--tadl-primary-dark);
+    color: #fff;
+}
+
+.tadl-advanced-actions .btn-primary:hover,
+.tadl-advanced-actions .btn-primary:focus,
+.tadl-advanced-actions .btn-primary:active,
 .tadl-advanced-actions .btn-primary a,
 .tadl-advanced-actions .btn-primary a:hover,
 .tadl-advanced-actions .btn-primary a:focus {
+    border-color: var(--tadl-primary-dark);
+    background: var(--tadl-primary-dark);
     color: #fff;
 }
 
