@@ -1033,10 +1033,12 @@ h6 {
     overflow: hidden;
     border: 1px solid var(--tadl-border);
     border-radius: var(--tadl-radius);
+    background: #fff;
 }
 
 .tadl-collection-view-toggle,
 .tadl-collection-view-toggle.btn {
+    margin: 0;
     border: 0;
     border-radius: 0;
     color: var(--tadl-primary-dark);
@@ -1857,9 +1859,11 @@ h6 {
     overflow: hidden;
     border: 1px solid var(--tadl-border);
     border-radius: var(--tadl-radius);
+    background: #fff;
 }
 
 .tadl-results-view-buttons .tadl-result-view-toggle.btn {
+    margin: 0;
     border: 0;
     border-radius: 0;
     background: #fff;
