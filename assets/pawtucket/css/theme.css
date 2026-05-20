@@ -749,8 +749,8 @@ h6 {
 
 .tadl-resource-panel .tadl-resource-header {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
-    gap: 28px;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    gap: 24px;
     align-items: start;
     margin-bottom: 26px;
 }
@@ -789,10 +789,6 @@ h6 {
     padding: 0;
     overflow: hidden;
     border-top: 0;
-}
-
-.tadl-resource-panel .tadl-resource-card-primary {
-    border-left: 6px solid var(--tadl-primary-dark);
 }
 
 .tadl-resource-panel .tadl-resource-image {
