@@ -84,6 +84,7 @@ if (sizeof($va_slides)) {
 				var startX = null;
 				var startY = null;
 				var didSwipe = false;
+				var isPointerDown = false;
 
 				function getPerView() {
 					var width = window.innerWidth || document.documentElement.clientWidth || 1200;
@@ -151,15 +152,30 @@ if (sizeof($va_slides)) {
 					var point = event.originalEvent.touches ? event.originalEvent.touches[0] : event.originalEvent;
 					startX = point.clientX;
 					startY = point.clientY;
+					isPointerDown = true;
+				});
+
+				$root.on('dragstart', 'a, img', function(event) {
+					event.preventDefault();
+				});
+
+				$root.on('pointermove', function(event) {
+					if (!isPointerDown || startX === null) { return; }
+					var deltaX = event.originalEvent.clientX - startX;
+					var deltaY = event.originalEvent.clientY - startY;
+					if (Math.abs(deltaX) > 10 && Math.abs(deltaX) > Math.abs(deltaY)) {
+						event.preventDefault();
+					}
 				});
 
 				$root.on('touchend pointerup pointercancel', function(event) {
 					if (startX === null) { return; }
 					var changed = event.originalEvent.changedTouches ? event.originalEvent.changedTouches[0] : event.originalEvent;
-					var deltaX = changed.clientX - startX;
-					var deltaY = changed.clientY - startY;
+					var deltaX = (changed.clientX || startX) - startX;
+					var deltaY = (changed.clientY || startY) - startY;
 					startX = null;
 					startY = null;
+					isPointerDown = false;
 					if (Math.abs(deltaX) < 45 || Math.abs(deltaX) < Math.abs(deltaY)) { return; }
 					didSwipe = true;
 					showPage(current + ((deltaX < 0) ? perView : -perView));

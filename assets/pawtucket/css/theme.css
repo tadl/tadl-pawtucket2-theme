@@ -363,6 +363,8 @@ h6 {
     background: #d7dee6;
     padding: 24px 18px 18px;
     touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .front .tadl-hero-slides {
@@ -402,6 +404,10 @@ h6 {
     height: 100%;
     object-fit: cover;
     display: block;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    -webkit-user-select: none;
 }
 
 .front .tadl-hero-control {
