@@ -37,7 +37,7 @@
 												<h3>".$va_set["name"]."</h3>
 												<p><small class='uppercase'>".$va_set["item_count"]." ".(($va_set["item_count"] == 1) ? _t("item") : _t("items"))."</small></p>
 											</a>
-												".caNavLink($this->request, "<span class='glyphicon glyphicon-th-large' aria-label='View gallery'></span> "._t("view %1", $this->getVar("section_item_name")), "btn btn-default", "", "Gallery", $vn_set_id)."
+												".caNavLink($this->request, "<span class='glyphicon glyphicon-th-large' aria-hidden='true'></span> "._t("View Gallery"), "btn btn-primary tadl-gallery-cta", "", "Gallery", $vn_set_id)."
 											<div style='clear:both;'><!-- empty --></div>
 										</div>\n";
 								$i++;

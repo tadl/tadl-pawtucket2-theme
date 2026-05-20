@@ -1012,6 +1012,13 @@ h6 {
     min-height: 420px;
 }
 
+.tadl-gallery-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 12px;
+}
+
 .tadl-collections-header {
     display: flex;
     align-items: flex-start;
