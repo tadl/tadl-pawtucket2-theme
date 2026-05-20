@@ -105,10 +105,10 @@ if (!$vb_ajax) {	// !ajax
 			<div class="tadl-results-title-block">
 		<H1>
 <?php
-			print _t('%1 %2 %3', $vn_result_size, ($va_browse_info["labelSingular"]) ? $va_browse_info["labelSingular"] : $t_instance->getProperty('NAME_SINGULAR'), ($vn_result_size == 1) ? _t("Result") : _t("Results"));	
+			print "<span class='tadl-results-title-text'>"._t('%1 %2 %3', $vn_result_size, ($va_browse_info["labelSingular"]) ? $va_browse_info["labelSingular"] : $t_instance->getProperty('NAME_SINGULAR'), ($vn_result_size == 1) ? _t("Result") : _t("Results"))."</span>";
 ?>		
 			<div class="btn-group">
-				<a href="#" data-toggle="dropdown" aria-label="<?php print _t('Result options'); ?>" aria-haspopup="true" aria-expanded="false"><i class="fa fa-cog bGear" aria-hidden="true"></i></a>
+				<a href="#" class="tadl-results-action tadl-results-options" data-toggle="dropdown" aria-label="<?php print _t('Result options'); ?>" aria-haspopup="true" aria-expanded="false"><i class="fa fa-cog bGear" aria-hidden="true"></i><span class="tadl-results-action-label"><?php print _t('Options'); ?></span></a>
 				<ul class="dropdown-menu" role="menu">
 <?php
 					if(($vs_table == "ca_objects") && $vn_result_size && (is_array($va_add_to_set_link_info) && sizeof($va_add_to_set_link_info))){
@@ -155,7 +155,7 @@ if (!$vb_ajax) {	// !ajax
 <?php
 			if(is_array($va_facets) && sizeof($va_facets)){
 ?>
-			<a href='#' id='bRefineButton' aria-controls='bRefine' aria-expanded='false' aria-label='<?php print _t("Toggle filters"); ?>' onclick='var expanded = jQuery("#bRefine").is(":visible"); jQuery("#bRefine").toggle(); jQuery(this).attr("aria-expanded", expanded ? "false" : "true"); return false;'><i class="fa fa-table" aria-hidden="true"></i></a>
+			<a href='#' id='bRefineButton' class='tadl-results-action tadl-results-filter' aria-controls='bRefine' aria-expanded='false' aria-label='<?php print _t("Toggle filters"); ?>' onclick='var expanded = jQuery("#bRefine").is(":visible"); jQuery("#bRefine").toggle(); jQuery(this).attr("aria-expanded", expanded ? "false" : "true"); return false;'><i class="fa fa-filter" aria-hidden="true"></i><span class="tadl-results-action-label"><?php print _t('Filters'); ?></span></a>
 <?php
 			}
 			if(is_array($va_add_to_set_link_info) && sizeof($va_add_to_set_link_info)){

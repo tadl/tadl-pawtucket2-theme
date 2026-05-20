@@ -1520,7 +1520,49 @@ h6 {
 }
 
 .tadl-results-title-block h1 {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
     margin-bottom: 10px;
+}
+
+.tadl-results-title-text {
+    margin-right: 4px;
+}
+
+.tadl-results-title-block h1 .btn-group {
+    display: inline-flex;
+}
+
+.tadl-results-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 6px 10px;
+    border: 1px solid var(--tadl-border);
+    border-radius: var(--tadl-radius);
+    background: #fff;
+    color: var(--tadl-primary-dark);
+    font-family: "Merriweather Sans", "Open Sans", Arial, sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.2;
+    text-decoration: none;
+}
+
+.tadl-results-action:hover,
+.tadl-results-action:focus,
+.tadl-results-action:active {
+    border-color: var(--tadl-primary-dark);
+    background: #fff;
+    color: var(--tadl-primary-dark);
+    text-decoration: none;
+}
+
+.tadl-results-action .fa {
+    font-size: 15px;
 }
 
 .tadl-results-tools {
@@ -1851,6 +1893,10 @@ h6 {
         justify-content: flex-start;
     }
 
+    .tadl-results-title-block h1 {
+        gap: 10px;
+    }
+
     .tadl-resource-panel .tadl-resource-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -1901,6 +1947,14 @@ h6 {
 
     .tadl-results-view-buttons {
         width: 100%;
+    }
+
+    .tadl-results-action {
+        flex: 1 1 auto;
+        justify-content: center;
+        min-height: 44px;
+        padding: 10px 12px;
+        font-size: 15px;
     }
 
     .tadl-collection-view-toggle,
