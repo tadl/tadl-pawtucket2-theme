@@ -33,39 +33,32 @@ if (is_array($va_item_ids) && sizeof($va_item_ids)) {
 }
 
 if (sizeof($va_slides)) {
-	$va_slide_pages = array_chunk($va_slides, 3);
 ?>
 	<div class="tadl-hero-slider" data-tadl-slider>
 		<div class="tadl-hero-slides">
 			<div class="tadl-hero-track" data-tadl-track>
 <?php
-	foreach ($va_slide_pages as $vn_page_index => $va_slide_page) {
+	foreach ($va_slides as $vn_slide_index => $va_slide) {
 ?>
-			<div class="tadl-hero-page tadl-hero-page-count-<?= sizeof($va_slide_page); ?><?= ($vn_page_index === 0) ? ' is-active' : ''; ?>" data-tadl-page="<?= $vn_page_index; ?>">
+				<div class="tadl-hero-slide<?= ($vn_slide_index === 0) ? ' is-visible' : ''; ?>" data-tadl-slide="<?= $vn_slide_index; ?>">
+					<div class="tadl-hero-card">
+						<div class="tadl-hero-image"><?= $va_slide['media']; ?></div>
 <?php
-		foreach ($va_slide_page as $va_slide) {
+		if ($va_slide['caption']) {
 ?>
-				<div class="tadl-hero-card">
-					<div class="tadl-hero-image"><?= $va_slide['media']; ?></div>
-<?php
-			if ($va_slide['caption']) {
-?>
-					<div class="tadl-hero-caption"><?= $va_slide['caption']; ?></div>
-<?php
-			}
-?>
-				</div>
+						<div class="tadl-hero-caption"><?= $va_slide['caption']; ?></div>
 <?php
 		}
 ?>
-			</div>
+					</div>
+				</div>
 <?php
 	}
 ?>
 			</div>
 		</div>
 <?php
-	if (sizeof($va_slide_pages) > 1) {
+	if (sizeof($va_slides) > 1) {
 ?>
 		<button class="tadl-hero-control tadl-hero-control-prev" type="button" data-tadl-prev aria-label="<?= _t("Previous"); ?>">
 			<i class="fa fa-angle-left" aria-hidden="true"></i>
@@ -85,26 +78,102 @@ if (sizeof($va_slides)) {
 			$slider.each(function() {
 				var $root = $(this);
 				var $track = $root.find('[data-tadl-track]');
-				var $pages = $root.find('[data-tadl-page]');
+				var $slides = $root.find('[data-tadl-slide]');
 				var current = 0;
+				var perView = 3;
+				var startX = null;
+				var startY = null;
+				var didSwipe = false;
+
+				function getPerView() {
+					var width = window.innerWidth || document.documentElement.clientWidth || 1200;
+					if (width <= 767) { return 1; }
+					if (width <= 1100) { return 2; }
+					return 3;
+				}
+
+				function getGap() {
+					var rawGap = window.getComputedStyle($track[0]).columnGap || window.getComputedStyle($track[0]).gap || '0';
+					return parseFloat(rawGap) || 0;
+				}
+
+				function maxStart() {
+					return Math.max(0, $slides.length - perView);
+				}
+
+				function updateControls() {
+					var disabled = $slides.length <= perView;
+					$root.find('[data-tadl-prev], [data-tadl-next]').prop('disabled', disabled).attr('aria-hidden', disabled ? 'true' : 'false');
+				}
+
+				function setVisibleSlides() {
+					$slides.removeClass('is-visible').attr('aria-hidden', 'true').find('a, button').attr('tabindex', '-1');
+					$slides.slice(current, current + perView).addClass('is-visible').attr('aria-hidden', 'false').find('a, button').removeAttr('tabindex');
+				}
+
+				function applyPosition() {
+					var slideWidth = $slides.length ? $slides.eq(0)[0].getBoundingClientRect().width : 0;
+					var offset = current * (slideWidth + getGap());
+					$track.css('transform', 'translate3d(' + (-offset) + 'px, 0, 0)');
+					setVisibleSlides();
+					updateControls();
+				}
 
 				function showPage(index) {
-					if (!$pages.length) { return; }
-					current = (index + $pages.length) % $pages.length;
-					$pages.removeClass('is-active').attr('aria-hidden', 'true').find('a, button').attr('tabindex', '-1');
-					$pages.eq(current).addClass('is-active').attr('aria-hidden', 'false').find('a, button').removeAttr('tabindex');
-					$track.css('transform', 'translate3d(' + (-100 * current) + '%, 0, 0)');
+					if (!$slides.length) { return; }
+					var max = maxStart();
+					if (index > max) {
+						current = 0;
+					} else if (index < 0) {
+						current = max;
+					} else {
+						current = index;
+					}
+					applyPosition();
+				}
+
+				function refreshLayout() {
+					perView = getPerView();
+					$root.css('--tadl-hero-per-view', perView);
+					current = Math.min(current, maxStart());
+					applyPosition();
 				}
 
 				$root.find('[data-tadl-prev]').on('click', function() {
-					showPage(current - 1);
+					showPage(current - perView);
 				});
 
 				$root.find('[data-tadl-next]').on('click', function() {
-					showPage(current + 1);
+					showPage(current + perView);
 				});
 
-				showPage(0);
+				$root.on('touchstart pointerdown', function(event) {
+					var point = event.originalEvent.touches ? event.originalEvent.touches[0] : event.originalEvent;
+					startX = point.clientX;
+					startY = point.clientY;
+				});
+
+				$root.on('touchend pointerup pointercancel', function(event) {
+					if (startX === null) { return; }
+					var changed = event.originalEvent.changedTouches ? event.originalEvent.changedTouches[0] : event.originalEvent;
+					var deltaX = changed.clientX - startX;
+					var deltaY = changed.clientY - startY;
+					startX = null;
+					startY = null;
+					if (Math.abs(deltaX) < 45 || Math.abs(deltaX) < Math.abs(deltaY)) { return; }
+					didSwipe = true;
+					showPage(current + ((deltaX < 0) ? perView : -perView));
+					window.setTimeout(function() { didSwipe = false; }, 250);
+				});
+
+				$root.on('click', 'a', function(event) {
+					if (!didSwipe) { return; }
+					event.preventDefault();
+					event.stopImmediatePropagation();
+				});
+
+				$(window).on('resize orientationchange', refreshLayout);
+				refreshLayout();
 			});
 		});
 	</script>

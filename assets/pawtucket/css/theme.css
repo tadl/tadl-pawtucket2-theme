@@ -353,6 +353,8 @@ h6 {
 }
 
 .front .tadl-hero-slider {
+    --tadl-hero-gap: 18px;
+    --tadl-hero-per-view: 3;
     margin-left: -24px;
     margin-right: -24px;
     margin-top: 0;
@@ -360,6 +362,7 @@ h6 {
     position: relative;
     background: #d7dee6;
     padding: 24px 18px 18px;
+    touch-action: pan-y;
 }
 
 .front .tadl-hero-slides {
@@ -369,28 +372,23 @@ h6 {
 
 .front .tadl-hero-track {
     display: flex;
+    gap: var(--tadl-hero-gap);
     transform: translate3d(0, 0, 0);
     transition: transform 680ms cubic-bezier(0.22, 1, 0.36, 1);
     will-change: transform;
 }
 
-.front .tadl-hero-page {
-    display: flex;
-    flex: 0 0 100%;
-    gap: 18px;
-    justify-content: center;
-}
-
-.front .tadl-hero-page.is-active {
-    visibility: visible;
+.front .tadl-hero-slide {
+    flex: 0 0 calc((100% - (var(--tadl-hero-gap) * (var(--tadl-hero-per-view) - 1))) / var(--tadl-hero-per-view));
+    min-width: 0;
 }
 
 .front .tadl-hero-card {
-    flex: 0 0 calc((100% - 36px) / 3);
     position: relative;
     overflow: hidden;
     background: #d7dee6;
     box-shadow: 0 16px 34px rgba(13, 45, 76, 0.16);
+    height: 100%;
 }
 
 .front .tadl-hero-image {
@@ -420,6 +418,10 @@ h6 {
     font-size: 40px;
     line-height: 1;
     transition: background 0.2s ease;
+}
+
+.front .tadl-hero-control[disabled] {
+    display: none;
 }
 
 .front .tadl-hero-control:hover,
@@ -1907,6 +1909,16 @@ h6 {
 }
 
 @media (max-width: 1100px) {
+    .front .tadl-hero-slider {
+        --tadl-hero-gap: 16px;
+        --tadl-hero-per-view: 2;
+    }
+
+    .front .tadl-hero-caption {
+        font-size: 16px;
+        line-height: 1.32;
+    }
+
     .tadl-results-header {
         flex-direction: column;
     }
@@ -2163,19 +2175,12 @@ h6 {
     }
 
     .front .tadl-hero-slider {
+        --tadl-hero-gap: 14px;
+        --tadl-hero-per-view: 1;
         margin-left: -20px;
         margin-right: -20px;
         margin-top: 0;
         padding: 12px;
-    }
-
-    .front .tadl-hero-page {
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .front .tadl-hero-card {
-        flex-basis: auto;
     }
 
     .tadl-front-copy {
