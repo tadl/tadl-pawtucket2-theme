@@ -33,8 +33,7 @@
 ?>
 		<div class="tadl-front-copy">
 			<div class="tadl-front-grid">
-				<div class="tadl-panel">
-					<div class="tadl-eyebrow">Digital Collections</div>
+				<div class="tadl-panel tadl-intro-panel">
 					<h1 class="tadl-hero-title">Discover the stories, places, and people that shaped our region.</h1>
 				<p class="tadl-lead">Explore photographs, documents, and community memory preserved by Traverse Area District Library. Browse archival collections, search across materials, and connect records back to the history of northern Michigan.</p>
 			</div>
@@ -57,7 +56,6 @@
 				<div class="tadl-panel tadl-resource-panel">
 					<div class="tadl-resource-header">
 						<div>
-							<div class="tadl-eyebrow">Local History Research</div>
 							<h2 class="tadl-section-title">Start with the Right Path</h2>
 							<p class="tadl-section-lead">The Local History Collection is a closed archive with digital collections, reference support, genealogy resources, and research guides for northern Michigan history.</p>
 						</div>
@@ -120,7 +118,6 @@
 			<section class="tadl-home-section tadl-blog-section">
 				<div class="tadl-section-header">
 					<div>
-						<div class="tadl-eyebrow">On Our Blog</div>
 						<h2 class="tadl-section-title">Recent Local History Writing</h2>
 					</div>
 					<a class="tadl-section-link" href="https://www.tadl.org/posts?field_bl_type_target_id%5B295%5D=295&amp;field_bl_tags_target_id%5B414%5D=414">View More</a>
@@ -139,7 +136,6 @@
 
 			<section class="tadl-home-section tadl-access-section">
 				<div class="tadl-access-card">
-					<div class="tadl-eyebrow">Accessing Materials</div>
 					<h2 class="tadl-section-title">Online Anytime, In Person by Request</h2>
 					<p>The Local History Digital Collection can be viewed at any time. In-person access to closed archival materials is available by request; TADL asks for 72 hours' notice so staff can prepare materials and secure appropriate research space.</p>
 				</div>

@@ -465,7 +465,7 @@ h6 {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
     gap: 24px;
-    align-items: start;
+    align-items: stretch;
 }
 
 .tadl-panel {
@@ -474,6 +474,12 @@ h6 {
     box-shadow: 0 14px 30px rgba(15, 37, 48, 0.08);
     padding: 26px 28px;
     border-radius: 4px;
+}
+
+.tadl-intro-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .tadl-eyebrow {
@@ -487,7 +493,10 @@ h6 {
 
 .tadl-hero-title {
     margin: 0 0 16px;
-    color: #14323d;
+    color: var(--tadl-primary-dark);
+    font-size: 28px;
+    line-height: 1.25;
+    font-weight: 700;
 }
 
 .tadl-lead {
@@ -499,16 +508,21 @@ h6 {
 
 .tadl-quicklinks {
     display: grid;
+    grid-template-rows: repeat(3, 1fr);
     gap: 14px;
+    height: 100%;
 }
 
 .tadl-quicklink {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     border: 1px solid var(--tadl-border);
     border-left: 6px solid var(--tadl-primary-dark);
     background: #fff;
     color: var(--tadl-primary-dark);
-    padding: 16px 18px;
+    min-height: 0;
+    padding: 14px 18px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
