@@ -749,13 +749,18 @@ h6 {
 
 .tadl-resource-panel .tadl-resource-header {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-    gap: 24px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
     align-items: start;
     margin-bottom: 26px;
 }
 
+.tadl-resource-panel .tadl-resource-header > div:first-child {
+    grid-column: 1 / span 2;
+}
+
 .tadl-contact-card {
+    grid-column: 3;
     padding: 18px 20px;
     background: #eef4f8;
     border-left: 6px solid var(--tadl-primary-dark);
@@ -1967,6 +1972,11 @@ h6 {
     .tadl-blog-grid,
     .tadl-access-section {
         grid-template-columns: 1fr;
+    }
+
+    .tadl-resource-panel .tadl-resource-header > div:first-child,
+    .tadl-contact-card {
+        grid-column: auto;
     }
 
     .tadl-section-header {
