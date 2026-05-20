@@ -445,7 +445,8 @@ h6 {
 
 @media (prefers-reduced-motion: reduce) {
     .front .tadl-hero-track {
-        transition: none;
+        transition-duration: 420ms;
+        transition-timing-function: ease-out;
     }
 }
 
