@@ -45,8 +45,8 @@ if ($representation_count > 1) {
 
 	<!-- Prev/next controls -->
 	<div id='detailRepNav'>
-		<a href='#' id='detailRepNavPrev' title='<?= _t("Previous"); ?>' aria-label='Previous'><span class='glyphicon glyphicon-arrow-left'></span></a> 
-		<a href='#' id='detailRepNavNext' title='<?= _t("Next"); ?>' aria-label='Next'><span class='glyphicon glyphicon-arrow-right'></span></a>
+		<a href='#' id='detailRepNavPrev' title='<?= _t("Previous"); ?>' aria-label='<?= _t("Previous"); ?>'><span class='glyphicon glyphicon-arrow-left' aria-hidden='true'></span></a>
+		<a href='#' id='detailRepNavNext' title='<?= _t("Next"); ?>' aria-label='<?= _t("Next"); ?>'><span class='glyphicon glyphicon-arrow-right' aria-hidden='true'></span></a>
 		<div style='clear:both;'></div>
 	</div><!-- end detailRepNav -->
 </div><!-- end wrapper -->

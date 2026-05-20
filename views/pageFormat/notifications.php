@@ -30,7 +30,7 @@
 		foreach($this->getVar('notifications') as $va_notification) {
 ?>
 			<div class="notificationMessage">
-				<div class="pull-right"><a href="#" onclick="jQuery('.notificationMessage').hide(); return false;"><span class="glyphicon glyphicon-remove"></span></a></div>
+				<div class="pull-right"><a href="#" aria-label="<?php print _t('Dismiss notification'); ?>" onclick="jQuery('.notificationMessage').hide(); return false;"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></a></div>
 <?php
 			switch($va_notification['type']) {
 				case __NOTIFICATION_TYPE_ERROR__:

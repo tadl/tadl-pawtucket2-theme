@@ -1,6 +1,6 @@
 <?php
 /* ----------------------------------------------------------------------
- * themes/default/views/Search/ca_collections_search_subview_html.php : 
+ * themes/default/views/Search/ca_collections_search_subview_html.php :
  * ----------------------------------------------------------------------
  * CollectiveAccess
  * Open-source collections management software
@@ -15,17 +15,17 @@
  * the terms of the provided license as published by Whirl-i-Gig
  *
  * CollectiveAccess is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTIES whatsoever, including any implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+ * WITHOUT ANY WARRANTIES whatsoever, including any implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * This source code is free and modifiable under the terms of 
+ * This source code is free and modifiable under the terms of
  * GNU General Public License. (http://www.gnu.org/copyleft/gpl.html). See
  * the "license.txt" file for details, or visit the CollectiveAccess web site at
  * http://www.CollectiveAccess.org
  *
  * ----------------------------------------------------------------------
  */
- 
+
 	$qr_results 		= $this->getVar('result');
 	$va_block_info 		= $this->getVar('blockInfo');
 	$va_options 		= $va_block_info["options"];
@@ -44,7 +44,7 @@
 	if(!$vs_caption_template){
 		$vs_caption_template = "<l>^ca_collections.preferred_labels.name</l>";
 	}
-	
+
 	if ($qr_results->numHits() > 0) {
 		if (!$this->request->isAjax()) {
 ?>
@@ -52,7 +52,7 @@
 <?php
 				if(in_array($vs_block, $va_browse_types)){
 ?>
-				<span class='multisearchFullResults'><?php print caNavLink($this->request, '<span class="glyphicon glyphicon-list" aria-label="list" role="graphics-document"></span> '._t('Full results'), '', '', 'Search', '{{{block}}}', array('search' => str_replace("/", "", $vs_search))); ?></span> | 
+				<span class='multisearchFullResults'><?php print caNavLink($this->request, '<span class="glyphicon glyphicon-list" aria-hidden="true"></span> '._t('Full results'), '', '', 'Search', '{{{block}}}', array('search' => str_replace("/", "", $vs_search))); ?></span> |
 <?php
 				}
 ?>
@@ -71,7 +71,7 @@
 			}
 ?>
 			<div class='blockResults authorityBlock'>
-				<div id="{{{block}}}scrollButtonPrevious" class="scrollButtonPrevious"><i class="fa fa-angle-left" aria-label="previous" role="graphics-document"></i></div><div id="{{{block}}}scrollButtonNext" class="scrollButtonNext"><i class="fa fa-angle-right" aria-label="next" role="graphics-document"></i></div>
+				<button type="button" id="{{{block}}}scrollButtonPrevious" class="scrollButtonPrevious" aria-label="<?php print _t('Previous'); ?>"><i class="fa fa-angle-left" aria-hidden="true"></i></button><button type="button" id="{{{block}}}scrollButtonNext" class="scrollButtonNext" aria-label="<?php print _t('Next'); ?>"><i class="fa fa-angle-right" aria-hidden="true"></i></button>
 				<div id='{{{block}}}Results' class='multiSearchResults' style="position:relative;">
 					<div class='blockResultsScroller'>
 <?php
@@ -89,39 +89,39 @@
 				$vb_div_open = false;
 				$vn_i = 0;
 			}
-			if ((!$vn_init_with_start && ($vn_count == $vn_hits_per_block)) || ($vn_init_with_start && ($vn_count >= $vn_init_with_start))) {break;} 
+			if ((!$vn_init_with_start && ($vn_count == $vn_hits_per_block)) || ($vn_init_with_start && ($vn_count >= $vn_init_with_start))) {break;}
 		}
-		
+
 		if ($vb_div_open) {print "</div><!-- end Set -->";}		// closing div if we stop short of a full row
-		
+
 		if (!$this->request->isAjax()) {
 ?>
 					</div><!-- end blockResultsScroller -->
 				</div>
 			</div><!-- end blockResults -->
-		
+
 			<div class='allLink'><?php print caNavLink($this->request, 'all '.$va_block_info['displayName'].' results', '', '', 'Search', '{{{block}}}', array('search' => $vs_search));?></div>
-			
+
 			<script type="text/javascript">
 				jQuery(document).ready(function() {
 					jQuery('#{{{block}}}Results').hscroll({
 						name: '{{{block}}}',
 						itemCount: <?php print $qr_results->numHits(); ?>,
 						preloadCount: <?php print $vn_count; ?>,
-						
+
 						itemsPerColumn: <?php print $vn_items_per_column; ?>,
 						itemWidth: jQuery('.{{{block}}}Set').outerWidth(true),
 						itemsPerLoad: <?php print $vn_hits_per_block; ?>,
 						itemLoadURL: '<?php print caNavUrl($this->request, '*', '*', '*', array('block' => $vs_block, 'search'=> $vs_search)); ?>',
 						itemContainerSelector: '.blockResultsScroller',
-						
+
 						sortParameter: '{{{block}}}Sort',
 						sortControlSelector: '#{{{block}}}_sort',
-						
+
 						sortDirection: '{{{sortDirection}}}',
 						sortDirectionParameter: '{{{block}}}SortDirection',
 						sortDirectionSelector: '#{{{block}}}_sort_direction',
-						
+
 						scrollPreviousControlSelector: '#{{{block}}}scrollButtonPrevious',
 						scrollNextControlSelector: '#{{{block}}}scrollButtonNext',
 						cacheKey: '{{{cacheKey}}}'

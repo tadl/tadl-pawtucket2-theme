@@ -89,8 +89,8 @@
 			if($vb_item_output){
 ?>
 			<!-- Prev/next controls -->
-			<a href="#" class="jcarousel-control-prev galleryItemsNav"><i class="fa fa-angle-left" aria-label="<?php print _t("Previous"); ?>"></i></a>
-			<a href="#" class="jcarousel-control-next galleryItemsNav"><i class="fa fa-angle-right" aria-label="<?php print _t("Next"); ?>"></i></a>
+			<a href="#" class="jcarousel-control-prev galleryItemsNav" aria-label="<?php print _t("Previous"); ?>"><i class="fa fa-angle-left" aria-hidden="true"></i></a>
+			<a href="#" class="jcarousel-control-next galleryItemsNav" aria-label="<?php print _t("Next"); ?>"><i class="fa fa-angle-right" aria-hidden="true"></i></a>
 		
 			<!-- Pagination -->
 			<p class="jcarousel-pagination galleryItemsPagination">

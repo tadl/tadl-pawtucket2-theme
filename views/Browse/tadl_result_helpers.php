@@ -29,16 +29,16 @@ if (!function_exists('tadlBrowseResultPager')) {
 		if ($vn_current_page > 1) {
 			$vs_output .= caNavLink($po_request, _t('Previous'), 'btn btn-default tadl-results-page', '*', '*', '*', array_merge($va_base_params, array('s' => max(0, $pn_start - $pn_per_page))));
 		} else {
-			$vs_output .= "<span class='btn btn-default tadl-results-page disabled'>"._t('Previous')."</span>";
+			$vs_output .= "<span class='btn btn-default tadl-results-page disabled' aria-disabled='true'>"._t('Previous')."</span>";
 		}
 
 		$vn_previous_page = null;
 		foreach($va_pages as $vn_page) {
 			if ($vn_previous_page && ($vn_page > ($vn_previous_page + 1))) {
-				$vs_output .= "<span class='tadl-results-page-gap'>...</span>";
+				$vs_output .= "<span class='tadl-results-page-gap' aria-hidden='true'>...</span>";
 			}
 			if ($vn_page == $vn_current_page) {
-				$vs_output .= "<span class='btn btn-default tadl-results-page active'>".$vn_page."</span>";
+				$vs_output .= "<span class='btn btn-default tadl-results-page active' aria-current='page'>".$vn_page."</span>";
 			} else {
 				$vs_output .= caNavLink($po_request, (string)$vn_page, 'btn btn-default tadl-results-page', '*', '*', '*', array_merge($va_base_params, array('s' => ($vn_page - 1) * $pn_per_page)));
 			}
@@ -48,7 +48,7 @@ if (!function_exists('tadlBrowseResultPager')) {
 		if ($vn_current_page < $vn_total_pages) {
 			$vs_output .= caNavLink($po_request, _t('Next'), 'btn btn-default tadl-results-page', '*', '*', '*', array_merge($va_base_params, array('s' => $pn_start + $pn_per_page)));
 		} else {
-			$vs_output .= "<span class='btn btn-default tadl-results-page disabled'>"._t('Next')."</span>";
+			$vs_output .= "<span class='btn btn-default tadl-results-page disabled' aria-disabled='true'>"._t('Next')."</span>";
 		}
 
 		return $vs_output."</nav>";
@@ -88,7 +88,7 @@ if (!function_exists('tadlBrowseResultViewControls')) {
 			$vs_icon = $va_view_icons[$vs_view];
 			$vs_link_content = '<span class="glyphicon '.$vs_icon.'" aria-hidden="true"></span> '.$vs_view_label;
 			if ($ps_current_view === $vs_view) {
-				$vs_output .= '<a href="#" class="btn btn-default tadl-result-view-toggle active" aria-current="true">'.$vs_link_content.'</a>';
+				$vs_output .= '<span class="btn btn-default tadl-result-view-toggle active" aria-current="true" aria-disabled="true">'.$vs_link_content.'</span>';
 			} else {
 				$vs_output .= caNavLink(
 					$po_request,

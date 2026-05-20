@@ -1,6 +1,6 @@
 <?php
 /* ----------------------------------------------------------------------
- * themes/default/views/Search/ca_objects_search_subview_html.php : 
+ * themes/default/views/Search/ca_objects_search_subview_html.php :
  * ----------------------------------------------------------------------
  * CollectiveAccess
  * Open-source collections management software
@@ -15,17 +15,17 @@
  * the terms of the provided license as published by Whirl-i-Gig
  *
  * CollectiveAccess is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTIES whatsoever, including any implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+ * WITHOUT ANY WARRANTIES whatsoever, including any implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * This source code is free and modifiable under the terms of 
+ * This source code is free and modifiable under the terms of
  * GNU General Public License. (http://www.gnu.org/copyleft/gpl.html). See
  * the "license.txt" file for details, or visit the CollectiveAccess web site at
  * http://www.CollectiveAccess.org
  *
  * ----------------------------------------------------------------------
  */
- 
+
 	$qr_results 		= $this->getVar('result');
 	$va_block_info 		= $this->getVar('blockInfo');
 	$vs_block 			= $this->getVar('block');
@@ -48,7 +48,7 @@
 	if(!$vs_caption_template){
 		$vs_caption_template = "<l>^ca_objects.preferred_labels.name</l>";
 	}
-	
+
 	if ($qr_results->numHits() > 0) {
 		if (!$this->request->isAjax()) {
 ?>
@@ -56,11 +56,11 @@
 <?php
 				if(in_array($vs_block, $va_browse_types)){
 ?>
-				<span class='multisearchFullResults'><?php print caNavLink($this->request, '<span class="glyphicon glyphicon-list" aria-label="list icon" role="graphics-document"></span> '._t('Full results'), '', '', 'Search', '{{{block}}}', array('search' => str_replace("/", "", $vs_search))); ?></span> | 
+				<span class='multisearchFullResults'><?php print caNavLink($this->request, '<span class="glyphicon glyphicon-list" aria-hidden="true"></span> '._t('Full results'), '', '', 'Search', '{{{block}}}', array('search' => str_replace("/", "", $vs_search))); ?></span> |
 <?php
 				}
 ?>
-				
+
 				<span class='multisearchSort'><?php print _t("sort by:"); ?> {{{sortByControl}}}</span>
 				{{{sortDirectionControl}}}
 			</small>
@@ -75,7 +75,7 @@
 <?php
 			}
 ?>
-			<div class='blockResults objects'><div id="{{{block}}}scrollButtonPrevious" class="scrollButtonPrevious" aria-label="previous" role="link" tabindex="0"><i class="fa fa-angle-left"></i></div><div id="{{{block}}}scrollButtonNext" class="scrollButtonNext" aria-label="next" role="link" tabindex="0"><i class="fa fa-angle-right"></i></div>
+			<div class='blockResults objects'><button type="button" id="{{{block}}}scrollButtonPrevious" class="scrollButtonPrevious" aria-label="<?php print _t('Previous'); ?>"><i class="fa fa-angle-left" aria-hidden="true"></i></button><button type="button" id="{{{block}}}scrollButtonNext" class="scrollButtonNext" aria-label="<?php print _t('Next'); ?>"><i class="fa fa-angle-right" aria-hidden="true"></i></button>
 				<div id='{{{block}}}Results' class='multiSearchResults'>
 					<div class='blockResultsScroller'>
 <?php
@@ -85,7 +85,7 @@
 		while($qr_results->nextHit()) {
 ?>
 			<div class='{{{block}}}Result multisearchResult'>
-<?php 
+<?php
 				$vs_image = $qr_results->get('ca_object_representations.media.widepreview', array("checkAccess" => $va_access_values));
 				if(!$vs_image){
 					$t_list_item->load($qr_results->get("type_id"));
@@ -102,16 +102,16 @@
 			</div><!-- end blockResult -->
 <?php
 			$vn_count++;
-			if ((!$vn_init_with_start && ($vn_count == $vn_hits_per_block)) || ($vn_init_with_start && ($vn_count >= $vn_init_with_start))) {break;} 
+			if ((!$vn_init_with_start && ($vn_count == $vn_hits_per_block)) || ($vn_init_with_start && ($vn_count >= $vn_init_with_start))) {break;}
 		}
 ?>
-<?php	
+<?php
 		if (!$this->request->isAjax()) {
 ?>
 					</div><!-- end blockResultsScroller -->
 				</div>
 			</div><!-- end blockResults -->
-		
+
 			<div class='allLink'><?php print caNavLink($this->request, 'all '.$va_block_info['displayName'].' results', '', '', 'Search', '{{{block}}}', array('search' => str_replace("/", "", $vs_search)));?></div>
 
 
@@ -121,19 +121,19 @@
 						name: '{{{block}}}',
 						itemCount: <?php print $qr_results->numHits(); ?>,
 						preloadCount: <?php print $vn_count; ?>,
-						
+
 						itemWidth: jQuery('.{{{block}}}Result').outerWidth(true),
 						itemsPerLoad: <?php print $vn_hits_per_block; ?>,
 						itemLoadURL: '<?php print caNavUrl($this->request, '*', '*', '*', array('block' => $vs_block, 'search'=> $vs_search)); ?>',
 						itemContainerSelector: '.blockResultsScroller',
-						
+
 						sortParameter: '{{{block}}}Sort',
 						sortControlSelector: '#{{{block}}}_sort',
-						
+
 						sortDirection: '{{{sortDirection}}}',
 						sortDirectionParameter: '{{{block}}}SortDirection',
 						sortDirectionSelector: '#{{{block}}}_sort_direction',
-						
+
 						scrollPreviousControlSelector: '#{{{block}}}scrollButtonPrevious',
 						scrollNextControlSelector: '#{{{block}}}scrollButtonNext',
 						cacheKey: '{{{cacheKey}}}'
@@ -158,6 +158,6 @@
 			}
 		}
 	}
-	
+
 	TooltipManager::add('#caObjectsFullResults', 'Click here for full results');
 ?>

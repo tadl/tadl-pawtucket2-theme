@@ -11,6 +11,7 @@
     --tadl-shadow: 0 18px 42px rgba(11, 47, 87, 0.14);
     --tadl-radius: 4px;
     --tadl-soft-shadow: 0 14px 32px rgba(13, 49, 83, 0.1);
+    --tadl-focus: #f2c94c;
 }
 
 html {
@@ -31,6 +32,17 @@ a,
 a:hover,
 a:focus {
     color: var(--tadl-primary);
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+.btn:focus-visible,
+[tabindex]:focus-visible {
+    outline: 3px solid var(--tadl-focus);
+    outline-offset: 3px;
 }
 
 h1, h2, h3, h4, h5, h6,
@@ -1756,12 +1768,13 @@ h6 {
     border-color: var(--tadl-primary-dark);
     color: #fff;
     background: var(--tadl-primary-dark);
+    cursor: default;
 }
 
 .tadl-results-page.disabled {
     color: #777;
     background: #f1f4f7;
-    cursor: not-allowed;
+    cursor: default;
 }
 
 .tadl-results-page-gap {
@@ -1809,10 +1822,19 @@ h6 {
     z-index: 2;
     background: var(--tadl-primary-dark);
     color: #fff;
+    cursor: default;
 }
 
 .tadl-results-view-buttons .tadl-result-view-toggle.active .glyphicon {
     color: #fff !important;
+}
+
+.scrollButtonPrevious,
+.scrollButtonNext {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: inherit;
 }
 
 @media (max-width: 1100px) {

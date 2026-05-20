@@ -266,7 +266,7 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
 		<div class="tadl-brandband">
 			<div class="container tadl-brandband-inner">
 				<div class="navbar-header tadl-branding">
-				<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-main-navbar-collapse-1" aria-label="<?= _t("Toggle navigation"); ?>">
+				<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-main-navbar-collapse-1" aria-controls="bs-main-navbar-collapse-1" aria-expanded="false" aria-label="<?= _t("Toggle navigation"); ?>">
 					<span class="sr-only">Toggle navigation</span>
 					<span class="icon-bar"></span>
 					<span class="icon-bar"></span>

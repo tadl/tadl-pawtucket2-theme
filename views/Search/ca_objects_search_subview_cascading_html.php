@@ -1,6 +1,6 @@
 <?php
 /* ----------------------------------------------------------------------
- * themes/default/views/Search/ca_objects_search_subview_html.php : 
+ * themes/default/views/Search/ca_objects_search_subview_html.php :
  * ----------------------------------------------------------------------
  * CollectiveAccess
  * Open-source collections management software
@@ -15,17 +15,17 @@
  * the terms of the provided license as published by Whirl-i-Gig
  *
  * CollectiveAccess is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTIES whatsoever, including any implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+ * WITHOUT ANY WARRANTIES whatsoever, including any implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * This source code is free and modifiable under the terms of 
+ * This source code is free and modifiable under the terms of
  * GNU General Public License. (http://www.gnu.org/copyleft/gpl.html). See
  * the "license.txt" file for details, or visit the CollectiveAccess web site at
  * http://www.CollectiveAccess.org
  *
  * ----------------------------------------------------------------------
  */
- 
+
 	$qr_results 		= $this->getVar('result');
 	$va_block_info 		= $this->getVar('blockInfo');
 	$vs_block 			= $this->getVar('block');
@@ -59,11 +59,11 @@
 <?php
 				if(in_array($vs_block, $va_browse_types)){
 ?>
-				<span class='multisearchFullResults'><?php print caNavLink($this->request, '<span class="glyphicon glyphicon-list" aria-label="list icon" role="graphics-document"></span> '._t('Full results'), '', '', 'Search', '{{{block}}}', array('search' => str_replace("/", "", $vs_search))); ?></span> 
+				<span class='multisearchFullResults'><?php print caNavLink($this->request, '<span class="glyphicon glyphicon-list" aria-hidden="true"></span> '._t('Full results'), '', '', 'Search', '{{{block}}}', array('search' => str_replace("/", "", $vs_search))); ?></span>
 <?php
 				}
 ?>
-				
+
 				<!--<span class='multisearchSort'><?php print _t("sort by:"); ?> {{{sortByControl}}}</span>
 				{{{sortDirectionControl}}}-->
 			</small>
@@ -76,7 +76,7 @@
 		while($qr_results->nextHit()) {
 				$vn_id 					= $qr_results->get("ca_objects.object_id");
 				$vs_label_detail_link 	= $qr_results->getWithTemplate($vs_caption_template, array("checkAccess" => $va_access_values));
-				
+
 				$vs_thumbnail = "";
 				$vs_type_placeholder = "";
 				$vs_typecode = "";
@@ -90,19 +90,19 @@
 						$vs_thumbnail = $vs_default_placeholder_tag;
 					}
 				}
-				
+
 				if(!$this->request->getParameter("openResultsInOverlay", pInteger)){
 					$vs_rep_detail_link 	= caDetailLink($this->request, $vs_thumbnail, '', 'ca_objects', $vn_id);
 				}else{
 					$vs_rep_detail_link = "<a href='#' onclick='caMediaPanel.showPanel(\"".caNavUrl($this->request, 'Detail', 'objects', $vn_id, array('overlay' => 1))."\"); return false;'>".$vs_thumbnail."</a>";
 				}
 				#$vs_add_to_set_link = "<div class='addTo'><a href='#' onclick='caMediaPanel.showPanel(\"".caNavUrl($this->request, '', 'Lightbox', 'addItemForm', array('object_id' => $vn_id))."\"); return false;' title='Add to lightbox'><i class='fa fa-suitcase'></i></a></div>";
-				
+
 				$vs_add_to_set_link = "";
 				if(is_array($va_add_to_set_link_info) && sizeof($va_add_to_set_link_info)){
 					$vs_add_to_set_link = "<a href='#' class='bResultItemSetLink' onclick='caMediaPanel.showPanel(\"".caNavUrl($this->request, '', $va_add_to_set_link_info["controller"], 'addItemForm', array($vs_pk => $vn_id))."\"); return false;' title='".$va_add_to_set_link_info["link_text"]."'>".$va_add_to_set_link_info["icon"]."</a>";
 				}
-				
+
 				$vs_rep_id = $qr_results->get("ca_object_representations.representation_id");
 				$vs_obj_id = $qr_results->get("ca_objects.object_id");
 				$vs_download_link = "";
@@ -111,7 +111,7 @@
 				}
 				$vs_expanded_info = "";
 				if($vs_extended_info_template){
-					$vs_expanded_info = $qr_res->getWithTemplate($vs_extended_info_template);		
+					$vs_expanded_info = $qr_res->getWithTemplate($vs_extended_info_template);
 				}
 				print "
 	<div class='bResultItemCol col-xs-12 col-sm-3 col-lg-2'>
@@ -127,13 +127,13 @@
 			</div><!-- bResultItemExpandedInfo -->
 		</div><!-- end bResultItem -->
 	</div><!-- end col -->";
-				
+
 
 			$vn_count++;
-			if ($vn_count == $vn_hits_per_block) {break;} 
+			if ($vn_count == $vn_hits_per_block) {break;}
 		}
 		print "<div style='clear:both'></div>".caNavLink($this->request, _t('Next %1', $vn_hits_per_block), 'jscroll-next', '*', '*', '*', array('s' => $vn_start + $vn_hits_per_block, 'key' => $this->getVar("cacheKey"), 'block' => $vs_block, 'search'=> $vs_search));
-		
+
 		if (!$this->request->isAjax()) {
 ?>
 					</div><!-- end browseResultsContainer -->
@@ -150,5 +150,5 @@
 </script><?php
 		}
 	}
-	
+
 ?>
