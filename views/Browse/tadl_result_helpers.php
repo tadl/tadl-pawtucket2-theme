@@ -67,3 +67,49 @@ if (!function_exists('tadlBrowseResultPageSize')) {
 		}
 	}
 }
+
+if (!function_exists('tadlBrowseResultViewControls')) {
+	function tadlBrowseResultViewControls($po_request, $pa_views, $ps_current_view, $ps_browse_key, $ps_sort, $ps_sort_dir, $pn_hits_per_block, $pb_is_advanced) {
+		if (!is_array($pa_views) || (sizeof($pa_views) <= 1)) { return ''; }
+
+		$va_view_labels = array(
+			'images' => _t('Tiles'),
+			'list' => _t('List')
+		);
+		$va_view_icons = array(
+			'images' => 'glyphicon-th',
+			'list' => 'glyphicon-list'
+		);
+
+		$vs_output = "<div class='tadl-results-view-buttons' aria-label='"._t('Result display options')."'>";
+		foreach($va_view_labels as $vs_view => $vs_view_label) {
+			if (!isset($pa_views[$vs_view])) { continue; }
+
+			$vs_icon = $va_view_icons[$vs_view];
+			$vs_link_content = '<span class="glyphicon '.$vs_icon.'" aria-hidden="true"></span> '.$vs_view_label;
+			if ($ps_current_view === $vs_view) {
+				$vs_output .= '<a href="#" class="btn btn-default tadl-result-view-toggle active" aria-current="true">'.$vs_link_content.'</a>';
+			} else {
+				$vs_output .= caNavLink(
+					$po_request,
+					$vs_link_content,
+					'btn btn-default tadl-result-view-toggle',
+					'*',
+					'*',
+					'*',
+					array(
+						'view' => $vs_view,
+						'key' => $ps_browse_key,
+						'sort' => $ps_sort,
+						'direction' => $ps_sort_dir,
+						'n' => tadlBrowseResultPageSize($vs_view) ?: $pn_hits_per_block,
+						'_advanced' => $pb_is_advanced ? 1 : 0,
+						's' => 0
+					)
+				);
+			}
+		}
+
+		return $vs_output."</div>";
+	}
+}

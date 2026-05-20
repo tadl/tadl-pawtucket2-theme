@@ -74,6 +74,7 @@
 	$va_add_to_set_link_info = caGetAddToSetInfo($this->request);
 	require_once(__DIR__.'/tadl_result_helpers.php');
 	$vn_tadl_page_size = tadlBrowseResultPageSize($vs_current_view);
+	$vs_tadl_result_view_controls = tadlBrowseResultViewControls($this->request, $va_views, $vs_current_view, $vs_browse_key, $vs_current_sort, $vs_sort_dir, $vn_hits_per_block_param, $vn_is_advanced ? true : false);
 	
 if (!$vb_ajax) {	// !ajax
 ?>
@@ -100,6 +101,8 @@ if (!$vb_ajax) {	// !ajax
 				}
 			}
 ?>
+		<div class="tadl-results-header">
+			<div class="tadl-results-title-block">
 		<H1>
 <?php
 			print _t('%1 %2 %3', $vn_result_size, ($va_browse_info["labelSingular"]) ? $va_browse_info["labelSingular"] : $t_instance->getProperty('NAME_SINGULAR'), ($vn_result_size == 1) ? _t("Result") : _t("Results"));	
@@ -186,6 +189,18 @@ if (!$vb_ajax) {	// !ajax
 		}
 ?>		
 		</div>
+			</div>
+			<div class="tadl-results-tools">
+<?php
+		print $vs_tadl_result_view_controls;
+		if ($vn_tadl_page_size) {
+			print "<div class='tadl-results-top-pager'>";
+			print tadlBrowseResultPager($this->request, $vn_result_size, $vn_start, $vn_tadl_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $vn_is_advanced ? true : false);
+			print "</div>";
+		}
+?>
+			</div>
+		</div>
 <?php
 		if($vs_facet_description){
 			print "<div class='bFacetDescription'>".$vs_facet_description."</div>";
@@ -201,11 +216,6 @@ if (!$vb_ajax) {	// !ajax
 			print " | ".caNavLink($this->request, _t("All"), (!$vs_letter) ? 'selectedLetter' : '', '*', '*', '*', array('key' => $vs_browse_key, 'l' => 'all')); 
 			print "</div>";
 		}
-		if ($vn_tadl_page_size) {
-			print "<div class='tadl-results-top-pager'>";
-			print tadlBrowseResultPager($this->request, $vn_result_size, $vn_start, $vn_tadl_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $vn_is_advanced ? true : false);
-			print "</div>";
-		}
 ?>
 		<form id="setsSelectMultiple">
 		<div class="row">
@@ -215,7 +225,7 @@ if (!$vb_ajax) {	// !ajax
 
 # --- check if this result page has been cached
 # --- key is MD5 of browse key, sort, sort direction, view, page/start, items per page, row_id
-$vs_cache_key = md5('tadl_results_v2'.$vs_browse_key.$vs_current_sort.$vs_sort_dir.$vs_current_view.$vn_start.$vn_hits_per_block.$vn_row_id.$vs_letter);
+$vs_cache_key = md5('tadl_results_v3'.$vs_browse_key.$vs_current_sort.$vs_sort_dir.$vs_current_view.$vn_start.$vn_hits_per_block.$vn_row_id.$vs_letter);
 if(($o_config->get("cache_timeout") > 0) && ExternalCache::contains($vs_cache_key,'browse_results')){
 	print ExternalCache::fetch($vs_cache_key, 'browse_results');
 }else{
@@ -231,45 +241,6 @@ if (!$vb_ajax) {	// !ajax
 		</form>
 	</div><!-- end col-8 -->
 	<div class="<?php print ($vs_refine_col_class) ? $vs_refine_col_class : "col-sm-4 col-md-3 col-md-offset-1 col-lg-3 col-lg-offset-1"; ?>">
-		<div id="bViewButtons">
-<?php
-		if(is_array($va_views) && (sizeof($va_views) > 1)){
-			$va_view_labels = array(
-				'images' => _t('Tiles'),
-				'list' => _t('List')
-			);
-			$va_view_icons = array(
-				'images' => 'glyphicon-th',
-				'list' => 'glyphicon-list'
-			);
-			foreach($va_view_labels as $vs_view => $vs_view_label) {
-				if (!isset($va_views[$vs_view])) { continue; }
-				$vs_icon = $va_view_icons[$vs_view];
-				if ($vs_current_view === $vs_view) {
-					print '<a href="#" class="btn btn-default tadl-result-view-toggle active" aria-current="true"><span class="glyphicon '.$vs_icon.'" aria-hidden="true"></span> '.$vs_view_label.'</a> ';
-				} else {
-					print caNavLink(
-						$this->request,
-						'<span class="glyphicon '.$vs_icon.'" aria-hidden="true"></span> '.$vs_view_label,
-						'btn btn-default tadl-result-view-toggle',
-						'*',
-						'*',
-						'*',
-						array(
-							'view' => $vs_view,
-							'key' => $vs_browse_key,
-							'sort' => $vs_current_sort,
-							'direction' => $vs_sort_dir,
-							'n' => $vn_hits_per_block_param,
-							'_advanced' => $vn_is_advanced ? 1 : 0,
-							's' => 0
-						)
-					).' ';
-				}
-			}
-		}
-?>
-		</div>
 <?php
 		print $this->render("Browse/browse_refine_subview_html.php");
 ?>			
