@@ -499,10 +499,10 @@ h6 {
 
 .tadl-hero-title {
     margin: 0 0 16px;
-    color: var(--tadl-primary-dark);
-    font-size: 28px;
+    color: var(--tadl-primary-dark) !important;
+    font-size: 34px;
     line-height: 1.25;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .tadl-lead {
