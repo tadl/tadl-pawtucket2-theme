@@ -94,7 +94,7 @@ h6 {
 .btn.btn-default:focus,
 .btn.btn-default:active {
     border-color: var(--tadl-primary-dark);
-    background: #fff;
+    background: #eef4f8;
     color: var(--tadl-primary-dark);
     text-decoration: none;
 }
@@ -108,8 +108,8 @@ h6 {
 .btn.btn-primary:hover,
 .btn.btn-primary:focus,
 .btn.btn-primary:active {
-    border-color: var(--tadl-primary-dark);
-    background: var(--tadl-primary-dark);
+    border-color: #143f6c;
+    background: #143f6c;
     color: #fff;
 }
 
@@ -1061,6 +1061,17 @@ h6 {
     color: #fff !important;
 }
 
+.tadl-collection-view-toggle:not(.active):hover,
+.tadl-collection-view-toggle:not(.active):focus {
+    background: var(--tadl-primary-dark);
+    color: #fff;
+}
+
+.tadl-collection-view-toggle:not(.active):hover .glyphicon,
+.tadl-collection-view-toggle:not(.active):focus .glyphicon {
+    color: #fff;
+}
+
 .tadl-collections-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1266,6 +1277,13 @@ h6 {
     color: #fff;
     background: var(--tadl-primary-dark);
     box-shadow: none;
+}
+
+.tadl-collections-page.btn:not(.active):not(:disabled):hover,
+.tadl-collections-page.btn:not(.active):not(:disabled):focus {
+    border-color: var(--tadl-primary-dark);
+    background: var(--tadl-primary-dark);
+    color: #fff;
 }
 
 .tadl-collections-page.btn:disabled {
@@ -1556,9 +1574,15 @@ h6 {
 .tadl-results-action:focus,
 .tadl-results-action:active {
     border-color: var(--tadl-primary-dark);
-    background: #fff;
-    color: var(--tadl-primary-dark);
+    background: var(--tadl-primary-dark);
+    color: #fff;
     text-decoration: none;
+}
+
+.tadl-results-action:hover .fa,
+.tadl-results-action:focus .fa,
+.tadl-results-action:active .fa {
+    color: #fff;
 }
 
 .tadl-results-action .fa {
@@ -1796,11 +1820,11 @@ h6 {
     text-transform: none;
 }
 
-.tadl-results-page.btn:hover,
-.tadl-results-page.btn:focus {
+.tadl-results-page.btn:not(.active):not(.disabled):hover,
+.tadl-results-page.btn:not(.active):not(.disabled):focus {
     border-color: var(--tadl-primary-dark);
-    background: #fff;
-    color: var(--tadl-primary-dark);
+    background: var(--tadl-primary-dark);
+    color: #fff;
     text-decoration: none;
 }
 
@@ -1848,12 +1872,12 @@ h6 {
     margin-left: -1px;
 }
 
-.tadl-results-view-buttons .tadl-result-view-toggle.btn:hover,
-.tadl-results-view-buttons .tadl-result-view-toggle.btn:focus {
+.tadl-results-view-buttons .tadl-result-view-toggle.btn:not(.active):hover,
+.tadl-results-view-buttons .tadl-result-view-toggle.btn:not(.active):focus {
     position: relative;
     z-index: 1;
-    background: #fff;
-    color: var(--tadl-primary-dark);
+    background: var(--tadl-primary-dark);
+    color: #fff;
     text-decoration: none;
 }
 
