@@ -113,6 +113,13 @@ h6 {
     color: #fff;
 }
 
+.btn .glyphicon,
+.btn .fa,
+.tadl-results-action .glyphicon,
+.tadl-results-action .fa {
+    color: currentColor !important;
+}
+
 .tadl-header {
     position: relative;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
@@ -1059,18 +1066,9 @@ h6 {
     box-shadow: none;
 }
 
-.tadl-collection-view-toggle.active .glyphicon {
-    color: #fff !important;
-}
-
 .tadl-collection-view-toggle:not(.active):hover,
 .tadl-collection-view-toggle:not(.active):focus {
     background: var(--tadl-primary-dark);
-    color: #fff;
-}
-
-.tadl-collection-view-toggle:not(.active):hover .glyphicon,
-.tadl-collection-view-toggle:not(.active):focus .glyphicon {
     color: #fff;
 }
 
@@ -1585,12 +1583,6 @@ h6 {
     text-decoration: none;
 }
 
-.tadl-results-action:hover .fa,
-.tadl-results-action:focus .fa,
-.tadl-results-action:active .fa {
-    color: #fff;
-}
-
 .tadl-results-action .fa {
     font-size: 15px;
 }
@@ -1897,10 +1889,6 @@ h6 {
     background: var(--tadl-primary-dark);
     color: #fff;
     cursor: default;
-}
-
-.tadl-results-view-buttons .tadl-result-view-toggle.active .glyphicon {
-    color: #fff !important;
 }
 
 .scrollButtonPrevious,
