@@ -106,7 +106,9 @@ if (!$vb_ajax) {	// !ajax
 		<H1>
 <?php
 			print "<span class='tadl-results-title-text'>"._t('%1 %2 %3', $vn_result_size, ($va_browse_info["labelSingular"]) ? $va_browse_info["labelSingular"] : $t_instance->getProperty('NAME_SINGULAR'), ($vn_result_size == 1) ? _t("Result") : _t("Results"))."</span>";
-?>		
+?>
+		</H1>
+		<div class="tadl-results-title-actions">
 			<div class="btn-group">
 				<a href="#" class="tadl-results-action tadl-results-options" data-toggle="dropdown" aria-label="<?php print _t('Result options'); ?>" aria-haspopup="true" aria-expanded="false"><i class="fa fa-cog bGear" aria-hidden="true"></i><span class="tadl-results-action-label"><?php print _t('Options'); ?></span></a>
 				<ul class="dropdown-menu" role="menu">
@@ -162,7 +164,7 @@ if (!$vb_ajax) {	// !ajax
 				print "<button type='button' class='btn btn-default btn-sm bSetsSelectMultiple' id='bSetsSelectMultipleButton' onclick='jQuery(\"#setsSelectMultiple\").submit(); return false;'>"._t("Add selected results to %1", $va_add_to_set_link_info['name_singular'])."</button>";
 			}
 ?>
-		</H1>
+		</div>
 		<div class='bCriteria'>
 <?php
 		if (sizeof($va_criteria) > 0) {

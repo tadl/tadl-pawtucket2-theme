@@ -1538,18 +1538,22 @@ h6 {
 }
 
 .tadl-results-title-block h1 {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
 }
 
 .tadl-results-title-text {
     margin-right: 4px;
 }
 
-.tadl-results-title-block h1 .btn-group {
+.tadl-results-title-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.tadl-results-title-actions .btn-group {
     display: inline-flex;
 }
 
@@ -1557,14 +1561,14 @@ h6 {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    min-height: 34px;
-    padding: 6px 10px;
+    min-height: 30px;
+    padding: 5px 9px;
     border: 1px solid var(--tadl-border);
     border-radius: var(--tadl-radius);
-    background: #fff;
+    background: #f4f7fa;
     color: var(--tadl-primary-dark);
     font-family: "Merriweather Sans", "Open Sans", Arial, sans-serif;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 800;
     line-height: 1.2;
     text-decoration: none;
@@ -1917,7 +1921,7 @@ h6 {
         justify-content: flex-start;
     }
 
-    .tadl-results-title-block h1 {
+    .tadl-results-title-actions {
         gap: 10px;
     }
 
@@ -1974,11 +1978,11 @@ h6 {
     }
 
     .tadl-results-action {
-        flex: 1 1 auto;
+        flex: 0 0 auto;
         justify-content: center;
-        min-height: 44px;
-        padding: 10px 12px;
-        font-size: 15px;
+        min-height: 38px;
+        padding: 8px 11px;
+        font-size: 14px;
     }
 
     .tadl-collection-view-toggle,
