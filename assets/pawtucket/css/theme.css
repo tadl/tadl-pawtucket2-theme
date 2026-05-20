@@ -381,7 +381,7 @@ h6 {
 }
 
 .front .tadl-hero-slide {
-    flex: 0 0 calc((100% - (var(--tadl-hero-gap) * (var(--tadl-hero-per-view) - 1))) / var(--tadl-hero-per-view));
+    flex: 0 0 var(--tadl-hero-slide-width, 33.333%);
     min-width: 0;
 }
 

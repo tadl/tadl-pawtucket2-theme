@@ -113,11 +113,22 @@ if (sizeof($va_slides)) {
 				}
 
 				function applyPosition() {
-					var slideWidth = $slides.length ? $slides.eq(0)[0].getBoundingClientRect().width : 0;
+					var slideWidth = getSlideWidth();
 					var offset = current * (slideWidth + getGap());
 					$track.css('transform', 'translate3d(' + (-offset) + 'px, 0, 0)');
 					setVisibleSlides();
 					updateControls();
+				}
+
+				function getSlideWidth() {
+					return $slides.length ? $slides.eq(0)[0].getBoundingClientRect().width : 0;
+				}
+
+				function setSlideWidth() {
+					var gap = getGap();
+					var availableWidth = $root.find('.tadl-hero-slides')[0].getBoundingClientRect().width;
+					var slideWidth = (availableWidth - (gap * (perView - 1))) / perView;
+					$root.css('--tadl-hero-slide-width', Math.max(0, slideWidth) + 'px');
 				}
 
 				function showPage(index) {
@@ -136,6 +147,7 @@ if (sizeof($va_slides)) {
 				function refreshLayout() {
 					perView = getPerView();
 					$root.css('--tadl-hero-per-view', perView);
+					setSlideWidth();
 					current = Math.min(current, maxStart());
 					applyPosition();
 				}
