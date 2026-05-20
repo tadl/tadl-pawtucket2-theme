@@ -59,10 +59,6 @@
 							<h2 class="tadl-section-title">Start with the Right Path</h2>
 							<p class="tadl-section-lead">The Local History Collection is a closed archive with digital collections, reference support, genealogy resources, and research guides for northern Michigan history.</p>
 						</div>
-						<div class="tadl-contact-card">
-							<strong>Questions or research requests?</strong>
-							<span>Contact the Reference Desk at <a href="tel:2319328502">231.932.8502</a> or <a href="mailto:ask@tadl.org">ask@tadl.org</a>.</span>
-						</div>
 					</div>
 
 					<div class="tadl-resource-grid">
