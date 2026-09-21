@@ -43,14 +43,17 @@
 	# --- get the collection hierarchy parent to use for exportin finding aid
 	$vn_top_level_collection_id = array_shift($t_item->get('ca_collections.hierarchy.collection_id', array("returnWithStructure" => true)));
 
+	$vs_collections_url = caNavUrl($this->request, '', 'Collections', 'Index');
+	$vs_history_back_link = '<a href="'.htmlspecialchars($vs_collections_url, ENT_QUOTES, 'UTF-8').'" onclick="if (window.history.length > 1) { window.history.go(-1); return false; }"><i class="fa fa-angle-double-left" aria-hidden="true"></i><div class="small">'.htmlspecialchars(_t('Back'), ENT_QUOTES, 'UTF-8').'</div></a>';
+
 ?>
 <div class="row">
 	<div class='col-xs-12 navTop'><!--- only shown at small screen size -->
-		{{{previousLink}}}{{{resultsLink}}}{{{nextLink}}}
+		{{{previousLink}}}<?php print $vs_history_back_link; ?>{{{nextLink}}}
 	</div><!-- end detailTop -->
 	<div class='navLeftRight col-xs-1 col-sm-1 col-md-1 col-lg-1'>
 		<div class="detailNavBgLeft">
-			{{{previousLink}}}{{{resultsLink}}}
+			{{{previousLink}}}<?php print $vs_history_back_link; ?>
 		</div><!-- end detailNavBgLeft -->
 	</div><!-- end col -->
 	<div class='col-xs-12 col-sm-10 col-md-10 col-lg-10'>
