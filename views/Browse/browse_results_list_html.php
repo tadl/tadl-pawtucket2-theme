@@ -103,6 +103,7 @@
 			} else {
 				$va_images = null;
 			}
+			$vn_c = 0;
 			
 			$t_list_item = new ca_list_items();
 			while($qr_res->nextHit()) {
