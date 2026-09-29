@@ -41,7 +41,7 @@
 	}
 	$vs_history_back_link = '<a href="'.htmlspecialchars($vs_results_url, ENT_QUOTES, 'UTF-8').'" aria-label="'.htmlspecialchars(_t('Back'), ENT_QUOTES, 'UTF-8').'" onclick="if (window.history.length > 1) { window.history.go(-1); return false; }"><i class="fa fa-angle-double-left" aria-hidden="true"></i><div class="small">'.htmlspecialchars(_t('Back'), ENT_QUOTES, 'UTF-8').'</div></a>';
 ?>
-<div class="row">
+<div class="row tadl-object-detail">
 	<div class='col-xs-12 navTop'><!--- only shown at small screen size -->
 		{{{previousLink}}}<?php print $vs_history_back_link; ?>{{{nextLink}}}
 	</div><!-- end detailTop -->
@@ -52,7 +52,7 @@
 	</div><!-- end col -->
 	<div class='col-xs-12 col-sm-10 col-md-10 col-lg-10'>
 		<div class="container"><div class="row">
-			<div class='col-sm-6 col-md-6 col-lg-5 col-lg-offset-1'>
+			<div class='col-sm-6 col-md-6 col-lg-6'>
 				{{{representationViewer}}}
 				
 				
@@ -84,7 +84,7 @@
 
 			</div><!-- end col -->
 			
-			<div class='col-sm-6 col-md-6 col-lg-5'>
+			<div class='col-sm-6 col-md-6 col-lg-6'>
 				<H1>{{{<unit relativeTo="ca_collections" delimiter="<br/>"><l>^ca_collections.preferred_labels.name</l></unit><ifcount min="1" code="ca_collections"> ➔ </ifcount>}}}{{{ca_objects.preferred_labels.name}}}</H1>
 				<H2>{{{<unit>^ca_objects.type_id</unit>}}}</H2>
 				<HR>

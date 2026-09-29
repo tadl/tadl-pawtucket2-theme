@@ -1008,6 +1008,12 @@ h6 {
     min-height: 420px;
 }
 
+@media (min-width: 1200px) {
+    .tadl-object-detail .repViewerCont img:not(.vjs-poster) {
+        max-height: 650px;
+    }
+}
+
 .tadl-gallery-cta {
     display: inline-flex;
     align-items: center;
