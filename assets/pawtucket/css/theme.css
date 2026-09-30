@@ -1288,14 +1288,14 @@ h6 {
     box-shadow: none;
 }
 
-.tadl-collections-page.btn:not(.active):not(:disabled):hover,
-.tadl-collections-page.btn:not(.active):not(:disabled):focus {
+.tadl-collections-page.btn:not(.active):not(.disabled):hover,
+.tadl-collections-page.btn:not(.active):not(.disabled):focus {
     border-color: var(--tadl-primary-dark);
     background: var(--tadl-primary-dark);
     color: #fff;
 }
 
-.tadl-collections-page.btn:disabled {
+.tadl-collections-page.btn.disabled {
     color: #777;
     background: #f1f4f7;
 }
