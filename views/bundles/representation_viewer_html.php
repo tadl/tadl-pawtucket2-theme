@@ -34,7 +34,7 @@ $t_subject						= $this->getVar('t_subject');
 $subject_id						= $t_subject->getPrimaryKey();
 
 $slide_list = $this->getVar('slide_list');
-
+$initial_index = tadlObjectDetailInitialMediaIndex($this->request, $t_subject, $slide_list);
 
 if ($representation_count > 1) {
 ?>
@@ -52,10 +52,10 @@ if ($representation_count > 1) {
 </div><!-- end wrapper -->
 
 <script type='text/javascript'>
-	let index = 0;
+	let index = <?= (int)$initial_index; ?>;
 	let slide_list = <?= json_encode($slide_list); ?>;
 	jQuery(document).ready(function() {
-		setByIndex(0);
+		setByIndex(index);
 		
 		jQuery('#detailRepNavPrev').on('click', function(e) {
 			previousItem();
