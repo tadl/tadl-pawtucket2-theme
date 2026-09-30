@@ -38,14 +38,17 @@ class Session {
 class TestRequest {
     public array $access = [1];
     public TestConfig $config;
-    function __construct(public array $params = [], public string $controller = 'Browse', public string $action = 'objects') { $this->config = new TestConfig(['maximum_find_result_list_values' => 1000]); }
+    function __construct(public array $params = [], public string $controller = 'Browse', public string $action = 'objects', public array $cookies = []) { $this->config = new TestConfig(['maximum_find_result_list_values' => 1000]); }
     function getParameter($name, $type = null, $method = null, $options = []) {
         $value = $this->params[$name] ?? null;
         return $type === pInteger ? (int)$value : $value;
     }
-    function getParameters($methods = null) { return $this->params; }
+    function getParameters($methods = null) { return $methods === ['COOKIE'] ? $this->cookies : $this->params; }
     function parameterExists($name, $method = null) { return array_key_exists($name, $this->params); }
-    function setParameter($name, $value, $method = null) { $this->params[$name] = $value; }
+    function setParameter($name, $value, $method = null) {
+        if ($method === 'COOKIE') { $this->cookies[$name] = $value; }
+        else { $this->params[$name] = $value; }
+    }
     function getController() { return $this->controller; }
     function getAction() { return $this->action; }
     function getModulePath() { return ''; }
@@ -53,6 +56,10 @@ class TestRequest {
     function getBaseUrlPath() { return ''; }
     function isAjax() { return false; }
 }
+function testMediaRequest($mode, $params = [], $controller = 'Browse', $action = 'objects') {
+    return new TestRequest($params, $controller, $action, ['tadlMediaPreference' => $mode]);
+}
+function caGenerateCSRFToken($request) { return 'synthetic-csrf-token'; }
 function caNavUrl($request, $module, $controller, $action, $params = [], $options = []) {
     if ($controller === '*') { $controller = $request->getController(); }
     if ($action === '*') { $action = $request->getAction(); }
@@ -268,16 +275,30 @@ require_once TEST_THEME.'/views/pageFormat/media_preference_toggle.php';
 Session::$values = [];
 $request = new TestRequest();
 testAssert(tadlMediaPreference($request) === 'only', 'New visitor must default to Only items with media.');
-testAssert(tadlMediaPreference(new TestRequest(['media' => 'only'])) === 'only', 'Explicit Only mode not selected.');
+testAssert(tadlMediaPreference(testMediaRequest('only')) === 'only', 'Cookie Only mode not selected.');
 testAssert(tadlMediaPreference(new TestRequest()) === 'only', 'Site-wide session does not persist Only mode.');
 testAssert(tadlMediaPreference(new TestRequest([], 'Collections', 'index')) === 'only', 'Preference lost on collection navigation.');
-testAssert(tadlMediaPreference(new TestRequest(['media' => 'invalid'])) === 'only', 'Invalid mode should retain preference.');
-testAssert(tadlMediaPreference(new TestRequest(['media' => ['only']])) === 'only', 'Array input should not become a valid new preference.');
-testAssert(tadlMediaPreference(new TestRequest(['media' => 'all'])) === 'all', 'Back/bookmarked explicit All mode must beat session Only.');
+testAssert(tadlMediaPreference(testMediaRequest('invalid')) === 'only', 'Invalid cookie should retain preference.');
+testAssert(tadlMediaPreference(testMediaRequest(['only'])) === 'only', 'Array cookie should not become a valid new preference.');
+testAssert(tadlMediaPreference(testMediaRequest('all')) === 'all', 'Cookie All mode must beat session Only.');
 testAssert(tadlMediaPreference(new TestRequest()) === 'all', 'All preference does not persist.');
+testAssert(tadlMediaPreference(new TestRequest(['media' => 'only'])) === 'all', 'Legacy URL must not override the site-wide preference.');
+Session::$values = [];
+testAssert(tadlMediaPreference(testMediaRequest('all')) === 'all', 'Cookie must survive a fresh server session.');
+testAssert(tadlSetMediaPreference(new TestRequest(), 'invalid') === false, 'Invalid mode must not be persisted.');
+$cookieRequest = new TestRequest();
+testAssert(tadlSetMediaPreference($cookieRequest, 'only') === true, 'Valid preference failed to persist.');
+testAssert(tadlMediaPreference($cookieRequest) === 'only', 'Saved preference was not visible in the current request.');
+$cookieOptions = tadlMediaPreferenceCookieOptions(new TestRequest());
+testAssert($cookieOptions['path'] === '/' && $cookieOptions['httponly'] && $cookieOptions['samesite'] === 'Lax', 'Cookie scope/security attributes are incorrect.');
+testAssert($cookieOptions['expires'] >= time() + 31535990, 'Preference cookie must persist for one year.');
+$subpathRequest = new class extends TestRequest { function getBaseUrlPath() { return '/archive'; } };
+testAssert(tadlMediaPreferenceCookieOptions($subpathRequest)['path'] === '/archive/', 'Cookie must stay within the application path.');
+define('__CA_SITE_PROTOCOL__', 'https');
+testAssert(tadlMediaPreferenceCookieOptions(new TestRequest())['secure'] === true, 'HTTPS preference cookie must use Secure.');
 
-$request = new TestRequest(['search' => 'example "quotes" & <sample>', 'key' => 'synthetic-cache', 'sort' => 'name', 'direction' => 'asc', 'view' => 'list', 'n' => 24, 'page' => 5, 's' => 96, 'row_id' => 55, 'facets' => 'collection_facet:42', '_advanced' => 0, 'password' => 'synthetic-secret', 'token' => 'synthetic-token']);
-$url = tadlMediaPreferenceUrl($request, 'only');
+$request = new TestRequest(['search' => 'example "quotes" & <sample>', 'key' => 'synthetic-cache', 'sort' => 'name', 'direction' => 'asc', 'view' => 'list', 'n' => 24, 'page' => 5, 's' => 96, 'row_id' => 55, 'facets' => 'collection_facet:42', '_advanced' => 0, 'media' => 'all', 'password' => 'synthetic-secret', 'token' => 'synthetic-token']);
+$url = tadlMediaPreferenceUrl($request);
 $parts = parse_url($url);
 parse_str($parts['query'], $params);
 testAssert($parts['path'] === '/Browse/objects', 'Toggle changed current route.');
@@ -287,18 +308,20 @@ foreach (['search', 'key', 'sort', 'direction', 'view', 'n', 'facets', '_advance
 foreach (['s', 'page', 'row_id', 'password', 'token'] as $field) {
     testAssert(!isset($params[$field]), 'Toggle retained forbidden/stale parameter '.$field.'.');
 }
-testAssert($params['media'] === 'only', 'Toggle URL does not carry explicit preference.');
+testAssert(!isset($params['media']), 'Toggle return URL must not carry the preference.');
 testAssert(!str_contains($url, 'synthetic-secret') && !str_contains($url, 'synthetic-token'), 'Toggle URL leaked unrelated sensitive state.');
-$html = tadlRenderMediaPreferenceToggle(new TestRequest(['media' => 'only']));
+$html = tadlRenderMediaPreferenceToggle(testMediaRequest('only'));
 $dom = new DOMDocument();
 $previous = libxml_use_internal_errors(true);
 $dom->loadHTML($html);
 libxml_clear_errors(); libxml_use_internal_errors($previous);
 $xpath = new DOMXPath($dom);
-testAssert($xpath->query('//div[@role="group" and @aria-label]')->length === 1, 'Toggle needs labelled group.');
-testAssert($xpath->query('//a')->length === 2, 'Toggle needs exactly two native links.');
-testAssert($xpath->query('//a[@aria-current="true"]')->length === 1, 'Selected toggle state is not unique.');
-testAssert($xpath->query('//a[@aria-current="true"]')->item(0)->textContent === '✓Only items with media', 'Wrong selected label.');
+testAssert($xpath->query('//form[@role="group" and @aria-label and @method="post" and @action="/MediaPreference/Set"]')->length === 1, 'Toggle needs a labelled POST form.');
+testAssert($xpath->query('//button[@type="submit" and @name="tadlMediaPreference"]')->length === 2, 'Toggle needs exactly two native submit buttons.');
+testAssert($xpath->query('//button[@aria-pressed="true"]')->length === 1, 'Selected toggle state is not unique.');
+testAssert($xpath->query('//button[@aria-pressed="true"]')->item(0)->textContent === '✓Only items with media', 'Wrong selected label.');
+testAssert($xpath->query('//input[@name="csrfToken" and @value="synthetic-csrf-token"]')->length === 1, 'Toggle must include the native CSRF token.');
+testAssert($xpath->query('//input[@name="media"]')->length === 0, 'Toggle leaked preference into query-style input.');
 
 $objectIDs = tadlMediaEligibleIDs('ca_objects', range(1, 13), [1]);
 testAssert($objectIDs === $GLOBALS['expected_object_ids'], 'Object eligibility mismatch: '.json_encode($objectIDs));
@@ -319,20 +342,20 @@ testAssert(tadlMediaEligibleIDs('ca_objects', [1,2,3], [0,1]) === [1,2,3], 'Acce
 // Filtering all IDs before pagination prevents empty pages when early records lack media.
 $ordered = [12,7,6,5,4,3,2,1,8,9,10,11,13];
 $result = new SearchResult('ca_objects', $ordered);
-$same = tadlFilterMediaResult(new TestRequest(['media' => 'only']), $result);
+$same = tadlFilterMediaResult(testMediaRequest('only'), $result);
 testAssert($same === $result, 'Filtering did not mutate the upstream result reference.');
 testAssert($result->numHits() === 6, 'Filtered count includes unavailable media.');
 testAssert($result->getPrimaryKeyValues() === [1,8,9,10,11,13], 'Filtered result IDs/order mismatch.');
 testAssert($result->seek(0) && $result->nextHit() && $result->getPrimaryKey() === 1, 'First page begins with excluded item.');
 testAssert($result->seek(3) && $result->nextHit() && $result->getPrimaryKey() === 10, 'Second page offset uses unfiltered IDs.');
 $allResult = new SearchResult('ca_objects', $ordered);
-tadlFilterMediaResult(new TestRequest(['media' => 'all']), $allResult);
+tadlFilterMediaResult(testMediaRequest('all'), $allResult);
 testAssert($allResult->getPrimaryKeyValues() === $ordered, 'All mode modified native result IDs.');
 $authorityResult = new SearchResult('ca_entities', [1,2,3]);
-tadlFilterMediaResult(new TestRequest(['media' => 'only']), $authorityResult);
+tadlFilterMediaResult(testMediaRequest('only'), $authorityResult);
 testAssert($authorityResult->getPrimaryKeyValues() === [1,2,3], 'Authority results unexpectedly filtered.');
 $emptyResult = new SearchResult('ca_objects', [2,3,4,5,6,7,12]);
-tadlFilterMediaResult(new TestRequest(['media' => 'only']), $emptyResult);
+tadlFilterMediaResult(testMediaRequest('only'), $emptyResult);
 testAssert($emptyResult->numHits() === 0 && $emptyResult->getPrimaryKeyValues() === [], 'All-excluded results did not become empty.');
 
 // Self matching is essential while new collection bounds have not yet been built.
@@ -354,14 +377,14 @@ testAssert(tadlMediaEligibleIDs('ca_objects', [1700,1701,1702], [1]) === [1700],
 
 $facetItems = [100 => ['id' => 100, 'label' => 'Synthetic root', 'content_count' => 20], 200 => ['id' => 200, 'label' => 'Synthetic empty root', 'content_count' => 20]];
 $facetInfo = ['tadl_subject_table' => 'ca_objects', 'table' => 'ca_collections', 'type' => 'authority'];
-$filteredFacet = tadlMediaFacetItems(new TestRequest(['media' => 'only']), $facetItems, $facetInfo);
+$filteredFacet = tadlMediaFacetItems(testMediaRequest('only'), $facetItems, $facetInfo);
 testAssert(array_keys($filteredFacet) === [100], 'Media-only collection facet retained an empty hierarchy.');
 testAssert(!isset($filteredFacet[100]['content_count']), 'Media-only facet displays an unfiltered count.');
-testAssert(tadlMediaFacetItems(new TestRequest(['media' => 'all']), $facetItems, $facetInfo) === $facetItems, 'All-mode facets were changed.');
+testAssert(tadlMediaFacetItems(testMediaRequest('all'), $facetItems, $facetInfo) === $facetItems, 'All-mode facets were changed.');
 $facetInfo['tadl_subject_table'] = 'ca_entities';
-testAssert(tadlMediaFacetItems(new TestRequest(['media' => 'only']), $facetItems, $facetInfo) === $facetItems, 'Authority subjects unrelated to media were changed.');
+testAssert(tadlMediaFacetItems(testMediaRequest('only'), $facetItems, $facetInfo) === $facetItems, 'Authority subjects unrelated to media were changed.');
 $facetInfo = ['tadl_subject_table' => 'ca_collections', 'table' => 'ca_entities', 'type' => 'authority'];
-$filteredFacet = tadlMediaFacetItems(new TestRequest(['media' => 'only']), $facetItems, $facetInfo);
+$filteredFacet = tadlMediaFacetItems(testMediaRequest('only'), $facetItems, $facetInfo);
 testAssert(array_keys($filteredFacet) === [100,200] && !isset($filteredFacet[100]['content_count']), 'Unrelated facet choices must remain while inaccurate counts are removed.');
 
 // Exercise the actual collection index: qualification happens before page count/seek.
@@ -369,29 +392,30 @@ foreach (range(600,629) as $id) { testCollection($id, 0, 0, 0); testCollectionOb
 $collectionConfig = new TestConfig(['collections_intro_text' => 'Synthetic introduction']);
 foreach (['only' => [10, 1, 609], 'all' => [30, 9, 609]] as $mode => $expected) {
     $result = new SearchResult('ca_collections', range(600,629));
-    $view = new TestView(new TestRequest(['media' => $mode, 'page' => 2, 'view' => 'tiles'], 'Collections', 'Index'), ['collection_results' => $result, 'collections_config' => $collectionConfig, 'section_name' => 'Example collections']);
+    $view = new TestView(testMediaRequest($mode, ['page' => 2, 'view' => 'tiles'], 'Collections', 'Index'), ['collection_results' => $result, 'collections_config' => $collectionConfig, 'section_name' => 'Example collections']);
     $html = $view->render(TEST_THEME.'/views/Collections/index_html.php');
     testAssert(strpos($html, $expected[0].' collections') !== false, $mode.': collection index uses unfiltered count.');
     testAssert(substr_count($html, 'data-collection-item') === $expected[1], $mode.': collection index rendered wrong page size.');
     testAssert(strpos($html, '/Detail/collections/'.$expected[2]) !== false, $mode.': collection page starts at unfiltered offset.');
-    testAssert(strpos($html, '/Detail/collections/'.$expected[2].'/media/'.$mode) !== false, $mode.': collection detail link lost preference.');
-    testAssert(strpos($html, '/media/'.$mode) !== false, $mode.': collection pager/canonical URL dropped preference.');
+    testAssert(strpos($html, '/media/') === false && strpos($html, 'media=') === false, $mode.': collection navigation leaked preference into URLs.');
+    testAssert(strpos($html, '/Collections/Index/page/') !== false, $mode.': collection canonical URL lost page state.');
     testAssert(strpos($html, '&lt;sample&gt; &amp; archive') !== false, $mode.': collection label escaping failed.');
     testAssert(count(ResultContext::$saved['ca_collections:collections:']['ids']) === $expected[0], $mode.': detail navigation context contains wrong IDs.');
 }
-$emptyView = new TestView(new TestRequest(['media' => 'only'], 'Collections', 'Index'), ['collection_results' => new SearchResult('ca_collections', [200,201,202,203,204,205]), 'collections_config' => $collectionConfig, 'section_name' => 'Example collections']);
+$emptyView = new TestView(testMediaRequest('only', [], 'Collections', 'Index'), ['collection_results' => new SearchResult('ca_collections', [200,201,202,203,204,205]), 'collections_config' => $collectionConfig, 'section_name' => 'Example collections']);
 $html = $emptyView->render(TEST_THEME.'/views/Collections/index_html.php');
 testAssert(strpos($html, 'No collections available') !== false && strpos($html, 'data-collection-item') === false, 'Collection index does not handle all-excluded results.');
 
 $windowResult = new SearchResult('ca_objects', range(1,2400));
-$windowView = new TestView(new TestRequest(['media' => 'only']), ['start' => 1100]);
+$windowView = new TestView(testMediaRequest('only'), ['start' => 1100]);
 tadlMediaResultContext($windowView, $windowResult, 'browse');
 $windowIDs = ResultContext::$saved['ca_objects:browse:']['ids'];
 testAssert(count($windowIDs) === 1000, 'Detail context exceeded the native result-list limit.');
 testAssert(in_array(1101, $windowIDs, true), 'Detail context window does not include the currently visible page.');
 testAssert(ResultContext::$saved['ca_objects:browse:']['count'] === 2400, 'Bounded context replaced full result count with window length.');
+testAssert(ResultContext::$saved['ca_objects:browse:']['media'] === null, 'Saved result context retained a URL preference.');
 testAssert($windowResult->currentIndex() === -1, 'Saving detail context did not reset the result cursor.');
-$latePageView = new TestView(new TestRequest(['media' => 'all', 'page' => 123, 'view' => 'tiles'], 'Collections', 'Index'), ['collection_results' => new SearchResult('ca_collections', range(2000,3999)), 'collections_config' => $collectionConfig, 'section_name' => 'Example collections']);
+$latePageView = new TestView(testMediaRequest('all', ['page' => 123, 'view' => 'tiles'], 'Collections', 'Index'), ['collection_results' => new SearchResult('ca_collections', range(2000,3999)), 'collections_config' => $collectionConfig, 'section_name' => 'Example collections']);
 $html = $latePageView->render(TEST_THEME.'/views/Collections/index_html.php');
 testAssert(strpos($html, '/Detail/collections/3098') !== false, 'Late collection index rendered the wrong page.');
 testAssert(in_array(3098, ResultContext::$saved['ca_collections:collections:']['ids'], true), 'Collection index saved detail context before calculating the page offset.');
@@ -408,17 +432,17 @@ foreach ([
     [$table, $ids] = $definition;
     $result = new SearchResult($table, $ids);
     $originalCount = $result->numHits();
-    $view = new TestView(new TestRequest(['media' => 'only', 'search' => 'example <sample> & archive'], 'MultiSearch', 'Index'), ['result' => $result, 'block' => $block, 'blockInfo' => ['table' => $table, 'displayName' => ucfirst($block)], 'search' => 'example <sample> & archive', 'itemsPerPage' => 6]);
+    $view = new TestView(testMediaRequest('only', ['search' => 'example <sample> & archive'], 'MultiSearch', 'Index'), ['result' => $result, 'block' => $block, 'blockInfo' => ['table' => $table, 'displayName' => ucfirst($block)], 'search' => 'example <sample> & archive', 'itemsPerPage' => 6]);
     $html = $view->render(TEST_THEME.'/views/Search/tadl_search_results_subview_html.php');
     $expectedCount = in_array($table, ['ca_objects','ca_collections'], true) ? 6 : count($ids);
     testAssert(strpos($html, ucfirst($block).' ('.$expectedCount.')') !== false, $block.': actual preview retained old count.');
     testAssert(substr_count($html, '<li>') === min(6, $expectedCount), $block.': actual preview paged before filtering.');
-    testAssert(strpos($html, 'media=only') !== false, $block.': View all link lost preference.');
-    testAssert(strpos($html, '/Detail/'.substr($table, 3).'/'.$result->getPrimaryKeyValues()[0].'/media/only') !== false, $block.': detail link lost media preference.');
+    testAssert(strpos($html, 'media=') === false && strpos($html, '/media/') === false, $block.': search navigation leaked preference into URLs.');
+    testAssert(strpos($html, '/Detail/'.substr($table, 3).'/'.$result->getPrimaryKeyValues()[0]) !== false, $block.': detail link missing.');
     $counts[$block] = ['count' => $originalCount, 'ids' => $result->getPrimaryKeyValues(), 'table' => $table, 'displayName' => ucfirst($block), 'html' => $html];
 }
 $counts['_info_'] = ['totalCount' => 38];
-$view = new TestView(new TestRequest(['media' => 'only'], 'MultiSearch', 'Index'), ['results' => $counts, 'blockNames' => ['objects','collections','people','organizations'], 'searchForDisplay' => 'example <sample> & archive']);
+$view = new TestView(testMediaRequest('only', [], 'MultiSearch', 'Index'), ['results' => $counts, 'blockNames' => ['objects','collections','people','organizations'], 'searchForDisplay' => 'example <sample> & archive']);
 $html = $view->render(TEST_THEME.'/views/Search/multisearch_results_html.php');
 testAssert(strpos($html, 'Objects <span>6</span>') !== false && strpos($html, 'Collections <span>6</span>') !== false, 'Overview navigation retained native pre-filter counts.');
 testAssert(ResultContext::$saved['ca_entities:multisearch:']['count'] === 5, 'Multisearch authority table count did not sum separate categories.');
@@ -426,12 +450,12 @@ testAssert(ResultContext::$saved['ca_objects:multisearch:']['count'] === 6, 'Mul
 testAssert(strpos($html, '<sample>') === false && strpos($html, '&lt;sample&gt; &amp; archive') !== false, 'Overview search/labels were not escaped.');
 
 $counts = ['objects' => ['count' => 13, 'ids' => [], 'table' => 'ca_objects', 'displayName' => 'Objects', 'html' => ''], '_info_' => ['totalCount' => 13]];
-$view = new TestView(new TestRequest(['media' => 'only'], 'MultiSearch', 'Index'), ['results' => $counts, 'blockNames' => ['objects'], 'searchForDisplay' => 'synthetic']);
+$view = new TestView(testMediaRequest('only', [], 'MultiSearch', 'Index'), ['results' => $counts, 'blockNames' => ['objects'], 'searchForDisplay' => 'synthetic']);
 $html = $view->render(TEST_THEME.'/views/Search/multisearch_results_html.php');
 testAssert(strpos($html, 'returned no results') !== false && strpos($html, '<section') === false, 'Overview all-excluded results retained empty category.');
 
-$allSubview = new TestView(new TestRequest(['media' => 'all'], 'MultiSearch', 'Index'), ['result' => new SearchResult('ca_objects', range(1,13)), 'block' => 'objects', 'blockInfo' => ['table' => 'ca_objects', 'displayName' => 'Objects'], 'search' => 'synthetic', 'itemsPerPage' => 6]);
+$allSubview = new TestView(testMediaRequest('all', [], 'MultiSearch', 'Index'), ['result' => new SearchResult('ca_objects', range(1,13)), 'block' => 'objects', 'blockInfo' => ['table' => 'ca_objects', 'displayName' => 'Objects'], 'search' => 'synthetic', 'itemsPerPage' => 6]);
 $html = $allSubview->render(TEST_THEME.'/views/Search/tadl_search_results_subview_html.php');
-testAssert(strpos($html, '/Detail/objects/1/media/all') !== false && strpos($html, 'media=all') !== false, 'All-mode multisearch detail/full result links lost preference.');
+testAssert(strpos($html, '/Detail/objects/1') !== false && strpos($html, '/media/') === false && strpos($html, 'media=') === false, 'All-mode search links must stay clean.');
 
 echo json_encode(['status' => 'passed', 'assertions' => $GLOBALS['assertions'], 'sql_queries' => count(Db::$queries), 'database' => 'SQLite in memory with actual helper SQL', 'result_adapter' => 'synthetic SearchResult boundary', 'records' => 'synthetic only'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;

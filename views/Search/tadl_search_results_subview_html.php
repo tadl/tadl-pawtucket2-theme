@@ -20,7 +20,7 @@
 		$va_preview_items[] = array(
 			'id' => $vn_id,
 			'label' => $vs_label ? $vs_label : _t('Untitled'),
-			'url' => caDetailUrl($this->request, $vs_table, $vn_id, false, array('media' => tadlMediaPreference($this->request))),
+			'url' => caDetailUrl($this->request, $vs_table, $vn_id),
 			'image' => ''
 		);
 	}
@@ -55,8 +55,7 @@
 		'search' => $vs_search,
 		'source' => 'multisearch',
 		'clear' => 1,
-		'_advanced' => 0,
-		'media' => tadlMediaPreference($this->request)
+		'_advanced' => 0
 	), array('useQueryString' => true));
 	$vs_display_name = (string)$va_block_info['displayName'];
 	$vb_media_cards = in_array($vs_table, array('ca_objects', 'ca_collections'), true);

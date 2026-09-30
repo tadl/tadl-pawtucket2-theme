@@ -1,9 +1,9 @@
 <?php
 
-/** The URL wins over the session so bookmarked pages and Back restore their mode. */
+/** Read the browser's site-wide preference without putting it into navigation URLs. */
 function tadlMediaPreference($request) {
-	$params = $request->getParameters(array('PATH', 'GET'));
-	$mode = $params['media'] ?? null;
+	$cookies = $request->getParameters(array('COOKIE'));
+	$mode = $cookies['tadlMediaPreference'] ?? null;
 	if (in_array($mode, array('only', 'all'), true)) {
 		Session::setVar('tadlMediaPreference', $mode);
 		return $mode;
@@ -11,15 +11,36 @@ function tadlMediaPreference($request) {
 	return Session::getVar('tadlMediaPreference') === 'all' ? 'all' : 'only';
 }
 
+/** The preference is not access control; only the two display modes are accepted. */
+function tadlSetMediaPreference($request, $mode) {
+	if (!in_array($mode, array('only', 'all'), true)) { return false; }
+	$options = tadlMediaPreferenceCookieOptions($request);
+	if (!setcookie('tadlMediaPreference', $mode, $options)) { return false; }
+	Session::setVar('tadlMediaPreference', $mode);
+	$request->setParameter('tadlMediaPreference', $mode, 'COOKIE');
+	return true;
+}
+
+function tadlMediaPreferenceCookieOptions($request) {
+	return array(
+		'expires' => time() + 31536000,
+		'path' => rtrim($request->getBaseUrlPath(), '/').'/',
+		'secure' => defined('__CA_SITE_PROTOCOL__')
+			? (__CA_SITE_PROTOCOL__ === 'https')
+			: (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+		'httponly' => true,
+		'samesite' => 'Lax'
+	);
+}
+
 /** Keep the active search/filters/display, but start at the first page when switching. */
-function tadlMediaPreferenceUrl($request, $mode) {
+function tadlMediaPreferenceUrl($request) {
 	$params = array_intersect_key($request->getParameters(array('PATH', 'GET')), array_flip(array(
 		'search', 'key', 'facets', 'facet', 'id', 'removeCriterion', 'removeID', 'clear',
 		'view', 'sort', 'direction', 'n', '_advanced', 'source', 'label',
 		'collection_id', 'object_id', 'entity_id', 'place_id', 'occurrence_id', 'set_id'
 	)));
 	$params = array_filter($params, function ($value) { return is_scalar($value); });
-	$params['media'] = $mode === 'only' ? 'only' : 'all';
 	return caNavUrl($request, '*', '*', '*', $params, array('useQueryString' => true));
 }
 
@@ -33,7 +54,7 @@ function tadlMediaResultContext($view, $result, $findType, $block = null) {
 	$ids = $result->getPrimaryKeyValues($limit);
 	$context->setResultList($ids);
 	$context->setSearchHistory($result->numHits());
-	$context->setParameter('media', tadlMediaPreference($view->request));
+	$context->setParameter('media', null);
 	$context->saveContext();
 	$result->seek(0);
 }

@@ -12,7 +12,7 @@
 	foreach ($va_table_counts as $vs_table => $vn_count) {
 		$o_context = new ResultContext($this->request, $vs_table, 'multisearch');
 		$o_context->setSearchHistory($vn_count);
-		$o_context->setParameter('media', tadlMediaPreference($this->request));
+		$o_context->setParameter('media', null);
 		$o_context->saveContext();
 	}
 	$vn_result_count = (int)($va_results['_info_']['totalCount'] ?? 0);

@@ -28,7 +28,6 @@
  
 	$vs_target = $this->getVar("target");
 	$vs_name = $this->getVar("browse_name");
-	$mediaMode = tadlMediaPreference($this->request);
 	$vs_facet_list = '';
 	$browseInfo = caGetInfoForBrowseType($vs_target);
 	if (is_array($browseInfo)) {
@@ -45,7 +44,7 @@
 		$defaultURL = null;
 		foreach ($menuFacets as $facetName => $facetInfo) {
 			$url = caNavUrl($this->request, '*', 'Browse', $vs_target, array(
-				'media' => $mediaMode, 'facet' => $facetName, 'getFacet' => 1, 'key' => 'null', 'isNav' => 1
+				'facet' => $facetName, 'getFacet' => 1, 'key' => 'null', 'isNav' => 1
 			), array('useQueryString' => true));
 			$active = $defaultURL ? '' : ' class="active"';
 			if (!$defaultURL) { $defaultURL = $url; }
@@ -80,7 +79,7 @@
 		</div> <!--end browseMenuSearch-->
 		<div class='browseMenuBrowseAll'>
 <?php
-		print caNavLink($this->request, _t('Browse all %1 &nbsp;<span class="glyphicon glyphicon-arrow-right"></span>', $vs_name), 'browseMenuBrowseAll btn btn-default btn-sm', '', 'Browse', $vs_target, array('media' => $mediaMode));
+		print caNavLink($this->request, _t('Browse all %1 &nbsp;<span class="glyphicon glyphicon-arrow-right"></span>', $vs_name), 'browseMenuBrowseAll btn btn-default btn-sm', '', 'Browse', $vs_target);
 ?>
 		</div> <!--end browseMenuAll-->
 	</div><!--end container-->	

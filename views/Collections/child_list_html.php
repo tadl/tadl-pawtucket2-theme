@@ -14,8 +14,7 @@ function printLevel($po_request, $va_collection_ids, $o_config, $vn_level, $va_o
 		return;
 	}
 	$va_access_values = caGetUserAccessValues($po_request);
-	$vs_media_preference = tadlMediaPreference($po_request);
-	$vb_only_media = ($vs_media_preference === 'only');
+	$vb_only_media = (tadlMediaPreference($po_request) === 'only');
 	$vs_output = "";
 	$vs_desc_template = $o_config->get("description_template");
 	$qr_collections = caMakeSearchResult("ca_collections", $va_collection_ids);
@@ -74,9 +73,9 @@ function printLevel($po_request, $va_collection_ids, $o_config, $vn_level, $va_o
 				if($vb_collapse_link){
 					$vs_output .= "<a href='#' onClick='jQuery(\"#level".$qr_collections->get('ca_collections.collection_id')."\").toggle(); return false;'>".$qr_collections->get('ca_collections.preferred_labels').$vs_date."</a>";
 				}else{
-					$vs_output .= caDetailLink($po_request, $qr_collections->get('ca_collections.preferred_labels').$vs_date, '', 'ca_collections',  $qr_collections->get("ca_collections.collection_id"), array('media' => $vs_media_preference));
+					$vs_output .= caDetailLink($po_request, $qr_collections->get('ca_collections.preferred_labels').$vs_date, '', 'ca_collections',  $qr_collections->get("ca_collections.collection_id"));
 				}
-				$vs_output .= " ".caDetailLink($po_request, (($o_config->get("link_out_icon")) ? $o_config->get("link_out_icon") : ""), '', 'ca_collections',  $qr_collections->get("ca_collections.collection_id"), array('media' => $vs_media_preference));
+				$vs_output .= " ".caDetailLink($po_request, (($o_config->get("link_out_icon")) ? $o_config->get("link_out_icon") : ""), '', 'ca_collections',  $qr_collections->get("ca_collections.collection_id"));
 			}else{
 				$vs_output .= "<span class='nonLinkedCollection'>".$vs_icon." ";
 				if($vb_collapse_link){

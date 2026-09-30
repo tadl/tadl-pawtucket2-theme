@@ -13,7 +13,7 @@ if (!function_exists('tadlAdvancedSearchTabs')) {
 		$vs_output = "<nav class='tadl-advanced-tabs' aria-label='"._t('Advanced search types')."'>";
 		foreach($va_tabs as $vs_key => $vs_label) {
 			$vs_class = ($vs_key === $ps_current) ? 'active' : '';
-			$vs_output .= "<a href='".htmlspecialchars(caNavUrl($po_request, '', 'Search', "advanced/{$vs_key}", array("media" => tadlMediaPreference($po_request))), ENT_QUOTES, 'UTF-8')."' class='{$vs_class}'".(($vs_key === $ps_current) ? " aria-current='page'" : "").">".htmlspecialchars($vs_label, ENT_QUOTES, 'UTF-8')."</a>";
+			$vs_output .= "<a href='".htmlspecialchars(caNavUrl($po_request, '', 'Search', "advanced/{$vs_key}"), ENT_QUOTES, 'UTF-8')."' class='{$vs_class}'".(($vs_key === $ps_current) ? " aria-current='page'" : "").">".htmlspecialchars($vs_label, ENT_QUOTES, 'UTF-8')."</a>";
 		}
 		return $vs_output."</nav>";
 	}

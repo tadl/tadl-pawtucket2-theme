@@ -250,10 +250,12 @@ h6 {
     border-radius: 4px;
     background: #fff;
     color: var(--tadl-primary-dark);
+    font-family: inherit;
     font-size: 13px;
     font-weight: 600;
     line-height: 1.4;
     text-align: center;
+    cursor: pointer;
 }
 
 .tadl-media-preference-option:hover,

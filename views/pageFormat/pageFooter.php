@@ -49,8 +49,8 @@
 					<div>
 						<h2 class="tadl-footer-title">Explore</h2>
 						<ul class="tadl-footer-links">
-							<li><?= caNavLink($this->request, _t("Browse Collections"), "", "", "Collections", "Index", array("media" => tadlMediaPreference($this->request))); ?></li>
-							<li><?= caNavLink($this->request, _t("Advanced Search"), "", "", "Search", "advanced/objects", array("media" => tadlMediaPreference($this->request))); ?></li>
+							<li><?= caNavLink($this->request, _t("Browse Collections"), "", "", "Collections", "Index"); ?></li>
+							<li><?= caNavLink($this->request, _t("Advanced Search"), "", "", "Search", "advanced/objects"); ?></li>
 							<li><?= caNavLink($this->request, _t("Gallery"), "", "", "Gallery", "Index"); ?></li>
 						</ul>
 					</div>

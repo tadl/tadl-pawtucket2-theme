@@ -26,7 +26,6 @@
  * ----------------------------------------------------------------------
  */
 require_once(__DIR__.'/media_preference_toggle.php');
-$vs_media_preference = tadlMediaPreference($this->request);
 $lightboxDisplayName = caGetLightboxDisplayName();
 $lightbox_sectionHeading = ucFirst($lightboxDisplayName["section_heading"]);
 
@@ -257,12 +256,18 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
 	<title><?= htmlspecialchars($window_title ?: $site_name, ENT_QUOTES, 'UTF-8'); ?></title>
 	
 	<script type="text/javascript">
-		// Make the session's current display mode explicit in history and copied links.
+		// Clean up links copied before the preference moved into a cookie.
 		if (window.history && window.history.replaceState) {
 			var mediaUrl = new URL(window.location.href);
-			mediaUrl.searchParams.set('media', <?php print json_encode($vs_media_preference); ?>);
-			window.history.replaceState(window.history.state, '', mediaUrl.pathname + mediaUrl.search + mediaUrl.hash);
+			if (mediaUrl.searchParams.has('media')) {
+				mediaUrl.searchParams.delete('media');
+				window.history.replaceState(window.history.state, '', mediaUrl.pathname + mediaUrl.search + mediaUrl.hash);
+			}
 		}
+		// A restored page must use the current site-wide preference and result counts.
+		window.addEventListener('pageshow', function(event) {
+			if (event.persisted) { window.location.reload(); }
+		});
 		jQuery(document).ready(function() {
     		jQuery('#browse-menu').on('click mouseover mouseout mousemove mouseenter',function(e) { e.stopPropagation(); });
     	});
@@ -290,7 +295,6 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
 			</div>
 			<div class="tadl-header-search hidden-xs">
 				<form class="tadl-search-form" role="search" action="<?= caNavUrl($this->request, '', 'MultiSearch', 'Index'); ?>" aria-label="<?= _t("Search"); ?>">
-					<input type="hidden" name="media" value="<?= htmlspecialchars($vs_media_preference, ENT_QUOTES, 'UTF-8'); ?>" />
 					<label class="sr-only" for="headerSearchInputDesktop"><?= _t("Search text"); ?></label>
 					<input type="text" class="form-control" id="headerSearchInputDesktop" placeholder="Search local history..." name="search" autocomplete="off" />
 					<button type="submit" class="tadl-search-button" id="headerSearchButtonDesktop">
@@ -311,7 +315,6 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
 			<div class="collapse navbar-collapse" id="bs-main-navbar-collapse-1">
 				<div class="tadl-mobile-search">
 					<form class="tadl-search-form" role="search" action="<?= caNavUrl($this->request, '', 'MultiSearch', 'Index'); ?>" aria-label="<?= _t("Search"); ?>">
-						<input type="hidden" name="media" value="<?= htmlspecialchars($vs_media_preference, ENT_QUOTES, 'UTF-8'); ?>" />
 						<label class="sr-only" for="headerSearchInputMobile"><?= _t("Search text"); ?></label>
 						<input type="text" class="form-control" id="headerSearchInputMobile" placeholder="Search local history..." name="search" autocomplete="off" />
 						<button type="submit" class="tadl-search-button" id="headerSearchButtonMobile">
@@ -324,9 +327,9 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
 				<ul class="nav navbar-nav navbar-right menuItems tadl-menu-items" role="list" aria-label="<?= _t("Primary Navigation"); ?>">
 					<li <?= ($this->request->getController() == "About") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("About"), "", "", "About", "Index"); ?></li>
 					<?= $this->render("pageFormat/browseMenu.php"); ?>	
-					<li <?= (($this->request->getController() == "Search") && ($this->request->getAction() == "advanced")) ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Advanced Search"), "", "", "Search", "advanced/objects", array("media" => $vs_media_preference)); ?></li>
+					<li <?= (($this->request->getController() == "Search") && ($this->request->getAction() == "advanced")) ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Advanced Search"), "", "", "Search", "advanced/objects"); ?></li>
 					<li <?= ($this->request->getController() == "Gallery") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Gallery"), "", "", "Gallery", "Index"); ?></li>
-					<li <?= ($this->request->getController() == "Collections") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Collections"), "", "", "Collections", "index", array("media" => $vs_media_preference)); ?></li>
+					<li <?= ($this->request->getController() == "Collections") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Collections"), "", "", "Collections", "index"); ?></li>
 					<li <?= ($this->request->getController() == "Contact") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Contact"), "", "", "Contact", "Form"); ?></li>
 				</ul>
 			</div><!-- /.navbar-collapse -->

@@ -38,7 +38,6 @@
 	$va_facet_info = 		$this->getVar("facet_info");
 	$vb_is_nav = 			(bool)$this->getVar('isNav');
 	$vn_id = 				$this->request->getParameter('id', pInteger);
-	$mediaMode = tadlMediaPreference($this->request);
 	
 	if(!$vb_is_nav){
 		print "<H1>".$va_facet_info["label_plural"]."</H1>";
@@ -55,7 +54,7 @@
 ?>
 <script type="text/javascript">
 	jQuery(document).ready(function() {
-		jQuery("#bHierarchyListMorePanel_<?php print $vs_facet_name.(($vb_is_nav) ? "Nav" : ""); ?>").load("<?php print caNavUrl($this->request, '*', '*', 'getFacetHierarchyLevel', array('media' => $mediaMode, 'facet' => $vs_facet_name, 'browseType' => $vs_browse_type, 'key' => $vs_key, 'isNav' => $vb_is_nav ? 1 : 0, 'id' => (int)$vn_id)); ?>");
-		jQuery(".bAncestorList_<?php print $vs_facet_name.(($vb_is_nav) ? "Nav" : ""); ?>").load("<?php print caNavUrl($this->request, '*', '*', 'getFacetHierarchyAncestorList', array('media' => $mediaMode, 'facet' => $vs_facet_name, 'browseType' => $vs_browse_type, 'key' => $vs_key, 'isNav' => $vb_is_nav ? 1 : 0, 'id' => (int)$vn_id)); ?>");
+		jQuery("#bHierarchyListMorePanel_<?php print $vs_facet_name.(($vb_is_nav) ? "Nav" : ""); ?>").load("<?php print caNavUrl($this->request, '*', '*', 'getFacetHierarchyLevel', array('facet' => $vs_facet_name, 'browseType' => $vs_browse_type, 'key' => $vs_key, 'isNav' => $vb_is_nav ? 1 : 0, 'id' => (int)$vn_id)); ?>");
+		jQuery(".bAncestorList_<?php print $vs_facet_name.(($vb_is_nav) ? "Nav" : ""); ?>").load("<?php print caNavUrl($this->request, '*', '*', 'getFacetHierarchyAncestorList', array('facet' => $vs_facet_name, 'browseType' => $vs_browse_type, 'key' => $vs_key, 'isNav' => $vb_is_nav ? 1 : 0, 'id' => (int)$vn_id)); ?>");
 	});
 </script>

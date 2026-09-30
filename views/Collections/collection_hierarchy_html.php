@@ -1,7 +1,6 @@
 <?php
 	$va_access_values = (array)$this->getVar("access_values");
-	$vs_media_preference = tadlMediaPreference($this->request);
-	$vb_only_media = ($vs_media_preference === 'only');
+	$vb_only_media = (tadlMediaPreference($this->request) === 'only');
 	$o_collections_config = $this->getVar("collections_config");
 	$t_item = $this->getVar("item");
 	$va_exclude_collection_type_ids = $this->getVar("exclude_collection_type_ids");
@@ -71,8 +70,8 @@
 							}
 							if(sizeof($va_grand_child_ids)){
 								# Keep a real detail URL as the non-JavaScript and modified-click fallback.
-								$vs_detail_url = caDetailUrl($this->request, 'ca_collections', $vn_child_collection_id, false, array('media' => $vs_media_preference));
-								$vs_child_list_url = caNavUrl($this->request, '', 'Collections', 'childList', array('collection_id' => $vn_child_collection_id, 'media' => $vs_media_preference));
+								$vs_detail_url = caDetailUrl($this->request, 'ca_collections', $vn_child_collection_id);
+								$vs_child_list_url = caNavUrl($this->request, '', 'Collections', 'childList', array('collection_id' => $vn_child_collection_id));
 								print "<a href=\"".htmlspecialchars($vs_detail_url, ENT_QUOTES, 'UTF-8')."\" class=\"openCollection openCollection{$vn_child_collection_id}\" data-collection-id=\"{$vn_child_collection_id}\" data-child-list-url=\"".htmlspecialchars($vs_child_list_url, ENT_QUOTES, 'UTF-8')."\" aria-controls=\"collectionLoad\" aria-expanded=\"false\">".$vs_icon." ".$qr_collection_children->get('ca_collections.preferred_labels')."</a>".$vs_record_count;
 							}else{
 								$vb_link_to_detail = true;
@@ -84,7 +83,7 @@
 								}
 
 								if($vb_link_to_detail){
-									print caDetailLink($this->request, $vs_icon." ".$qr_collection_children->get('ca_collections.preferred_labels')." ".(($o_collections_config->get("link_out_icon")) ? $o_collections_config->get("link_out_icon") : ""), '', 'ca_collections', $vn_child_collection_id, array('media' => $vs_media_preference)).$vs_record_count;
+									print caDetailLink($this->request, $vs_icon." ".$qr_collection_children->get('ca_collections.preferred_labels')." ".(($o_collections_config->get("link_out_icon")) ? $o_collections_config->get("link_out_icon") : ""), '', 'ca_collections', $vn_child_collection_id).$vs_record_count;
 								}else{
 									print "<div class='listItem'>".$vs_icon." ".$qr_collection_children->get('ca_collections.preferred_labels').$vs_record_count."</div>";
 								}

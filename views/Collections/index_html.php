@@ -5,7 +5,6 @@
 	$o_collections_config = $this->getVar("collections_config");
 	$qr_collections = $this->getVar("collection_results");
 	tadlFilterMediaResult($this->request, $qr_collections);
-	$vs_media_preference = tadlMediaPreference($this->request);
 	$va_access_values = caGetUserAccessValues($this->request);
 	$va_collection_ids = [];
 	$vn_collection_count = 0;
@@ -55,7 +54,7 @@
 			if ($vs_collection_view === $vs_view) {
 				print '<span class="btn btn-default tadl-collection-view-toggle active" aria-current="true">'.$vs_content.'</span>';
 			} else {
-				print caNavLink($this->request, $vs_content, 'btn btn-default tadl-collection-view-toggle', '', 'Collections', 'Index', ['view' => $vs_view, 'page' => 1, 'media' => $vs_media_preference]);
+				print caNavLink($this->request, $vs_content, 'btn btn-default tadl-collection-view-toggle', '', 'Collections', 'Index', ['view' => $vs_view, 'page' => 1]);
 			}
 		}
 ?>
@@ -74,7 +73,7 @@
 			$vn_collection_id = (int)$qr_collections->get("ca_collections.collection_id");
 			$vs_collection_label = $qr_collections->get("ca_collections.preferred_labels");
 			$vs_image = $va_collection_images[$vn_collection_id] ?? '';
-			$vs_card_url = caDetailUrl($this->request, "ca_collections", $vn_collection_id, false, array('media' => $vs_media_preference));
+			$vs_card_url = caDetailUrl($this->request, "ca_collections", $vn_collection_id);
 			$vs_scope = '';
 
 			if (($o_collections_config->get("description_template")) && ($vs_scope = $qr_collections->getWithTemplate($o_collections_config->get("description_template")))) {
@@ -107,8 +106,8 @@
 		</div>
 	</div>
 	<script type="text/javascript">
-		// Keep the initial history entry tied to its rendered page and display preference.
+		// Keep the initial history entry tied to its rendered page and view.
 		if (window.history && window.history.replaceState) {
-			window.history.replaceState(null, '', <?php print json_encode(caNavUrl($this->request, '', 'Collections', 'Index', ['page' => $vn_page, 'view' => $vs_collection_view, 'media' => $vs_media_preference]), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?> + window.location.hash);
+			window.history.replaceState(null, '', <?php print json_encode(caNavUrl($this->request, '', 'Collections', 'Index', ['page' => $vn_page, 'view' => $vs_collection_view]), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?> + window.location.hash);
 		}
 	</script>

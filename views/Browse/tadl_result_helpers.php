@@ -9,7 +9,6 @@ if (!function_exists('tadlBrowseResultPager')) {
 		$vn_current_page = (int)floor($pn_start / $pn_per_page) + 1;
 		$vn_total_pages = (int)ceil($pn_total / $pn_per_page);
 		$va_base_params = array(
-			'media' => tadlMediaPreference($po_request),
 			'key' => $ps_browse_key,
 			'view' => $ps_view,
 			'sort' => $ps_sort,
@@ -99,7 +98,6 @@ if (!function_exists('tadlBrowseResultViewControls')) {
 					'*',
 					'*',
 					array(
-						'media' => tadlMediaPreference($po_request),
 						'view' => $vs_view,
 						'key' => $ps_browse_key,
 						'sort' => $ps_sort,
