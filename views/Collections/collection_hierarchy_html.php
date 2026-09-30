@@ -1,5 +1,7 @@
 <?php
-	$va_access_values = $this->getVar("access_values");
+	$va_access_values = (array)$this->getVar("access_values");
+	$vs_media_preference = tadlMediaPreference($this->request);
+	$vb_only_media = ($vs_media_preference === 'only');
 	$o_collections_config = $this->getVar("collections_config");
 	$t_item = $this->getVar("item");
 	$va_exclude_collection_type_ids = $this->getVar("exclude_collection_type_ids");
@@ -11,12 +13,22 @@
 	}
 	$vb_has_children = false;
 	$vb_has_grandchildren = false;
-	if($va_collection_children = $t_item->get('ca_collections.children.collection_id', array('returnAsArray' => true, 'checkAccess' => $va_access_values, 'sort' => $vs_child_collection_sort))){
+	$va_grandchildren_by_collection = array();
+	$va_collection_children = (array)$t_item->get('ca_collections.children.collection_id', array('returnAsArray' => true, 'checkAccess' => $va_access_values, 'sort' => $vs_child_collection_sort));
+	if ($vb_only_media) {
+		$va_collection_children = tadlMediaEligibleIDs('ca_collections', $va_collection_children, $va_access_values);
+	}
+	if($va_collection_children){
 		$vb_has_children = true;
 		$qr_collection_children = caMakeSearchResult("ca_collections", $va_collection_children);
 		if($qr_collection_children->numHits()){
 			while($qr_collection_children->nextHit()){
-				if($qr_collection_children->get("ca_collections.children.collection_id", array('returnAsArray' => true, 'checkAccess' => $va_access_values, 'sort' => $vs_child_collection_sort))){
+				$va_grand_child_ids = (array)$qr_collection_children->get("ca_collections.children.collection_id", array('returnAsArray' => true, 'checkAccess' => $va_access_values, 'sort' => $vs_child_collection_sort));
+				if ($vb_only_media) {
+					$va_grand_child_ids = tadlMediaEligibleIDs('ca_collections', $va_grand_child_ids, $va_access_values);
+				}
+				$va_grandchildren_by_collection[(int)$qr_collection_children->get("ca_collections.collection_id")] = $va_grand_child_ids;
+				if($va_grand_child_ids){
 					$vb_has_grandchildren = true;
 				}
 			}
@@ -47,16 +59,20 @@
 							}
 							print "<div style='margin-left:0px;margin-top:5px;'>";
 							$vn_child_collection_id = (int)$qr_collection_children->get("ca_collections.collection_id");
-							$va_grand_children_type_ids = $qr_collection_children->get("ca_collections.children.type_id", array('returnAsArray' => true, 'checkAccess' => $va_access_values));
-							$vn_rel_object_count = sizeof($qr_collection_children->get("ca_objects.object_id", array('returnAsArray' => true, 'checkAccess' => $va_access_values)));
+							$va_grand_child_ids = $va_grandchildren_by_collection[$vn_child_collection_id];
+							$va_related_object_ids = (array)$qr_collection_children->get("ca_objects.object_id", array('returnAsArray' => true, 'checkAccess' => $va_access_values));
+							if ($vb_only_media) {
+								$va_related_object_ids = tadlMediaEligibleIDs('ca_objects', $va_related_object_ids, $va_access_values);
+							}
+							$vn_rel_object_count = sizeof($va_related_object_ids);
 							$vs_record_count = "";
 							if($vn_rel_object_count){
 								$vs_record_count = "<br/><small>(".$vn_rel_object_count." record".(($vn_rel_object_count == 1) ? "" : "s").")</small>";
 							}
-							if(sizeof($va_grand_children_type_ids)){
+							if(sizeof($va_grand_child_ids)){
 								# Keep a real detail URL as the non-JavaScript and modified-click fallback.
-								$vs_detail_url = caDetailUrl($this->request, 'ca_collections', $vn_child_collection_id);
-								$vs_child_list_url = caNavUrl($this->request, '', 'Collections', 'childList', array('collection_id' => $vn_child_collection_id));
+								$vs_detail_url = caDetailUrl($this->request, 'ca_collections', $vn_child_collection_id, false, array('media' => $vs_media_preference));
+								$vs_child_list_url = caNavUrl($this->request, '', 'Collections', 'childList', array('collection_id' => $vn_child_collection_id, 'media' => $vs_media_preference));
 								print "<a href=\"".htmlspecialchars($vs_detail_url, ENT_QUOTES, 'UTF-8')."\" class=\"openCollection openCollection{$vn_child_collection_id}\" data-collection-id=\"{$vn_child_collection_id}\" data-child-list-url=\"".htmlspecialchars($vs_child_list_url, ENT_QUOTES, 'UTF-8')."\" aria-controls=\"collectionLoad\" aria-expanded=\"false\">".$vs_icon." ".$qr_collection_children->get('ca_collections.preferred_labels')."</a>".$vs_record_count;
 							}else{
 								$vb_link_to_detail = true;
@@ -68,7 +84,7 @@
 								}
 
 								if($vb_link_to_detail){
-									print caDetailLink($this->request, $vs_icon." ".$qr_collection_children->get('ca_collections.preferred_labels')." ".(($o_collections_config->get("link_out_icon")) ? $o_collections_config->get("link_out_icon") : ""), '', 'ca_collections', $vn_child_collection_id).$vs_record_count;
+									print caDetailLink($this->request, $vs_icon." ".$qr_collection_children->get('ca_collections.preferred_labels')." ".(($o_collections_config->get("link_out_icon")) ? $o_collections_config->get("link_out_icon") : ""), '', 'ca_collections', $vn_child_collection_id, array('media' => $vs_media_preference)).$vs_record_count;
 								}else{
 									print "<div class='listItem'>".$vs_icon." ".$qr_collection_children->get('ca_collections.preferred_labels').$vs_record_count."</div>";
 								}

@@ -1,6 +1,20 @@
 <?php
 	$va_results = $this->getVar('results');
 	$va_block_names = $this->getVar('blockNames');
+	// Native multisearch captures counts before rendering the filtered result previews.
+	$va_table_counts = array();
+	foreach ($va_block_names as $vs_block) {
+		$va_results[$vs_block]['count'] = count($va_results[$vs_block]['ids'] ?? array());
+		$vs_table = $va_results[$vs_block]['table'];
+		$va_table_counts[$vs_table] = ($va_table_counts[$vs_table] ?? 0) + $va_results[$vs_block]['count'];
+	}
+	$va_results['_info_']['totalCount'] = array_sum($va_table_counts);
+	foreach ($va_table_counts as $vs_table => $vn_count) {
+		$o_context = new ResultContext($this->request, $vs_table, 'multisearch');
+		$o_context->setSearchHistory($vn_count);
+		$o_context->setParameter('media', tadlMediaPreference($this->request));
+		$o_context->saveContext();
+	}
 	$vn_result_count = (int)($va_results['_info_']['totalCount'] ?? 0);
 	$vs_search_display = caUcFirstUTF8Safe((string)$this->getVar('searchForDisplay'));
 	$escape = function ($value) { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'); };

@@ -4,7 +4,7 @@ if (!function_exists('tadlCollectionIndexPager')) {
 		if ($pn_total_pages <= 1) { return ''; }
 
 		$link = function($page, $label, $aria_label) use ($po_request, $ps_view) {
-			$url = caNavUrl($po_request, '', 'Collections', 'Index', ['page' => $page, 'view' => $ps_view]);
+			$url = caNavUrl($po_request, '', 'Collections', 'Index', ['page' => $page, 'view' => $ps_view, 'media' => tadlMediaPreference($po_request)]);
 			return '<a class="btn btn-default tadl-collections-page" href="'.htmlspecialchars($url, ENT_QUOTES, 'UTF-8').'" aria-label="'.htmlspecialchars($aria_label, ENT_QUOTES, 'UTF-8').'">'.$label.'</a>';
 		};
 		$pages = array_values(array_unique(array_filter([1, $pn_page - 1, $pn_page, $pn_page + 1, $pn_total_pages], function($page) use ($pn_total_pages) {

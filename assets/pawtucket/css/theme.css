@@ -231,6 +231,59 @@ h6 {
     color: #fff;
 }
 
+.tadl-media-preference {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 9px;
+}
+
+.tadl-media-preference-option {
+    display: inline-flex;
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 38px;
+    padding: 6px 9px;
+    border: 1px solid rgba(11, 47, 87, 0.3);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--tadl-primary-dark);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
+}
+
+.tadl-media-preference-option:hover,
+.tadl-media-preference-option:focus {
+    background: #eef3f7;
+    color: var(--tadl-primary-dark);
+    text-decoration: underline;
+}
+
+.tadl-media-preference-option.is-selected {
+    border-color: #fff;
+    background: var(--tadl-primary-dark);
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.tadl-media-preference-check {
+    visibility: hidden;
+    flex: 0 0 auto;
+}
+
+.tadl-media-preference-option.is-selected .tadl-media-preference-check {
+    visibility: visible;
+}
+
+.tadl-mobile-search {
+    display: none;
+}
+
 .tadl-accent-bar {
     height: 8px;
     background: var(--tadl-green);
@@ -2342,6 +2395,12 @@ h6 {
 
     .tadl-header-search {
         display: none;
+    }
+
+    .tadl-mobile-search {
+        display: block;
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(11, 47, 87, 0.15);
     }
 
     .tadl-menu-items {

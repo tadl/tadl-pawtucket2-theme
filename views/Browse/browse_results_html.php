@@ -27,6 +27,9 @@
  */
 
 	$qr_res 			= $this->getVar('result');				// browse results (subclass of SearchResult)
+	tadlFilterMediaResult($this->request, $qr_res);
+	$vs_media_preference = tadlMediaPreference($this->request);
+	$vs_find_type = ($this->getVar('find_type') ?: 'browse').($this->getVar('is_advanced') ? '_advanced' : '');
 	$va_facets 			= $this->getVar('facets');				// array of available browse facets
 	$va_criteria 		= $this->getVar('criteria');			// array of browse criteria
 	$vs_browse_key 		= $this->getVar('key');					// cache key for current browse
@@ -74,6 +77,14 @@
 	$va_add_to_set_link_info = caGetAddToSetInfo($this->request);
 	require_once(__DIR__.'/tadl_result_helpers.php');
 	$vn_tadl_page_size = tadlBrowseResultPageSize($vs_current_view);
+	if ($vn_tadl_page_size) {
+		$vn_start = min(max(0, $vn_start), max(0, ((int)ceil($vn_result_size / $vn_tadl_page_size) - 1) * $vn_tadl_page_size));
+		$this->setVar('start', $vn_start);
+	}
+	tadlMediaResultContext($this, $qr_res, $vs_find_type, $this->request->getController() === 'Search' ? $this->getVar('browse_type') : null);
+	if ($this->request->getParameter('source', pString) === 'multisearch') {
+		tadlMediaResultContext($this, $qr_res, 'multisearch', $this->getVar('browse_type'));
+	}
 	$vs_tadl_result_view_controls = tadlBrowseResultViewControls($this->request, $va_views, $vs_current_view, $vs_browse_key, $vs_current_sort, $vs_sort_dir, $vn_hits_per_block_param, $vn_is_advanced ? true : false);
 	
 if (!$vb_ajax) {	// !ajax
@@ -90,13 +101,13 @@ if (!$vb_ajax) {	// !ajax
 						if ($vs_current_sort === $vs_sort) {
 							print "<li class='selectedSort'>{$vs_sort}</li>\n";
 						} else {
-							print "<li>".caNavLink($this->request, $vs_sort, '', '*', '*', '*', array('view' => $vs_current_view, 'key' => $vs_browse_key, 'sort' => $vs_sort, '_advanced' => $vn_is_advanced ? 1 : 0))."</li>\n";
+							print "<li>".caNavLink($this->request, $vs_sort, '', '*', '*', '*', array('media' => $vs_media_preference, 'view' => $vs_current_view, 'key' => $vs_browse_key, 'sort' => $vs_sort, '_advanced' => $vn_is_advanced ? 1 : 0))."</li>\n";
 						}
 						if($i < sizeof($va_sorts)){
 							print "<li class='divide'>&nbsp;</li>";
 						}
 					}
-					print "<li>".caNavLink($this->request, '<span class="glyphicon glyphicon-sort-by-attributes'.(($vs_sort_dir == 'asc') ? '' : '-alt').'" aria-hidden="true"></span><span class="sr-only">'._t("Change sort direction").'</span>', '', '*', '*', '*', array('view' => $vs_current_view, 'key' => $vs_browse_key, 'direction' => (($vs_sort_dir == 'asc') ? _t("desc") : _t("asc")), '_advanced' => $vn_is_advanced ? 1 : 0))."</li>";
+					print "<li>".caNavLink($this->request, '<span class="glyphicon glyphicon-sort-by-attributes'.(($vs_sort_dir == 'asc') ? '' : '-alt').'" aria-hidden="true"></span><span class="sr-only">'._t("Change sort direction").'</span>', '', '*', '*', '*', array('media' => $vs_media_preference, 'view' => $vs_current_view, 'key' => $vs_browse_key, 'direction' => (($vs_sort_dir == 'asc') ? _t("desc") : _t("asc")), '_advanced' => $vn_is_advanced ? 1 : 0))."</li>";
 					print "</ul></div>\n";
 				}
 			}
@@ -125,13 +136,13 @@ if (!$vb_ajax) {	// !ajax
 								if ($vs_current_sort === $vs_sort) {
 									print "<li role='menuitem'><a href='#'><em>{$vs_sort}</em></a></li>\n";
 								} else {
-									print "<li role='menuitem'>".caNavLink($this->request, $vs_sort, '', '*', '*', '*', array('view' => $vs_current_view, 'key' => $vs_browse_key, 'sort' => $vs_sort, '_advanced' => $vn_is_advanced ? 1 : 0))."</li>\n";
+									print "<li role='menuitem'>".caNavLink($this->request, $vs_sort, '', '*', '*', '*', array('media' => $vs_media_preference, 'view' => $vs_current_view, 'key' => $vs_browse_key, 'sort' => $vs_sort, '_advanced' => $vn_is_advanced ? 1 : 0))."</li>\n";
 								}
 							}
 							print "<li class='divider' role='menuitem'></li>\n";
 							print "<li class='dropdown-header' role='menuitem'>"._t("Sort order:")."</li>\n";
-							print "<li role='menuitem'>".caNavLink($this->request, (($vs_sort_dir == 'asc') ? '<em>' : '')._t("Ascending").(($vs_sort_dir == 'asc') ? '</em>' : ''), '', '*', '*', '*', array('view' => $vs_current_view, 'key' => $vs_browse_key, 'direction' => 'asc', '_advanced' => $vn_is_advanced ? 1 : 0))."</li>";
-							print "<li role='menuitem'>".caNavLink($this->request, (($vs_sort_dir == 'desc') ? '<em>' : '')._t("Descending").(($vs_sort_dir == 'desc') ? '</em>' : ''), '', '*', '*', '*', array('view' => $vs_current_view, 'key' => $vs_browse_key, 'direction' => 'desc', '_advanced' => $vn_is_advanced ? 1 : 0))."</li>";
+							print "<li role='menuitem'>".caNavLink($this->request, (($vs_sort_dir == 'asc') ? '<em>' : '')._t("Ascending").(($vs_sort_dir == 'asc') ? '</em>' : ''), '', '*', '*', '*', array('media' => $vs_media_preference, 'view' => $vs_current_view, 'key' => $vs_browse_key, 'direction' => 'asc', '_advanced' => $vn_is_advanced ? 1 : 0))."</li>";
+							print "<li role='menuitem'>".caNavLink($this->request, (($vs_sort_dir == 'desc') ? '<em>' : '')._t("Descending").(($vs_sort_dir == 'desc') ? '</em>' : ''), '', '*', '*', '*', array('media' => $vs_media_preference, 'view' => $vs_current_view, 'key' => $vs_browse_key, 'direction' => 'desc', '_advanced' => $vn_is_advanced ? 1 : 0))."</li>";
 						}
 						
 						if ((sizeof($va_criteria) > ($vb_is_search ? 1 : 0)) && is_array($va_sorts) && sizeof($va_sorts)) {
@@ -141,10 +152,10 @@ if (!$vb_ajax) {	// !ajax
 						}
 					}
 					if (sizeof($va_criteria) > ($vb_is_search ? 1 : 0)) {
-						print "<li role='menuitem'>".caNavLink($this->request, _t("Start Over"), '', '*', '*', '*', array('view' => $vs_current_view, 'key' => $vs_browse_key, 'clear' => 1, '_advanced' => $vn_is_advanced ? 1 : 0))."</li>";
+						print "<li role='menuitem'>".caNavLink($this->request, _t("Start Over"), '', '*', '*', '*', array('media' => $vs_media_preference, 'view' => $vs_current_view, 'key' => $vs_browse_key, 'clear' => 1, '_advanced' => $vn_is_advanced ? 1 : 0))."</li>";
 					}
-					if(is_array($va_export_formats) && sizeof($va_export_formats)){
-						// Export as PDF links
+					if(($vs_media_preference === 'all') && is_array($va_export_formats) && sizeof($va_export_formats)){
+						// Native exports bypass theme filtering; offer them in All items mode.
 						print "<li class='divider' role='menuitem'></li>\n";
 						print "<li class='dropdown-header' role='menuitem'>"._t("Download results as:")."</li>\n";
 						foreach($va_export_formats as $va_export_format){
@@ -173,7 +184,7 @@ if (!$vb_ajax) {	// !ajax
 				print "<strong>".$va_criterion['facet'].':</strong>';
 				if ($va_criterion['facet_name'] != '_search') {
 					$vs_remove_filter_link = '<span class="btn btn-default btn-sm">'.htmlspecialchars($va_criterion['value'], ENT_QUOTES, 'UTF-8').' <span class="glyphicon glyphicon-remove-circle" aria-hidden="true"></span><span class="sr-only"> '._t("Remove filter").'</span></span>';
-					print caNavLink($this->request, $vs_remove_filter_link, 'browseRemoveFacet', '*', '*', '*', array('removeCriterion' => $va_criterion['facet_name'], 'removeID' => urlencode($va_criterion['id']), 'view' => $vs_current_view, 'key' => $vs_browse_key));
+					print caNavLink($this->request, $vs_remove_filter_link, 'browseRemoveFacet', '*', '*', '*', array('media' => $vs_media_preference, 'removeCriterion' => $va_criterion['facet_name'], 'removeID' => urlencode($va_criterion['id']), 'view' => $vs_current_view, 'key' => $vs_browse_key));
 				}else{
 					print ' '.$va_criterion['value'];
 					$vs_search = $va_criterion['value'];
@@ -213,10 +224,10 @@ if (!$vb_ajax) {	// !ajax
 			print "<div id='bLetterBar'>";
 			foreach(array_keys($va_letter_bar) as $vs_l){
 				if(trim($vs_l)){
-					print caNavLink($this->request, $vs_l, ($vs_letter == $vs_l) ? 'selectedLetter' : '', '*', '*', '*', array('key' => $vs_browse_key, 'l' => $vs_l))." ";
+					print caNavLink($this->request, $vs_l, ($vs_letter == $vs_l) ? 'selectedLetter' : '', '*', '*', '*', array('media' => $vs_media_preference, 'key' => $vs_browse_key, 'l' => $vs_l))." ";
 				}
 			}
-			print " | ".caNavLink($this->request, _t("All"), (!$vs_letter) ? 'selectedLetter' : '', '*', '*', '*', array('key' => $vs_browse_key, 'l' => 'all')); 
+			print " | ".caNavLink($this->request, _t("All"), (!$vs_letter) ? 'selectedLetter' : '', '*', '*', '*', array('media' => $vs_media_preference, 'key' => $vs_browse_key, 'l' => 'all'));
 			print "</div>";
 		}
 ?>
@@ -228,7 +239,7 @@ if (!$vb_ajax) {	// !ajax
 
 # --- check if this result page has been cached
 # --- key is MD5 of browse key, sort, sort direction, view, page/start, items per page, row_id
-$vs_cache_key = md5('tadl_results_v3'.$vs_browse_key.$vs_current_sort.$vs_sort_dir.$vs_current_view.$vn_start.$vn_hits_per_block.$vn_row_id.$vs_letter);
+$vs_cache_key = md5('tadl_results_v4'.$vs_browse_key.$vs_current_sort.$vs_sort_dir.$vs_current_view.$vn_start.$vn_hits_per_block.$vn_row_id.$vs_letter.$vs_media_preference.serialize($va_access_values).serialize($qr_res->getPrimaryKeyValues()));
 if(($o_config->get("cache_timeout") > 0) && ExternalCache::contains($vs_cache_key,'browse_results')){
 	print ExternalCache::fetch($vs_cache_key, 'browse_results');
 }else{

@@ -50,4 +50,28 @@
 	$vb_ajax			= (bool)$this->request->isAjax();
 	
 	
-	print $this->getVar('map');
+	if (tadlMediaPreference($this->request) === 'only' && in_array($vs_table, array('ca_objects', 'ca_collections'), true)) {
+		// The controller built its map before the theme filtered the full result.
+		$va_map_info = $va_views['map'];
+		$va_display = $va_map_info['display'];
+		$o_map = new GeographicMap(caGetOption('width', $va_map_info, '100%'), caGetOption('height', $va_map_info, '600px'));
+		$qr_res->seek(0);
+		$o_map->mapFrom($qr_res, $va_map_info['data'], array(
+			'renderLabelAsLink' => false,
+			'request' => $this->request,
+			'labelTemplate' => caGetOption('labelTemplate', $va_display, null),
+			'contentTemplate' => caGetOption('contentTemplate', $va_display, null),
+			'excludeRelationshipTypes' => caGetOption('excludeRelationshipTypes', $va_display, null)
+		));
+		print $o_map->render('HTML', array(
+			'labelTemplate' => caGetOption('labelTemplate', $va_display, null),
+			'circle' => 0,
+			'cluster' => caGetOption('cluster', $va_map_info, false),
+			'minZoomLevel' => caGetOption('minZoomLevel', $va_map_info, 2),
+			'maxZoomLevel' => caGetOption('maxZoomLevel', $va_map_info, 12),
+			'noWrap' => caGetOption('noWrap', $va_map_info, null),
+			'request' => $this->request
+		));
+	} else {
+		print $this->getVar('map');
+	}

@@ -29,6 +29,7 @@
 AssetLoadManager::register('timeline');
 
 $qr_res 			= $this->getVar('result');				// browse results (subclass of SearchResult)
+tadlFilterMediaResult($this->request, $qr_res);
 $va_facets 			= $this->getVar('facets');				// array of available browse facets
 $va_criteria 		= $this->getVar('criteria');			// array of browse criteria
 $vs_browse_key 		= $this->getVar('key');					// cache key for current browse

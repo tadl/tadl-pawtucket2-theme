@@ -32,18 +32,20 @@ $primary_key = 		$this->getVar("primary_key");
 $key = 				$this->getVar("key");
 $browse_type = 		$this->getVar("browse_type");
 $is_nav = 			(bool)$this->getVar('isNav');
+$mediaMode = tadlMediaPreference($this->request);
 
 if(is_array($ancestors) && sizeof($ancestors)){
 	if (sizeof($ancestors) > 1) {
 		$ancestor = $ancestors[0];
-		print '<div style="float:right;"><a href="#" onClick=\'jQuery("#bHierarchyListMorePanel_'.$facet_name.(($is_nav) ? "Nav" : "").'").load("'.caNavUrl($this->request, '*', '*', 'getFacetHierarchyLevel', array('facet' => $facet_name, 'key' => $key, 'browseType' => $browse_type, 'isNav' => $is_nav ? 1 : 0, 'id' => (int)$ancestor['parent_id'])).'"); jQuery(".bAncestorList_'.$facet_name.(($is_nav) ? "Nav" : "").'").load("'.caNavUrl($this->request, '*', '*', 'getFacetHierarchyAncestorList', array('facet' => $facet_name, 'browseType' => $browse_type, 'key' => $key, 'isNav' => $is_nav ? 1 : 0)).'"); return false;\'><span class="glyphicon glyphicon-arrow-up"></span></a> '._t('Top').'</div>';
+		$parentID = $ancestor['NODE']['parent_id'] ?? $ancestor['parent_id'] ?? 0;
+		print '<div style="float:right;"><a href="#" onClick=\'jQuery("#bHierarchyListMorePanel_'.$facet_name.(($is_nav) ? "Nav" : "").'").load("'.caNavUrl($this->request, '*', '*', 'getFacetHierarchyLevel', array('media' => $mediaMode, 'facet' => $facet_name, 'key' => $key, 'browseType' => $browse_type, 'isNav' => $is_nav ? 1 : 0, 'id' => (int)$parentID)).'"); jQuery(".bAncestorList_'.$facet_name.(($is_nav) ? "Nav" : "").'").load("'.caNavUrl($this->request, '*', '*', 'getFacetHierarchyAncestorList', array('media' => $mediaMode, 'facet' => $facet_name, 'browseType' => $browse_type, 'key' => $key, 'isNav' => $is_nav ? 1 : 0)).'"); return false;\'><span class="glyphicon glyphicon-arrow-up"></span></a> '._t('Top').'</div>';
 	}	
 	$vn_c = 0;
 	foreach($ancestors as $ancestor){
 		$ancestor = $ancestor['NODE'];
 		
-		print caNavLink($this->request, caTruncateStringWithEllipsis($ancestor[$display_field], 40), '', '*', '*', $browse_type, array('key' => $key, 'facet' => $facet_name, 'id' => $ancestor[$primary_key], 'isNav' => $is_nav ? 1 : 0));
-		print '<a href="#" onClick=\'jQuery("#bHierarchyListMorePanel_'.$facet_name.(($is_nav) ? "Nav" : "").'").load("'.caNavUrl($this->request, '*', '*', 'getFacetHierarchyLevel', array('facet' => $facet_name, 'key' => $key, 'browseType' => $browse_type, 'isNav' => $is_nav ? 1 : 0, 'id' => (int)$ancestor[$primary_key])).'"); jQuery(".bAncestorList_'.$facet_name.(($is_nav) ? "Nav" : "").'").load("'.caNavUrl($this->request, '*', '*', 'getFacetHierarchyAncestorList', array('facet' => $facet_name, 'browseType' => $browse_type, 'key' => $key, 'id' => $ancestor[$primary_key], 'isNav' => $is_nav ? 1 : 0)).'"); return false;\'><span class="glyphicon glyphicon-chevron-down"></span></a>';
+		print caNavLink($this->request, caTruncateStringWithEllipsis($ancestor[$display_field], 40), '', '*', '*', $browse_type, array('media' => $mediaMode, 'key' => $key, 'facet' => $facet_name, 'id' => $ancestor[$primary_key], 'isNav' => $is_nav ? 1 : 0));
+		print '<a href="#" onClick=\'jQuery("#bHierarchyListMorePanel_'.$facet_name.(($is_nav) ? "Nav" : "").'").load("'.caNavUrl($this->request, '*', '*', 'getFacetHierarchyLevel', array('media' => $mediaMode, 'facet' => $facet_name, 'key' => $key, 'browseType' => $browse_type, 'isNav' => $is_nav ? 1 : 0, 'id' => (int)$ancestor[$primary_key])).'"); jQuery(".bAncestorList_'.$facet_name.(($is_nav) ? "Nav" : "").'").load("'.caNavUrl($this->request, '*', '*', 'getFacetHierarchyAncestorList', array('media' => $mediaMode, 'facet' => $facet_name, 'browseType' => $browse_type, 'key' => $key, 'id' => $ancestor[$primary_key], 'isNav' => $is_nav ? 1 : 0)).'"); return false;\'><span class="glyphicon glyphicon-chevron-down"></span></a>';
 		if ($vn_c < sizeof($ancestors) - 1) { print " <span class='glyphicon glyphicon-chevron-right'></span> "; }
 		$vn_c++;
 	}

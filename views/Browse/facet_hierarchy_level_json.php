@@ -26,4 +26,10 @@
  * ----------------------------------------------------------------------
  */
  
-	print json_encode($this->getVar('facet_list'));
+	$levels = $this->getVar('facet_list');
+	$info = tadlMediaHierarchyFacetInfo($this->request, $this->getVar('browse_type'), $this->getVar('facet_name'));
+	foreach ($levels as &$items) {
+		$items = tadlMediaFacetItems($this->request, $items, $info);
+	}
+	unset($items);
+	print json_encode($levels);

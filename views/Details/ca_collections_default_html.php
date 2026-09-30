@@ -29,6 +29,13 @@
 	require_once(__DIR__.'/detail_field_helpers.php');
 
 	$t_item = $this->getVar("item");
+	$vs_media_preference = tadlMediaPreference($this->request);
+	$va_access_values = (array)caGetUserAccessValues($this->request);
+	$va_related_object_ids = (array)$t_item->get('ca_objects.object_id', array('returnAsArray' => true, 'checkAccess' => $va_access_values));
+	$vb_show_single_related_object = true;
+	if ($vs_media_preference === 'only') {
+		$vb_show_single_related_object = (sizeof($va_related_object_ids) === 1) && (bool)tadlMediaEligibleIDs('ca_objects', $va_related_object_ids, $va_access_values);
+	}
 	$va_comments = $this->getVar("comments");
 	$vn_comments_enabled = 	$this->getVar("commentsEnabled");
 	$vn_share_enabled = 	$this->getVar("shareEnabled");
@@ -43,7 +50,7 @@
 	# --- get the collection hierarchy parent to use for exportin finding aid
 	$vn_top_level_collection_id = array_shift($t_item->get('ca_collections.hierarchy.collection_id', array("returnWithStructure" => true)));
 
-	$vs_collections_url = caNavUrl($this->request, '', 'Collections', 'Index');
+	$vs_collections_url = caNavUrl($this->request, '', 'Collections', 'Index', array('media' => $vs_media_preference));
 	$vs_history_back_link = '<a href="'.htmlspecialchars($vs_collections_url, ENT_QUOTES, 'UTF-8').'" onclick="if (window.history.length > 1) { window.history.go(-1); return false; }"><i class="fa fa-angle-double-left" aria-hidden="true"></i><div class="small">'.htmlspecialchars(_t('Back'), ENT_QUOTES, 'UTF-8').'</div></a>';
 
 ?>
@@ -78,7 +85,7 @@
 				<div id="collectionHierarchy"><?php print caBusyIndicatorIcon($this->request).' '.addslashes(_t('Loading...')); ?></div>
 				<script>
 					$(document).ready(function(){
-						$('#collectionHierarchy').load("<?php print caNavUrl($this->request, '', 'Collections', 'collectionHierarchy', array('collection_id' => $t_item->get('collection_id'))); ?>"); 
+						$('#collectionHierarchy').load(<?php print json_encode(caNavUrl($this->request, '', 'Collections', 'collectionHierarchy', array('collection_id' => $t_item->get('collection_id'), 'media' => $vs_media_preference))); ?>);
 					})
 				</script>
 <?php				
@@ -109,9 +116,11 @@
 					print tadlDetailField($this->request, $t_item, 'Library of Congress subject headings', '<unit relativeTo="ca_collections.lcsh_terms" delimiter="<br/>">^ca_collections.lcsh_terms</unit>');
 					print tadlDetailField($this->request, $t_item, 'Rights', '^ca_collections.rights.rightsText');
 					print tadlDetailField($this->request, $t_item, 'Copyright statement', '^ca_collections.rights.copyrightStatement');
+					if ($vb_show_single_related_object) {
 ?>
 					{{{<ifcount code="ca_objects" min="1" max="1"><div class='unit'><unit relativeTo="ca_objects" delimiter=" "><l>^ca_object_representations.media.large</l><div class='caption'>Related Object: <l>^ca_objects.preferred_labels.name</l></div></unit></div></ifcount>}}}
 <?php
+					}
 				# Comment and Share Tools
 				if ($vn_comments_enabled | $vn_share_enabled) {
 						
@@ -148,7 +157,7 @@
 					{{{<ifcount code="ca_places" min="1"><unit relativeTo="ca_places" delimiter="<br/>"><l>^ca_places.preferred_labels.name</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit></ifcount>}}}
 				</div><!-- end col -->
 			</div><!-- end row -->
-{{{<ifcount code="ca_objects" min="2">
+<?php if (sizeof($va_related_object_ids) >= 2) { ?>
 			<div class="row">
 				<div id="browseResultsContainer">
 					<?php print caBusyIndicatorIcon($this->request).' '.addslashes(_t('Loading...')); ?>
@@ -156,7 +165,7 @@
 			</div><!-- end row -->
 			<script type="text/javascript">
 				jQuery(document).ready(function() {
-					jQuery("#browseResultsContainer").load("<?php print caNavUrl($this->request, '', 'Search', 'objects', array('search' => 'collection_id:^ca_collections.collection_id'), array('dontURLEncodeParameters' => true)); ?>", function() {
+					jQuery("#browseResultsContainer").load(<?php print json_encode(caNavUrl($this->request, '', 'Search', 'objects', array('search' => 'collection_id:'.(int)$t_item->get('collection_id'), 'media' => $vs_media_preference))); ?>, function() {
 						jQuery('#browseResultsContainer').jscroll({
 							autoTrigger: true,
 							loadingHtml: '<?php print caBusyIndicatorIcon($this->request).' '.addslashes(_t('Loading...')); ?>',
@@ -168,7 +177,7 @@
 					
 				});
 			</script>
-</ifcount>}}}
+<?php } ?>
 		</div><!-- end container -->
 	</div><!-- end col -->
 	<div class='navLeftRight col-xs-1 col-sm-1 col-md-1 col-lg-1'>
