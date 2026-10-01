@@ -28,6 +28,39 @@ if (!function_exists('tadlDetailFirstAvailableField')) {
 	}
 }
 
+if (!function_exists('tadlObjectThesaurusTerms')) {
+	function tadlObjectThesaurusTerms($request, $object, $label = 'Thesaurus terms') {
+		if (!$object || caGetBundleAccessLevel('ca_objects', 'lctgm') < __CA_BUNDLE_ACCESS_READONLY__) { return ''; }
+		if (!($object_id = $object->getPrimaryKey())) { return ''; }
+
+		$options = [
+			'returnWithStructure' => true, 'checkAccess' => caGetUserAccessValues($request),
+			'highlighting' => false, 'convertLineBreaks' => false, 'dontReturnDefault' => true
+		];
+		$labels = $object->get('ca_objects.lctgm', array_merge($options, ['text' => true]))[$object_id] ?? [];
+		$ids = $object->get('ca_objects.lctgm', array_merge($options, ['n' => true]))[$object_id] ?? [];
+		if (!is_array($labels)) { return ''; }
+
+		$terms = [];
+		foreach ($labels as $attribute_id => $values) {
+			$text = trim((string)($values['lctgm'] ?? ''));
+			if ($text === '') { continue; }
+
+			$text = htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+			$id = trim((string)($ids[$attribute_id]['lctgm'] ?? ''));
+			// Native LC values can have a malformed stored URI; use their term ID
+			// and a fixed TGM destination rather than trusting that URI as a link.
+			if (preg_match('/^tgm[0-9]+$/D', $id)) {
+				$text = '<a href="https://id.loc.gov/vocabulary/graphicMaterials/'.$id.'">'.$text.'</a>';
+			}
+			$terms[] = $text;
+		}
+		if (!$terms) { return ''; }
+
+		return "<div class='unit'><label>".htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')."</label>".join('<br/>', $terms)."</div>\n";
+	}
+}
+
 if (!function_exists('tadlObjectRepresentationCaptions')) {
 	function tadlObjectRepresentationCaptions($request, $object, $label = 'Media caption') {
 		if (!$object || !method_exists($object, 'getRepresentations')) { return ''; }

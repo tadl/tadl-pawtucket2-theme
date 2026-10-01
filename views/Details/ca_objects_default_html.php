@@ -128,7 +128,7 @@
 					'^ca_objects.formatNotes'
 				], ['skipAccessCheck' => true]);
 				print tadlDetailField($this->request, $t_object, 'Art and Architecture terms', '<unit relativeTo="ca_objects.art_architecture_authority" delimiter="<br/>">^ca_objects.art_architecture_authority</unit>');
-				print tadlDetailField($this->request, $t_object, 'Thesaurus terms', '<unit relativeTo="ca_objects.lctgm" delimiter="<br/>">^ca_objects.lctgm</unit>');
+				print tadlObjectThesaurusTerms($this->request, $t_object);
 				print tadlDetailField($this->request, $t_object, 'Library of Congress subject headings', '<unit relativeTo="ca_objects.lcsh_terms" delimiter="<br/>">^ca_objects.lcsh_terms</unit>');
 				print tadlDetailField($this->request, $t_object, 'Rights', '^ca_objects.rights.rightsText');
 				print tadlDetailField($this->request, $t_object, 'Copyright statement', '^ca_objects.rights.copyrightStatement');
@@ -146,7 +146,7 @@
 							{{{<ifcount code="ca_objects.related" min="1"><div class="unit">
 								<ifcount code="ca_objects.related" min="1" max="1"><label>Related object</label></ifcount>
 								<ifcount code="ca_objects.related" min="2"><label>Related objects</label></ifcount>
-								<unit relativeTo="ca_objects.related" delimiter="<br/>"><l>^ca_objects.related.preferred_labels.name</l> (^relationship_typename)</unit>
+								<unit relativeTo="ca_objects.related" delimiter="<br/>"><l>^ca_objects.preferred_labels.name<ifdef code="ca_objects.idno"> — ^ca_objects.idno%htmlEncode=1</ifdef></l> (^relationship_typename)</unit>
 							</div></ifcount>}}}
 							
 							{{{<ifcount code="ca_occurrences" min="1"><div class="unit">
