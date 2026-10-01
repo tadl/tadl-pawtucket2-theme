@@ -33,7 +33,7 @@ $context							= $this->getVar('context');
 $t_subject						= $this->getVar('t_subject');
 $subject_id						= $t_subject->getPrimaryKey();
 
-$slide_list = $this->getVar('slide_list');
+$slide_list = tadlObjectDetailVideoPosters($this->request, $t_subject, $this->getVar('slide_list'));
 $initial_index = tadlObjectDetailInitialMediaIndex($this->request, $t_subject, $slide_list);
 
 if ($representation_count > 1) {
