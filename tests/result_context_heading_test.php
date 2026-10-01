@@ -160,7 +160,7 @@ foreach (['entity_id:42' => 'Synthetic Person', 'place_id:42' => 'Synthetic Harb
 	$criteria = [contextCriterion('_search', $query, 'Raw display query: '.$query), contextCriterion('type_facet', 3, 'Synthetic type')];
 	$html = (new ContextView(new ContextRequest('Search'), $criteria))->render('Browse/browse_results_html.php');
 	checkContext(contextHeading($html) === 'Items related to '.$label, $query.': related context lost when refining.');
-	checkContext(str_contains($html, '<strong>Related to:</strong> '.$label), $query.': related search is not human-readable.');
+	checkContext(str_contains(html_entity_decode(strip_tags($html), ENT_QUOTES, 'UTF-8'), 'Related to:'.$label), $query.': related search is not human-readable.');
 	checkContext(!str_contains($html, 'Raw display query:'), $query.': raw related query displayed.');
 }
 foreach (['place_id:42 OR place_id:43', 'place_id:42 AND harbor', 'place_id:*', 'place_id:0', 'place_id:-42', 'place_id:42<script>', 'ca_entities.place_id:42', 'place_id:9999999999999999999999999'] as $query) {

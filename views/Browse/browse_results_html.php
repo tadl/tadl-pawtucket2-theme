@@ -194,23 +194,19 @@ if (!$vb_ajax) {	// !ajax
 			}
 ?>
 		</div>
-		<div class='bCriteria'>
+		<div class='bCriteria tadl-active-filters'>
 <?php
 		if (sizeof($va_criteria) > 0) {
-			$i = 0;
 			foreach($va_criteria as $va_criterion) {
-				print "<strong>".htmlspecialchars($va_criterion['facet'], ENT_QUOTES, 'UTF-8').':</strong>';
+				print '<div class="tadl-filter-criterion"><strong>'.htmlspecialchars($va_criterion['facet'], ENT_QUOTES, 'UTF-8').':</strong>';
 				if ($va_criterion['facet_name'] != '_search') {
-					$vs_remove_filter_link = '<span class="btn btn-default btn-sm">'.htmlspecialchars($va_criterion['value'], ENT_QUOTES, 'UTF-8').' <span class="glyphicon glyphicon-remove-circle" aria-hidden="true"></span><span class="sr-only"> '._t("Remove filter").'</span></span>';
-					print caNavLink($this->request, $vs_remove_filter_link, 'browseRemoveFacet', '*', '*', '*', array('removeCriterion' => $va_criterion['facet_name'], 'removeID' => urlencode($va_criterion['id']), 'view' => $vs_current_view, 'key' => $vs_browse_key));
+					$vs_remove_filter_link = '<span class="sr-only">'.htmlspecialchars(_t('Remove filter'), ENT_QUOTES, 'UTF-8').': </span><span class="tadl-filter-chip-label">'.htmlspecialchars($va_criterion['value'], ENT_QUOTES, 'UTF-8').'</span><span class="tadl-filter-chip-remove" aria-hidden="true">&times;</span>';
+					print caNavLink($this->request, $vs_remove_filter_link, 'browseRemoveFacet btn btn-default btn-sm tadl-filter-chip', '*', '*', '*', array('removeCriterion' => $va_criterion['facet_name'], 'removeID' => urlencode($va_criterion['id']), 'view' => $vs_current_view, 'key' => $vs_browse_key));
 				}else{
-					print ' '.(isset($va_criterion['tadl_authority']) || tadlResultRelatedSearchReference($va_criterion['id']) ? htmlspecialchars($va_criterion['value'], ENT_QUOTES, 'UTF-8') : $va_criterion['value']);
+					print '<span class="tadl-filter-context">'.(isset($va_criterion['tadl_authority']) || tadlResultRelatedSearchReference($va_criterion['id']) ? htmlspecialchars($va_criterion['value'], ENT_QUOTES, 'UTF-8') : $va_criterion['value']).'</span>';
 					$vs_search = $va_criterion['value'];
-				}
-				$i++;
-				if($i < sizeof($va_criteria)){
-					print " ";
-				}
+					}
+				print '</div>';
 				$va_current_facet = $va_all_facets[$va_criterion['facet_name']] ?? [];
 				if((sizeof($va_criteria) == 1) && !$vb_is_search && ($va_current_facet['show_description_when_first_facet'] ?? false) && ($va_current_facet['type'] ?? '') == 'authority' && ($va_criterion['tadl_authority'] ?? null)){
 					$t_authority_table = new $va_current_facet["table"];
