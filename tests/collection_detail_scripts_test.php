@@ -76,10 +76,7 @@ $cases = array();
 foreach (array(
 	array('name' => 'multiple objects and hierarchy', 'table' => 'ca_collections', 'objects' => 2, 'hierarchy' => true, 'mode' => 'only', 'objectSearch' => 'collection_id%3A42'),
 	array('name' => 'all items and hierarchy', 'table' => 'ca_collections', 'objects' => 2, 'hierarchy' => true, 'mode' => 'all', 'objectSearch' => 'collection_id%3A42'),
-	array('name' => 'single object without hierarchy', 'table' => 'ca_collections', 'objects' => 1, 'hierarchy' => false, 'mode' => 'only'),
-	array('name' => 'entity with multiple objects', 'table' => 'ca_entities', 'objects' => 2, 'hierarchy' => false, 'mode' => 'only', 'objectSearch' => 'entity_id:42', 'extraScripts' => 1),
-	array('name' => 'place with multiple objects', 'table' => 'ca_places', 'objects' => 2, 'hierarchy' => false, 'mode' => 'only', 'objectSearch' => 'place_id:42'),
-	array('name' => 'occurrence with multiple objects', 'table' => 'ca_occurrences', 'objects' => 2, 'hierarchy' => false, 'mode' => 'only', 'objectSearch' => 'occurrence_id:42', 'extraScripts' => 1)
+	array('name' => 'single object without hierarchy', 'table' => 'ca_collections', 'objects' => 1, 'hierarchy' => false, 'mode' => 'only')
 ) as $case) {
 	$GLOBALS['detailScriptMode'] = $case['mode'];
 	$GLOBALS['detailScriptShowHierarchy'] = $case['hierarchy'];
@@ -148,4 +145,4 @@ fclose($pipes[2]);
 $status = proc_close($process);
 checkDetailScripts($status === 0, "Rendered detail JavaScript failed in Node.js:\n".$stderr);
 $nodeResult = json_decode($stdout, true, 512, JSON_THROW_ON_ERROR);
-echo json_encode(array('status' => 'passed', 'assertions' => $GLOBALS['detailScriptAssertions'] + $nodeResult['assertions'], 'templates' => 'actual collection/entity/place/occurrence details', 'dependencies' => 'synthetic view/model/config/jQuery boundaries; Node.js syntax and execution'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;
+echo json_encode(array('status' => 'passed', 'assertions' => $GLOBALS['detailScriptAssertions'] + $nodeResult['assertions'], 'templates' => 'actual collection detail; authority pages have authority_detail_test.php', 'dependencies' => 'synthetic view/model/config/jQuery boundaries; Node.js syntax and execution'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;

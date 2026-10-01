@@ -1080,6 +1080,273 @@ h6 {
     color: #fff;
 }
 
+/* Authority records keep related items beside their descriptive context. */
+.tadl-authority-detail {
+    min-width: 0;
+}
+
+.tadl-authority-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.tadl-authority-nav a {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 36px;
+    padding: 7px 12px;
+    border: 1px solid var(--tadl-border);
+    border-radius: var(--tadl-radius);
+    color: var(--tadl-primary-dark);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.4;
+    text-decoration: none;
+}
+
+.tadl-authority-nav a:hover,
+.tadl-authority-nav a:focus {
+    border-color: var(--tadl-primary);
+    background: #eef4f8;
+    color: var(--tadl-primary-dark);
+}
+
+.tadl-authority-nav .small {
+    font-size: inherit;
+}
+
+.tadl-authority-header {
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--tadl-border);
+    overflow-wrap: anywhere;
+}
+
+.tadl-authority-kind {
+    margin-bottom: 8px;
+    color: var(--tadl-muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.tadl-authority-header h1 {
+    margin: 0;
+    color: var(--tadl-primary-dark);
+    font-size: clamp(26px, 2.2vw, 36px);
+    line-height: 1.2;
+    letter-spacing: normal;
+}
+
+.tadl-authority-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin-top: 12px;
+    color: var(--tadl-muted);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.tadl-authority-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+    align-items: start;
+    gap: 32px;
+}
+
+.tadl-authority-layout--items-only {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.tadl-results-context-count,
+.tadl-related-results-summary {
+    margin: 0 0 18px;
+    color: var(--tadl-muted);
+    font-size: 14px;
+}
+
+.tadl-authority-items,
+.tadl-authority-sidebar {
+    min-width: 0;
+}
+
+.tadl-authority-section-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin-bottom: 20px;
+}
+
+.tadl-authority-section-heading h2,
+.tadl-authority-sidebar h2 {
+    margin: 0;
+    color: var(--tadl-primary-dark);
+    font-size: 21px;
+    line-height: 1.3;
+    text-transform: none;
+}
+
+.tadl-authority-all-items {
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+.tadl-authority-sidebar {
+    padding-left: 28px;
+    border-left: 1px solid var(--tadl-border);
+    overflow-wrap: anywhere;
+}
+
+.tadl-authority-about,
+.tadl-authority-related {
+    margin-bottom: 28px;
+}
+
+.tadl-authority-sidebar h2 {
+    margin-bottom: 16px;
+}
+
+.tadl-authority-about .unit {
+    margin-bottom: 18px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.tadl-authority-about .unit label {
+    margin: 0 0 5px;
+    color: var(--tadl-muted);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: none;
+}
+
+.tadl-authority-relationships {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.tadl-authority-relationships > li {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--tadl-border);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.tadl-authority-relationships > li:first-child {
+    padding-top: 0;
+}
+
+.tadl-authority-relationship-label {
+    display: block;
+    font-weight: 600;
+}
+
+.tadl-authority-relationship-role {
+    display: block;
+    margin-top: 3px;
+    color: var(--tadl-muted);
+    font-size: 12px;
+}
+
+.tadl-authority-more {
+    margin-top: 12px;
+}
+
+.tadl-authority-more summary {
+    padding: 5px 0;
+    color: var(--tadl-primary-dark);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.tadl-authority-more summary:hover,
+.tadl-authority-more summary:focus {
+    text-decoration: underline;
+}
+
+.tadl-authority-more summary:focus-visible {
+    outline: 3px solid var(--tadl-focus);
+    outline-offset: 3px;
+}
+
+.tadl-authority-more[open] summary {
+    margin-bottom: 12px;
+}
+
+.tadl-authority-loading,
+.tadl-authority-empty,
+.tadl-authority-error {
+    padding: 18px;
+    border: 1px solid var(--tadl-border);
+    border-radius: var(--tadl-radius);
+    background: #f5f8fb;
+    color: var(--tadl-ink);
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.tadl-authority-error {
+    border-left: 3px solid var(--tadl-primary-dark);
+}
+
+.tadl-authority-items .bResultItemText,
+.tadl-authority-items .bResultListItemText {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.tadl-authority-items #browseResultsContainer {
+    display: flex;
+    flex-wrap: wrap;
+    height: auto;
+}
+
+/* Keep rows aligned when one object's title wraps onto several lines. */
+.tadl-authority-items #browseResultsContainer::before,
+.tadl-authority-items #browseResultsContainer::after {
+    display: none;
+}
+
+.tadl-authority-items #browseResultsContainer > :not(.bResultItemCol) {
+    flex-basis: 100%;
+    min-width: 0;
+}
+
+.tadl-authority-items #browseResultsContainer > p {
+    margin-right: 15px;
+    margin-left: 15px;
+}
+
+@media (min-width: 992px) and (max-width: 1199px) {
+    .tadl-authority-items .bResultItemCol {
+        width: 50%;
+    }
+}
+
+@media (max-width: 991px) {
+    .tadl-authority-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .tadl-authority-sidebar {
+        padding: 24px 0 0;
+        border-top: 1px solid var(--tadl-border);
+        border-left: 0;
+    }
+}
+
 /* Search overview: visible previews with normal links to complete results. */
 .tadl-search-overview h1 {
     margin-top: 0;

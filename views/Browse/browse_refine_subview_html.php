@@ -33,6 +33,7 @@
 	$vs_view			= $this->getVar('view');
 	$vs_browse_type		= $this->getVar('browse_type');
 	$o_browse			= $this->getVar('browse');
+	require_once(__DIR__.'/tadl_result_context_helpers.php');
 	
 	$vn_facet_display_length_initial = 7;
 	$vn_facet_display_length_maximum = 60;
@@ -46,8 +47,7 @@
 			$va_facet_info['content'] = tadlMediaFacetItems($this->request, $va_facet_info['content'] ?? [], $va_facet_info);
 			
 			if ((caGetOption('deferred_load', $va_facet_info, false) || ($va_facet_info["group_mode"] == 'hierarchical')) && ($o_browse->getFacet($vs_facet_name))) {
-				print "<H3>".$va_facet_info['label_singular']."</H3>";
-				print "<p>".$va_facet_info['description']."</p>";
+				print "<H3>".htmlspecialchars(tadlResultFacetHeading($va_facet_info), ENT_QUOTES, 'UTF-8')."</H3>";
 ?>
 					<script type="text/javascript">
 						jQuery(document).ready(function() {
@@ -58,7 +58,7 @@
 <?php
 			} else {				
 				if (!is_array($va_facet_info['content']) || !sizeof($va_facet_info['content'])) { continue; }
-				print "<h3>".$va_facet_info['label_singular']."</h3>"; 
+				print "<h3>".htmlspecialchars(tadlResultFacetHeading($va_facet_info), ENT_QUOTES, 'UTF-8')."</h3>";
 				switch($va_facet_info["group_mode"]){
 					case "alphabetical":
 					case "list":

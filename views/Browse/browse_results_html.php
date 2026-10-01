@@ -31,7 +31,7 @@
 	$vs_media_preference = tadlMediaPreference($this->request);
 	$vs_find_type = ($this->getVar('find_type') ?: 'browse').($this->getVar('is_advanced') ? '_advanced' : '');
 	$va_facets 			= $this->getVar('facets');				// array of available browse facets
-	$va_criteria 		= $this->getVar('criteria');			// array of browse criteria
+	$va_criteria 		= (array)$this->getVar('criteria');		// array of browse criteria
 	$vs_browse_key 		= $this->getVar('key');					// cache key for current browse
 	$va_access_values 	= $this->getVar('access_values');		// list of access values for this user
 	$vn_hits_per_block 	= (int)$this->getVar('hits_per_block');	// number of hits to display per block
@@ -66,16 +66,29 @@
 	) {
 		$vs_current_view = $vs_default_view;
 	}
-	$vn_result_size 	= $qr_res->numHits();
+	$vn_result_size 	= (int)$qr_res->numHits();
 	$vs_sort_control_type = caGetOption('sortControlType', $va_browse_info, 'dropdown');
 	$o_config = $this->getVar("config");
 	$vs_result_col_class = $o_config->get('result_col_class');
 	$vs_refine_col_class = $o_config->get('refine_col_class');
 	$va_export_formats = $this->getVar('export_formats');
 	$va_browse_type_info = $o_config->get($va_browse_info["table"]);
-	$va_all_facets = $va_browse_type_info["facets"];	
+	$va_all_facets = (array)($va_browse_type_info['facets'] ?? []);
+	if ($o_browse = $this->getVar('browse')) { $va_all_facets = $o_browse->getInfoForFacets(); }
 	$va_add_to_set_link_info = caGetAddToSetInfo($this->request);
 	require_once(__DIR__.'/tadl_result_helpers.php');
+	require_once(__DIR__.'/tadl_result_context_helpers.php');
+	$va_result_context = null;
+	$vs_facet_description = null;
+	$va_sorts = [];
+	if (!$vb_ajax) {
+		$va_criteria = tadlResultDisplayCriteria($this->request, $va_criteria, $va_all_facets);
+		$va_result_context = tadlResultContext($vs_table, $va_criteria);
+	}
+	if ($vb_ajax && $vb_is_search) {
+		// This summary is outside the cached cards and reflects the media-filtered result.
+		print '<p class="tadl-related-results-summary" data-tadl-result-count="'.(int)$vn_result_size.'">'.htmlspecialchars(tadlResultItemCount($vn_result_size), ENT_QUOTES, 'UTF-8').'</p>';
+	}
 	$vn_tadl_page_size = tadlBrowseResultPageSize($vs_current_view);
 	if ($vn_tadl_page_size) {
 		$vn_start = min(max(0, $vn_start), max(0, ((int)ceil($vn_result_size / $vn_tadl_page_size) - 1) * $vn_tadl_page_size));
@@ -116,9 +129,14 @@ if (!$vb_ajax) {	// !ajax
 			<div class="tadl-results-title-block">
 		<H1>
 <?php
-			print "<span class='tadl-results-title-text'>"._t('%1 %2 %3', $vn_result_size, ($va_browse_info["labelSingular"]) ? $va_browse_info["labelSingular"] : $t_instance->getProperty('NAME_SINGULAR'), ($vn_result_size == 1) ? _t("Result") : _t("Results"))."</span>";
+			$vs_result_label = ($vn_result_size === 1)
+				? ($va_browse_info['labelSingular'] ?? $t_instance->getProperty('NAME_SINGULAR'))
+				: ($va_browse_info['labelPlural'] ?? $t_instance->getProperty('NAME_PLURAL'));
+			$vs_result_heading = $va_result_context['title'] ?? _t('%1 %2', $vn_result_size, $vs_result_label);
+			print "<span class='tadl-results-title-text'>".htmlspecialchars($vs_result_heading, ENT_QUOTES, 'UTF-8')."</span>";
 ?>
 		</H1>
+		<?php if ($va_result_context) { print '<p class="tadl-results-context-count">'.htmlspecialchars(tadlResultItemCount($vn_result_size), ENT_QUOTES, 'UTF-8').'</p>'; } ?>
 		<div class="tadl-results-title-actions">
 			<div class="btn-group">
 				<a href="#" class="tadl-results-action tadl-results-options" data-toggle="dropdown" aria-label="<?php print _t('Result options'); ?>" aria-haspopup="true" aria-expanded="false"><i class="fa fa-cog bGear" aria-hidden="true"></i><span class="tadl-results-action-label"><?php print _t('Options'); ?></span></a>
@@ -181,20 +199,20 @@ if (!$vb_ajax) {	// !ajax
 		if (sizeof($va_criteria) > 0) {
 			$i = 0;
 			foreach($va_criteria as $va_criterion) {
-				print "<strong>".$va_criterion['facet'].':</strong>';
+				print "<strong>".htmlspecialchars($va_criterion['facet'], ENT_QUOTES, 'UTF-8').':</strong>';
 				if ($va_criterion['facet_name'] != '_search') {
 					$vs_remove_filter_link = '<span class="btn btn-default btn-sm">'.htmlspecialchars($va_criterion['value'], ENT_QUOTES, 'UTF-8').' <span class="glyphicon glyphicon-remove-circle" aria-hidden="true"></span><span class="sr-only"> '._t("Remove filter").'</span></span>';
 					print caNavLink($this->request, $vs_remove_filter_link, 'browseRemoveFacet', '*', '*', '*', array('removeCriterion' => $va_criterion['facet_name'], 'removeID' => urlencode($va_criterion['id']), 'view' => $vs_current_view, 'key' => $vs_browse_key));
 				}else{
-					print ' '.$va_criterion['value'];
+					print ' '.(isset($va_criterion['tadl_authority']) || tadlResultRelatedSearchReference($va_criterion['id']) ? htmlspecialchars($va_criterion['value'], ENT_QUOTES, 'UTF-8') : $va_criterion['value']);
 					$vs_search = $va_criterion['value'];
 				}
 				$i++;
 				if($i < sizeof($va_criteria)){
 					print " ";
 				}
-				$va_current_facet = $va_all_facets[$va_criterion['facet_name']];
-				if((sizeof($va_criteria) == 1) && !$vb_is_search && $va_current_facet["show_description_when_first_facet"] && ($va_current_facet["type"] == "authority")){
+				$va_current_facet = $va_all_facets[$va_criterion['facet_name']] ?? [];
+				if((sizeof($va_criteria) == 1) && !$vb_is_search && ($va_current_facet['show_description_when_first_facet'] ?? false) && ($va_current_facet['type'] ?? '') == 'authority' && ($va_criterion['tadl_authority'] ?? null)){
 					$t_authority_table = new $va_current_facet["table"];
 					$t_authority_table->load($va_criterion['id']);
 					$vs_facet_description = $t_authority_table->get($va_current_facet["show_description_when_first_facet"]);
