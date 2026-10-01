@@ -1,81 +1,75 @@
 <?php
-	$pa_set_items = $this->getVar("set_items");
-	$pn_set_id = $this->getVar("set_id");
-	$t_set = $this->getVar("set");
-	$ps_label = $this->getVar("label");
-	$ps_description = $this->getVar("description");
-	$pn_set_item_id = $this->getVar("set_item_id");
-?>
-	<div class="row">
-		<div class="col-sm-12">
-			<H1><?php print $this->getVar("section_name"); ?>: <?php print $this->getVar("label")."</H1>"; ?>
-		</div>
-	</div>
-	<div class="row">
-		<div class="col-sm-8"><div id="galleryDetailImageArea">
-		</div><!-- end galleryDetailImageArea --></div><!--end col-sm-8-->
-		<div class="col-sm-4" id="galleryDetailObjectInfo"> </div>
-	</div><!-- end row -->
-<div class="galleryDetailBottom"></div>
-
-
-	<div class="row">
-<?php
-	if($ps_description){
-?>
-		<div class="col-sm-4 setDescription">
-			<?php print "<p>".$ps_description."</p>"; ?>
-		</div><!-- end col -->
-<?php
+	$pa_set_items = (array)$this->getVar('set_items');
+	$pn_set_id = (int)$this->getVar('set_id');
+	$ps_description = $this->getVar('description');
+	$pn_set_item_id = (int)$this->getVar('set_item_id');
+	$vn_first_item_id = 0;
+	$vn_item_position = 0;
+	$va_thumbnails = [];
+	foreach ($pa_set_items as $pa_set_item) {
+		$vn_item_id = (int)($pa_set_item['item_id'] ?? 0);
+		if (!$vn_item_id) { continue; }
+		$vn_item_position++;
+		if (!$vn_first_item_id) { $vn_first_item_id = $vn_item_id; }
+		$t_set_item = new ca_set_items($vn_item_id);
+		$vs_icon = !empty($pa_set_item['representation_url_iconlarge']) ? 'iconlarge' : 'icon';
+		$vs_rep = $t_set_item->get('ca_set_items.set_item_media', ['version' => 'iconlarge']) ?: ($pa_set_item['representation_tag_'.$vs_icon] ?? '');
+		if ($vs_rep) { $va_thumbnails[$vn_item_id] = ['media' => $vs_rep, 'position' => $vn_item_position]; }
 	}
-?>	
-		<div id="galleryDetailImageGrid" class="col-sm-<?php print ($ps_description) ? "8" : "12"; ?>">
-			<div class="row">		
-<?php
-		$vn_i = 0;
-		foreach($pa_set_items as $pa_set_item){
-			if(!$vn_first_item_id){
-				$vn_first_item_id = $pa_set_item["item_id"];
-			}
-			if ($pa_set_item["item_id"]) {
-				$t_set_item = new ca_set_items($pa_set_item["item_id"]);
-				$vs_rep = $t_set_item->get('ca_set_items.set_item_media', array('version' => 'iconlarge'));
-			}
-			# --- is the iconlarge version available?
-			$vs_icon = "icon";
-			if($pa_set_item["representation_url_iconlarge"]){
-				$vs_icon = "iconlarge";
-			}
-			if ($t_set_item->get('ca_set_items.set_item_media', array('version' => 'iconlarge'))) {
-				$vs_rep = $t_set_item->get('ca_set_items.set_item_media', array('version' => 'iconlarge'));
-			} else {
-				$vs_rep = $pa_set_item["representation_tag_".$vs_icon];
-			}
-			if($pa_set_item["representation_tag_".$vs_icon]){
-				$vn_i++;
-				print "<div class='smallpadding col-xs-3 col-sm-2 col-md-".(($ps_description) ? "2" : "1").(($vn_i > 12) ? " galleryIconHidden" : "")."'>";
-				print "<a href='#' id='galleryIcon".$pa_set_item["item_id"]."' onclick='jQuery(\"#galleryDetailImageArea\").load(\"".caNavUrl($this->request, '', 'Gallery', 'getSetItemRep', array('item_id' => $pa_set_item["item_id"], 'set_id' => $pn_set_id))."\"); jQuery(\"#galleryDetailObjectInfo\").load(\"".caNavUrl($this->request, '', 'Gallery', 'getSetItemInfo', array('item_id' => $pa_set_item["item_id"], 'set_id' => $pn_set_id))."\"); galleryHighlightThumbnail(\"galleryIcon".$pa_set_item["item_id"]."\"); return false;'>".$vs_rep."</a>";
-				print "</div>\n";
-				
-				if($vn_i == 12){
-					print "<div class='col-sm-3' id='moreLink'>
-								<a href='#' onclick='$(\".galleryIconHidden\").removeClass(\"galleryIconHidden\"); $(\"#moreLink\").hide(); return false;'>".(sizeof($pa_set_items) - 12)." "._t("more")."</a>
-							</div>";
-				}
-			}
-		}
+	$vn_initial_item_id = $pn_set_item_id ?: $vn_first_item_id;
 ?>
-			</div><!-- end row -->
-		</div><!-- end col -->
-	</div><!-- end row -->
-<script type='text/javascript'>
-		jQuery(document).ready(function() {		
-			jQuery("#galleryDetailImageArea").load("<?php print caNavUrl($this->request, '', 'Gallery', 'getSetItemRep', array('item_id' => ($pn_set_item_id) ? $pn_set_item_id : $vn_first_item_id, 'set_id' => $pn_set_id)); ?>");
-			jQuery("#galleryDetailObjectInfo").load("<?php print caNavUrl($this->request, '', 'Gallery', 'getSetItemInfo', array('item_id' => ($pn_set_item_id) ? $pn_set_item_id : $vn_first_item_id, 'set_id' => $pn_set_id)); ?>");
-			galleryHighlightThumbnail("galleryIcon<?php print ($pn_set_item_id) ? $pn_set_item_id : $vn_first_item_id; ?>");
+<div class="tadl-gallery-detail">
+	<h1><?= htmlspecialchars((string)$this->getVar('section_name').': '.(string)$this->getVar('label'), ENT_QUOTES, 'UTF-8'); ?></h1>
+	<div class="tadl-gallery-detail-columns tadl-gallery-detail-main">
+		<div id="galleryDetailImageArea"><?php if (!$vn_initial_item_id) { print '<p>'._t('No gallery items are currently available.').'</p>'; } ?></div>
+		<div id="galleryDetailObjectInfo"></div>
+	</div>
+	<div class="tadl-gallery-detail-columns tadl-gallery-detail-bottom">
+		<nav id="galleryDetailImageGrid" aria-label="<?= htmlspecialchars(_t('Gallery items'), ENT_QUOTES, 'UTF-8'); ?>">
+			<div class="tadl-gallery-thumbnails">
+			<?php $vn_i = 0; foreach ($va_thumbnails as $vn_item_id => $va_thumbnail): $vn_i++; ?>
+				<div class="tadl-gallery-thumbnail<?= $vn_i > 12 ? ' galleryIconHidden' : ''; ?>">
+					<a class="tadl-gallery-thumbnail-link" id="galleryIcon<?= $vn_item_id; ?>"
+						href="<?= htmlspecialchars(caNavUrl($this->request, '', 'Gallery', $pn_set_id, ['set_item_id' => $vn_item_id]), ENT_QUOTES, 'UTF-8'); ?>"
+						data-rep-url="<?= htmlspecialchars(caNavUrl($this->request, '', 'Gallery', 'getSetItemRep', ['item_id' => $vn_item_id, 'set_id' => $pn_set_id]), ENT_QUOTES, 'UTF-8'); ?>"
+						data-info-url="<?= htmlspecialchars(caNavUrl($this->request, '', 'Gallery', 'getSetItemInfo', ['item_id' => $vn_item_id, 'set_id' => $pn_set_id]), ENT_QUOTES, 'UTF-8'); ?>"
+						aria-label="<?= htmlspecialchars(_t('View gallery item %1', $va_thumbnail['position']), ENT_QUOTES, 'UTF-8'); ?>"><?= $va_thumbnail['media']; ?></a>
+				</div>
+			<?php endforeach; ?>
+			</div>
+			<?php if (count($va_thumbnails) > 12): ?>
+			<button type="button" class="btn btn-default" id="moreLink"><?= _t('%1 more items', count($va_thumbnails) - 12); ?></button>
+			<?php endif; ?>
+		</nav>
+		<?php if ($ps_description): ?>
+		<section class="tadl-gallery-description" aria-labelledby="tadl-gallery-description-title">
+			<h2 id="tadl-gallery-description-title"><?= _t('About this gallery'); ?></h2>
+			<?= $ps_description; ?>
+		</section>
+		<?php endif; ?>
+	</div>
+</div>
+<script>
+	jQuery(document).ready(function () {
+		jQuery('#galleryDetailImageGrid').on('click', '.tadl-gallery-thumbnail-link', function (event) {
+			if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) { return; }
+			event.preventDefault();
+			jQuery('#galleryDetailImageArea').load(jQuery(this).attr('data-rep-url'));
+			jQuery('#galleryDetailObjectInfo').load(jQuery(this).attr('data-info-url'));
+			galleryHighlightThumbnail(this.id);
 		});
-		function galleryHighlightThumbnail(id) {		
-			jQuery("#galleryDetailImageGrid a").removeClass("galleryIconActive");
-			jQuery("#" + id).addClass("galleryIconActive");
-		}
+		jQuery('#moreLink').on('click', function () {
+			jQuery('#galleryDetailImageGrid .galleryIconHidden').removeClass('galleryIconHidden');
+			jQuery(this).hide();
+		});
+		<?php if ($vn_initial_item_id): ?>
+		jQuery('#galleryDetailImageArea').load(<?= json_encode(caNavUrl($this->request, '', 'Gallery', 'getSetItemRep', ['item_id' => $vn_initial_item_id, 'set_id' => $pn_set_id]), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>);
+		jQuery('#galleryDetailObjectInfo').load(<?= json_encode(caNavUrl($this->request, '', 'Gallery', 'getSetItemInfo', ['item_id' => $vn_initial_item_id, 'set_id' => $pn_set_id]), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>);
+		galleryHighlightThumbnail(<?= json_encode('galleryIcon'.$vn_initial_item_id); ?>);
+		<?php endif; ?>
+	});
+	function galleryHighlightThumbnail(id) {
+		jQuery('#galleryDetailImageGrid a').removeClass('galleryIconActive').removeAttr('aria-current');
+		jQuery('#' + id).addClass('galleryIconActive').attr('aria-current', 'true');
+	}
 </script>

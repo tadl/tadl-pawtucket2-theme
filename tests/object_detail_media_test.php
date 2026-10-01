@@ -14,7 +14,10 @@ function checkObjectMedia($condition, $message) {
 	$GLOBALS['objectMediaAssertions']++;
 	if (!$condition) { throw new RuntimeException($message); }
 }
-function _t($text) { return $text; }
+function _t($text, ...$values) {
+	foreach ($values as $i => $value) { $text = str_replace('%'.($i + 1), (string)$value, $text); }
+	return $text;
+}
 function caGetUserAccessValues($request) { return $request->access; }
 class ObjectMediaRequest {
 	public array $access = array(1);
@@ -79,6 +82,9 @@ $rows = array(
 $fixtures = array(
 	array('name' => 'primary still then playable video', 'slides' => array($image, $video), 'expected' => 1),
 	array('name' => 'representation ID order differs from slides', 'slides' => array($image, $video), 'ids' => array(102, 101), 'expected' => 1),
+	array('name' => 'double-quoted native wrappers support thumbnail selection', 'slides' => array($image, '<div data-representation_id="102"><video src="https://example.org/movie.mp4"></video></div>'), 'expected' => 1),
+	array('name' => 'native rank collision retains thumbnail callback for one rendered slide', 'slides' => array($image), 'ids' => array(101, 102), 'advertisedCount' => 2, 'expected' => 0, 'noQuery' => true),
+	array('name' => 'rendered count wins over underreported native count', 'slides' => array($image, $secondImage), 'advertisedCount' => 1, 'expected' => 0, 'noQuery' => true),
 	array('name' => 'first rendered video wins regardless of metadata order', 'slides' => array($image, $secondVideo, $video), 'expected' => 1),
 	array('name' => 'already first video remains first', 'slides' => array($video, $image), 'expected' => 0),
 	array('name' => 'audio PDF and image keep primary still', 'slides' => array($image, $audio, $pdf, $secondImage), 'expected' => 0, 'noQuery' => true),
@@ -112,15 +118,17 @@ foreach ($fixtures as $fixture) {
 	$subject = new ObjectMediaSubject(array_replace($rows, $fixture['rowOverrides'] ?? array()), $fixture['table'] ?? 'ca_objects');
 	$originalRows = $subject->representations;
 	$ids = $fixture['ids'] ?? array_map(function ($slide) {
-		preg_match("/data-representation_id='(\d+)'/", $slide, $match);
+		preg_match('/data-representation_id=[\'\"](\d+)[\'\"]/', $slide, $match);
 		return (int)$match[1];
 	}, $fixture['slides']);
 	$html = (new ObjectMediaView($request, array(
-		'representation_count' => count($fixture['slides']), 'representation_ids' => $ids,
+		'representation_count' => $fixture['advertisedCount'] ?? count($fixture['slides']), 'representation_ids' => $ids,
 		't_subject' => $subject, 'slide_list' => $fixture['slides'], 'display_annotations' => null, 'context' => 'synthetic'
 	)))->render();
 	preg_match_all('~<script\b[^>]*>(.*?)</script\s*>~is', $html, $scripts);
 	checkObjectMedia(count($scripts[1]) === 1, $fixture['name'].': viewer script did not render.');
+	checkObjectMedia((strpos($html, 'id="detailRepNavPrev"') !== false) === (count($fixture['slides']) > 1), $fixture['name'].': arrows do not match rendered media count.');
+	checkObjectMedia((strpos($html, 'id="detailRepCounter"') !== false) === (count($fixture['slides']) > 1), $fixture['name'].': counter does not match rendered media count.');
 	checkObjectMedia($subject->primaryRepresentation === 101 && $subject->representations === $originalRows, $fixture['name'].': primary representation or metadata changed.');
 	if ($fixture['noQuery'] ?? false) { checkObjectMedia($subject->metadataQueries === 0, $fixture['name'].': avoidable metadata query.'); }
 	$nodeFixtures[] = array('name' => $fixture['name'], 'scripts' => $scripts[1], 'slides' => $fixture['slides'], 'thumbIds' => $ids, 'expected' => $fixture['expected']);
@@ -135,14 +143,48 @@ let assertions = 0;
 for (const fixture of fixtures) {
     let displayedHtml = null;
     let activeThumb = null;
+    const currentThumbs = new Map();
+    const disabled = new Map();
+    let counter = null;
+    let pausedSinceReplacement = 0;
+    let pauseCalls = 0;
+    let replacements = 0;
+    const hasControls = fixture.slides.length > 1;
     const handlers = new Map();
     const rootId = html => html.match(/^\s*<[^>]*\bdata-representation_id=['"](\d+)['"]/)[1];
+    const mediaCount = html => html ? [...html.matchAll(/<(?:video|audio)\b/gi)].length : 0;
+    const thumbnails = {
+        removeClass(name) { assert.equal(name, 'active'); activeThumb = null; return thumbnails; },
+        removeAttr(name) { assert.equal(name, 'aria-current'); currentThumbs.clear(); return thumbnails; },
+        filter(selector) {
+            const match = selector.match(/^\[data-representation_id="(\d+)"\]$/);
+            assert.ok(match, 'Unexpected thumbnail filter: ' + selector);
+            const thumbIndex = fixture.thumbIds.indexOf(Number(match[1]));
+            const selected = {
+                addClass(name) { assert.equal(name, 'active'); if (thumbIndex !== -1) activeThumb = thumbIndex; return selected; },
+                attr(name, value) { assert.equal(name, 'aria-current'); if (thumbIndex !== -1) currentThumbs.set(thumbIndex, value); return selected; }
+            };
+            return selected;
+        }
+    };
     const jquery = selector => {
         if (typeof selector !== 'string') return { ready(callback) { callback(); } };
+        if (selector === '#repViewerItemDisplay video, #repViewerItemDisplay audio') return {
+            each(callback) {
+                for (let i = 0; i < mediaCount(displayedHtml); i++) callback.call({ pause() { pausedSinceReplacement++; pauseCalls++; } });
+            }
+        };
         if (selector === '#repViewerItemDisplay') return {
-            html(value) { displayedHtml = value; },
+            html(value) {
+                assert.equal(pausedSinceReplacement, mediaCount(displayedHtml), fixture.name + ': outgoing media was not paused before replacement');
+                assertions++;
+                pausedSinceReplacement = 0;
+                replacements++;
+                displayedHtml = value;
+            },
             children() { return { attr(name) { assert.equal(name, 'data-representation_id'); return rootId(displayedHtml); } }; }
         };
+        if (selector === '#detailRepresentationThumbnails .repThumb') return thumbnails;
         if (selector === '.repThumb') return { removeClass(name) { assert.equal(name, 'active'); activeThumb = null; } };
         const representation = selector.match(/^\.repThumb\[data-representation_id="(\d+)"\]$/);
         if (representation) return { attr(name) { assert.equal(name, 'id'); return 'repThumb_' + fixture.thumbIds.indexOf(Number(representation[1])); } };
@@ -152,8 +194,10 @@ for (const fixture of fixtures) {
             addClass(name) { assert.equal(name, 'active'); activeThumb = Number(thumb[1]); }
         };
         if (selector === '#detailRepNavPrev' || selector === '#detailRepNavNext') return {
-            on(event, callback) { assert.equal(event, 'click'); handlers.set(selector, callback); }
+            on(event, callback) { assert.equal(event, 'click'); handlers.set(selector, callback); },
+            prop(name, value) { assert.equal(name, 'disabled'); if (hasControls) disabled.set(selector, value); }
         };
+        if (selector === '#detailRepCounter') return { text(value) { if (hasControls) counter = value; } };
         throw new Error('Unexpected jQuery selector: ' + selector);
     };
     const context = vm.createContext({ document: {}, jQuery: jquery });
@@ -163,29 +207,51 @@ for (const fixture of fixtures) {
         assert.equal(activeThumb, fixture.thumbIds.indexOf(Number(rootId(fixture.slides[index]))), fixture.name + ': active thumbnail differs');
         assert.equal(vm.runInContext('index', context), index, fixture.name + ': current slide index differs');
         assertions += 3;
+        assert.equal(currentThumbs.get(activeThumb), 'true', fixture.name + ': selected thumbnail lacks aria-current');
+        assert.equal(currentThumbs.size, 1, fixture.name + ': inactive thumbnail retained aria-current');
+        if (hasControls) {
+            assert.equal(disabled.get('#detailRepNavPrev'), index === 0, fixture.name + ': previous boundary state differs');
+            assert.equal(disabled.get('#detailRepNavNext'), index === fixture.slides.length - 1, fixture.name + ': next boundary state differs');
+            assert.equal(counter, `Media ${index + 1} of ${fixture.slides.length}`, fixture.name + ': counter differs');
+            assertions += 3;
+        } else {
+            assert.equal(counter, null, fixture.name + ': one rendered slide should not gain a counter');
+            assert.equal(disabled.size, 0, fixture.name + ': one rendered slide should not gain arrows');
+            assertions += 2;
+        }
+        assertions += 2;
     };
     checkSelected(fixture.expected, 'wrong initial media');
     assert.equal(vm.runInContext('JSON.stringify(slide_list)', context), JSON.stringify(fixture.slides), fixture.name + ': slide ordering changed');
     assertions++;
     for (let i = fixture.expected; i < fixture.slides.length; i++) {
         let prevented = false;
+        const countBefore = replacements;
         handlers.get('#detailRepNavNext')({ preventDefault() { prevented = true; } });
         checkSelected(Math.min(i + 1, fixture.slides.length - 1), 'Next control failed');
         assert.equal(prevented, true);
+        if (i === fixture.slides.length - 1) { assert.equal(replacements, countBefore, fixture.name + ': next boundary needlessly replaced media'); assertions++; }
         assertions++;
     }
     for (let i = fixture.slides.length - 1; i >= 0; i--) {
         let prevented = false;
+        const countBefore = replacements;
         handlers.get('#detailRepNavPrev')({ preventDefault() { prevented = true; } });
         checkSelected(Math.max(i - 1, 0), 'Previous control failed');
         assert.equal(prevented, true);
+        if (i === 0) { assert.equal(replacements, countBefore, fixture.name + ': previous boundary needlessly replaced media'); assertions++; }
         assertions++;
     }
     fixture.thumbIds.forEach((id, thumbIndex) => {
+        const previousIndex = vm.runInContext('index', context);
+        const countBefore = replacements;
         assert.equal(context.setItem(thumbIndex), false, fixture.name + ': thumbnail handler stopped preventing navigation');
-        checkSelected(fixture.slides.findIndex(slide => rootId(slide) === String(id)), 'Thumbnail control failed');
+        const selectedIndex = fixture.slides.findIndex(slide => rootId(slide) === String(id));
+        checkSelected(selectedIndex === -1 ? previousIndex : selectedIndex, 'Thumbnail control failed');
+        if (selectedIndex === -1) { assert.equal(replacements, countBefore, fixture.name + ': unrendered thumbnail changed the displayed media'); assertions++; }
         assertions++;
     });
+    if (fixture.slides.some(slide => mediaCount(slide))) { assert.ok(pauseCalls > 0, fixture.name + ': outgoing audio/video pause path was not exercised'); assertions++; }
 }
 process.stdout.write(JSON.stringify({ assertions }));
 JS;
@@ -201,8 +267,24 @@ $status = proc_close($process);
 checkObjectMedia($status === 0, "Rendered media viewer failed in Node.js:\n".$stderr);
 $nodeResult = json_decode($stdout, true, 512, JSON_THROW_ON_ERROR);
 
+foreach (array(
+	array('name' => 'ordinary empty viewer keeps placeholder', 'slides' => array()),
+	array('name' => 'ordinary single still renders directly', 'slides' => array($image)),
+	array('name' => 'ordinary single video renders directly', 'slides' => array($video))
+) as $fixture) {
+	$subject = new ObjectMediaSubject($rows);
+	$html = (new ObjectMediaView(new ObjectMediaRequest(), array(
+		'representation_count' => count($fixture['slides']), 'representation_ids' => count($fixture['slides']) ? array(101) : array(),
+		't_subject' => $subject, 'slide_list' => $fixture['slides'], 'display_annotations' => null, 'context' => 'synthetic'
+	)))->render();
+	checkObjectMedia(strpos($html, 'id="detailRepNavPrev"') === false && strpos($html, 'id="detailRepNavNext"') === false, $fixture['name'].': unnecessary navigation buttons.');
+	checkObjectMedia(strpos($html, 'id="detailRepCounter"') === false && strpos($html, 'function setItem') === false, $fixture['name'].': unnecessary counter or multi-slide callback.');
+	checkObjectMedia(strpos($html, count($fixture['slides']) ? $fixture['slides'][0] : '{{{placeholder}}}') !== false, $fixture['name'].': direct media or placeholder output changed.');
+	checkObjectMedia($subject->metadataQueries === 0, $fixture['name'].': avoidable metadata query.');
+}
+
 // Root wrapper IDs are authoritative, including double-quoted native markup.
-// These helper boundaries do not expand the existing thumbnail JS's quote format.
+// Additional helper boundaries remain independent from thumbnail navigation.
 foreach (array(
 	array('name' => 'double quoted rendered root ID', 'slides' => array($image, '<div data-representation_id="102"><video src="https://example.org/movie.mp4"></video></div>'), 'expected' => 1),
 	array('name' => 'nested ID cannot impersonate rendered root', 'slides' => array($image, "<div class='repViewerContCont'><div data-representation_id='102'><video src='https://example.org/movie.mp4'></video></div></div>"), 'expected' => 0),

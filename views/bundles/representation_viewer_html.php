@@ -35,25 +35,30 @@ $subject_id						= $t_subject->getPrimaryKey();
 
 $slide_list = tadlObjectDetailVideoPosters($this->request, $t_subject, $this->getVar('slide_list'));
 $initial_index = tadlObjectDetailInitialMediaIndex($this->request, $t_subject, $slide_list);
+$rendered_count = count((array)$slide_list);
 
-if ($representation_count > 1) {
+// Keep thumbnail callbacks available when native IDs outnumber rendered slides.
+if ($rendered_count > 1 || $representation_count > 1) {
 ?>
-<div class="repViewerWrapper">
-	<div id="repViewerItemDisplay">
-			
+<div class="repViewerWrapper tadl-representation-viewer">
+	<div<?= $rendered_count > 1 ? ' class="tadl-representation-stage"' : ''; ?>>
+		<div id="repViewerItemDisplay"></div>
+		<?php if ($rendered_count > 1): ?>
+		<div id="detailRepNav">
+			<button type="button" id="detailRepNavPrev" aria-controls="repViewerItemDisplay" aria-label="<?= htmlspecialchars(_t('Previous media'), ENT_QUOTES, 'UTF-8'); ?>"><i class="fa fa-chevron-left" aria-hidden="true"></i></button>
+			<button type="button" id="detailRepNavNext" aria-controls="repViewerItemDisplay" aria-label="<?= htmlspecialchars(_t('Next media'), ENT_QUOTES, 'UTF-8'); ?>"><i class="fa fa-chevron-right" aria-hidden="true"></i></button>
+		</div>
+		<?php endif; ?>
 	</div>
-
-	<!-- Prev/next controls -->
-	<div id='detailRepNav'>
-		<a href='#' id='detailRepNavPrev' title='<?= _t("Previous"); ?>' aria-label='<?= _t("Previous"); ?>'><span class='glyphicon glyphicon-arrow-left' aria-hidden='true'></span></a>
-		<a href='#' id='detailRepNavNext' title='<?= _t("Next"); ?>' aria-label='<?= _t("Next"); ?>'><span class='glyphicon glyphicon-arrow-right' aria-hidden='true'></span></a>
-		<div style='clear:both;'></div>
-	</div><!-- end detailRepNav -->
+	<?php if ($rendered_count > 1): ?>
+	<p id="detailRepCounter" class="tadl-representation-counter" role="status" aria-live="polite" aria-atomic="true"></p>
+	<?php endif; ?>
 </div><!-- end wrapper -->
 
 <script type='text/javascript'>
 	let index = <?= (int)$initial_index; ?>;
-	let slide_list = <?= json_encode($slide_list); ?>;
+	let slide_list = <?= json_encode($slide_list, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+	const mediaCounterLabel = <?= json_encode(_t('Media %1 of %2', '{position}', '{count}'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 	jQuery(document).ready(function() {
 		setByIndex(index);
 		
@@ -83,15 +88,19 @@ if ($representation_count > 1) {
 	};
 	function setByIndex(i) {
 		if((i >= 0) && (i < slide_list.length)) {
+			// Stop outgoing playback before the native slide scripts initialize the next player.
+			jQuery('#repViewerItemDisplay video, #repViewerItemDisplay audio').each(function () { this.pause(); });
 			jQuery('#repViewerItemDisplay').html(slide_list[i]);
 
 			let repid = jQuery('#repViewerItemDisplay').children(":first").attr('data-representation_id');
-			let thumbid = jQuery('.repThumb[data-representation_id="' + repid + '"]').attr('id');
-
-			jQuery('.repThumb').removeClass('active');
-			jQuery('#' + thumbid).addClass('active');
+			let thumbnails = jQuery('#detailRepresentationThumbnails .repThumb');
+			thumbnails.removeClass('active').removeAttr('aria-current');
+			thumbnails.filter('[data-representation_id="' + repid + '"]').addClass('active').attr('aria-current', 'true');
 
 			index = i;
+			jQuery('#detailRepNavPrev').prop('disabled', index === 0);
+			jQuery('#detailRepNavNext').prop('disabled', index === slide_list.length - 1);
+			jQuery('#detailRepCounter').text(mediaCounterLabel.replace('{position}', index + 1).replace('{count}', slide_list.length));
 		}
 		return false;
 	};
@@ -99,7 +108,8 @@ if ($representation_count > 1) {
 		let repid = jQuery('#repThumb_' + i).attr('data-representation_id');
 
 		for (let newindex = 0; newindex < slide_list.length; newindex++) {
-			if (slide_list[newindex].includes("data-representation_id='" + repid + "'")) {
+			let slideId = slide_list[newindex].match(/^\s*<[^>]+\bdata-representation_id=['"](\d+)['"]/);
+			if (slideId && slideId[1] === repid) {
 				setByIndex(newindex);
 				break;
 			}
@@ -108,7 +118,7 @@ if ($representation_count > 1) {
 	};
 </script>
 <?php
-	} elseif($representation_count == 1) {
+	} elseif($rendered_count == 1) {
 		// Just dump the slide list without controls when there is only one representation
 
 		print $slide_list[0];

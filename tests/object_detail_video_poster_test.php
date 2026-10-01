@@ -14,7 +14,10 @@ function checkPoster($condition, $message) {
 	$GLOBALS['posterAssertions']++;
 	if (!$condition) { throw new RuntimeException($message); }
 }
-function _t($text) { return $text; }
+function _t($text, ...$values) {
+	foreach ($values as $i => $value) { $text = str_replace('%'.($i + 1), (string)$value, $text); }
+	return $text;
+}
 function caGetUserAccessValues($request) { return $request->access; }
 class PosterRequest {
 	public array $access = array(1);
@@ -130,6 +133,7 @@ $baseVersions = array('large' => posterDerivative($largeUrl), 'mediumlarge' => p
 $cases = array(
 	array('name' => 'primary image replaces double-quoted video posters', 'bundle' => true),
 	array('name' => 'multiple videos retain switching and single-quoted native wrappers', 'slides' => array($image, $video, $secondVideo), 'bundle' => true),
+	array('name' => 'double-quoted root wrapper retains poster and thumbnail switching', 'slides' => array($image, str_replace("data-representation_id='102'", 'data-representation_id="102"', $video)), 'bundle' => true),
 	array('name' => 'video without poster receives both attributes', 'slides' => array($image, posterVideo(102, '')), 'bundle' => true),
 	array('name' => 'hostile URL round trips as an HTML attribute', 'versions' => array('large' => posterDerivative($hostileUrl)), 'expected' => $hostileUrl, 'bundle' => true),
 	array('name' => 'literal dollar group and backslashes survive poster replacement', 'versions' => array('large' => posterDerivative($literalUrl)), 'expected' => $literalUrl, 'bundle' => true),
@@ -198,7 +202,7 @@ foreach ($cases as $case) {
 	if ($case['noQuery'] ?? false) { checkPoster(!$subject->metadataQueries && !$subject->primaryQueries && !Datamodel::$loads, $case['name'].': avoidable media lookup.'); }
 	if ($case['noPrimary'] ?? false) { checkPoster(!$subject->primaryQueries && !Datamodel::$loads, $case['name'].': nonvideo lookup reached primary media.'); }
 	if (!($case['bundle'] ?? false)) { continue; }
-	$ids = array_map(function ($slide) { preg_match("/data-representation_id='(\d+)'/", $slide, $match); return (int)$match[1]; }, $slides);
+	$ids = array_map(function ($slide) { preg_match('/data-representation_id=[\'\"](\d+)[\'\"]/', $slide, $match); return (int)$match[1]; }, $slides);
 	$html = (new PosterView($request, array('representation_count' => count($slides), 'representation_ids' => $ids, 'display_annotations' => null, 'context' => 'synthetic', 't_subject' => $subject, 'slide_list' => $slides)))->render();
 	preg_match_all('~<script\b[^>]*>(.*?)</script\s*>~is', $html, $scripts);
 	checkPoster(count($scripts[1]) === 1, $case['name'].': emitted bundle scripts broke.');
@@ -207,7 +211,10 @@ foreach ($cases as $case) {
 		$player = posterDocument($html)->getElementsByTagName('video')->item(0);
 		checkPoster($player->getAttribute('poster') === ($case['expected'] ?? $largeUrl), $case['name'].': single-slide poster differs.');
 	}
-	$nodeFixtures[] = array('name' => $case['name'], 'scripts' => $scripts[1], 'slides' => $output, 'ids' => $ids, 'expectedIndex' => count($slides) > 1 && !($case['unchanged'] ?? false) ? 1 : 0);
+	$nodeFixtures[] = array('name' => $case['name'], 'scripts' => $scripts[1], 'slides' => $output, 'ids' => $ids, 'mediaCounts' => array_map(function ($slide) {
+		$document = posterDocument($slide);
+		return $document->getElementsByTagName('video')->length + $document->getElementsByTagName('audio')->length;
+	}, $output), 'expectedIndex' => count($slides) > 1 && !($case['unchanged'] ?? false) ? 1 : 0);
 }
 
 $nodeCode = <<<'JS'
@@ -219,25 +226,58 @@ let assertions = 0;
 for (const fixture of fixtures) {
     let displayed = null;
     let activeThumb = null;
+    const currentThumbs = new Map();
+    const disabled = new Map();
+    let counter = null;
+    let pausedSinceReplacement = 0;
+    let pauseCalls = 0;
     const initializedPlayers = [];
     const handlers = new Map();
     let context;
-    const rootId = html => Number(html.match(/^\s*<[^>]*data-representation_id='(\d+)'/)[1]);
+    const rootId = html => Number(html.match(/^\s*<[^>]*data-representation_id=['"](\d+)['"]/)[1]);
+    const displayedMediaCount = () => displayed === null ? 0 : fixture.mediaCounts[fixture.slides.indexOf(displayed)];
+    const thumbnails = {
+        removeClass(name) { assert.equal(name, 'active'); activeThumb = null; return thumbnails; },
+        removeAttr(name) { assert.equal(name, 'aria-current'); currentThumbs.clear(); return thumbnails; },
+        filter(selector) {
+            const match = selector.match(/^\[data-representation_id="(\d+)"\]$/);
+            assert.ok(match, 'Unexpected thumbnail filter: ' + selector);
+            const index = fixture.ids.indexOf(Number(match[1]));
+            const selected = {
+                addClass(name) { assert.equal(name, 'active'); activeThumb = index; return selected; },
+                attr(name, value) { assert.equal(name, 'aria-current'); currentThumbs.set(index, value); return selected; }
+            };
+            return selected;
+        }
+    };
     const jquery = selector => {
         if (typeof selector !== 'string') return { ready(callback) { callback(); } };
+        if (selector === '#repViewerItemDisplay video, #repViewerItemDisplay audio') return {
+            each(callback) {
+                for (let i = 0; i < displayedMediaCount(); i++) callback.call({ pause() { pausedSinceReplacement++; pauseCalls++; } });
+            }
+        };
         if (selector === '#repViewerItemDisplay') return {
             html(value) {
+                assert.equal(pausedSinceReplacement, displayedMediaCount(), fixture.name + ': outgoing media was not paused before replacement');
+                assertions++;
+                pausedSinceReplacement = 0;
                 displayed = value;
                 for (const match of value.matchAll(/<script\b[^>]*>(.*?)<\/script\s*>/gs)) new vm.Script(match[1]).runInContext(context, { timeout: 1000 });
             },
             children() { return { attr() { return String(rootId(displayed)); } }; }
         };
+        if (selector === '#detailRepresentationThumbnails .repThumb') return thumbnails;
         if (selector === '.repThumb') return { removeClass() { activeThumb = null; } };
         const byRepresentation = selector.match(/^\.repThumb\[data-representation_id="(\d+)"\]$/);
         if (byRepresentation) return { attr() { return 'repThumb_' + fixture.ids.indexOf(Number(byRepresentation[1])); } };
         const thumb = selector.match(/^#repThumb_(\d+)$/);
         if (thumb) return { attr() { return String(fixture.ids[Number(thumb[1])]); }, addClass() { activeThumb = Number(thumb[1]); } };
-        if (selector === '#detailRepNavPrev' || selector === '#detailRepNavNext') return { on(event, callback) { handlers.set(selector, callback); } };
+        if (selector === '#detailRepNavPrev' || selector === '#detailRepNavNext') return {
+            on(event, callback) { handlers.set(selector, callback); },
+            prop(name, value) { assert.equal(name, 'disabled'); disabled.set(selector, value); }
+        };
+        if (selector === '#detailRepCounter') return { text(value) { counter = value; } };
         throw new Error('Unexpected selector: ' + selector);
     };
     context = vm.createContext({ document: {}, jQuery: jquery, window: { syntheticPlayerInit(id) { initializedPlayers.push(id); } } });
@@ -252,6 +292,12 @@ for (const fixture of fixtures) {
         assert.equal(activeThumb, index, fixture.name + ': thumbnail ID/single quote matching broke');
         assert.equal(vm.runInContext('index', context), index, fixture.name + ': viewer index differs');
         assertions += 3;
+        assert.equal(currentThumbs.get(index), 'true', fixture.name + ': selected thumbnail lacks aria-current');
+        assert.equal(currentThumbs.size, 1, fixture.name + ': inactive thumbnail retained aria-current');
+        assert.equal(disabled.get('#detailRepNavPrev'), index === 0, fixture.name + ': previous boundary state differs');
+        assert.equal(disabled.get('#detailRepNavNext'), index === fixture.slides.length - 1, fixture.name + ': next boundary state differs');
+        assert.equal(counter, `Media ${index + 1} of ${fixture.slides.length}`, fixture.name + ': counter differs');
+        assertions += 5;
     };
     checkSlide(fixture.expectedIndex);
     assert.equal(vm.runInContext('JSON.stringify(slide_list)', context), JSON.stringify(fixture.slides), fixture.name + ': decoration changed order or scripts');
@@ -267,6 +313,8 @@ for (const fixture of fixtures) {
     checkSlide(Math.max(0, fixture.ids.length - 2));
     handlers.get('#detailRepNavNext')({ preventDefault() {} });
     checkSlide(fixture.ids.length - 1);
+    assert.ok(pauseCalls > 0, fixture.name + ': outgoing video pause path was not exercised');
+    assertions++;
 }
 process.stdout.write(JSON.stringify({ assertions }));
 JS;

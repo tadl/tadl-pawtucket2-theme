@@ -51,14 +51,25 @@
 		</div><!-- end detailNavBgLeft -->
 	</div><!-- end col -->
 	<div class='col-xs-12 col-sm-10 col-md-10 col-lg-10'>
-		<div class="container"><div class="row">
-			<div class='col-sm-6 col-md-6 col-lg-6'>
+		<div class="container tadl-object-content"><div class="row">
+			<div class='col-sm-6 col-md-6 col-lg-6 tadl-object-media'>
 				{{{representationViewer}}}
 				
 				
 				<div id="detailAnnotations"></div>
 				
-				<?= caObjectRepresentationThumbnails($this->request, $this->getVar("representation_id"), $t_object, array("returnAs" => "bsCols", "linkTo" => "basic", "bsColClasses" => "smallpadding col-sm-3 col-md-3 col-xs-4", "primaryOnly" => $this->getVar('representationViewerPrimaryOnly') ? 1 : 0)); ?>
+				<?php
+				$va_representation_thumbnails = caObjectRepresentationThumbnails($this->request, $this->getVar('representation_id'), $t_object, [
+					'returnAs' => 'array', 'linkTo' => 'basic',
+					'primaryOnly' => $this->getVar('representationViewerPrimaryOnly') ? 1 : 0
+				]);
+				if ($va_representation_thumbnails): ?>
+				<div id="detailRepresentationThumbnails" class="tadl-object-thumbnails" role="group" aria-label="<?= htmlspecialchars(_t('Select media'), ENT_QUOTES, 'UTF-8'); ?>">
+					<?php foreach ($va_representation_thumbnails as $vn_representation_id => $vs_thumbnail_link): ?>
+					<div id="detailRepresentationThumbnail<?= (int)$vn_representation_id; ?>"><?= $vs_thumbnail_link; ?></div>
+					<?php endforeach; ?>
+				</div>
+				<?php endif; ?>
 				
 <?php
 				# Comment and Share Tools
@@ -84,7 +95,7 @@
 
 			</div><!-- end col -->
 			
-			<div class='col-sm-6 col-md-6 col-lg-6'>
+			<div class='col-sm-6 col-md-6 col-lg-6 tadl-object-info'>
 				<H1>{{{<unit relativeTo="ca_collections" delimiter="<br/>"><l>^ca_collections.preferred_labels.name</l></unit><ifcount min="1" code="ca_collections"><br/>➔ </ifcount>}}}{{{ca_objects.preferred_labels.name}}}</H1>
 				<H2>{{{<unit>^ca_objects.type_id</unit>}}}</H2>
 				<HR>
