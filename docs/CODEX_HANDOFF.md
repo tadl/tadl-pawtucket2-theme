@@ -346,6 +346,11 @@ link, flatten the value arrays, patch core, or repair catalog data as a side eff
 
 ## Home-page local-history writing
 
+**Start with the Right Path** retains its heading and archive introduction but
+has no resource tiles. Its introduction spans the panel's full content width;
+the previous 980px header limit and tile spacing were removed. The quick links
+above it, recent writing below it and research-request section remain.
+
 **Recent Local History Writing** progressively replaces its two fallback cards
 with the latest two entries from
 `https://feeds.tools.tadl.org/local_history_posts.json?limit=2`. `View More` retains

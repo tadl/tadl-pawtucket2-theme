@@ -60,54 +60,6 @@
 							<p class="tadl-section-lead">The Local History Collection is a closed archive with digital collections, reference support, genealogy resources, and research guides for northern Michigan history.</p>
 						</div>
 					</div>
-
-					<div class="tadl-resource-grid">
-						<a class="tadl-resource-card tadl-resource-card-primary" href="<?= caNavUrl($this->request, '', 'Collections', 'Index'); ?>">
-							<span class="tadl-resource-image"><img src="https://www.tadl.org/sites/default/files/styles/linked_image/public/2025-05/DigitalCollection.jpg?itok=H8KvYS6y" alt="Vintage photo of a family at the beach"></span>
-							<span class="tadl-resource-title">Digital Collection</span>
-							<span class="tadl-resource-copy">Browse public collection guides, photographs, records, and descriptive metadata in this archive.</span>
-						</a>
-						<a class="tadl-resource-card" href="https://www.tadl.org/research?title=&amp;field_db_type_target_id%5B238%5D=238">
-							<span class="tadl-resource-image"><img src="https://www.tadl.org/sites/default/files/styles/linked_image/public/2025-05/Family%20History.jpg?itok=oa1JgQIv" alt="Black and white photo of a family on a porch"></span>
-							<span class="tadl-resource-title">Family History</span>
-							<span class="tadl-resource-copy">Find genealogy and family-history resources available through TADL.</span>
-						</a>
-						<a class="tadl-resource-card" href="https://www.tadl.org/posts/newspapers">
-							<span class="tadl-resource-image"><img src="https://www.tadl.org/sites/default/files/styles/linked_image/public/2025-05/NewspaperThumnail_5_.jpg?itok=WcaJbKKq" alt="Newspaper layout room in black and white"></span>
-							<span class="tadl-resource-title">Newspapers</span>
-							<span class="tadl-resource-copy">Review local newspaper holdings and newspaper-related research options.</span>
-						</a>
-						<a class="tadl-resource-card" href="https://www.tadl.org/posts/house-history">
-							<span class="tadl-resource-image"><img src="https://www.tadl.org/sites/default/files/styles/linked_image/public/2025-05/House%20History.jpg?itok=Gs23FfSO" alt="Black and white photo of a house with a family outside"></span>
-							<span class="tadl-resource-title">House History</span>
-							<span class="tadl-resource-copy">Research the history of a house, property, or neighborhood.</span>
-						</a>
-						<a class="tadl-resource-card" href="https://www.tadl.org/posts/lhc-archives">
-							<span class="tadl-resource-image"><img src="https://www.tadl.org/sites/default/files/styles/linked_image/public/2025-05/Archive.jpg?itok=C7V2W3h9" alt="Black and white photo of the Sixth Street Library card catalog area"></span>
-							<span class="tadl-resource-title">Archives</span>
-							<span class="tadl-resource-copy">Learn how archival collections are preserved, requested, and accessed.</span>
-						</a>
-						<a class="tadl-resource-card" href="https://www.tadl.org/posts/lhc-donations">
-							<span class="tadl-resource-image"><img src="https://www.tadl.org/sites/default/files/styles/linked_image/public/2025-05/Donation.jpg?itok=y22Gas42" alt="Black and white photo of people loading by a truck"></span>
-							<span class="tadl-resource-title">Donations</span>
-							<span class="tadl-resource-copy">Review donation information for local-history materials.</span>
-						</a>
-						<a class="tadl-resource-card" href="https://www.tadl.org/posts/lhc-other-historical-resources">
-							<span class="tadl-resource-image"><img src="https://www.tadl.org/sites/default/files/styles/linked_image/public/2025-05/Other%20Hsitorical%20Resources.jpg?itok=GdqXayvj" alt="Black and white photo of a library reading room"></span>
-							<span class="tadl-resource-title">Other Historical Research</span>
-							<span class="tadl-resource-copy">Explore related repositories and local-history tools.</span>
-						</a>
-						<a class="tadl-resource-card" href="https://www.tadl.org/lhcvolunteersthanks">
-							<span class="tadl-resource-image"><img src="https://www.tadl.org/sites/default/files/styles/linked_image/public/2025-05/Volunteer.jpg?itok=t1Ahrs9S" alt="Black and white photo of people working in a production space"></span>
-							<span class="tadl-resource-title">Volunteer</span>
-							<span class="tadl-resource-copy">See volunteer-related information for the collection.</span>
-						</a>
-						<a class="tadl-resource-card" href="https://www.tadl.org/posts/lhc-additional-resources">
-							<span class="tadl-resource-image"><img src="https://www.tadl.org/sites/default/files/styles/linked_image/public/2025-05/Media.jpg?itok=4cmUoyzN" alt="Black and white photo of a man with a camera"></span>
-							<span class="tadl-resource-title">Additional Resources</span>
-							<span class="tadl-resource-copy">Follow related reading and support resources from TADL.</span>
-						</a>
-					</div>
 				</div>
 			</section>
 

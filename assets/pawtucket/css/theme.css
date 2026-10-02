@@ -847,8 +847,7 @@ h6 {
 }
 
 .tadl-resource-panel .tadl-resource-header {
-    max-width: 980px;
-    margin-bottom: 26px;
+    margin-bottom: 0;
 }
 
 .tadl-resource-panel .tadl-resource-grid {
