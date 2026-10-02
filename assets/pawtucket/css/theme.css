@@ -1239,12 +1239,6 @@ h6 {
     padding: 0;
 }
 
-/* Open menus grow the action row so the media thumbnails stay below it. */
-.tadl-object-media-actions .tadl-image-downloads ul {
-    position: static;
-    margin-top: 8px;
-}
-
 @media (min-width: 768px) {
     .tadl-object-detail {
         display: grid;
@@ -1815,12 +1809,6 @@ h6 {
     justify-content: center;
     align-items: flex-start;
     padding: 0;
-}
-
-/* The open menu participates in the row height so thumbnails stay below it. */
-.tadl-gallery-media-actions .tadl-image-downloads ul {
-    position: static;
-    margin-top: 8px;
 }
 
 .tadl-gallery-detail-bottom {

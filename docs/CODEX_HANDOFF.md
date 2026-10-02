@@ -167,8 +167,8 @@ line numbers. Native application behavior can be inspected in the nearby
 - Object image actions sit in a centered row below the media/counter, before
   annotations and thumbnails, matching gallery actions below their image.
   The former left action column is removed so desktop media can use that width.
-  Opening Download grows the action row and pushes thumbnails down, on desktop
-  and phones.
+  Download menus overlay the content below their buttons without changing the
+  action-row height or thumbnail positions, on desktop and phones.
   Keep native **Media viewer**/compare callbacks; omit the image's
   Lightbox action and replace its original-download link with one native HTML
   disclosure menu. Video toolbar behavior and account Lightbox remain unchanged.
