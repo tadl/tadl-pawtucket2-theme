@@ -88,6 +88,8 @@
 	if ($o_browse = $this->getVar('browse')) { $va_all_facets = $o_browse->getInfoForFacets(); }
 	require_once(__DIR__.'/tadl_result_helpers.php');
 	require_once(__DIR__.'/tadl_result_context_helpers.php');
+	$vs_refine_html = !$vb_ajax ? $this->render('Browse/browse_refine_subview_html.php') : '';
+	$vb_has_filters = trim($vs_refine_html) !== '';
 	$va_result_context = null;
 	$vs_facet_description = null;
 	$va_sorts = [];
@@ -125,7 +127,7 @@ if (!$vb_ajax) {	// !ajax
 <p><?php print caNavLink($this->request, _t('Browse all subjects'), '', '', 'Browse', 'subjects', ['clear' => 1]); ?></p>
 <?php } ?>
 <div style="clear:both;" class="row<?= $vb_subject_browse ? ' tadl-subject-browse' : ''; ?>">
-	<div class='<?php print ($vs_result_col_class) ? $vs_result_col_class : "col-sm-8 col-md-8 col-lg-8"; ?>'>
+	<div class='<?php print !$vb_has_filters ? "col-sm-12" : (($vs_result_col_class) ? $vs_result_col_class : "col-sm-8 col-md-8 col-lg-8"); ?>'>
 <?php 
 			if($vs_sort_control_type == 'list'){
 				if(is_array($va_sorts = $this->getVar('sortBy')) && sizeof($va_sorts)) {
@@ -201,7 +203,7 @@ if (!$vb_ajax) {	// !ajax
 				</ul>
 			</div><!-- end btn-group -->
 <?php
-			if(is_array($va_facets) && sizeof($va_facets)){
+			if ($vb_has_filters) {
 ?>
 			<a href='#' id='bRefineButton' class='tadl-results-action tadl-results-filter' aria-controls='bRefine' aria-expanded='<?= $vb_subject_browse ? 'true' : 'false'; ?>' aria-label='<?php print _t("Toggle filters"); ?>' onclick='var expanded = jQuery("#bRefine").is(":visible"); jQuery("#bRefine").toggle(); jQuery(this).attr("aria-expanded", expanded ? "false" : "true"); return false;'><i class="fa fa-filter" aria-hidden="true"></i><span class="tadl-results-action-label"><?php print _t('Filters'); ?></span></a>
 <?php
@@ -280,11 +282,13 @@ if (!$vb_ajax) {	// !ajax
 			</div><!-- end browseResultsContainer -->
 		</div><!-- end row -->
 	</div><!-- end col-8 -->
+	<?php if ($vb_has_filters): ?>
 	<div class="<?php print ($vs_refine_col_class) ? $vs_refine_col_class : "col-sm-4 col-md-3 col-md-offset-1 col-lg-3 col-lg-offset-1"; ?>">
 <?php
-		print $this->render("Browse/browse_refine_subview_html.php");
+		print $vs_refine_html;
 ?>			
 	</div><!-- end col-2 -->
+	<?php endif; ?>
 	
 	
 </div><!-- end row -->

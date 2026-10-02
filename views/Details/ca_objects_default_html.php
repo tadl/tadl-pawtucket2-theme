@@ -86,9 +86,9 @@
 				<HR>
 				
 				
-				{{{<ifdef code="ca_objects.idno"><div class="unit"><label>Identifier</label>^ca_objects.idno</div></ifdef>}}}
-				{{{<ifdef code="ca_objects.containerID"><div class="unit"><label>Box/series</label>^ca_objects.containerID</div></ifdef>}}}				
 <?php
+				print tadlDetailField($this->request, $t_object, 'Identifier', '^ca_objects.idno');
+				print tadlDetailField($this->request, $t_object, 'Box/series', '^ca_objects.containerID');
 				print tadlDetailField($this->request, $t_object, 'Alternate title', '<unit relativeTo="ca_objects.nonpreferred_labels" delimiter="<br/>">^ca_objects.nonpreferred_labels.name</unit>');
 				print tadlDetailField($this->request, $t_object, 'Date', '^ca_objects.date.dates_value');
 				print tadlDetailField($this->request, $t_object, 'Creators', '<unit relativeTo="ca_entities" restrictToRelationshipTypes="creator" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l></unit>');
@@ -129,25 +129,12 @@
 							print tadlDetailField($this->request, $t_object, 'Related people/organizations', '<unit relativeTo="ca_entities" delimiter="<br/>" excludeRelationshipTypes="creator,publisher"><l>^ca_entities.preferred_labels</l> (^relationship_typename)</unit>');
 ?>
 
-							{{{<ifcount code="ca_objects.related" min="1"><div class="unit">
-								<ifcount code="ca_objects.related" min="1" max="1"><label>Related object</label></ifcount>
-								<ifcount code="ca_objects.related" min="2"><label>Related objects</label></ifcount>
-								<unit relativeTo="ca_objects.related" delimiter="<br/>"><l>^ca_objects.preferred_labels.name<ifdef code="ca_objects.idno"> — ^ca_objects.idno%htmlEncode=1</ifdef></l> (^relationship_typename)</unit>
-							</div></ifcount>}}}
-							
-							{{{<ifcount code="ca_occurrences" min="1"><div class="unit">
-								<ifcount code="ca_occurrences" min="1" max="1"><label>Related occurrence</label></ifcount>
-								<ifcount code="ca_occurrences" min="2"><label>Related occurrences</label></ifcount>
-								<unit relativeTo="ca_occurrences" delimiter="<br/>"><l>^ca_occurrences.preferred_labels</l> (^relationship_typename)</unit>
-							</div></ifcount>}}}
-							
-							{{{<ifcount code="ca_places" min="1"><div class="unit">
-								<ifcount code="ca_places" min="1" max="1"><label>Related place</label></ifcount>
-								<ifcount code="ca_places" min="2"><label>Related places</label></ifcount>
-								<unit relativeTo="ca_places" delimiter="<br/>"><l>^ca_places.preferred_labels</l> (^relationship_typename)</unit>
-							</div></ifcount>}}}
-							
-							
+<?php
+							print tadlDetailField($this->request, $t_object, 'Related objects', '<unit relativeTo="ca_objects.related" delimiter="<br/>"><l>^ca_objects.preferred_labels.name<ifdef code="ca_objects.idno"> — ^ca_objects.idno%htmlEncode=1</ifdef></l> (^relationship_typename)</unit>');
+							print tadlDetailField($this->request, $t_object, 'Related occurrences', '<unit relativeTo="ca_occurrences" delimiter="<br/>"><l>^ca_occurrences.preferred_labels.name</l> (^relationship_typename)</unit>');
+							print tadlDetailField($this->request, $t_object, 'Related places', '<unit relativeTo="ca_places" delimiter="<br/>"><l>^ca_places.preferred_labels.name</l> (^relationship_typename)</unit>');
+?>
+
 						</div><!-- end col -->				
 						<div class="col-sm-12">
 							{{{map}}}

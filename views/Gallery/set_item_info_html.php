@@ -5,9 +5,10 @@
 
 {{{<ifdef code="ca_objects.description">^ca_objects.description<br/><br/></ifdef>}}}
 
-{{{<ifcount code="ca_entities" min="1" max="1"><label>Related person: </label></ifcount>}}}
-{{{<ifcount code="ca_entities" min="2"><label>Related people: </label></ifcount>}}}
-{{{<unit relativeTo="ca_entities" delimiter=", "><l>^ca_entities.preferred_labels.displayname</l></unit><br/><br/>}}}
+<?php
+	require_once(__DIR__.'/../Details/detail_field_helpers.php');
+	print tadlDetailField($this->request, $this->getVar('object'), 'Related people', '<unit relativeTo="ca_entities" delimiter=", "><l>^ca_entities.preferred_labels.displayname</l></unit>');
+?>
 
 
 <?php print caDetailLink($this->request, _t("VIEW RECORD"), 'btn btn-default', $this->getVar("table"),  $this->getVar("row_id")); ?>

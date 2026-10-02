@@ -46,6 +46,33 @@ class MetadataObject {
 }
 require getenv('TADL_TEST_DETAIL_HELPERS') ?: dirname(__DIR__).'/views/Details/detail_field_helpers.php';
 
+class MetadataTemplateItem {
+	public array $calls = [];
+	public function __construct(private array $values) {}
+	public function getWithTemplate($template, $options = []) {
+		$this->calls[] = ['template' => $template, 'options' => $options];
+		return $this->values[$template] ?? '';
+	}
+}
+foreach ([null, '', " \t\n", '<p><br/></p>', '<span>&nbsp;</span>', '&#160;', "\u{00A0}\u{2009}\u{200B}\u{FEFF}"] as $value) {
+	foreach (['Date', 'Description', 'Related places'] as $heading) {
+		$item = new MetadataTemplateItem(['synthetic-template' => $value]);
+		checkMetadata(tadlDetailField(new MetadataRequest(), $item, $heading, 'synthetic-template') === '', $heading.': empty content emitted its heading.');
+		checkMetadata($item->calls[0]['options']['checkAccess'] === [1], 'Empty field lost native access filtering.');
+	}
+}
+foreach (['0', '1930', '<p>Synthetic description &amp; context</p>', '<a href="/synthetic/place">Synthetic place</a>'] as $value) {
+	$item = new MetadataTemplateItem(['synthetic-template' => $value]);
+	$html = tadlDetailField(new MetadataRequest([1, 2]), $item, 'Synthetic field', 'synthetic-template');
+	checkMetadata(str_contains($html, '<label>Synthetic field</label>'.$value), 'Populated field lost its heading or native markup.');
+	checkMetadata($item->calls[0]['options'] === ['convertCodesToDisplayText' => true, 'checkAccess' => [1, 2]], 'Populated field lost native display/access options.');
+}
+$item = new MetadataTemplateItem(['blank' => '<p>&nbsp;</p>', 'fallback' => 'Synthetic fallback']);
+$html = tadlDetailFirstAvailableField(new MetadataRequest(), $item, 'Description', ['blank', 'fallback']);
+checkMetadata(str_contains($html, '<label>Description</label>Synthetic fallback'), 'Blank rich text blocked a populated fallback.');
+checkMetadata(count($item->calls) === 2, 'Fallback field did not try both templates.');
+checkMetadata(tadlDetailField(new MetadataRequest(), null, 'Date', 'synthetic-template') === '', 'Missing record emitted a field.');
+
 function metadataValues($values) {
 	$result = array();
 	foreach ($values as $attributeId => $value) { $result[$attributeId] = array('lctgm' => $value); }

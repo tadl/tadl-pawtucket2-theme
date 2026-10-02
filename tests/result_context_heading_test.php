@@ -43,7 +43,7 @@ function caGetBrowseInstance($table) { return new ContextBrowse([], $table); }
 function tadlFilterMediaResult($request, $result) { $result->count = $request->filteredCount ?? $result->count; }
 function tadlMediaPreference($request) { return $request->mediaMode; }
 function tadlMediaResultContext($view, $result, $type, $block = null) {}
-function tadlMediaFacetItems($request, $items, $info) { return $items; }
+function tadlMediaFacetItems($request, $items, $info) { return ($info['synthetic_media_filtered'] ?? false) ? [] : $items; }
 function caGetAddToSetInfo($request) { return []; }
 function caBusyIndicatorIcon($request) { return '<span class="synthetic-spinner"></span>'; }
 function caNavUrl($request, $module, $controller, $action, $params = []) {
@@ -79,9 +79,12 @@ class ContextSubject {
 	function getProperty($name) { return $name === 'NAME_SINGULAR' ? 'record' : 'records'; }
 }
 class ContextBrowse {
-	function __construct(private array $definitions, private string $table = 'ca_objects') {}
+	function __construct(private array $definitions, private string $table = 'ca_objects', private array $contents = []) {}
 	function getInfoForFacets() { return $this->definitions; }
-	function getFacet($facet) { return [['id' => 42, 'label' => 'Synthetic value']]; }
+	function getFacet($facet, $options = []) {
+		checkContext(($options['checkAccess'] ?? null) === [1] && isset($options['request']), 'Hierarchy availability must use request access filtering.');
+		return array_key_exists($facet, $this->contents) ? $this->contents[$facet] : [['id' => 42, 'label' => 'Synthetic value']];
+	}
 	function filterHitsByACL($ids, $tableNum, $userID) {
 		checkContext($tableNum === 72 && $userID === 7, 'ACL filter must use current table and user.');
 		return array_values(array_filter($ids, fn($id) => $GLOBALS['contextRecords'][$this->table][$id]['aclAllowed'] ?? true));
@@ -220,6 +223,29 @@ checkContext(str_contains($html, '<h3>People and organizations</h3>') && str_con
 checkContext(!str_contains($html, 'Generic hierarchy copy'), 'Generic hierarchy description remains.');
 checkContext(str_contains($html, 'getFacetHierarchyLevel?facet=place_facet') && str_contains($html, 'linkTo=morePanel') && str_contains($html, "id='bHierarchyList_place_facet'"), 'Hierarchy AJAX behavior changed.');
 checkContext(str_contains($html, 'facet=entity_facet&amp;id=42&amp;view=images'), 'Flat facet navigation changed.');
+
+foreach ([
+	['content' => []],
+	['content' => false, 'deferred_load' => true],
+	['content' => true, 'group_mode' => 'hierarchical'],
+	['content' => [['id' => 42, 'label' => 'Synthetic excluded collection']], 'synthetic_media_filtered' => true]
+] as $emptyFacet) {
+	$facets = ['collection_facet' => array_merge(contextFacetDefinitions()['collection_facet'], $emptyFacet)];
+	$extra = ['facets' => $facets, 'browse' => new ContextBrowse(contextFacetDefinitions(), 'ca_objects', ['collection_facet' => []])];
+	$view = new ContextView(new ContextRequest(), [], 45, $extra);
+	checkContext(trim($view->render('Browse/browse_refine_subview_html.php')) === '', 'Empty facets emitted a panel, heading or loader.');
+	$html = $view->render('Browse/browse_results_html.php');
+	checkContext(!str_contains($html, "id='bRefineButton'") && !str_contains($html, "id='bRefine'"), 'Empty filters left a sidebar or toggle.');
+	checkContext(str_contains($html, "<div class='col-sm-12'>"), 'Results did not reclaim empty sidebar space.');
+	checkContext(str_contains($html, 'data-synthetic-cards') && str_contains($html, 'Page 1 of 5'), 'Empty filters changed results or pagination.');
+}
+$facets = contextFacetDefinitions();
+$facets['entity_facet']['content'] = [['id' => 42, 'label' => 'Synthetic Studio']];
+$facets['place_facet']['content'] = [];
+$html = (new ContextView(new ContextRequest(), [], 45, ['facets' => $facets]))->render('Browse/browse_results_html.php');
+checkContext(str_contains($html, '<h3>People and organizations</h3>') && !str_contains($html, '<h3>Places</h3>'), 'Mixed facets retained an empty heading or lost populated filters.');
+checkContext(str_contains($html, "id='bRefineButton'") && str_contains($html, "id='bRefine'"), 'Populated facets lost their panel or toggle.');
+checkContext(str_contains($html, "col-sm-8 col-md-8 col-lg-8"), 'Populated sidebar lost its allocated column.');
 
 $subjectFacets = ['term_facet' => ['type' => 'authority', 'table' => 'ca_list_items', 'label_singular' => 'Subject', 'group_mode' => 'alphabetical', 'content' => [
 	['id' => 42, 'label' => 'Synthetic bridges'], ['id' => 43, 'label' => 'Archives <script>x</script> & maps'],

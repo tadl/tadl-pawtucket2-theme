@@ -37,6 +37,17 @@
 	
 	$vn_facet_display_length_initial = 7;
 	$vn_facet_display_length_maximum = 60;
+	// Resolve deferred facets and apply the display preference before emitting headings.
+	$va_facets = is_array($va_facets) ? $va_facets : [];
+	foreach ($va_facets as $vs_facet_name => &$va_facet_info) {
+		$vb_hierarchy = caGetOption('deferred_load', $va_facet_info, false) || (($va_facet_info['group_mode'] ?? '') === 'hierarchical');
+		$va_content = $vb_hierarchy && $o_browse
+			? $o_browse->getFacet($vs_facet_name, ['checkAccess' => $va_access_values, 'request' => $this->request])
+			: ($va_facet_info['content'] ?? []);
+		$va_facet_info['content'] = tadlMediaFacetItems($this->request, $va_content, $va_facet_info);
+		if (!is_array($va_facet_info['content']) || !$va_facet_info['content']) { unset($va_facets[$vs_facet_name]); }
+	}
+	unset($va_facet_info);
 	
 	if(is_array($va_facets) && sizeof($va_facets)){
 		print "<div id='bMorePanel'><!-- long lists of facets are loaded here --></div>";
@@ -44,9 +55,7 @@
 		print "<a href='#' class='pull-right' id='bRefineClose' aria-label='"._t("Close filters")."' onclick='jQuery(\"#bRefine\").toggle(); jQuery(\"#bRefineButton\").attr(\"aria-expanded\", \"false\"); return false;'><span class='glyphicon glyphicon-remove-circle' aria-hidden='true'></span></a>";
 		print "<H2>"._t("Filter by")."</H2>";
 		foreach($va_facets as $vs_facet_name => $va_facet_info) {
-			$va_facet_info['content'] = tadlMediaFacetItems($this->request, $va_facet_info['content'] ?? [], $va_facet_info);
-			
-			if ((caGetOption('deferred_load', $va_facet_info, false) || ($va_facet_info["group_mode"] == 'hierarchical')) && ($o_browse->getFacet($vs_facet_name))) {
+			if (caGetOption('deferred_load', $va_facet_info, false) || (($va_facet_info['group_mode'] ?? '') === 'hierarchical')) {
 				print "<H3>".htmlspecialchars(tadlResultFacetHeading($va_facet_info), ENT_QUOTES, 'UTF-8')."</H3>";
 ?>
 					<script type="text/javascript">

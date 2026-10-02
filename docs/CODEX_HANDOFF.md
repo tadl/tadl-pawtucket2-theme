@@ -215,6 +215,16 @@ line numbers. Native application behavior can be inspected in the nearby
 
 ### Related-object and vocabulary fixes
 
+Detail field headings render only alongside populated display values. The shared
+field helper treats HTML-only markup, encoded nonbreaking spaces and invisible
+Unicode whitespace as empty; numeric `0` remains populated. Relationship headings
+on object, collection and gallery records use the same rendered-value check,
+with native access filtering preserved. Authority metadata uses the shared helper.
+Browse/search resolves deferred facets and applies the media preference before
+rendering facet headings. When no facets remain, omit the entire **Filter by**
+panel and its toggle and give results the full row width. Preserve the Subjects
+directory's empty-state message and editable search-form labels.
+
 Object-detail relationships use the full metadata-column width. Any map follows
 below them, so an absent map does not reserve half the sidebar or force related
 record labels to wrap early.
@@ -309,12 +319,12 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | --- | --- |
 | `tests/media_preferences_test.php` | Eligibility SQL, filtered result adapter, result rendering |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |
-| `tests/collection_detail_scripts_test.php` | Collection detail loader JavaScript |
+| `tests/collection_detail_scripts_test.php` | Collection detail loader JavaScript and empty/populated field/relationship headings |
 | `tests/object_detail_media_test.php` | Media selection, viewer controls and callbacks |
 | `tests/object_detail_video_poster_test.php` | Covers, playback, player fallback and access |
 | `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |
-| `tests/result_context_heading_test.php` | Results context, headings, removable criteria and Subjects browse/refine rendering |
-| `tests/object_detail_metadata_test.php` | Structured TGM pairing, safe links, escaping and permissions |
+| `tests/result_context_heading_test.php` | Results context, headings, removable criteria, empty flat/deferred/media-filtered facets and Subjects browse/refine rendering |
+| `tests/object_detail_metadata_test.php` | Empty/populated rich-text fields and fallback values; structured TGM pairing, safe links, escaping and permissions |
 | `tests/image_download_test.php` | Toolbar/bundle/overlay menus, current image action relocation, gallery AJAX navigation and media callbacks, download policy/ACL/attachment checks, TIFF/JPEG/PDF bytes, conversion validation and failure handling |
 | `tests/subjects_test.php` | Subject relationship rendering, escaping, native browse links, bundle access and Pawtucket ACL filtering |
 

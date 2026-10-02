@@ -35,7 +35,7 @@ class DetailScriptConfig {
 }
 class DetailScriptItem {
 	private array $values;
-	public function __construct($objectCount) {
+	public function __construct($objectCount, private array $templates = []) {
 		$this->values = array(
 			'collection_id' => 42,
 			'entity_id' => 42,
@@ -48,14 +48,20 @@ class DetailScriptItem {
 	// The legacy template passes this result to array_shift() by reference. Keep
 	// that unrelated PHP notice outside this emitted-JavaScript regression.
 	public function &get($name, $options = array()) { return $this->values[$name]; }
-	public function getWithTemplate($template, $options = array()) { return ''; }
+	public function getWithTemplate($template, $options = array()) {
+		checkDetailScripts(($options['convertCodesToDisplayText'] ?? null) === true, 'Detail fields lost native display conversion.');
+		foreach ($this->templates as $code => $value) {
+			if (str_contains($template, $code)) { return $value; }
+		}
+		return '';
+	}
 }
 class DetailScriptView {
 	public $request;
 	private array $values;
-	public function __construct($objectCount) {
+	public function __construct($objectCount, array $templates = []) {
 		$this->request = new stdClass();
-		$this->values = array('item' => new DetailScriptItem($objectCount), 'comments' => array());
+		$this->values = array('item' => new DetailScriptItem($objectCount, $templates), 'comments' => array());
 	}
 	public function getVar($name) { return $this->values[$name] ?? null; }
 	public function render($table) {
@@ -71,6 +77,13 @@ class DetailScriptView {
 		}
 	}
 }
+
+foreach ([[], ['ca_collections.description' => '<p>&nbsp;</p>', 'ca_collections.date.dates_value' => '<br/>', 'relativeTo="ca_places"' => '&nbsp;']] as $values) {
+	$html = (new DetailScriptView(0, $values))->render('ca_collections');
+	checkDetailScripts(!preg_match('~<label>(Description|Dates|Related collections|Related people|Related events|Related places)</label>~', $html), 'Empty collection fields or relationships emitted headings.');
+}
+$html = (new DetailScriptView(0, ['ca_collections.description' => 'Synthetic description', 'ca_collections.date.dates_value' => '1930', 'relativeTo="ca_places"' => '<a href="/synthetic/place">Synthetic place</a>']))->render('ca_collections');
+checkDetailScripts(str_contains($html, '<label>Description</label>Synthetic description') && str_contains($html, '<label>Dates</label>1930') && str_contains($html, '<label>Related places</label><a href="/synthetic/place">Synthetic place</a>'), 'Populated collection fields lost headings or native links.');
 
 $cases = array();
 foreach (array(

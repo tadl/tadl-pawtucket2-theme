@@ -1,4 +1,12 @@
 <?php
+/** Empty rich-text markup and encoded whitespace do not make a display field. */
+if (!function_exists('tadlDetailHasContent')) {
+	function tadlDetailHasContent($value) {
+		$text = html_entity_decode(strip_tags((string)$value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		return preg_match('/[^\s\p{Z}\x{200B}\x{FEFF}]/u', $text) === 1;
+	}
+}
+
 if (!function_exists('tadlDetailField')) {
 	function tadlDetailField($request, $item, $label, $template, $options = []) {
 		if (!$item || !trim((string)$template)) { return ''; }
@@ -9,7 +17,7 @@ if (!function_exists('tadlDetailField')) {
 		}
 
 		$value = trim((string)$item->getWithTemplate($template, $template_options));
-		if (!strlen(trim(strip_tags($value)))) { return ''; }
+		if (!tadlDetailHasContent($value)) { return ''; }
 
 		return "<div class='unit'><label>".htmlspecialchars($label, ENT_QUOTES, 'UTF-8')."</label>{$value}</div>\n";
 	}
@@ -113,7 +121,7 @@ if (!function_exists('tadlObjectRepresentationCaptions')) {
 			$caption = trim((string)$rep->getWithTemplate('^ca_object_representations.media_caption', [
 				'convertCodesToDisplayText' => true
 			]));
-			if (!strlen(trim(strip_tags($caption)))) { continue; }
+			if (!tadlDetailHasContent($caption)) { continue; }
 
 			if (sizeof($representations) > 1) {
 				$rep_label = trim((string)$rep->getWithTemplate('^ca_object_representations.preferred_labels.name', [
