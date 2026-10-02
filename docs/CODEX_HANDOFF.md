@@ -69,6 +69,22 @@ line numbers. Native application behavior can be inspected in the nearby
 
 ## Behavior and implementation contracts
 
+### Typography
+
+- Interior pages have an **18px minimum** for readable text, including object
+  descriptions/metadata, result titles/captions, galleries, navigation, forms,
+  download menus and footer text. Larger headings retain their existing sizes.
+- `pageHeader.php` adds `tadl-interior` to the body outside the `Front`
+  controller. This sets inherited `--tadl-text-min: 18px`; small sizes in the
+  theme's `main.css` and `theme.css` use `max()` with that floor. Bootstrap
+  controls/small text have scoped overrides, and object units use 1.6 line height.
+  Keep the root rem scale unchanged and retain the landing page's established
+  sizes. The zero fallback preserves its smaller supporting text.
+- Desktop/mobile synthetic previews checked object descriptions and other
+  representative text at 18px, with no horizontal overflow at 390px. Landing
+  typography samples matched their previous computed font sizes and line heights.
+  PDF export templates keep their independent print styles.
+
 ### Media preference
 
 - **Only items with media** is the default; **All items** is a browser preference.

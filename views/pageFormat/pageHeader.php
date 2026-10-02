@@ -273,7 +273,7 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
     	});
 	</script>
 </head>
-<body>
+<body<?= $this->request->getController() === 'Front' ? '' : ' class="tadl-interior"'; ?>>
 	<div id="skipNavigation"><a href="#main">Skip to main content</a></div>
 	<header class="tadl-header" role="banner">
 		<div class="tadl-brandband">
