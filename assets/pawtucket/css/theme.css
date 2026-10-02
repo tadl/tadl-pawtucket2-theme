@@ -1338,17 +1338,97 @@ h6 {
     outline-offset: 3px;
 }
 
-#caMediaPanel .tadl-image-downloads {
+#caMediaOverlayContent > .tadl-viewer-downloads {
     position: absolute;
-    bottom: 12px;
+    top: 52px;
     left: 12px;
     z-index: 300;
 }
 
-#caMediaPanel .tadl-image-downloads ul {
-    top: auto;
-    bottom: 100%;
-    margin: 0 0 2px;
+.tileviewer .tadl-viewer-downloads {
+    width: auto;
+    margin: 0;
+}
+
+.tadl-viewer-downloads summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    margin: 5px 0 8px;
+    color: #fff;
+    font-size: 24px;
+    line-height: 1;
+    opacity: .5;
+}
+
+.tadl-viewer-downloads[open] summary,
+.tadl-viewer-downloads summary:is(:hover, :focus-visible) {
+    opacity: 1;
+}
+
+.tadl-viewer-downloads ul {
+    top: 0;
+    left: calc(100% + 10px);
+    margin: 0;
+    line-height: 1.4;
+    text-align: left;
+}
+
+/* Native TileViewer uses removed Font Awesome 4 names for these icons. */
+.tileviewer .tileviewerControlZoomIn,
+.tileviewer .tileviewerControlZoomOut {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    color: #fff;
+    font-size: 28px;
+    line-height: 1;
+}
+
+.tileviewerControlZoomIn i,
+.tileviewerControlZoomOut i {
+    display: none;
+}
+
+.tileviewerControlZoomIn::before { content: '+'; }
+.tileviewerControlZoomOut::before { content: '−'; }
+
+.tileviewer .fa-arrows::before { content: '\f0b2'; }
+.tileviewer .fa-picture-o::before { content: '\f03e'; }
+
+.tileviewer .tileviewerToolbarZoom {
+    height: 44px;
+    max-width: calc(100% - 96px);
+    /* Override the native fixed-500px centering on narrow viewports. */
+    left: 50% !important;
+    transform: translateX(-50%);
+}
+
+.tileviewer .tileviewerToolbarZoomSlider {
+    left: 44px;
+    top: 18px;
+    width: calc(100% - 88px);
+}
+
+.tileviewer .tileviewerControl:focus-visible,
+.tileviewer .tileviewerControlZoomIn:focus-visible,
+.tileviewer .tileviewerControlZoomOut:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 2px;
+}
+
+.tileviewer .tileviewerHelpPanel {
+    max-width: calc(100% - 24px);
+    max-height: calc(100% - 24px);
+}
+
+.tileviewerHelpPanel .tileviewerHelpText,
+.tileviewerHelpPanel .tileviewerHelpList {
+    font-size: max(var(--tadl-text-min, 0px), 16px);
+    line-height: 1.5;
 }
 
 .tadl-object-detail .tadl-representation-stage {

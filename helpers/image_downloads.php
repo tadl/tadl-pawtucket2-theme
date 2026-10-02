@@ -25,7 +25,7 @@ function tadlImageDownloadSource($request, $object, $representationID) {
 	return ['representation' => $representation, 'path' => $path, 'mime' => strtolower($info['MIMETYPE'])];
 }
 
-function tadlImageDownloadLinks($request, $object, $representationID) {
+function tadlImageDownloadLinks($request, $object, $representationID, $inViewer = false) {
 	$source = tadlImageDownloadSource($request, $object, $representationID);
 	if (!$source) { return ''; }
 	$formats = [];
@@ -34,7 +34,10 @@ function tadlImageDownloadLinks($request, $object, $representationID) {
 	}
 	$formats['jpg'] = _t('JPG (to share)');
 	$formats['pdf'] = _t('PDF');
-	$html = '<details class="tadl-image-downloads"><summary class="btn btn-default btn-sm"><i class="fa fa-download" aria-hidden="true"></i> '.htmlspecialchars(_t('Download'), ENT_QUOTES, 'UTF-8').' <span class="caret" aria-hidden="true"></span></summary><ul>';
+	$label = htmlspecialchars(_t('Download'), ENT_QUOTES, 'UTF-8');
+	$html = $inViewer
+		? '<details class="tadl-image-downloads tadl-viewer-downloads"><summary aria-label="'.$label.'" title="'.$label.'"><i class="fa fa-download" aria-hidden="true"></i></summary><ul>'
+		: '<details class="tadl-image-downloads"><summary class="btn btn-default btn-sm"><i class="fa fa-download" aria-hidden="true"></i> '.$label.' <span class="caret" aria-hidden="true"></span></summary><ul>';
 	foreach ($formats as $format => $label) {
 		$url = caNavUrl($request, '', 'ImageDownload', 'Download', [
 			'object_id' => (int)$object->getPrimaryKey(), 'representation_id' => (int)$representationID, 'format' => $format

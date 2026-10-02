@@ -54,7 +54,8 @@ before calling an issue deployed or still broken.
 | Browse/results/pagers | `views/Browse/browse_results_html.php`, `tadl_result_helpers.php`, `tadl_result_context_helpers.php`, image/list/refine subviews |
 | Search previews | `conf/search.conf`, `views/Search/multisearch_results_html.php`, `tadl_search_results_subview_html.php` |
 | Object media | `helpers/object_detail_media.php`, `views/bundles/representation_viewer_html.php` |
-| Image downloads | `helpers/image_downloads.php`, `controllers/ImageDownloadController.php`, `views/Details/image_download_binary.php`, `views/mediaViewers/viewerWrapper.php` |
+| Image downloads | `helpers/image_downloads.php`, `controllers/ImageDownloadController.php`, `views/Details/image_download_binary.php`, `views/mediaViewers/viewerWrapper.php`, `assets/pawtucket/js/image-downloads.js` |
+| Enlarged viewer help | `views/Details/viewer_help_html.php` |
 | Object metadata | `views/Details/ca_objects_default_html.php`, `detail_field_helpers.php` |
 | Collection details | `views/Details/ca_collections_default_html.php` |
 | Authority details | `views/Details/authority_detail_helpers.php`, `authority_detail_html.php`, entity/place/occurrence detail templates |
@@ -182,6 +183,18 @@ line numbers. Native application behavior can be inspected in the nearby
   **JPG (to share)** and **PDF**. The enlarged TileViewer has the same menu; preserve both
   `id` and native `object_id` navigation URLs and replace its native download
   form while keeping viewer navigation/close controls.
+- The enlarged viewer uses an accessible Download icon immediately above Rotate
+  in the native TileViewer control column. The wrapper moves the existing menu
+  after native initialization; normal object/gallery page buttons stay labeled.
+  `conf/assets.conf` loads `image-downloads.js` site-wide. Its delegated capture
+  handler closes open download menus on outside clicks, including canvas clicks
+  and AJAX-loaded content. Escape closes menus before the viewer; Tab remains a
+  focus key within download menus rather than invoking TileViewer's Tab shortcut.
+- Native TileViewer zoom links existed but their Font Awesome 4 icon names did
+  not render under Font Awesome 5. Scoped CSS makes the native +/− controls visible,
+  restores Pan/Overview icons and keeps the zoom slider within narrow viewports.
+  Help describes public image navigation/download controls and actual shortcuts;
+  it omits annotation-editing tools unavailable in the public viewer.
 - JPG uses the original image dimensions, never the display-size derivative.
   Existing JPEG originals stream unchanged. Other image originals convert on
   demand through CollectiveAccess `Media` to quality-90 JPEG with a white
@@ -328,7 +341,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |
 | `tests/result_context_heading_test.php` | Results context, headings, removable criteria, empty flat/deferred/media-filtered facets and Subjects browse/refine rendering |
 | `tests/object_detail_metadata_test.php` | Empty/populated rich-text fields and fallback values; structured TGM pairing, safe links, escaping and permissions |
-| `tests/image_download_test.php` | Toolbar/bundle/overlay menus, current image action relocation, gallery AJAX navigation and media callbacks, download policy/ACL/attachment checks, TIFF/JPEG/PDF bytes, conversion validation and failure handling |
+| `tests/image_download_test.php` | Toolbar/bundle/overlay menus, viewer icon placement, outside-click/Escape/Tab handling, current image action relocation, gallery AJAX navigation and media callbacks, download policy/ACL/attachment checks, TIFF/JPEG/PDF bytes, conversion validation and failure handling |
 | `tests/subjects_test.php` | Subject relationship rendering, escaping, native browse links, bundle access and Pawtucket ACL filtering |
 
 All eight original suites passed during handoff preparation, as did PHP lint.
@@ -341,6 +354,13 @@ For future changes, begin with the relevant tests and lint changed files:
 php -l path/to/changed_file.php
 git diff --check
 ```
+
+All ten suites passed after the 2026-10-02 viewer-control changes, including 238
+image-download assertions. Changed PHP lint, new JavaScript syntax and the native
+asset configuration parser passed. A synthetic local preview using the actual
+native TileViewer engine verified desktop/390px controls, visible working zoom,
+help opening/closing and scrolling, menu dismissal on canvas clicks, and
+Enter/Tab/Escape download navigation. No production deployment was performed.
 
 Optional full PHP lint, with ripgrep installed:
 

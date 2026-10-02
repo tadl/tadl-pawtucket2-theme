@@ -304,6 +304,11 @@ foreach (['objects', 'gallery'] as $overlayContext) {
 		$renderOverlay = function () { ob_start(); include dirname(__DIR__).'/views/mediaViewers/viewerWrapper.php'; return ob_get_clean(); };
 		$html = $renderOverlay->call($view);
 		checkDownload(substr_count($html, '<details') === 1 && str_contains($html, 'TIFF (to print)') && !str_contains($html, 'Native download') && str_contains($html, 'Native navigation'), $overlayContext.'/'.$idParameter.': overlay dropdown or native navigation was lost.');
+		$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+		$xpath = new DOMXPath($document);
+		checkDownload($xpath->query('//div[@id="caMediaOverlayContent"]//details[contains(@class,"tadl-viewer-downloads")]')->length === 1, 'Viewer download menu must accompany the selected native viewer.');
+		$summary = $xpath->query('//details/summary')->item(0);
+		checkDownload($summary->getAttribute('aria-label') === 'Download' && $summary->getAttribute('title') === 'Download' && trim($summary->textContent) === '', 'Viewer download must be an accessible icon control.');
 	}
 }
 
@@ -366,6 +371,7 @@ foreach ($galleryItems as $position => $item) {
 	];
 }
 $actionsScript = file_get_contents(dirname(__DIR__).'/views/Details/image_actions_script.php');
+$menusScript = file_get_contents(dirname(__DIR__).'/assets/pawtucket/js/image-downloads.js');
 preg_match('~<script>(.*?)</script>~s', $actionsScript, $scriptMatch);
 $js = <<<'JS'
 const vm = require('node:vm');
@@ -398,6 +404,38 @@ assert.deepEqual(target.children, [first]);
 visible = false; context.tadlPlaceImageToolbar(true);
 assert.equal(target.children[0], first); // No object-detail page means no relocation.
 assert.equal(clears, 4);
+
+// Capture-phase handlers work even when the native canvas stops bubbling.
+const listeners = {};
+const focused = {};
+const menu = {open:true, contains(node) { return node === focused; }, querySelector() { return {focus() {menu.focused=true;}}; }};
+const menusContext = vm.createContext({document:{
+ activeElement: focused,
+ addEventListener(type, callback, capture) { assert.equal(capture,true); listeners[type]=callback; },
+ querySelectorAll() { return menu.open ? [menu] : []; }
+}});
+new vm.Script(input.menus).runInContext(menusContext);
+listeners.click({target:focused}); assert.equal(menu.open,true);
+listeners.click({target:{}}); assert.equal(menu.open,false);
+menu.open=true;
+let prevented=false, stopped=false;
+listeners.keydown({key:'Escape',preventDefault(){prevented=true;},stopPropagation(){stopped=true;}});
+assert.equal(menu.open,false); assert.equal(menu.focused,true); assert.equal(prevented,true); assert.equal(stopped,true);
+prevented=stopped=false;
+listeners.keydown({key:'Escape',preventDefault(){prevented=true;},stopPropagation(){stopped=true;}});
+assert.equal(prevented,false); assert.equal(stopped,false); // Closed menus leave native Escape handling alone.
+listeners.keydown({key:'Tab',target:{closest(){return menu;}},stopPropagation(){stopped=true;}});
+assert.equal(stopped,true); // Tab remains a focus key inside the menu.
+const rotation = {};
+let placed=null;
+const column = {contains(node){return placed===node;},querySelector(){return rotation;},insertBefore(node,before){assert.equal(before,rotation);placed=node;},prepend(node){placed=node;}};
+const overlay = {querySelector(selector){return selector === '.tadl-viewer-downloads' ? menu : column;}};
+menusContext.tadlPlaceViewerDownload(overlay); assert.equal(placed,menu);
+column.insertBefore=()=>assert.fail('Already placed menu moved twice');
+menusContext.tadlPlaceViewerDownload(overlay);
+column.querySelector=()=>null; placed=null;
+menusContext.tadlPlaceViewerDownload(overlay); assert.equal(placed,menu);
+menusContext.tadlPlaceViewerDownload(null);
 
 const loads = [], highlights = [], opened = [];
 const galleryContext = vm.createContext({
@@ -443,7 +481,7 @@ for (const fixture of input.gallery) {
 }
 JS;
 $process = proc_open([getenv('TADL_TEST_NODE') ?: 'node', '-e', $js], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
-fwrite($pipes[0], json_encode(['actions' => $scriptMatch[1], 'gallery' => $galleryFixtures], JSON_THROW_ON_ERROR)); fclose($pipes[0]);
+fwrite($pipes[0], json_encode(['actions' => $scriptMatch[1], 'menus' => $menusScript, 'gallery' => $galleryFixtures], JSON_THROW_ON_ERROR)); fclose($pipes[0]);
 $output = stream_get_contents($pipes[1]); fclose($pipes[1]);
 $errors = stream_get_contents($pipes[2]); fclose($pipes[2]);
 checkDownload(proc_close($process) === 0, 'Image action or gallery callback regression failed: '.$errors.$output);
