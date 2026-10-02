@@ -189,6 +189,10 @@ line numbers. Native application behavior can be inspected in the nearby
   frame/page as JPG. Pawtucket's bundled `Dompdf` dependency renders the PDF with
   remote resources, PHP and JavaScript disabled. Its scratch files use the same
   private request-local workspace and shutdown cleanup as image conversions.
+  Object details omit the separate **Download as PDF** metadata-report link
+  below the viewer; PDF is offered through the image download menu. The lower
+  tools container appears only when Comments/Tags or Share is enabled.
+  Collection PDF links remain available.
 - The download endpoint rechecks object/representation access, ACLs, attachment,
   bundle visibility, the native download policy and permission for `original`.
   Private temporary conversions are removed at request shutdown. Byte MIME and

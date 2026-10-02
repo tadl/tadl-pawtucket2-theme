@@ -33,8 +33,6 @@
 	$va_tags = 				$this->getVar("tags_array");
 	$vn_comments_enabled = 	$this->getVar("commentsEnabled");
 	$vn_share_enabled = 	$this->getVar("shareEnabled");
-	$vn_pdf_enabled = 		$this->getVar("pdfEnabled");
-	$vn_id =				$t_object->get('ca_objects.object_id');
 ?>
 <div class="row tadl-object-detail">
 	<aside class="tadl-object-action-rail">
@@ -63,7 +61,7 @@
 				
 <?php
 				# Comment and Share Tools
-				if ($vn_comments_enabled | $vn_share_enabled | $vn_pdf_enabled) {
+				if ($vn_comments_enabled || $vn_share_enabled) {
 						
 					print '<div id="detailTools">';
 					if ($vn_comments_enabled) {
@@ -74,9 +72,6 @@
 					}
 					if ($vn_share_enabled) {
 						print '<div class="detailTool"><span class="glyphicon glyphicon-share-alt" aria-hidden="true"></span>'.$this->getVar("shareLink").'</div><!-- end detailTool -->';
-					}
-					if ($vn_pdf_enabled) {
-						print "<div class='detailTool'><span class='glyphicon glyphicon-file' aria-hidden='true'></span>".caDetailLink($this->request, "Download as PDF", "faDownload", "ca_objects",  $vn_id, array('view' => 'pdf', 'export_format' => '_pdf_ca_objects_summary'))."</div>";
 					}
 					print '</div><!-- end detailTools -->';
 				}				
