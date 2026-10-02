@@ -26,6 +26,16 @@
  * ----------------------------------------------------------------------
  */
 
+	// The subject landing page lists vocabulary choices, never unfiltered objects.
+	if ($this->request->getController() === 'Browse' && $this->getVar('browse_type') === 'subjects') {
+		$subject_criteria = array_filter((array)$this->getVar('criteria'), static function ($criterion) {
+			return ($criterion['facet_name'] ?? '') === 'term_facet';
+		});
+		if (!$subject_criteria) {
+			print $this->render('Browse/subjects_index_html.php');
+			return;
+		}
+	}
 	$qr_res 			= $this->getVar('result');				// browse results (subclass of SearchResult)
 	tadlFilterMediaResult($this->request, $qr_res);
 	$vs_media_preference = tadlMediaPreference($this->request);
@@ -112,8 +122,7 @@
 if (!$vb_ajax) {	// !ajax
 ?>
 <?php if ($vb_subject_browse) { ?>
-<h1><?php print _t('Browse Subjects'); ?></h1>
-<p><?php print _t('Choose a subject in the filters to find related objects.'); ?></p>
+<p><?php print caNavLink($this->request, _t('Browse all subjects'), '', '', 'Browse', 'subjects', ['clear' => 1]); ?></p>
 <?php } ?>
 <div style="clear:both;" class="row<?= $vb_subject_browse ? ' tadl-subject-browse' : ''; ?>">
 	<div class='<?php print ($vs_result_col_class) ? $vs_result_col_class : "col-sm-8 col-md-8 col-lg-8"; ?>'>

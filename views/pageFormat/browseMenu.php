@@ -41,6 +41,7 @@
 						foreach($va_browse_types as $vs_browse_name => $va_browse_type){
 							if(!$va_browse_type["dontShowInBrowseMenu"]){
 								$va_browse_params = ($vs_browse_name === 'collections') ? array('sort' => 'Name', 'direction' => 'asc') : array();
+								if ($vs_browse_name === 'subjects') { $va_browse_params = ['clear' => 1]; }
 								print "<li>".caNavLink($this->request, caUcFirstUTF8Safe($va_browse_type['displayName']), '', '', 'Browse', $vs_browse_name, $va_browse_params)."</li>";
 							}
 						}

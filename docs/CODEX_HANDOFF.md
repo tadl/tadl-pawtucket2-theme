@@ -234,24 +234,36 @@ are separate from the optional `lcsh_terms` and `lctgm` attributes.
   to a fresh `Browse/subjects` with the native `term_facet` criterion. This
   replaces the lower **Related Terms** block. Labels are escaped, duplicate IDs
   are removed, and native record access, bundle permissions and Pawtucket ACLs
-  are enforced before display.
+  are enforced before display. Native locale-selected label arrays supply
+  `name_plural`, falling back to `name_singular`; a term with only a plural label
+  must not disappear. The facet template uses the same preference.
 - Objects advanced search adds **Subjects** using the existing `term` search
   access point. The reference `app/conf/search_indexing.conf` maps it to both
   `ca_list_item_labels.name_singular` and `name_plural`; no index configuration
   or catalog data is changed. The separate Library of Congress field remains.
-- **Browse → Subjects** returns objects with the native vocabulary facet. The
-  `tadl_subjects` facet group limits this entry to subjects. `#!merge` extends
+- **Browse → Subjects** opens a complete alphabetical list of available subject
+  vocabulary choices, with no object cards, result options or object paging.
+  Selecting a term starts a clean native `term_facet` object browse; its results
+  retain media filtering, Tiles/List and paging. **Browse all subjects** returns
+  to the index. The menu clears previous criteria so it always opens the index.
+  The list uses three columns on desktop, two on tablets and one on phones.
+  Choices derive from native accessible catalogue facets, independently of the
+  media preference, as on other authority filters; no unfiltered counts appear.
+  Empty facets show an empty-state message instead of all objects. Previously,
+  the unselected route showed all objects, including records without subjects.
+  The `tadl_subjects` facet group limits this entry to subjects. `#!merge` extends
   the native facet configuration, preserving other facets. Subjects also appear
   as a filter on ordinary object browse and search whenever available.
-- The subject list starts visible, appears above results on phones, and retains
-  native expansion, criterion links, paging and media filtering. Text follows
-  the interior 18px baseline.
+- Selected-subject results keep the refine sidebar visible, above results on
+  phones, with native expansion and criterion links. Directory and results text
+  follow the interior 18px baseline.
 
 Ten standalone suites and PHP lint passed on PHP 8.5.10. The native reference
 configuration parser verified preservation of all eight other object facets.
-A synthetic desktop/mobile browser preview verified visible subject links,
-list expansion, 18px text and no horizontal overflow at 390px. Production
-subject relationships, indexed search hits and installed configuration remain
+A synthetic desktop/mobile browser preview verified the subject directory,
+18px links and no horizontal overflow at 390px. The reference configuration and
+display-template parsers verified the facet merge and plural/singular fallback.
+Production subject relationships, indexed search hits and installed configuration remain
 unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop

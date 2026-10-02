@@ -33,7 +33,7 @@ function tadlObjectSubjects($request, $object) {
 	if (!$object || !$object->getPrimaryKey()
 		|| caGetBundleAccessLevel('ca_objects', 'ca_list_items') < __CA_BUNDLE_ACCESS_READONLY__
 		|| caGetBundleAccessLevel('ca_list_items', 'preferred_labels') < __CA_BUNDLE_ACCESS_READONLY__) { return ''; }
-	$rows = (array)$object->getRelatedItems('ca_list_items', ['checkAccess' => caGetUserAccessValues($request)]);
+	$rows = (array)$object->getRelatedItems('ca_list_items', ['checkAccess' => caGetUserAccessValues($request), 'returnLabelsAsArray' => true]);
 	if ($rows && caACLIsEnabled('ca_list_items', ['forPawtucket' => true])) {
 		$target = Datamodel::getInstance('ca_list_items', true);
 		$browse = caGetBrowseInstance('ca_list_items');
@@ -43,7 +43,13 @@ function tadlObjectSubjects($request, $object) {
 	$terms = [];
 	foreach ($rows as $row) {
 		$id = (int)($row['item_id'] ?? 0);
-		$label = trim((string)($row['label'] ?? ''));
+		// Native "label" selects the user's locale; the array retains both label forms.
+		$label = $row['label'] ?? '';
+		if (is_array($label)) {
+			$plural = trim((string)($label['name_plural'] ?? ''));
+			$label = $plural !== '' ? $plural : ($label['name_singular'] ?? '');
+		}
+		$label = trim((string)$label);
 		if ($id > 0 && $label !== '') { $terms[$id] = $label; }
 	}
 	if (!$terms) { return ''; }

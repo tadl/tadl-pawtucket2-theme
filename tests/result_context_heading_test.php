@@ -221,11 +221,22 @@ checkContext(!str_contains($html, 'Generic hierarchy copy'), 'Generic hierarchy 
 checkContext(str_contains($html, 'getFacetHierarchyLevel?facet=place_facet') && str_contains($html, 'linkTo=morePanel') && str_contains($html, "id='bHierarchyList_place_facet'"), 'Hierarchy AJAX behavior changed.');
 checkContext(str_contains($html, 'facet=entity_facet&amp;id=42&amp;view=images'), 'Flat facet navigation changed.');
 
-$subjectFacets = ['term_facet' => ['type' => 'authority', 'table' => 'ca_list_items', 'label_singular' => 'Subject', 'group_mode' => 'alphabetical', 'content' => [['id' => 42, 'label' => 'Synthetic bridges']]]];
+$subjectFacets = ['term_facet' => ['type' => 'authority', 'table' => 'ca_list_items', 'label_singular' => 'Subject', 'group_mode' => 'alphabetical', 'content' => [
+	['id' => 42, 'label' => 'Synthetic bridges'], ['id' => 43, 'label' => 'Archives <script>x</script> & maps'],
+	['id' => 0, 'label' => 'Invalid'], ['id' => 44, 'label' => ' '], ['id' => 42, 'label' => 'Synthetic bridges']
+]]];
 $html = (new ContextView(new ContextRequest(), [], 45, ['browse_type' => 'subjects', 'facets' => $subjectFacets]))->render('Browse/browse_results_html.php');
-checkContext(str_contains($html, '<h1>Browse Subjects</h1>') && str_contains($html, 'row tadl-subject-browse'), 'Subject browse must have its introduction and responsive layout.');
-checkContext(str_contains($html, "aria-expanded='true'") && str_contains($html, '<h3>Subjects</h3>'), 'Subject filters must start open and use the Subjects heading.');
-checkContext(str_contains($html, 'facet=term_facet&amp;id=42&amp;view=images'), 'Subject choice must retain native facet navigation.');
+checkContext(str_contains($html, '>Browse Subjects</h1>') && str_contains($html, 'tadl-subject-index-list'), 'Subject landing page must list subjects.');
+checkContext(!str_contains($html, 'data-synthetic-cards') && !str_contains($html, 'Tiles') && !str_contains($html, 'tadl-results-pager'), 'Subject landing page leaked unfiltered object results or their controls.');
+checkContext(str_contains($html, 'facet=term_facet&amp;id=42&amp;clear=1'), 'Subject selection must start a clean native browse.');
+checkContext(strpos($html, 'Archives') < strpos($html, 'Synthetic bridges') && substr_count($html, '>Synthetic bridges</a>') === 1, 'Subject list order or deduplication failed.');
+checkContext(!str_contains($html, '<script>') && str_contains($html, '&lt;script&gt;') && !str_contains($html, '>Invalid</a>'), 'Subject index failed escaping or ID validation.');
+$html = (new ContextView(new ContextRequest(), [], 45, ['browse_type' => 'subjects']))->render('Browse/browse_results_html.php');
+checkContext(str_contains($html, 'No subjects are available.') && !str_contains($html, 'data-synthetic-cards'), 'Empty subject index must not show all objects.');
+$subjectCriteria = [['facet_name' => 'term_facet', 'facet' => 'Subject', 'id' => 42, 'value' => 'Synthetic bridges']];
+$html = (new ContextView(new ContextRequest(), $subjectCriteria, 45, ['browse_type' => 'subjects', 'facets' => $subjectFacets]))->render('Browse/browse_results_html.php');
+checkContext(str_contains($html, 'data-synthetic-cards') && str_contains($html, 'Browse all subjects') && str_contains($html, 'subjects?clear=1'), 'Selected subject must show related objects and a link back to the index.');
+checkContext(!str_contains($html, 'tadl-subject-index-list'), 'Selected subject still shows landing directory.');
 $html = (new ContextView(new ContextRequest(), [], 45))->render('Browse/browse_results_html.php');
 checkContext(!str_contains($html, 'Browse Subjects') && !str_contains($html, 'tadl-subject-browse'), 'Subject layout leaked onto normal object browse.');
 

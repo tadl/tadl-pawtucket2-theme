@@ -1132,6 +1132,32 @@ h6 {
     flex-wrap: wrap;
 }
 
+.tadl-subject-index-list {
+    columns: 3;
+    column-gap: 32px;
+    list-style: none;
+    padding: 0;
+    margin: 24px 0;
+}
+
+.tadl-subject-index-list li {
+    break-inside: avoid;
+}
+
+.tadl-subject-index-list a {
+    display: block;
+    padding: 8px 0;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 991px) {
+    .tadl-subject-index-list { columns: 2; }
+}
+
+@media (max-width: 767px) {
+    .tadl-subject-index-list { columns: 1; }
+}
+
 .tadl-subject-browse #bRefine {
     display: block;
 }

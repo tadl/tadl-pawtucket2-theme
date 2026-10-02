@@ -53,7 +53,7 @@ $object->rows = [
 ];
 $request = new SubjectRequest();
 $html = tadlObjectSubjects($request, $object);
-checkSubjects($object->calls === [['ca_list_items', ['checkAccess' => [1]]]], 'Relationship read did not preserve native access filtering.');
+checkSubjects($object->calls === [['ca_list_items', ['checkAccess' => [1], 'returnLabelsAsArray' => true]]], 'Relationship read must preserve native access and request both label forms.');
 $document = new DOMDocument();
 $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 $xpath = new DOMXPath($document);
@@ -77,6 +77,15 @@ checkSubjects(str_contains($html, 'Synthetic bridges') && !str_contains($html, '
 $subjectTarget = false;
 checkSubjects(tadlObjectSubjects($request, $object) === '', 'Missing ACL target failed open.');
 $subjectACL = false;
+$object->rows = [
+	['item_id' => 21, 'label' => ['name_singular' => '', 'name_plural' => 'Bridges']],
+	['item_id' => 22, 'label' => ['name_singular' => 'Library', 'name_plural' => 'Libraries']],
+	['item_id' => 23, 'label' => ['name_singular' => 'Photograph', 'name_plural' => ' ']],
+	['item_id' => 24, 'label' => ['name_singular' => '', 'name_plural' => '']]
+];
+$html = tadlObjectSubjects($request, $object);
+checkSubjects(str_contains($html, '>Bridges</a>') && str_contains($html, '>Libraries</a>'), 'Plural subjects or terms without singular labels disappeared.');
+checkSubjects(str_contains($html, '>Photograph</a>') && !str_contains($html, 'id=24'), 'Singular fallback or empty-label omission failed.');
 checkSubjects(tadlObjectSubjects($request, new SubjectObject()) === '', 'Empty subject field was displayed.');
 checkSubjects(tadlObjectSubjects($request, new SubjectObject(0)) === '', 'Unloaded object displayed subjects.');
 checkSubjects(tadlObjectSubjects($request, null) === '', 'Missing object displayed subjects.');
