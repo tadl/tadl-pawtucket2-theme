@@ -54,6 +54,7 @@ before calling an issue deployed or still broken.
 | Browse/results/pagers | `views/Browse/browse_results_html.php`, `tadl_result_helpers.php`, `tadl_result_context_helpers.php`, image/list/refine subviews |
 | Search previews | `conf/search.conf`, `views/Search/multisearch_results_html.php`, `tadl_search_results_subview_html.php` |
 | Object media | `helpers/object_detail_media.php`, `views/bundles/representation_viewer_html.php` |
+| Image downloads | `helpers/image_downloads.php`, `controllers/ImageDownloadController.php`, `views/Details/image_download_binary.php`, `views/mediaViewers/viewerWrapper.php` |
 | Object metadata | `views/Details/ca_objects_default_html.php`, `detail_field_helpers.php` |
 | Collection details | `views/Details/ca_collections_default_html.php` |
 | Authority details | `views/Details/authority_detail_helpers.php`, `authority_detail_html.php`, entity/place/occurrence detail templates |
@@ -133,6 +134,26 @@ line numbers. Native application behavior can be inspected in the nearby
 - Multi-representation objects use side arrows and a position counter. Changing
   slides stops active media; thumbnails remain functional. Avoid colliding with
   native callback/count variable names.
+- Object and gallery image toolbars are always visible, larger, and wrap on narrow
+  screens. Keep native **Open media view**/compare callbacks; omit the image's
+  Lightbox action and replace its original-download link with one native HTML
+  disclosure menu. Video toolbar behavior and account Lightbox remain unchanged.
+- Image downloads use **TIFF (to print)** when the original is TIFF, plus
+  **JPG (to share)**. The enlarged TileViewer has the same menu; preserve both
+  `id` and native `object_id` navigation URLs and replace its native download
+  form while keeping viewer navigation/close controls.
+- JPG uses the original image dimensions, never the display-size derivative.
+  Existing JPEG originals stream unchanged. Other image originals convert on
+  demand through CollectiveAccess `Media` to quality-90 JPEG with a white
+  background, without scaling. Native ImageMagick selects the first frame/page;
+  TIFF downloads preserve the complete original file. No TIFF is synthesized for
+  other source formats. Originals and permanent derivatives are unchanged.
+- The download endpoint rechecks object/representation access, ACLs, attachment,
+  bundle visibility, the native download policy and permission for `original`.
+  Private temporary conversions are removed at request shutdown. Byte MIME and
+  converted JPEG dimensions are validated; a failed conversion returns 503,
+  never another format disguised with a `.jpg` suffix. Production requires PHP
+  fileinfo and a native image processor capable of reading originals/writing JPEG.
 - The object title puts its collection on the first line and the arrow/object
   label below. Representation filenames/titles are hidden; intentional media
   captions remain a separate field.
@@ -164,13 +185,13 @@ link, flatten the value arrays, patch core, or repair catalog data as a side eff
 
 ## Local verification on the laptop
 
-The eight committed tests are portable and use synthetic boundaries. They do not
+The nine committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
-Requirements: PHP 8+ CLI with DOM, PDO SQLite and JSON; `proc_open` enabled;
+Requirements: PHP 8+ CLI with DOM, PDO SQLite, JSON and fileinfo; `proc_open` enabled;
 Node.js available on PATH. The theme header additionally needs mbstring, though
-these eight standalone suites do not. The handoff checks passed on PHP 8.5.7 and
+these standalone suites do not. The original handoff checks passed on PHP 8.5.7 and
 Node 24.13.0. Those are observed workstation versions, not a required production
 upgrade.
 
@@ -179,7 +200,7 @@ From the theme repository:
 ```sh
 php --version
 node --version
-php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring"] as $extension) { echo $extension, ": ", extension_loaded($extension) ? "yes" : "no", PHP_EOL; }'
+php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $extension) { echo $extension, ": ", extension_loaded($extension) ? "yes" : "no", PHP_EOL; }'
 (
   for test_file in tests/*_test.php; do
     php "$test_file" || exit 1
@@ -197,8 +218,12 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring"] as $extension) { echo
 | `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |
 | `tests/result_context_heading_test.php` | Results context, headings and removable criteria |
 | `tests/object_detail_metadata_test.php` | Structured TGM pairing, safe links, escaping and permissions |
+| `tests/image_download_test.php` | Toolbar/bundle/overlay menus, download policy/ACL/attachment checks, original TIFF/JPEG bytes, conversion validation and failure handling |
 
-All eight passed during handoff preparation, as did lint for the theme PHP files.
+All eight original suites passed during handoff preparation, as did PHP lint.
+The nine suites passed after the image-download change on PHP 8.5.10 and Node
+24.19.0. Desktop/mobile synthetic browser preview verified enlarged controls,
+mouse/keyboard disclosure and wrapping. Production conversion remains unverified.
 For future changes, begin with the relevant tests and lint changed files:
 
 ```sh
@@ -215,6 +240,17 @@ rg --files -g '*.php' -0 | xargs -0 -n 1 php -l
 The JavaScript suites accept `TADL_TEST_NODE` if Node is not named `node` on PATH.
 Test-specific helper/bundle overrides are for targeted checks; normal runs use
 the files in this checkout.
+
+The image-download suite uses a synthetic native `Media` boundary by default.
+With ImageMagick already installed, optionally exercise actual TIFF/PNG-to-JPEG
+conversion through that boundary:
+
+```sh
+TADL_TEST_MAGICK=/path/to/magick php tests/image_download_test.php
+```
+
+This checks real conversion bytes/dimensions,
+but does not bootstrap the installed CollectiveAccess processor or database.
 
 Full browser QA still needs a configured local application with a safe database
 and media setup, or an intentionally constructed synthetic local preview. Merely

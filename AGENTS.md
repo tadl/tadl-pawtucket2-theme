@@ -39,7 +39,7 @@ also applies when the theme is cloned without the surrounding workspace.
 
 ## Checks
 
-From this repository, with PHP 8+ CLI (DOM, PDO SQLite, JSON and `proc_open`)
+From this repository, with PHP 8+ CLI (DOM, PDO SQLite, JSON, fileinfo and `proc_open`)
 and Node.js available:
 
 ```sh

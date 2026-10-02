@@ -20,7 +20,15 @@
 	}else{
 		print "<a href='#' class='galleryDetailNext inactive' onClick='return false;'><i class='fa fa-chevron-right' role='graphics-document' aria-label='next'></i></a>";
 	}
-	print "<div id='galleryDetailImageWrapper'>".caDetailLink($this->request, $this->getVar("rep"), '', $ps_table,  $this->getVar("row_id")).$this->getVar("repToolBar")."</div>";	
+	$vs_rep_toolbar = $this->getVar('repToolBar');
+	require_once(__DIR__.'/../../helpers/image_downloads.php');
+	if ($ps_table === 'ca_objects' && $pn_rep_id > 0) {
+		$t_download_object = Datamodel::getInstance('ca_objects', true);
+		if ($t_download_object && $t_download_object->load((int)$pn_row_id)) {
+			$vs_rep_toolbar = tadlImageToolbar($this->request, $t_download_object, (int)$pn_rep_id, $vs_rep_toolbar);
+		}
+	}
+	print "<div id='galleryDetailImageWrapper'>".caDetailLink($this->request, $this->getVar("rep"), '', $ps_table,  $this->getVar("row_id")).$vs_rep_toolbar."</div>";
 ?>
 
 

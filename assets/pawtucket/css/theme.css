@@ -1085,6 +1085,116 @@ h6 {
     min-width: 0;
 }
 
+.tadl-image-downloads {
+    position: relative;
+    width: max-content;
+    margin: 12px 0;
+}
+
+.detail .repViewerCont .tadl-image-toolbar,
+.detail .repViewerCont:hover .tadl-image-toolbar,
+.gallery #galleryDetailImageArea #galleryDetailImageWrapper .tadl-image-toolbar,
+.gallery #galleryDetailImageArea #galleryDetailImageWrapper:hover .tadl-image-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    top: 12px;
+    left: 12px;
+    max-width: calc(100% - 24px);
+    box-sizing: border-box;
+    padding: 10px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+}
+
+.tadl-image-toolbar .tadl-image-downloads {
+    margin: 0;
+    flex: 0 0 auto;
+}
+
+.tadl-image-downloads summary,
+.detail .tadl-image-toolbar a.zoomButton,
+.gallery .tadl-image-toolbar a.zoomButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    font-size: 16px;
+    line-height: 1.4;
+    color: #333;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.detail .tadl-image-toolbar span,
+.gallery .tadl-image-toolbar span {
+    padding: 0;
+}
+
+.tadl-image-toolbar i {
+    font-size: 22px;
+}
+
+.tadl-image-downloads summary {
+    list-style: none;
+    cursor: pointer;
+}
+
+.tadl-image-downloads summary::-webkit-details-marker {
+    display: none;
+}
+
+.tadl-image-downloads ul {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 400;
+    min-width: 170px;
+    padding: 5px 0;
+    margin: 2px 0 0;
+    list-style: none;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, .18);
+}
+
+.tadl-image-downloads li a {
+    display: block;
+    padding: 8px 16px;
+    font-size: 16px;
+    white-space: nowrap;
+    color: #333;
+}
+
+.tadl-image-downloads li a:hover,
+.tadl-image-downloads li a:focus {
+    background: #eee;
+}
+
+.tadl-image-downloads a:focus-visible,
+.tadl-image-downloads summary:focus-visible,
+.tadl-image-toolbar a:focus-visible {
+    outline: 3px solid #1a5e8a;
+    outline-offset: 3px;
+}
+
+#caMediaPanel .tadl-image-downloads {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    z-index: 300;
+}
+
+#caMediaPanel .tadl-image-downloads ul {
+    top: auto;
+    bottom: 100%;
+    margin: 0 0 2px;
+}
+
 .tadl-object-detail .tadl-representation-stage {
     position: relative;
     padding: 0 52px;

@@ -34,6 +34,14 @@ $t_subject						= $this->getVar('t_subject');
 $subject_id						= $t_subject->getPrimaryKey();
 
 $slide_list = tadlObjectDetailVideoPosters($this->request, $t_subject, $this->getVar('slide_list'));
+require_once(__DIR__.'/../../helpers/image_downloads.php');
+if (function_exists('caObjectsDisplayDownloadLink') && $t_subject && $t_subject->tableName() === 'ca_objects') {
+	foreach ((array)$slide_list as $slide_index => $slide) {
+		if (preg_match('/^\s*<[^>]+\bdata-representation_id=[\'\"](\d+)[\'\"]/', $slide, $match)) {
+			$slide_list[$slide_index] = tadlImageViewerSlide($this->request, $t_subject, (int)$match[1], $slide);
+		}
+	}
+}
 $initial_index = tadlObjectDetailInitialMediaIndex($this->request, $t_subject, $slide_list);
 $rendered_count = count((array)$slide_list);
 

@@ -30,7 +30,20 @@
  * ----------------------------------------------------------------------
  */
 ?>
-<div id="caMediaOverlayContent" ><?php print $this->render($this->getVar('viewer').".php"); ?></div>	
+<div id="caMediaOverlayContent" ><?php print $this->render($this->getVar('viewer').".php"); ?></div>
+<?php
+require_once(__DIR__.'/../../helpers/image_downloads.php');
+$download_controls = $this->getVar('controls');
+if ($this->getVar('viewer') === 'TileViewer' && in_array($this->getVar('context') ?: $this->request->getParameter('context', pString), ['objects', 'gallery'], true)
+	&& preg_match('/^representation:(\d+)$/', (string)$this->getVar('identifier'), $download_match)) {
+	$t_download_object = Datamodel::getInstance('ca_objects', true);
+	$download_object_id = $this->request->getParameter('id', pInteger) ?: $this->request->getParameter('object_id', pInteger);
+	if ($t_download_object && $t_download_object->load((int)$download_object_id)) {
+		print tadlImageDownloadLinks($this->request, $t_download_object, (int)$download_match[1]);
+		$download_controls = preg_replace('~<div class=[\'\"]download[\'\"]>.*?</div>~is', '', (string)$download_controls);
+	}
+}
+?>
 <?php if ($this->getVar('hideOverlayControls')) { ?>
 <div class="caMediaOverlayControlsMinimal">
 	<div class='close'><a href="#" onclick="caMediaPanel.hidePanel(); return false;" title="close"><i class="fa fa-times" aria-hidden="true"></i></a></div>
@@ -38,7 +51,7 @@
 <?php } else { ?>
 <div class="caMediaOverlayControls">
 	<div class='close'><a href="#" onclick="caMediaPanel.hidePanel(); return false;" title="close"><i class="fa fa-times" aria-hidden="true"></i></a></div>
-	<?php print $this->getVar('controls'); ?>
+	<?php print $download_controls; ?>
 </div>
 <?php } ?>
 
