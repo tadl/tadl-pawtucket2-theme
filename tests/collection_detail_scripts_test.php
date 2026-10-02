@@ -90,7 +90,7 @@ foreach (array(
 		'name' => $case['name'],
 		'scripts' => $scripts[1],
 		'hierarchyUrl' => $case['hierarchy'] ? '/synthetic/Collections/collectionHierarchy/collection_id/42' : null,
-		'objectsUrl' => $case['objects'] >= 2 ? '/synthetic/Search/objects/search/'.$case['objectSearch'] : null,
+		'objectsUrl' => $case['objects'] >= 2 ? '/synthetic/Search/objects/search/'.$case['objectSearch'].'/tadl_collection_controls/1' : null,
 		'loadingHtml' => $GLOBALS['detailScriptIcon'].' '.$GLOBALS['detailScriptLoading']
 	);
 }

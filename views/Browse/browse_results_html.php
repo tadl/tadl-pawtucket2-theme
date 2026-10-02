@@ -99,6 +99,15 @@
 		tadlMediaResultContext($this, $qr_res, 'multisearch', $this->getVar('browse_type'));
 	}
 	$vs_tadl_result_view_controls = tadlBrowseResultViewControls($this->request, $va_views, $vs_current_view, $vs_browse_key, $vs_current_sort, $vs_sort_dir, $vn_hits_per_block_param, $vn_is_advanced ? true : false);
+	if ($vb_ajax && $vb_is_search && $vs_table === 'ca_objects'
+		&& $this->request->getParameter('tadl_collection_controls', pInteger) === 1) {
+		// Collection details request a compact header alongside the AJAX result cards.
+		print '<div class="tadl-results-tools tadl-collection-results-tools">'.$vs_tadl_result_view_controls;
+		if ($vn_tadl_page_size) {
+			print '<div class="tadl-results-top-pager">'.tadlBrowseResultPager($this->request, $vn_result_size, $vn_start, $vn_tadl_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $vn_is_advanced ? true : false).'</div>';
+		}
+		print '</div>';
+	}
 	
 if (!$vb_ajax) {	// !ajax
 ?>

@@ -90,8 +90,8 @@ class ContextBrowse {
 class ContextRequest {
 	public array $access = [1];
 	public string $mediaMode = 'only';
-	function __construct(public string $controller = 'Browse', public bool $ajax = false, public ?int $filteredCount = null) {}
-	function getParameter($name, $type, $options = []) { return $type === pInteger ? 0 : null; }
+	function __construct(public string $controller = 'Browse', public bool $ajax = false, public ?int $filteredCount = null, public array $params = []) {}
+	function getParameter($name, $type, $options = []) { return $this->params[$name] ?? ($type === pInteger ? 0 : null); }
 	function getController() { return $this->controller; }
 	function isAjax() { return $this->ajax; }
 	function getUserID() { return 7; }
@@ -199,6 +199,19 @@ foreach ([0, 1, 8] as $filteredCount) {
 }
 $html = (new ContextView(new ContextRequest('Browse', true), [], 45))->render('Browse/browse_results_html.php');
 checkContext(!str_contains($html, 'tadl-related-results-summary'), 'Browse AJAX must not gain Search-only related summary.');
+foreach (['images' => 9, 'list' => 24] as $view => $pageSize) {
+	$html = (new ContextView(new ContextRequest('Search', true, 45, ['tadl_collection_controls' => 1]), [], 90, ['view' => $view]))->render('Browse/browse_results_html.php');
+	$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+	$xpath = new DOMXPath($document);
+	checkContext($xpath->query('//div[contains(@class,"tadl-collection-results-tools")]')->length === 1 && $xpath->query('//div[@aria-label="Result display options"]')->length === 1, 'Embedded collection needs exactly one Tiles/List toolbar.');
+	checkContext(str_contains($html, 'Page 1 of '.(int)ceil(45 / $pageSize)) && str_contains($html, 's='.$pageSize), 'Embedded top pager must use filtered count and current view page size.');
+	checkContext(strpos($html, 'tadl-collection-results-tools') < strpos($html, 'data-synthetic-cards'), 'Embedded collection controls must precede its first-page cards.');
+	checkContext(str_contains($html, 'key=synthetic-key') && str_contains($html, 'sort=Identifier') && !str_contains($html, 'tadl_collection_controls='), 'View/page links must preserve native state and open ordinary full results.');
+}
+$html = (new ContextView(new ContextRequest('Search', true), [], 45))->render('Browse/browse_results_html.php');
+checkContext(!str_contains($html, 'tadl-collection-results-tools'), 'Ordinary AJAX result blocks gained collection-only controls.');
+$html = (new ContextView(new ContextRequest('Search', false, null, ['tadl_collection_controls' => 1]), [], 45))->render('Browse/browse_results_html.php');
+checkContext(!str_contains($html, 'tadl-collection-results-tools') && substr_count($html, "aria-label='Result display options'") === 1, 'Full search pages gained duplicate controls.');
 $facets = contextFacetDefinitions();
 $facets['entity_facet']['content'] = [['id' => 42, 'label' => 'Synthetic Studio']];
 $facets['place_facet'] = array_merge($facets['place_facet'], ['group_mode' => 'hierarchical', 'description' => 'Generic hierarchy copy should not appear', 'content' => []]);

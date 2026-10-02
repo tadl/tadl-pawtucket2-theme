@@ -116,6 +116,15 @@ line numbers. Native application behavior can be inspected in the nearby
 - Collection index pagination uses normal links with page/view state. Browse
   retains native keys, criteria, sorting and result contexts; do not strip them
   just because URLs look complicated. Browser Back and direct page links matter.
+- Collection detail's initial object search is an AJAX response, which normally
+  omits the full results header. Its loader now requests `tadl_collection_controls=1`
+  so object-search AJAX includes a compact **Tiles/List** control and top pager.
+  The normal bottom pager remains. Both use the media-filtered count and native
+  key, view, sort, direction and page sizes; their links open full search pages.
+  The flag affects only this explicit AJAX object-search response, avoiding
+  duplicate headers on full pages and other AJAX result blocks. Loader and
+  rendered-header regressions cover the first page and both views. A synthetic
+  browser preview verified page 2, List, Back and no overflow at 390px.
 - Multisearch has up to six previews per category, sensible text layouts for
   non-image records, counts and ordinary links to full results. It is not a carousel.
 - Result headings identify search/browse context and authority names. Active

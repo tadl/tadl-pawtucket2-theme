@@ -164,7 +164,7 @@
 			</div><!-- end row -->
 			<script type="text/javascript">
 				jQuery(document).ready(function() {
-					jQuery("#browseResultsContainer").load(<?php print json_encode(caNavUrl($this->request, '', 'Search', 'objects', array('search' => 'collection_id:'.(int)$t_item->get('collection_id')))); ?>, function() {
+					jQuery("#browseResultsContainer").load(<?php print json_encode(caNavUrl($this->request, '', 'Search', 'objects', array('search' => 'collection_id:'.(int)$t_item->get('collection_id'), 'tadl_collection_controls' => 1))); ?>, function() {
 						jQuery('#browseResultsContainer').jscroll({
 							autoTrigger: true,
 							loadingHtml: <?php print json_encode(caBusyIndicatorIcon($this->request).' '._t('Loading...'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
