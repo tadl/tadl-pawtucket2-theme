@@ -106,6 +106,10 @@ line numbers. Native application behavior can be inspected in the nearby
 - The shared search/browse **Options** menu omits Lightbox bulk-add and selection
   actions. Sorting, Start Over and eligible downloads remain available. This is
   a menu change; per-item Lightbox controls and the account Lightbox remain intact.
+- Object browse, regular search and advanced search offer **Date**, using the
+  same `ca_objects.date.dates_value` field displayed on object details and native
+  date-range sorting. Date defaults to ascending; the normal descending control
+  remains available. Existing default sort choices are unchanged.
 - Entity types distinguish people and organizations; places and events have
   explicit headings. The shared authority layout gives related objects priority
   and collapses long relationship groups instead of leaving tall empty columns.
