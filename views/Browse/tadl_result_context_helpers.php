@@ -79,6 +79,7 @@ function tadlResultFacetHeading(array $info) {
 	if (($info['type'] ?? '') === 'authority') {
 		if (($info['table'] ?? '') === 'ca_entities') { return _t('People and organizations'); }
 		if (($info['table'] ?? '') === 'ca_places') { return _t('Places'); }
+		if (($info['table'] ?? '') === 'ca_list_items') { return _t('Subjects'); }
 	}
 	return $info['label_singular'] ?? '';
 }

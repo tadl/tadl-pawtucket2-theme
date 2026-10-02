@@ -54,6 +54,7 @@
 	$t_instance			= $this->getVar('t_instance');
 	
 	$vb_is_search		= ($this->request->getController() == 'Search');
+	$vb_subject_browse = !$vb_is_search && ($this->getVar('browse_type') === 'subjects');
 
 	$va_options			= $this->getVar('options');
 	$vs_extended_info_template = caGetOption('extendedInformationTemplate', $va_options, null);
@@ -101,7 +102,11 @@
 	
 if (!$vb_ajax) {	// !ajax
 ?>
-<div class="row" style="clear:both;">
+<?php if ($vb_subject_browse) { ?>
+<h1><?php print _t('Browse Subjects'); ?></h1>
+<p><?php print _t('Choose a subject in the filters to find related objects.'); ?></p>
+<?php } ?>
+<div style="clear:both;" class="row<?= $vb_subject_browse ? ' tadl-subject-browse' : ''; ?>">
 	<div class='<?php print ($vs_result_col_class) ? $vs_result_col_class : "col-sm-8 col-md-8 col-lg-8"; ?>'>
 <?php 
 			if($vs_sort_control_type == 'list'){
@@ -180,7 +185,7 @@ if (!$vb_ajax) {	// !ajax
 <?php
 			if(is_array($va_facets) && sizeof($va_facets)){
 ?>
-			<a href='#' id='bRefineButton' class='tadl-results-action tadl-results-filter' aria-controls='bRefine' aria-expanded='false' aria-label='<?php print _t("Toggle filters"); ?>' onclick='var expanded = jQuery("#bRefine").is(":visible"); jQuery("#bRefine").toggle(); jQuery(this).attr("aria-expanded", expanded ? "false" : "true"); return false;'><i class="fa fa-filter" aria-hidden="true"></i><span class="tadl-results-action-label"><?php print _t('Filters'); ?></span></a>
+			<a href='#' id='bRefineButton' class='tadl-results-action tadl-results-filter' aria-controls='bRefine' aria-expanded='<?= $vb_subject_browse ? 'true' : 'false'; ?>' aria-label='<?php print _t("Toggle filters"); ?>' onclick='var expanded = jQuery("#bRefine").is(":visible"); jQuery("#bRefine").toggle(); jQuery(this).attr("aria-expanded", expanded ? "false" : "true"); return false;'><i class="fa fa-filter" aria-hidden="true"></i><span class="tadl-results-action-label"><?php print _t('Filters'); ?></span></a>
 <?php
 			}
 ?>

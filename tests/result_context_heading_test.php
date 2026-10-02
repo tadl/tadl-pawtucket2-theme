@@ -208,4 +208,12 @@ checkContext(!str_contains($html, 'Generic hierarchy copy'), 'Generic hierarchy 
 checkContext(str_contains($html, 'getFacetHierarchyLevel?facet=place_facet') && str_contains($html, 'linkTo=morePanel') && str_contains($html, "id='bHierarchyList_place_facet'"), 'Hierarchy AJAX behavior changed.');
 checkContext(str_contains($html, 'facet=entity_facet&amp;id=42&amp;view=images'), 'Flat facet navigation changed.');
 
+$subjectFacets = ['term_facet' => ['type' => 'authority', 'table' => 'ca_list_items', 'label_singular' => 'Subject', 'group_mode' => 'alphabetical', 'content' => [['id' => 42, 'label' => 'Synthetic bridges']]]];
+$html = (new ContextView(new ContextRequest(), [], 45, ['browse_type' => 'subjects', 'facets' => $subjectFacets]))->render('Browse/browse_results_html.php');
+checkContext(str_contains($html, '<h1>Browse Subjects</h1>') && str_contains($html, 'row tadl-subject-browse'), 'Subject browse must have its introduction and responsive layout.');
+checkContext(str_contains($html, "aria-expanded='true'") && str_contains($html, '<h3>Subjects</h3>'), 'Subject filters must start open and use the Subjects heading.');
+checkContext(str_contains($html, 'facet=term_facet&amp;id=42&amp;view=images'), 'Subject choice must retain native facet navigation.');
+$html = (new ContextView(new ContextRequest(), [], 45))->render('Browse/browse_results_html.php');
+checkContext(!str_contains($html, 'Browse Subjects') && !str_contains($html, 'tadl-subject-browse'), 'Subject layout leaked onto normal object browse.');
+
 echo json_encode(['status' => 'passed', 'assertions' => $GLOBALS['contextAssertions'], 'boundaries' => 'actual results/refine templates with synthetic record, access, ACL, result, URL and cache APIs'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;

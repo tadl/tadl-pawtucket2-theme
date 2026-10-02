@@ -1110,6 +1110,50 @@ h6 {
     width: 100%;
 }
 
+.tadl-subject-terms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0;
+    margin: 6px 0 0;
+    list-style: none;
+}
+
+.tadl-subject-terms a {
+    display: inline-block;
+    padding: 5px 10px;
+    border: 1px solid var(--tadl-border);
+    border-radius: var(--tadl-radius);
+    background: #fff;
+}
+
+.tadl-subject-browse {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.tadl-subject-browse #bRefine {
+    display: block;
+}
+
+.tadl-subject-browse::before,
+.tadl-subject-browse::after {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    .tadl-subject-browse > div:last-child {
+        order: -1;
+        width: 100%;
+    }
+
+    .tadl-subject-browse #bRefine {
+        position: static;
+        height: auto !important;
+        margin-bottom: 24px;
+    }
+}
+
 .tadl-object-content > .row {
     display: grid;
     grid-template-columns: minmax(0, 1fr);

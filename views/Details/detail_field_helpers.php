@@ -28,6 +28,34 @@ if (!function_exists('tadlDetailFirstAvailableField')) {
 	}
 }
 
+/** Catalog subjects are related vocabulary records, rather than LC attributes. */
+function tadlObjectSubjects($request, $object) {
+	if (!$object || !$object->getPrimaryKey()
+		|| caGetBundleAccessLevel('ca_objects', 'ca_list_items') < __CA_BUNDLE_ACCESS_READONLY__
+		|| caGetBundleAccessLevel('ca_list_items', 'preferred_labels') < __CA_BUNDLE_ACCESS_READONLY__) { return ''; }
+	$rows = (array)$object->getRelatedItems('ca_list_items', ['checkAccess' => caGetUserAccessValues($request)]);
+	if ($rows && caACLIsEnabled('ca_list_items', ['forPawtucket' => true])) {
+		$target = Datamodel::getInstance('ca_list_items', true);
+		$browse = caGetBrowseInstance('ca_list_items');
+		$readable = array_fill_keys($target && $browse ? $browse->filterHitsByACL(array_column($rows, 'item_id'), $target->tableNum(), $request->getUserID()) : [], true);
+		$rows = array_filter($rows, static function ($row) use ($readable) { return isset($readable[(int)($row['item_id'] ?? 0)]); });
+	}
+	$terms = [];
+	foreach ($rows as $row) {
+		$id = (int)($row['item_id'] ?? 0);
+		$label = trim((string)($row['label'] ?? ''));
+		if ($id > 0 && $label !== '') { $terms[$id] = $label; }
+	}
+	if (!$terms) { return ''; }
+	natcasesort($terms);
+	$links = [];
+	foreach ($terms as $id => $label) {
+		$url = caNavUrl($request, '', 'Browse', 'subjects', ['facet' => 'term_facet', 'id' => $id, 'clear' => 1]);
+		$links[] = '<li><a href="'.htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'">'.htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'</a></li>';
+	}
+	return '<div class="unit"><label>'.htmlspecialchars(_t('Subjects'), ENT_QUOTES, 'UTF-8').'</label><ul class="tadl-subject-terms">'.join('', $links).'</ul></div>';
+}
+
 if (!function_exists('tadlObjectThesaurusTerms')) {
 	function tadlObjectThesaurusTerms($request, $object, $label = 'Thesaurus terms') {
 		if (!$object || caGetBundleAccessLevel('ca_objects', 'lctgm') < __CA_BUNDLE_ACCESS_READONLY__) { return ''; }

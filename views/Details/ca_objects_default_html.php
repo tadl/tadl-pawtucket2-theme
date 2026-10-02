@@ -109,6 +109,7 @@
 				print tadlDetailField($this->request, $t_object, 'Creators', '<unit relativeTo="ca_entities" restrictToRelationshipTypes="creator" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l></unit>');
 				print tadlDetailField($this->request, $t_object, 'Publisher', '<unit relativeTo="ca_entities" restrictToRelationshipTypes="publisher" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l></unit>');
 				print tadlDetailField($this->request, $t_object, 'Description', '<span class="trimText">^ca_objects.description</span>');
+				print tadlObjectSubjects($this->request, $t_object);
 				print tadlDetailField($this->request, $t_object, 'Source of description', '^ca_objects.description_source');
 				print tadlDetailFirstAvailableField($this->request, $t_object, 'Languages', [
 					'<unit relativeTo="ca_objects.language" delimiter="<br/>">^ca_objects.language</unit>',
@@ -161,11 +162,6 @@
 								<unit relativeTo="ca_places" delimiter="<br/>"><l>^ca_places.preferred_labels</l> (^relationship_typename)</unit>
 							</div></ifcount>}}}
 							
-							{{{<ifcount code="ca_list_items" min="1"><div class="unit">
-								<ifcount code="ca_list_items" min="1" max="1"><label>Related Term</label></ifcount>
-								<ifcount code="ca_list_items" min="2"><label>Related Terms</label></ifcount>
-								<unit relativeTo="ca_list_items" delimiter="<br/>"><l>^ca_list_items.preferred_labels.name_plural</l> (^relationship_typename)</unit>
-							</div></ifcount>}}}
 							
 						</div><!-- end col -->				
 						<div class="col-sm-6 colBorderLeft">

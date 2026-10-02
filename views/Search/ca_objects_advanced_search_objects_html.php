@@ -78,9 +78,10 @@
 			</div>
 			<div class="row">
 <?php
+				tadlAdvancedField(_t('Subjects'), _t('Search the subject vocabulary terms attached to objects.'), 'term', '{{{term%width=220px&label=Subjects}}}');
 				tadlAdvancedField(_t('Materials and techniques'), _t('Search materials and technique notes.'), 'ca_objects_materials_techniques', '{{{ca_objects.materials_techniques%width=220px&label=Materials_and_techniques}}}');
 				tadlAdvancedField(_t('Inscriptions / marks'), _t('Search inscriptions, markings, and annotations.'), 'ca_objects_inscriptions_marks', '{{{ca_objects.inscriptions_marks%width=220px&label=Inscriptions_marks}}}');
-				tadlAdvancedField(_t('Subject headings'), _t('Search Library of Congress or other subject terms.'), 'ca_objects_lcsh_terms', '{{{ca_objects.lcsh_terms%width=220px&label=Subject_headings}}}');
+				tadlAdvancedField(_t('Library of Congress subject headings'), _t('Search the separate Library of Congress subject-heading field.'), 'ca_objects_lcsh_terms', '{{{ca_objects.lcsh_terms%width=220px&label=LOC_subject_headings}}}');
 				tadlAdvancedField(_t('Rights'), _t('Search rights statements.'), 'ca_objects_rights_rightsText', '{{{ca_objects.rights.rightsText%width=220px&label=Rights}}}');
 				tadlAdvancedField(_t('Copyright statement'), _t('Search copyright statements.'), 'ca_objects_rights_copyrightStatement', '{{{ca_objects.rights.copyrightStatement%width=220px&label=Copyright_statement}}}');
 				tadlAdvancedField(_t('Website name'), _t('Search external link labels.'), 'ca_objects_external_link_url_source', '{{{ca_objects.external_link.url_source%width=220px&label=Website_name}}}');

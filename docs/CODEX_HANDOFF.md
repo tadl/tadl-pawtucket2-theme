@@ -199,9 +199,39 @@ permissions, escape the label and build a fixed
 Invalid/missing IDs stay plain text. Do not use the stored URI as an arbitrary
 link, flatten the value arrays, patch core, or repair catalog data as a side effect.
 
+## Subjects
+
+Catalog subjects are related `ca_list_items` vocabulary records through
+`ca_objects_x_vocabulary_terms`, as reflected in the migration mapping. They
+are separate from the optional `lcsh_terms` and `lctgm` attributes.
+
+- Object details show **Subjects** directly after Description. Each term links
+  to a fresh `Browse/subjects` with the native `term_facet` criterion. This
+  replaces the lower **Related Terms** block. Labels are escaped, duplicate IDs
+  are removed, and native record access, bundle permissions and Pawtucket ACLs
+  are enforced before display.
+- Objects advanced search adds **Subjects** using the existing `term` search
+  access point. The reference `app/conf/search_indexing.conf` maps it to both
+  `ca_list_item_labels.name_singular` and `name_plural`; no index configuration
+  or catalog data is changed. The separate Library of Congress field remains.
+- **Browse → Subjects** returns objects with the native vocabulary facet. The
+  `tadl_subjects` facet group limits this entry to subjects. `#!merge` extends
+  the native facet configuration, preserving other facets. Subjects also appear
+  as a filter on ordinary object browse and search whenever available.
+- The subject list starts visible, appears above results on phones, and retains
+  native expansion, criterion links, paging and media filtering. Text follows
+  the interior 18px baseline.
+
+Ten standalone suites and PHP lint passed on PHP 8.5.10. The native reference
+configuration parser verified preservation of all eight other object facets.
+A synthetic desktop/mobile browser preview verified visible subject links,
+list expansion, 18px text and no horizontal overflow at 390px. Production
+subject relationships, indexed search hits and installed configuration remain
+unverified until deployment and a live check; source changes do not deploy them.
+
 ## Local verification on the laptop
 
-The nine committed tests are portable and use synthetic boundaries. They do not
+The ten committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -232,9 +262,10 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/object_detail_media_test.php` | Media selection, viewer controls and callbacks |
 | `tests/object_detail_video_poster_test.php` | Covers, playback, player fallback and access |
 | `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |
-| `tests/result_context_heading_test.php` | Results context, headings and removable criteria |
+| `tests/result_context_heading_test.php` | Results context, headings, removable criteria and Subjects browse/refine rendering |
 | `tests/object_detail_metadata_test.php` | Structured TGM pairing, safe links, escaping and permissions |
 | `tests/image_download_test.php` | Toolbar/bundle/overlay menus, download policy/ACL/attachment checks, original TIFF/JPEG bytes, conversion validation and failure handling |
+| `tests/subjects_test.php` | Subject relationship rendering, escaping, native browse links, bundle access and Pawtucket ACL filtering |
 
 All eight original suites passed during handoff preparation, as did PHP lint.
 The nine suites passed after the image-download change on PHP 8.5.10 and Node

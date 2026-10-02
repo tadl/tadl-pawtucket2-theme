@@ -4,7 +4,7 @@ Standalone source repository for the `tadl` Pawtucket2 theme used for TADL local
 
 For Codex or a new workstation, start with [AGENTS.md](AGENTS.md) and the
 [current handoff](docs/CODEX_HANDOFF.md). The handoff explains the source map,
-recent changes, design decisions and all nine standalone regression suites.
+recent changes, design decisions and all ten standalone regression suites.
 It uses relative paths and does not require an application database for those tests.
 
 Deployment is a separate, explicitly authorized step. A source commit/push does
