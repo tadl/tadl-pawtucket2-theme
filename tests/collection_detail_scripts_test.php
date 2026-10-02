@@ -94,6 +94,8 @@ foreach (array(
 	$GLOBALS['detailScriptMode'] = $case['mode'];
 	$GLOBALS['detailScriptShowHierarchy'] = $case['hierarchy'];
 	$html = (new DetailScriptView($case['objects']))->render($case['table']);
+	checkDetailScripts(!preg_match('~navTop|navLeftRight|detailNavBg|\{\{\{(?:previousLink|nextLink)\}\}\}~', $html), $case['name'].': collection detail still reserves record-navigation columns.');
+	checkDetailScripts(str_contains($html, '<div class="row tadl-collection-detail">') && str_contains($html, "<div class='col-xs-12'>"), $case['name'].': collection content lost its full-width layout.');
 	preg_match_all('~<script\b[^>]*>(.*?)</script\s*>~is', $html, $scripts);
 	$expectedScriptCount = ($case['hierarchy'] ? 1 : 0) + ($case['objects'] >= 2 ? 1 : 0) + ($case['extraScripts'] ?? 0);
 	checkDetailScripts(count($scripts[1]) === $expectedScriptCount, $case['name'].': unexpected inline script count.');

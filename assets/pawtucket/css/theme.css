@@ -1110,6 +1110,10 @@ h6 {
     width: 100%;
 }
 
+.tadl-collection-detail > .col-xs-12 > .container {
+    width: 100%;
+}
+
 .tadl-subject-terms {
     display: flex;
     flex-wrap: wrap;
@@ -2136,8 +2140,8 @@ h6 {
 }
 
 @media (min-width: 992px) and (max-width: 1199px) {
-    .tadl-authority-items .bResultItemCol {
-        width: 50%;
+    .tadl-authority-items .tadl-results-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
@@ -2970,6 +2974,38 @@ h6 {
     font-size: 20px;
     font-weight: 400;
     line-height: 1;
+}
+
+.tadl-results-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 30px;
+    margin: 0 15px 30px;
+}
+
+.tadl-results-grid > .bResultItemCol {
+    float: none;
+    width: auto;
+    min-width: 0;
+    margin-bottom: 0;
+    padding: 0;
+}
+
+.tadl-results-grid .bResultItemText {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+@media (min-width: 768px) {
+    .tadl-results-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 992px) {
+    .tadl-results-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
 .bResultItemCol {

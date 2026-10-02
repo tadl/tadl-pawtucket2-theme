@@ -129,6 +129,14 @@ line numbers. Native application behavior can be inspected in the nearby
   browser preview verified page 2, List, Back and no overflow at 390px.
 - Multisearch has up to six previews per category, sensible text layouts for
   non-image records, counts and ordinary links to full results. It is not a carousel.
+- Shared Tiles results use a responsive grid with equal-height cards within each
+  row. Long titles remain fully visible without allowing later cards to float
+  into gaps. Each AJAX/infinite-scroll page owns its grid; controls and pagination
+  remain outside it. Desktop/tablet/phone columns remain three/two/one, with two
+  columns in the narrower authority layout at 992–1199px.
+- Collection details omit the rectangular Back/Previous/Next blocks on desktop
+  and phones, and the main column uses the full available width. Collection
+  hierarchy links, result pagination and browser Back remain available.
 - Result headings identify search/browse context and authority names. Active
   criteria are removable with visible controls and accessible labels.
 - The shared search/browse **Options** menu omits Lightbox bulk-add and selection

@@ -80,6 +80,7 @@
 			$vn_col_span_xs = 12;
 		}
 		if ($vn_start < $qr_res->numHits()) {
+			print '<div class="tadl-results-grid">';
 			$vn_c = 0;
 			$vn_results_output = 0;
 			$qr_res->seek($vn_start);
@@ -178,7 +179,7 @@
 				$vn_results_output++;
 			}
 			
-			print "<div style='clear:both'></div>";
+			print '</div><!-- end tadl-results-grid -->';
 			print tadlBrowseResultPager($this->request, $qr_res->numHits(), $vn_start, $vn_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $this->getVar('is_advanced') ? true : false);
 		}
 ?>
