@@ -39,18 +39,23 @@ function caACLIsEnabled($object, $options) { return $object->values['acl'] ?? fa
 function caObjectsDisplayDownloadLink($request, $objectID, $representation) { return $request->allowed; }
 function caGetAvailableDownloadVersions($request, $mime) { return $request->versions; }
 function caNavUrl($request, $module, $controller, $action, $params = []) { return '/'.$controller.'/'.$action.'?'.http_build_query($params); }
+function caDetailLink($request, $content, $class, $table, $id) {
+	checkDownload($table === 'ca_objects', 'Gallery image linked to the wrong record table.');
+	return '<a href="/Detail/objects?object_id='.(int)$id.'">'.$content.'</a>';
+}
 class DownloadConfig { function get($key) { return $GLOBALS['requiresLogin'] ?? false; } }
 class DownloadRequest {
 	public bool $allowed = true;
 	public array $versions = ['original'];
 	public DownloadConfig $config;
+	public string $controller = 'Detail';
 	function __construct(public array $params = [], public string $method = 'GET', public bool $loggedIn = false) { $this->config = new DownloadConfig(); }
 	function getParameter($key, $type) { return $this->params[$key] ?? null; }
 	function parameterExists($key) { return array_key_exists($key, $this->params) ? true : null; }
 	function getRequestMethod() { return $this->method; }
 	function getUserID() { return $this->loggedIn ? 7 : null; }
 	function isLoggedIn() { return $this->loggedIn; }
-	function getController() { return 'Detail'; }
+	function getController() { return $this->controller; }
 }
 class DownloadModel {
 	public array $values = ['access' => 1, 'deleted' => 0, 'original_filename' => 'Synthetic scan.tif'];
@@ -291,12 +296,73 @@ $view->values['representation_count'] = 2;
 $view->values['slide_list'] = [$slide, $slide];
 $html = $renderBundle->call($view);
 checkDownload(str_contains($html, 'tadl-image-downloads') && !str_contains($html, 'setsButton') && str_contains($html, 'detailRepNavNext'), 'Multi-image bundle lost download controls or navigation.');
-foreach (['id', 'object_id'] as $idParameter) {
-	$request->params = [$idParameter => 42, 'context' => 'objects'];
-	$view->values = ['viewer' => 'TileViewer', 'identifier' => 'representation:101', 'controls' => '<div class="repNav">Native navigation</div><div class="download"><form>Native download</form></div>'];
-	$renderOverlay = function () { ob_start(); include dirname(__DIR__).'/views/mediaViewers/viewerWrapper.php'; return ob_get_clean(); };
-	$html = $renderOverlay->call($view);
-	checkDownload(substr_count($html, '<details') === 1 && str_contains($html, 'TIFF (to print)') && !str_contains($html, 'Native download') && str_contains($html, 'Native navigation'), $idParameter.': overlay dropdown or native navigation was lost.');
+foreach (['objects', 'gallery'] as $overlayContext) {
+	foreach (['id', 'object_id'] as $idParameter) {
+		$request->params = [$idParameter => 42, 'context' => $overlayContext];
+		$view->values = ['viewer' => 'TileViewer', 'identifier' => 'representation:101', 'controls' => '<div class="repNav">Native navigation</div><div class="download"><form>Native download</form></div>'];
+		$renderOverlay = function () { ob_start(); include dirname(__DIR__).'/views/mediaViewers/viewerWrapper.php'; return ob_get_clean(); };
+		$html = $renderOverlay->call($view);
+		checkDownload(substr_count($html, '<details') === 1 && str_contains($html, 'TIFF (to print)') && !str_contains($html, 'Native download') && str_contains($html, 'Native navigation'), $overlayContext.'/'.$idParameter.': overlay dropdown or native navigation was lost.');
+	}
+}
+
+// Gallery AJAX replaces the entire actual media partial. Its toolbar and global
+// navigation callback must follow the new item rather than retain the first IDs.
+$galleryItems = [
+	['item' => 21, 'object' => 42, 'representation' => 101, 'format' => 'tiff'],
+	['item' => 22, 'object' => 43, 'representation' => 202, 'format' => 'jpg'],
+	['item' => 23, 'object' => 44, 'representation' => 303, 'format' => 'png']
+];
+$galleryFixtures = [];
+foreach ($galleryItems as $position => $item) {
+	[$object, $rep, $request] = resetDownload($item['format']);
+	$object->id = $item['object']; $rep->id = $item['representation'];
+	$object->rows = [$rep->id => ['mimetype' => $rep->info['MIMETYPE']]];
+	$request->controller = 'Gallery';
+	$zoomUrl = caNavUrl($request, '', 'Detail', 'GetMediaOverlay', ['context' => 'gallery', 'id' => $object->id, 'representation_id' => $rep->id, 'set_id' => 301, 'overlay' => 1]);
+	$zoomCallback = 'caMediaPanel.showPanel('.json_encode($zoomUrl).', function() { var url = jQuery("#" + caMediaPanel.getPanelID()).data("reloadUrl"); if(url) { window.location = url; } }); return false;';
+	$galleryToolbar = '<div class="detailMediaToolbar"><a href="#" class="zoomButton" onclick="'.htmlspecialchars($zoomCallback, ENT_QUOTES, 'UTF-8').'"><i class="fa fa-search-plus"></i></a><a href="#" class="compare_link" data-id="representation:'.$rep->id.'">Compare</a><a href="#" class="setsButton">Lightbox</a><a href="#" class="dlButton">Download original</a></div><!-- end detailMediaToolbar -->';
+	$previous = $galleryItems[$position - 1] ?? []; $next = $galleryItems[$position + 1] ?? [];
+	$view = new DownloadView($request);
+	$view->values = [
+		'set_id' => 301, 'row_id' => $object->id, 'table' => 'ca_objects', 'representation_id' => $rep->id,
+		'previous_item_id' => $previous['item'] ?? 0, 'previous_row_id' => $previous['object'] ?? 0, 'previous_representation_id' => $previous['representation'] ?? 0,
+		'next_item_id' => $next['item'] ?? 0, 'next_row_id' => $next['object'] ?? 0, 'next_representation_id' => $next['representation'] ?? 0,
+		'rep' => '<img src="/synthetic/gallery-'.$rep->id.'.jpg" alt="Synthetic gallery image" width="1300" height="700">', 'repToolBar' => $galleryToolbar
+	];
+	$renderGallery = function () { ob_start(); include dirname(__DIR__).'/views/Gallery/set_item_rep_html.php'; return ob_get_clean(); };
+	$html = $renderGallery->call($view);
+	$document = new DOMDocument();
+	$document->loadHTML('<!doctype html><html><head><meta charset="UTF-8"></head><body>'.$html.'</body></html>', LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+	$xpath = new DOMXPath($document);
+	$class = static function ($name) { return 'contains(concat(" ", normalize-space(@class), " "), " '.$name.' ")'; };
+	$toolbars = $xpath->query('//div['.$class('tadl-image-toolbar').']');
+	checkDownload($toolbars->length === 1, 'Gallery item '.$item['item'].' must render exactly one current image toolbar.');
+	$zoom = $xpath->query('//a['.$class('zoomButton').']');
+	checkDownload($zoom->length === 1 && $zoom->item(0)->getAttribute('onclick') === $zoomCallback && str_contains($zoom->item(0)->textContent, 'Open media view'), 'Gallery lost or rebuilt the native media-view callback.');
+	$compare = $xpath->query('//a['.$class('compare_link').']');
+	checkDownload($compare->length === 1 && $compare->item(0)->getAttribute('data-id') === 'representation:'.$rep->id, 'Gallery compare action retained the previous representation.');
+	$menus = $xpath->query('//details['.$class('tadl-image-downloads').']');
+	checkDownload($menus->length === 1, 'Gallery download menu was missing or duplicated.');
+	$formats = [];
+	foreach ($xpath->query('.//a', $menus->item(0)) as $link) {
+		checkDownload(parse_url($link->getAttribute('href'), PHP_URL_PATH) === '/ImageDownload/Download', 'Gallery download stopped using the checked endpoint.');
+		parse_str((string)parse_url($link->getAttribute('href'), PHP_URL_QUERY), $params);
+		checkDownload(($params['object_id'] ?? '') === (string)$object->id && ($params['representation_id'] ?? '') === (string)$rep->id, 'Gallery download retained a different selected image.');
+		$formats[] = $params['format'] ?? '';
+	}
+	sort($formats);
+	checkDownload($formats === ($item['format'] === 'tiff' ? ['jpg', 'pdf', 'tiff'] : ['jpg', 'pdf']), 'Gallery download formats did not follow the selected original.');
+	checkDownload($xpath->query('//a['.$class('setsButton').' or '.$class('dlButton').']')->length === 0, 'Gallery retained replaced Lightbox/download actions.');
+	$previousArrow = $xpath->query('//a['.$class('galleryDetailPrevious').']');
+	$nextArrow = $xpath->query('//a['.$class('galleryDetailNext').']');
+	checkDownload($previousArrow->length === 1 && $nextArrow->length === 1, 'Gallery navigation controls disappeared.');
+	$galleryFixtures[] = [
+		'item' => $item, 'previous' => $previous, 'next' => $next, 'zoomUrl' => $zoomUrl,
+		'zoomCallback' => $zoom->item(0)->getAttribute('onclick'),
+		'previousCallback' => $previousArrow->item(0)->getAttribute('onclick'), 'nextCallback' => $nextArrow->item(0)->getAttribute('onclick'),
+		'scripts' => array_map(static function ($script) { return $script->textContent; }, iterator_to_array($xpath->query('//script')))
+	];
 }
 $actionsScript = file_get_contents(dirname(__DIR__).'/views/Details/image_actions_script.php');
 preg_match('~<script>(.*?)</script>~s', $actionsScript, $scriptMatch);
@@ -304,6 +370,7 @@ $js = <<<'JS'
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const input = JSON.parse(fs.readFileSync(0, 'utf8'));
 let current = null, visible = true, ready, clears = 0;
 const target = {
  children: [],
@@ -315,7 +382,7 @@ const document = {
  getElementById() { return target; }
 };
 const context = vm.createContext({document, jQuery: () => ({ready(callback) {ready = callback;}})});
-new vm.Script(fs.readFileSync(0, 'utf8')).runInContext(context);
+new vm.Script(input.actions).runInContext(context);
 const first = {representation:101}, second = {representation:102};
 current = first; ready();
 assert.equal(target.children[0], first); // Preserve the actual node and its callbacks.
@@ -329,10 +396,53 @@ assert.deepEqual(target.children, [first]);
 visible = false; context.tadlPlaceImageToolbar(true);
 assert.equal(target.children[0], first); // No object-detail page means no relocation.
 assert.equal(clears, 4);
+
+const loads = [], highlights = [], opened = [];
+const galleryContext = vm.createContext({
+ window: {},
+ jQuery(selector) { return {
+  load(url) { loads.push({selector, url}); return this; },
+  data(key) { assert.equal(selector, '#syntheticMediaPanel'); assert.equal(key, 'reloadUrl'); return '/Gallery/301?set_item_id=22'; }
+ }; },
+ galleryHighlightThumbnail(id) { highlights.push(id); },
+ caMediaPanel: {showPanel(url, callback) { opened.push({url, callback}); }, getPanelID() { return 'syntheticMediaPanel'; }}
+});
+const invoke = callback => new vm.Script('(function(){' + callback + '})()').runInContext(galleryContext);
+for (const fixture of input.gallery) {
+ // jQuery.load executes the new partial's scripts, replacing caGalleryNav.
+ for (const script of fixture.scripts) new vm.Script(script).runInContext(galleryContext);
+ opened.length = 0;
+ invoke(fixture.zoomCallback);
+ assert.equal(opened.length, 1);
+ assert.equal(opened[0].url, fixture.zoomUrl);
+ opened[0].callback();
+ assert.equal(galleryContext.window.location, '/Gallery/301?set_item_id=22');
+ for (const direction of ['previous', 'next']) {
+  loads.length = 0; highlights.length = 0;
+  invoke(fixture[direction + 'Callback']);
+  const selected = fixture[direction];
+  if (!selected.item) {
+   assert.equal(loads.length, 0); assert.equal(highlights.length, 0); continue;
+  }
+  assert.equal(loads.length, 3);
+  assert.deepEqual(highlights, ['galleryIcon' + selected.item]);
+  const expected = [
+   {selector:'#galleryDetailImageArea', path:'/Gallery/getSetItemRep', params:{item_id:selected.item, set_id:301}},
+   {selector:'#galleryDetailObjectInfo', path:'/Gallery/getSetItemInfo', params:{item_id:selected.item, set_id:301}},
+   {selector:'#caMediaPanelContentArea:visible', path:'/Detail/GetMediaOverlay', params:{context:'gallery', id:selected.object, representation_id:selected.representation, set_id:301, overlay:1}}
+  ];
+  for (let i = 0; i < expected.length; i++) {
+   const url = new URL(loads[i].url, 'https://example.org');
+   assert.equal(loads[i].selector, expected[i].selector);
+   assert.equal(url.pathname, expected[i].path);
+   for (const [key, value] of Object.entries(expected[i].params)) assert.equal(url.searchParams.get(key), String(value));
+  }
+ }
+}
 JS;
 $process = proc_open([getenv('TADL_TEST_NODE') ?: 'node', '-e', $js], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
-fwrite($pipes[0], $scriptMatch[1]); fclose($pipes[0]);
+fwrite($pipes[0], json_encode(['actions' => $scriptMatch[1], 'gallery' => $galleryFixtures], JSON_THROW_ON_ERROR)); fclose($pipes[0]);
 $output = stream_get_contents($pipes[1]); fclose($pipes[1]);
 $errors = stream_get_contents($pipes[2]); fclose($pipes[2]);
-checkDownload(proc_close($process) === 0, 'Image action relocation failed: '.$errors.$output);
-echo json_encode(['status' => 'passed', 'assertions' => $assertions, 'boundaries' => 'actual helper/controller/action script; synthetic access/ACL/media/DOM APIs; real image bytes; '.($autoload ? 'real bundled Dompdf' : 'synthetic PDF renderer')], JSON_PRETTY_PRINT).PHP_EOL;
+checkDownload(proc_close($process) === 0, 'Image action or gallery callback regression failed: '.$errors.$output);
+echo json_encode(['status' => 'passed', 'assertions' => $assertions, 'boundaries' => 'actual helper/controller/action script/gallery media partial; synthetic access/ACL/media/DOM APIs; Node.js gallery callbacks; real image bytes; '.($autoload ? 'real bundled Dompdf' : 'synthetic PDF renderer')], JSON_PRETTY_PRINT).PHP_EOL;

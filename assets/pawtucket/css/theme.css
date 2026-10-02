@@ -1676,6 +1676,67 @@ h6 {
     min-width: 0;
 }
 
+.tadl-gallery-detail #galleryDetailImageArea {
+    height: auto;
+    margin-bottom: 0;
+    padding: 0;
+}
+
+.tadl-gallery-detail #galleryDetailImageArea #galleryDetailImageWrapper {
+    display: block;
+    width: 100%;
+}
+
+.tadl-gallery-media-stage {
+    position: relative;
+    padding: 0 52px;
+}
+
+.tadl-gallery-detail #galleryDetailImageArea .tadl-gallery-media-stage img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 650px;
+    margin: 0 auto;
+}
+
+.tadl-gallery-detail .tadl-gallery-media-stage .galleryDetailPrevious,
+.tadl-gallery-detail .tadl-gallery-media-stage .galleryDetailNext {
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+}
+
+.tadl-gallery-detail .tadl-gallery-media-stage .galleryDetailPrevious {
+    left: 0;
+}
+
+.tadl-gallery-detail .tadl-gallery-media-stage .galleryDetailNext {
+    right: 0;
+}
+
+.tadl-gallery-media-actions {
+    margin-top: 16px;
+}
+
+.gallery #galleryDetailImageArea #galleryDetailImageWrapper .tadl-gallery-media-actions .tadl-image-toolbar {
+    justify-content: center;
+    align-items: flex-start;
+    padding: 0;
+}
+
+/* The open menu participates in the row height so thumbnails stay below it. */
+.tadl-gallery-media-actions .tadl-image-downloads ul {
+    position: static;
+    margin-top: 8px;
+}
+
 .tadl-gallery-detail-bottom {
     margin-top: 20px;
     padding-top: 24px;
@@ -1731,6 +1792,15 @@ h6 {
     .tadl-gallery-detail-columns {
         grid-template-columns: minmax(0, 1fr);
         gap: 24px;
+    }
+
+    .tadl-gallery-media-stage {
+        padding: 0;
+    }
+
+    .tadl-gallery-detail .tadl-gallery-media-stage .galleryDetailPrevious,
+    .tadl-gallery-detail .tadl-gallery-media-stage .galleryDetailNext {
+        background: rgba(255, 255, 255, 0.94);
     }
 
     .tadl-gallery-thumbnails {

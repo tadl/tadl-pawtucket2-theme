@@ -206,6 +206,10 @@ line numbers. Native application behavior can be inspected in the nearby
   **More galleries**. Gallery detail keeps native AJAX item partials and direct
   thumbnail-link fallbacks. Thumbnails align beneath the media column; the gallery
   description belongs beneath the information column.
+- Gallery detail images retain their aspect ratio with a 650px height limit.
+  The image stage owns the centered side arrows; its separate action row follows
+  below. The viewer and open Download menu grow in normal flow, keeping controls
+  clear of the thumbnails on desktop and phones.
 
 ### Related-object and vocabulary fixes
 
@@ -309,7 +313,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |
 | `tests/result_context_heading_test.php` | Results context, headings, removable criteria and Subjects browse/refine rendering |
 | `tests/object_detail_metadata_test.php` | Structured TGM pairing, safe links, escaping and permissions |
-| `tests/image_download_test.php` | Toolbar/bundle/overlay menus, current image action relocation, download policy/ACL/attachment checks, TIFF/JPEG/PDF bytes, conversion validation and failure handling |
+| `tests/image_download_test.php` | Toolbar/bundle/overlay menus, current image action relocation, gallery AJAX navigation and media callbacks, download policy/ACL/attachment checks, TIFF/JPEG/PDF bytes, conversion validation and failure handling |
 | `tests/subjects_test.php` | Subject relationship rendering, escaping, native browse links, bundle access and Pawtucket ACL filtering |
 
 All eight original suites passed during handoff preparation, as did PHP lint.

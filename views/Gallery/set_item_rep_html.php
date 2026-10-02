@@ -10,6 +10,7 @@
 	$pn_row_id = $this->getVar("row_id");
 	$ps_table = $this->getVar("table");
 	$pn_rep_id = $this->getVar("representation_id");
+	print "<div id='galleryDetailImageWrapper'><div class='tadl-gallery-media-stage'>";
 	if($pn_previous_item_id > 0){
 		print "<a href='#' class='galleryDetailPrevious' onclick='caGalleryNav(\"previous\"); return false;'><i class='fa fa-chevron-left' role='graphics-document' aria-label='previous'></i></a>";
 	}else{
@@ -28,7 +29,11 @@
 			$vs_rep_toolbar = tadlImageToolbar($this->request, $t_download_object, (int)$pn_rep_id, $vs_rep_toolbar);
 		}
 	}
-	print "<div id='galleryDetailImageWrapper'>".caDetailLink($this->request, $this->getVar("rep"), '', $ps_table,  $this->getVar("row_id")).$vs_rep_toolbar."</div>";
+	print caDetailLink($this->request, $this->getVar("rep"), '', $ps_table, $pn_row_id)."</div>";
+	if ($vs_rep_toolbar) {
+		print '<div class="tadl-gallery-media-actions" role="group" aria-label="'.htmlspecialchars(_t('Media actions'), ENT_QUOTES, 'UTF-8').'">'.$vs_rep_toolbar.'</div>';
+	}
+	print '</div>';
 ?>
 
 
