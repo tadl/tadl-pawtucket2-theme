@@ -62,6 +62,7 @@ before calling an issue deployed or still broken.
 | Authority details | `views/Details/authority_detail_helpers.php`, `authority_detail_html.php`, entity/place/occurrence detail templates |
 | Galleries | `views/Gallery/index_html.php`, `set_info_html.php`, `detail_html.php`, `set_item_rep_html.php`, `set_item_info_html.php` |
 | Styling | `assets/pawtucket/css/theme.css`, with the existing `main.css` foundation |
+| Asset cache versions | `helpers/asset_versions.php`, shared header and standalone Lightbox presentation |
 | Regression checks | `tests/*_test.php` |
 
 Resolve abbreviated view filenames relative to the directory named in their row.
@@ -70,6 +71,27 @@ line numbers. Native application behavior can be inspected in the nearby
 `pawtucket2/app/` reference tree without editing it.
 
 ## Behavior and implementation contracts
+
+### Asset cache versions
+
+- `tadlAssetLoadHTML()` wraps the native asset loader in the shared page header
+  and standalone Lightbox presentation. Each readable local theme CSS/JS URL gets
+  `v=` plus the first 16 hexadecimal characters of its SHA-256 content hash.
+- Changed contents automatically produce a new URL on the next page render,
+  including when rsync preserves modification times. Normal browser Reload is
+  sufficient after deployment. No manual version bump, asset build step, core
+  patch or permanent browser-cache disabling is needed.
+- Unchanged assets keep stable URLs. Hashes are computed once per referenced
+  file per render, without a persistent hash cache that could become stale.
+  Native priorities, configured `asset_suffix`, query parameters and fragments
+  remain intact; application/external assets, media, fonts and inline code are
+  untouched. Missing/unreadable assets retain native output.
+- All twelve standalone suites and changed PHP lint passed. The local reference
+  `AssetLoadManager` also rendered the versioned tags with synthetic configuration.
+  A synthetic browser preview served CSS with a one-year immutable cache: normal
+  Reload loaded a changed stylesheet with preserved timestamps, while the
+  unchanged stylesheet retained its URL. Production behavior remains a
+  deployment-time check.
 
 ### Typography
 
@@ -367,7 +389,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The ten committed tests are portable and use synthetic boundaries. They do not
+The twelve committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -392,6 +414,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 
 | Test | Coverage |
 | --- | --- |
+| `tests/asset_versions_test.php` | Stable/changed CSS and JS URLs, preserved timestamps, native loader options, subdirectory/absolute theme URLs, escaping, inline-code preservation and path boundaries |
 | `tests/media_preferences_test.php` | Eligibility SQL, filtered result adapter, result rendering |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |
 | `tests/collection_detail_scripts_test.php` | Collection detail loader JavaScript and empty/populated field/relationship headings |

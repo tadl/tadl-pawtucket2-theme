@@ -29,6 +29,7 @@
  *
  * ----------------------------------------------------------------------
  */
+	require_once(__DIR__.'/../../helpers/asset_versions.php');
 	$va_access_values = $this->getVar('access_values');
 	$t_set = $this->getVar('set');
 	$va_items = caExtractValuesByUserLocale($t_set->getItems(array('thumbnailVersions' => array('small', 'medium'), 'checkAccess' => $va_access_values)));
@@ -49,7 +50,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 		<?php print MetaTagManager::getHTML(); ?>
-		<?php print AssetLoadManager::getLoadHTML($this->request); ?>
+		<?php print tadlAssetLoadHTML($this->request); ?>
 
 		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
 		<script>

@@ -26,6 +26,7 @@
  * ----------------------------------------------------------------------
  */
 require_once(__DIR__.'/media_preference_toggle.php');
+require_once(__DIR__.'/../../helpers/asset_versions.php');
 $lightboxDisplayName = caGetLightboxDisplayName();
 $lightbox_sectionHeading = ucFirst($lightboxDisplayName["section_heading"]);
 
@@ -251,7 +252,7 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0"/>
 	<?= MetaTagManager::getHTML(); ?>
-	<?= AssetLoadManager::getLoadHTML($this->request); ?>
+	<?= tadlAssetLoadHTML($this->request); ?>
 
 	<title><?= htmlspecialchars($window_title ?: $site_name, ENT_QUOTES, 'UTF-8'); ?></title>
 	
