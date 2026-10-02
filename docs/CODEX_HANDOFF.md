@@ -63,6 +63,7 @@ before calling an issue deployed or still broken.
 | Galleries | `views/Gallery/index_html.php`, `set_info_html.php`, `detail_html.php`, `set_item_rep_html.php`, `set_item_info_html.php` |
 | Styling | `assets/pawtucket/css/theme.css`, with the existing `main.css` foundation |
 | Asset cache versions | `helpers/asset_versions.php`, shared header and standalone Lightbox presentation |
+| Collection finding aids | `controllers/FindingAidController.php`, `helpers/finding_aid.php`, `conf/finding_aid.conf`, PDF/binary detail views; `docs/FINDING_AIDS.md` |
 | Regression checks | `tests/*_test.php` |
 
 Resolve abbreviated view filenames relative to the directory named in their row.
@@ -71,6 +72,18 @@ line numbers. Native application behavior can be inspected in the nearby
 `pawtucket2/app/` reference tree without editing it.
 
 ## Behavior and implementation contracts
+
+### Collection finding aids
+
+Collection details now offer **Download Finding Aid** for the selected collection,
+with populated collection metadata and unique accessible objects from it and its
+readable descendants. Inventory includes objects without media, independent of
+the header preference, and preserves all record, bundle and Pawtucket ACL checks.
+There is no native relationship cap or shared PDF cache. Recorded home/related
+storage locations are shown only when readable; they are not asserted to be
+current physical locations. The PDF uses the existing Dompdf dependency with
+remote resources/PHP/JS disabled. See `docs/FINDING_AIDS.md` for field mappings,
+source boundaries, real-render verification and pending archives-team decisions.
 
 ### Asset cache versions
 
@@ -389,7 +402,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The twelve committed tests are portable and use synthetic boundaries. They do not
+The thirteen committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -414,6 +427,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 
 | Test | Coverage |
 | --- | --- |
+| `tests/finding_aid_test.php` | Selected collection export, descendants, access/ACL/bundle restrictions, complete unique inventories over native caps, field mappings, locations, escaped PDF text and safe failure; optional real Dompdf |
 | `tests/asset_versions_test.php` | Stable/changed CSS and JS URLs, preserved timestamps, native loader options, subdirectory/absolute theme URLs, escaping, inline-code preservation and path boundaries |
 | `tests/media_preferences_test.php` | Eligibility SQL, filtered result adapter, result rendering |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |

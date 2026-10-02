@@ -46,8 +46,6 @@
 	if($o_collections_config->get("do_not_display_collection_browser")){
 		$vb_show_hierarchy_viewer = false;	
 	}
-	# --- get the collection hierarchy parent to use for exportin finding aid
-	$vn_top_level_collection_id = array_shift($t_item->get('ca_collections.hierarchy.collection_id', array("returnWithStructure" => true)));
 
 ?>
 <div class="row tadl-collection-detail">
@@ -60,7 +58,8 @@
 					{{{<ifdef code="ca_collections.parent_id"><div class="unit">Part of: <unit relativeTo="ca_collections.hierarchy" delimiter=" &gt; "><l>^ca_collections.preferred_labels.name</l></unit></div></ifdef>}}}
 <?php					
 					if ($vn_pdf_enabled) {
-						print "<div class='exportCollection'><span class='glyphicon glyphicon-file' aria-hidden='true'></span> ".caDetailLink($this->request, "Download as PDF", "", "ca_collections",  $vn_top_level_collection_id, array('view' => 'pdf', 'export_format' => '_pdf_ca_collections_summary'))."</div>";
+						$finding_aid_url = caNavUrl($this->request, '', 'FindingAid', 'Download', ['collection_id' => (int)$t_item->get('collection_id')]);
+						print "<div class='exportCollection'><span class='glyphicon glyphicon-file' aria-hidden='true'></span> <a href=\"".htmlspecialchars($finding_aid_url, ENT_QUOTES, 'UTF-8')."\">".htmlspecialchars(_t('Download Finding Aid'), ENT_QUOTES, 'UTF-8')."</a></div>";
 					}
 ?>
 				</div><!-- end col -->
