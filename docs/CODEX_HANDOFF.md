@@ -195,6 +195,11 @@ line numbers. Native application behavior can be inspected in the nearby
 - The enlarged viewer uses an accessible Download icon immediately above Rotate
   in the native TileViewer control column. The wrapper moves the existing menu
   after native initialization; normal object/gallery page buttons stay labeled.
+  Object/gallery image top bars show the currently viewed object's preferred
+  title and identifier, rather than its representation label/filename. Long
+  titles use a single-line ellipsis with the complete text in a hover title;
+  the identifier, representation navigation and Close retain their space. Each
+  overlay request resolves its current object, including both ID URL forms.
   Its tooltip uses the native jQuery UI tooltip styling and positioning. Fixed
   padding reserves its toolbar space so opening the menu cannot shift Rotate,
   Fit or Help. The zoom buttons have opaque dark squares, centered on the slider,

@@ -300,17 +300,37 @@ checkDownload(str_contains($html, 'tadl-image-downloads') && !str_contains($html
 foreach (['objects', 'gallery'] as $overlayContext) {
 	foreach (['id', 'object_id'] as $idParameter) {
 		$request->params = [$idParameter => 42, 'context' => $overlayContext];
-		$view->values = ['viewer' => 'TileViewer', 'identifier' => 'representation:101', 'controls' => '<div class="repNav">Native navigation</div><div class="download"><form>Native download</form></div>'];
+		$object->values['ca_objects.preferred_labels.name'] = 'Synthetic $1 <script>title</script> & "caption"';
+		$object->values['idno'] = 'SYNTHETIC.42 & "id"';
+		$view->values = ['viewer' => 'TileViewer', 'identifier' => 'representation:101', 'controls' => '<div class="objectInfo">Synthetic_filename.tiff</div><div class="repNav">Native navigation</div><div class="download"><form>Native download</form></div>'];
 		$renderOverlay = function () { ob_start(); include dirname(__DIR__).'/views/mediaViewers/viewerWrapper.php'; return ob_get_clean(); };
 		$html = $renderOverlay->call($view);
 		checkDownload(substr_count($html, '<details') === 1 && str_contains($html, 'TIFF (to print)') && !str_contains($html, 'Native download') && str_contains($html, 'Native navigation'), $overlayContext.'/'.$idParameter.': overlay dropdown or native navigation was lost.');
 		$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 		$xpath = new DOMXPath($document);
+		$heading = $xpath->query('//div[@class="objectInfo"]')->item(0);
+		checkDownload($heading->textContent === $object->values['ca_objects.preferred_labels.name'].' ('.$object->values['idno'].')' && $heading->getAttribute('title') === $heading->textContent, 'Image viewer must show the current object title and identifier, with full hover text.');
+		checkDownload(!str_contains($html, 'Synthetic_filename.tiff') && $xpath->query('//div[@class="objectInfo"]//script')->length === 0 && str_contains($html, 'tadl-image-viewer-controls'), 'Image viewer heading was not escaped or retained the representation filename.');
 		checkDownload($xpath->query('//div[@id="caMediaOverlayContent"]//details[contains(@class,"tadl-viewer-downloads")]')->length === 1, 'Viewer download menu must accompany the selected native viewer.');
 		$summary = $xpath->query('//details/summary')->item(0);
 		checkDownload($summary->getAttribute('aria-label') === 'Download' && $summary->getAttribute('title') === 'Download' && trim($summary->textContent) === '', 'Viewer download must be an accessible icon control.');
 	}
 }
+
+$object->values['ca_objects.preferred_labels.name'] = 'A different synthetic object';
+$object->values['idno'] = '';
+$html = $renderOverlay->call($view);
+checkDownload(str_contains($html, 'A different synthetic object') && !str_contains($html, 'tadl-viewer-object-identifier') && !str_contains($html, 'Synthetic $1'), 'Fresh overlay title or missing-identifier handling is incorrect.');
+$object->values['ca_objects.preferred_labels.name'] = '';
+$html = $renderOverlay->call($view);
+checkDownload(str_contains($html, 'tadl-viewer-object-title">Object</span>'), 'Missing titles need a readable object fallback.');
+$object->readable = false;
+$html = $renderOverlay->call($view);
+checkDownload(!str_contains($html, 'tadl-viewer-object-title'), 'Unreadable object metadata must not populate the viewer heading.');
+$object->readable = true;
+$request->params['context'] = 'places';
+$html = $renderOverlay->call($view);
+checkDownload(str_contains($html, 'Synthetic_filename.tiff') && !str_contains($html, 'tadl-image-viewer-controls'), 'Non-object media headers must keep their native context.');
 
 // Gallery AJAX replaces the entire actual media partial. Its toolbar and global
 // navigation callback must follow the new item rather than retain the first IDs.

@@ -1343,6 +1343,51 @@ h6 {
     z-index: 300;
 }
 
+div.caMediaOverlayControls.tadl-image-viewer-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 10px;
+}
+
+div.tadl-image-viewer-controls .objectInfo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+    padding: 0;
+    float: none;
+}
+
+.tadl-viewer-object-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tadl-viewer-object-identifier {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+div.tadl-image-viewer-controls .repNav,
+div.tadl-image-viewer-controls .nextPreviousLinks,
+div.tadl-image-viewer-controls .close {
+    flex: 0 0 auto;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    float: none;
+    white-space: nowrap;
+}
+
+div.tadl-image-viewer-controls .close {
+    order: 1;
+}
+
 .tileviewer .tadl-viewer-downloads {
     width: auto;
     height: 45px;

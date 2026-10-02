@@ -32,11 +32,21 @@
 require_once(__DIR__.'/../../helpers/image_downloads.php');
 $download_controls = $this->getVar('controls');
 $viewer_download = '';
+$viewer_object_heading = '';
 if ($this->getVar('viewer') === 'TileViewer' && in_array($this->getVar('context') ?: $this->request->getParameter('context', pString), ['objects', 'gallery'], true)
 	&& preg_match('/^representation:(\d+)$/', (string)$this->getVar('identifier'), $download_match)) {
 	$t_download_object = Datamodel::getInstance('ca_objects', true);
 	$download_object_id = $this->request->getParameter('id', pInteger) ?: $this->request->getParameter('object_id', pInteger);
 	if ($t_download_object && $t_download_object->load((int)$download_object_id)) {
+		if ($t_download_object->isReadable($this->request)) {
+			$object_title = trim((string)$t_download_object->get('ca_objects.preferred_labels.name')) ?: _t('Object');
+			$object_identifier = trim((string)$t_download_object->get('idno'));
+			$identifier_text = $object_identifier !== '' ? ' ('.$object_identifier.')' : '';
+			$viewer_object_heading = '<div class="objectInfo" title="'.htmlspecialchars($object_title.$identifier_text, ENT_QUOTES, 'UTF-8').'">'
+				.'<span class="tadl-viewer-object-title">'.htmlspecialchars($object_title, ENT_QUOTES, 'UTF-8').'</span>'
+				.($identifier_text !== '' ? '<span class="tadl-viewer-object-identifier">'.htmlspecialchars($identifier_text, ENT_QUOTES, 'UTF-8').'</span>' : '').'</div>';
+			$download_controls = preg_replace_callback('~<div class=[\'\"]objectInfo[\'\"]>.*?</div>~is', static function () use ($viewer_object_heading) { return $viewer_object_heading; }, (string)$download_controls);
+		}
 		$viewer_download = tadlImageDownloadLinks($this->request, $t_download_object, (int)$download_match[1], true);
 		$download_controls = preg_replace('~<div class=[\'\"]download[\'\"]>.*?</div>~is', '', (string)$download_controls);
 	}
@@ -48,7 +58,7 @@ if ($this->getVar('viewer') === 'TileViewer' && in_array($this->getVar('context'
 	<div class='close'><a href="#" onclick="caMediaPanel.hidePanel(); return false;" title="close"><i class="fa fa-times" aria-hidden="true"></i></a></div>
 </div>
 <?php } else { ?>
-<div class="caMediaOverlayControls">
+<div class="caMediaOverlayControls<?= $viewer_object_heading !== '' ? ' tadl-image-viewer-controls' : ''; ?>">
 	<div class='close'><a href="#" onclick="caMediaPanel.hidePanel(); return false;" title="close"><i class="fa fa-times" aria-hidden="true"></i></a></div>
 	<?php print $download_controls; ?>
 </div>
