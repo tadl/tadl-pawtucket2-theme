@@ -295,6 +295,14 @@ field helper treats HTML-only markup, encoded nonbreaking spaces and invisible
 Unicode whitespace as empty; numeric `0` remains populated. Relationship headings
 on object, collection and gallery records use the same rendered-value check,
 with native access filtering preserved. Authority metadata uses the shared helper.
+Relationship labels across Detail pages follow the linked record name in
+parentheses, with a separating space and natural wrapping. The shared authority
+helper/CSS applies this to people, organizations, places and events, including
+collapsed relationship lists; absent roles produce no empty parentheses. Link
+and role text use the surrounding metadata size and normal weight, with the role
+inheriting the metadata text color. Native directional names and access checks
+remain unchanged. Synthetic desktop and 390px browser previews verified inline
+roles, matching 18px/normal-weight text and natural wrapping without overflow.
 Individual entities (the `ind` type and its descendants) show **Occupation** with
 each optional occupation date in parentheses. Native structured `occupation`
 attributes preserve name/date pairing; empty names are skipped and the bundle's

@@ -99,7 +99,7 @@ function tadlAuthorityRelatedGroups($request, $item, $table) {
 			if (!$id || !$label || ($related_table === $table && $id === (int)$item->get($definition['key']))) { continue; }
 			$role = trim((string)($row['relationship_typename'] ?? ''));
 			$html = '<li><span class="tadl-authority-relationship-label">'.caDetailLink($request, tadlAuthorityEscape($label), '', $related_table, $id).'</span>';
-			if ($role) { $html .= '<span class="tadl-authority-relationship-role">'.tadlAuthorityEscape($role).'</span>'; }
+			if ($role) { $html .= ' <span class="tadl-authority-relationship-role">('.tadlAuthorityEscape($role).')</span>'; }
 			$links[] = ['label' => $label, 'html' => $html.'</li>'];
 		}
 		if (!$links) { continue; }

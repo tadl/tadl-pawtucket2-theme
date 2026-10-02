@@ -183,10 +183,13 @@ checkAuthority(!str_contains($markup, 'Synthetic private') && !str_contains($mar
 checkAuthority(count($GLOBALS['authorityMediaCalls']) === 1 && $GLOBALS['authorityMediaCalls'][0][1] === [50, 52], 'Collection eligibility must follow native access filtering.');
 checkAuthority(substr_count($markup, '/ca_entities/77') === 2 && !str_contains($markup, '/ca_entities/42') && !str_contains($markup, '/ca_entities/999'), 'Self relations used row_id/relationship ID or removed distinct relationships.');
 checkAuthority(str_contains($markup, 'Parent of') && str_contains($markup, 'Employer of') && str_contains($markup, 'Participant in'), 'Native directional relationship names were lost.');
+checkAuthority(str_contains($markup, '</a></span> <span class="tadl-authority-relationship-role">(Parent of)</span>') && str_contains($markup, '(Employer of)</span>') && str_contains($markup, '(Participant in)</span>'), 'Relationship roles must follow their links with a space and parentheses.');
+checkAuthority(str_contains($markup, 'Synthetic accessible media collection</a></span> <span class="tadl-authority-relationship-role">(Part of)</span>'), 'Collection relationships must use the same inline role convention.');
 checkAuthority(!str_contains($markup, '<img ') && !str_contains($markup, '<script>') && str_contains($markup, '&lt;img') && str_contains($markup, '&lt;script&gt;'), 'Relationship label/role HTML was not escaped.');
 checkAuthority(str_contains($markup, '&amp; &quot;Harbor&quot;') && str_contains($markup, '&amp; &quot;near&quot;'), 'Relationship label/role quotes were not escaped.');
 $mediaCallsBefore = count($GLOBALS['authorityMediaCalls']);
 $all = tadlAuthorityRelatedGroups(new AuthorityRequest('all'), $item, 'ca_entities');
+checkAuthority(str_contains(join('', $all[0]['links']), 'Synthetic collection without media</a></span></li>'), 'Relationships without a role must omit parentheses and empty role markup.');
 checkAuthority(str_contains(join('', $all[0]['links']), '/ca_collections/52'), 'All-items mode failed to restore an accessible collection without media.');
 checkAuthority(count($GLOBALS['authorityMediaCalls']) === $mediaCallsBefore, 'All-items mode should not query media eligibility.');
 

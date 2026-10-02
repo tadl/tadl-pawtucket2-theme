@@ -2103,15 +2103,14 @@ div.tadl-image-viewer-controls .close {
 }
 
 .tadl-authority-relationship-label {
-    display: block;
-    font-weight: 600;
+    display: inline;
+    font-weight: inherit;
 }
 
 .tadl-authority-relationship-role {
-    display: block;
-    margin-top: 3px;
-    color: var(--tadl-muted);
-    font-size: max(var(--tadl-text-min, 0px), 12px);
+    display: inline;
+    color: inherit;
+    font-size: inherit;
 }
 
 .tadl-authority-more {
