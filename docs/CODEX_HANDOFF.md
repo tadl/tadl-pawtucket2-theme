@@ -165,9 +165,11 @@ line numbers. Native application behavior can be inspected in the nearby
 - Object image actions sit in a left column, outside the
   image. On phones they appear above the image; opening
   Download pushes the image down. Gallery image actions sit below their image.
-  Keep native **Open media view**/compare callbacks; omit the image's
+  Keep native **Media viewer**/compare callbacks; omit the image's
   Lightbox action and replace its original-download link with one native HTML
   disclosure menu. Video toolbar behavior and account Lightbox remain unchanged.
+- **Media viewer** and **Download** share the same regular font and black text.
+  The viewer's visible label, accessible name and tooltip use the shorter label.
 - `views/Details/image_actions_script.php` moves the current toolbar node into
   `tadlObjectMediaActions`, preserving callbacks. The representation bundle calls
   it after each slide change so downloads follow the selected image, and clears

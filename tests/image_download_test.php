@@ -272,10 +272,11 @@ checkDownload(runDownload($request)->rendered, 'ACL-readable object should prese
 $controller = runDownload($request);
 checkDownload(preg_match('/^[A-Za-z0-9_-]+\.jpg$/', $controller->view->getVar('image_download_name')) === 1, 'Unsafe attachment filename.');
 [$object, $rep, $request] = resetDownload();
-$toolbar = '<div class=\'detailMediaToolbar\'><a href="#" class="zoomButton" onclick="nativeZoom()" aria-label="Open Media View"><i class="fa fa-search-plus"></i></a><a class="setsButton" href="/Lightbox">Login to add to lightbox</a><a class="dlButton" href="/original">Download</a><a class="compare_link" href="/compare">Compare</a></div><!-- end detailMediaToolbar -->';
+$toolbar = '<div class=\'detailMediaToolbar\'><a href="#" class="zoomButton" onclick="nativeZoom()" aria-label="Open Media View" title="Open Media View"><i class="fa fa-search-plus"></i></a><a class="setsButton" href="/Lightbox">Login to add to lightbox</a><a class="dlButton" href="/original">Download</a><a class="compare_link" href="/compare">Compare</a></div><!-- end detailMediaToolbar -->';
 $html = tadlImageToolbar($request, $object, 101, $toolbar);
 checkDownload(!str_contains($html, 'setsButton') && !str_contains($html, 'lightbox') && !str_contains($html, 'dlButton'), 'Old Lightbox/download buttons remain in toolbar.');
-checkDownload(str_contains($html, 'nativeZoom()') && str_contains($html, 'compare_link') && str_contains($html, 'Open media view'), 'Native zoom/compare actions changed.');
+checkDownload(str_contains($html, 'nativeZoom()') && str_contains($html, 'compare_link') && str_contains($html, 'Media viewer'), 'Native zoom/compare actions changed.');
+checkDownload(str_contains($html, 'aria-label="Media viewer"') && str_contains($html, 'title="Media viewer"'), 'Media viewer accessible name and tooltip must match its visible label.');
 checkDownload(substr_count($html, '<details') === 1 && str_contains($html, 'TIFF (to print)') && str_contains($html, 'JPG (to share)'), 'Toolbar must have one labeled dropdown.');
 $slide = '<div data-representation_id="101"><img src="/synthetic/still.jpg">'.$toolbar.'</div><script>nativeInitialization()</script>';
 $html = tadlImageViewerSlide($request, $object, 101, $slide);
@@ -339,7 +340,7 @@ foreach ($galleryItems as $position => $item) {
 	$toolbars = $xpath->query('//div['.$class('tadl-image-toolbar').']');
 	checkDownload($toolbars->length === 1, 'Gallery item '.$item['item'].' must render exactly one current image toolbar.');
 	$zoom = $xpath->query('//a['.$class('zoomButton').']');
-	checkDownload($zoom->length === 1 && $zoom->item(0)->getAttribute('onclick') === $zoomCallback && str_contains($zoom->item(0)->textContent, 'Open media view'), 'Gallery lost or rebuilt the native media-view callback.');
+	checkDownload($zoom->length === 1 && $zoom->item(0)->getAttribute('onclick') === $zoomCallback && str_contains($zoom->item(0)->textContent, 'Media viewer'), 'Gallery lost or rebuilt the native media-view callback.');
 	$compare = $xpath->query('//a['.$class('compare_link').']');
 	checkDownload($compare->length === 1 && $compare->item(0)->getAttribute('data-id') === 'representation:'.$rep->id, 'Gallery compare action retained the previous representation.');
 	$menus = $xpath->query('//details['.$class('tadl-image-downloads').']');

@@ -50,7 +50,11 @@ function tadlImageToolbar($request, $object, $representationID, $toolbar) {
 	if (!preg_match('!^image/!i', (string)($rows[$representationID]['mimetype'] ?? ''))) { return $toolbar; }
 	$toolbar = preg_replace('~<a\b(?=[^>]*\bclass=[\'\"][^\'\"]*\b(?:setsButton|dlButton)\b)[^>]*>.*?</a>~is', '', $toolbar);
 	$toolbar = preg_replace_callback('~(<a\b(?=[^>]*\bclass=[\'\"][^\'\"]*\bzoomButton\b)[^>]*>)(.*?)(</a>)~is', static function ($match) {
-		return $match[1].$match[2].'<span>'.htmlspecialchars(_t('Open media view'), ENT_QUOTES, 'UTF-8').'</span>'.$match[3];
+		$label = htmlspecialchars(_t('Media viewer'), ENT_QUOTES, 'UTF-8');
+		$link = preg_replace_callback('~\b(aria-label|title)\s*=\s*([\'\"])(.*?)\2~is', static function ($attribute) use ($label) {
+			return $attribute[1].'="'.$label.'"';
+		}, $match[1]);
+		return $link.$match[2].'<span>'.$label.'</span>'.$match[3];
 	}, $toolbar);
 	$menu = tadlImageDownloadLinks($request, $object, $representationID);
 	if (preg_match('~<div\b[^>]*\bclass=[\'\"]detailMediaToolbar[\'\"][^>]*>~i', $toolbar)) {

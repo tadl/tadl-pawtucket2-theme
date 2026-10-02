@@ -1281,19 +1281,25 @@ h6 {
     }
 }
 
-.tadl-image-downloads summary,
+.tadl-image-downloads summary.btn,
 .detail .tadl-image-toolbar a.zoomButton,
 .gallery .tadl-image-toolbar a.zoomButton {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
+    font-family: inherit;
     font-size: max(var(--tadl-text-min, 0px), 16px);
+    font-weight: 400;
     line-height: 1.4;
-    color: #333;
+    color: #000;
     background: #fff;
     border: 1px solid #ccc;
     border-radius: 4px;
+}
+
+.tadl-image-downloads summary.btn:is(:hover, :focus, :active) {
+    color: #000;
 }
 
 .detail .tadl-image-toolbar span,
