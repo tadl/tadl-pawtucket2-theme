@@ -124,7 +124,7 @@
 			
 				<hr></hr>
 					<div class="row">
-						<div class="col-sm-6">		
+						<div class="col-sm-12">
 <?php
 							print tadlDetailField($this->request, $t_object, 'Related people/organizations', '<unit relativeTo="ca_entities" delimiter="<br/>" excludeRelationshipTypes="creator,publisher"><l>^ca_entities.preferred_labels</l> (^relationship_typename)</unit>');
 ?>
@@ -149,7 +149,7 @@
 							
 							
 						</div><!-- end col -->				
-						<div class="col-sm-6 colBorderLeft">
+						<div class="col-sm-12">
 							{{{map}}}
 						</div>
 					</div><!-- end row -->

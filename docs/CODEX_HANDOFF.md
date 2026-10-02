@@ -209,6 +209,10 @@ line numbers. Native application behavior can be inspected in the nearby
 
 ### Related-object and vocabulary fixes
 
+Object-detail relationships use the full metadata-column width. Any map follows
+below them, so an absent map does not reserve half the sidebar or force related
+record labels to wrap early.
+
 The related-object template already establishes the current related record with
 `<unit relativeTo="ca_objects.related">`. Its inner label must therefore use
 `^ca_objects.preferred_labels.name`, not
