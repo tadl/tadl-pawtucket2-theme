@@ -199,6 +199,8 @@ line numbers. Native application behavior can be inspected in the nearby
   padding reserves its toolbar space so opening the menu cannot shift Rotate,
   Fit or Help. The zoom buttons have opaque dark squares, centered on the slider,
   with visible white symbols even when native handlers change their opacity.
+  The slider track is inset from both buttons so its handle clears them at the
+  minimum and maximum zoom positions.
   `conf/assets.conf` loads `image-downloads.js` site-wide. Its delegated capture
   handler closes open download menus on outside clicks, including canvas clicks
   and AJAX-loaded content. Escape closes menus before the viewer; Tab remains a

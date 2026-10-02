@@ -1422,10 +1422,11 @@ h6 {
 }
 
 .tileviewer .tileviewerToolbarZoomSlider {
-    left: 44px;
+    /* Leave room for the slider handle to extend beyond either track endpoint. */
+    left: 58px;
     top: 50%;
     transform: translateY(-50%);
-    width: calc(100% - 88px);
+    width: calc(100% - 116px);
 }
 
 .tileviewer .tileviewerControl:focus-visible,
