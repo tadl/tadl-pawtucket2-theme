@@ -375,11 +375,12 @@ const input = JSON.parse(fs.readFileSync(0, 'utf8'));
 let current = null, visible = true, ready, clears = 0;
 const target = {
  children: [],
+ contains(toolbar) { return this.children.includes(toolbar); },
  replaceChildren() { this.children = []; clears++; },
  appendChild(toolbar) { this.children.push(toolbar); current = null; }
 };
 const document = {
- querySelector() { return visible ? { querySelector() { return current; } } : null; },
+ querySelector() { return visible ? { querySelectorAll() { return [...(current ? [current] : []), ...target.children]; } } : null; },
  getElementById() { return target; }
 };
 const context = vm.createContext({document, jQuery: () => ({ready(callback) {ready = callback;}})});

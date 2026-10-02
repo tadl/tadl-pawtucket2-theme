@@ -1229,21 +1229,26 @@ h6 {
     display: none;
 }
 
-.tadl-object-action-rail .tadl-image-toolbar {
-    align-items: stretch;
-    flex-direction: column;
+.tadl-object-media-actions {
+    margin-top: 16px;
 }
 
-.tadl-object-action-rail .tadl-image-downloads,
-.tadl-object-action-rail .tadl-image-downloads summary {
-    width: 100%;
+.detail .tadl-object-media-actions .tadl-image-toolbar {
+    justify-content: center;
+    align-items: flex-start;
+    padding: 0;
+}
+
+/* Open menus grow the action row so the media thumbnails stay below it. */
+.tadl-object-media-actions .tadl-image-downloads ul {
+    position: static;
+    margin-top: 8px;
 }
 
 @media (min-width: 768px) {
     .tadl-object-detail {
         display: grid;
-        grid-template-columns: 190px minmax(0, 1fr);
-        gap: 16px;
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .tadl-object-detail::before,
@@ -1256,28 +1261,6 @@ h6 {
         min-width: 0;
         padding: 0;
         float: none;
-    }
-}
-
-@media (max-width: 767px) {
-    .tadl-object-action-rail {
-        padding: 0 15px;
-    }
-
-    .tadl-object-action-rail .tadl-image-toolbar {
-        flex-direction: row;
-        align-items: flex-start;
-        margin-bottom: 12px;
-    }
-
-    .tadl-object-action-rail .tadl-image-downloads,
-    .tadl-object-action-rail .tadl-image-downloads summary {
-        width: auto;
-    }
-
-    .tadl-object-action-rail .tadl-image-downloads ul {
-        position: static;
-        margin-top: 8px;
     }
 }
 
