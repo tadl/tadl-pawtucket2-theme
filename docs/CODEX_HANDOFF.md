@@ -63,7 +63,7 @@ before calling an issue deployed or still broken.
 | Galleries | `views/Gallery/index_html.php`, `set_info_html.php`, `detail_html.php`, `set_item_rep_html.php`, `set_item_info_html.php` |
 | Styling | `assets/pawtucket/css/theme.css`, with the existing `main.css` foundation |
 | Asset cache versions | `helpers/asset_versions.php`, shared header and standalone Lightbox presentation |
-| Collection finding aids | `controllers/FindingAidController.php`, `helpers/finding_aid.php`, `conf/finding_aid.conf`, PDF/binary detail views; `docs/FINDING_AIDS.md` |
+| Collection finding aids | `controllers/CollectionFindingAidController.php`, `helpers/finding_aid.php`, `conf/finding_aid.conf`, PDF/binary detail views; `docs/FINDING_AIDS.md` |
 | Regression checks | `tests/*_test.php` |
 
 Resolve abbreviated view filenames relative to the directory named in their row.
@@ -84,6 +84,10 @@ storage locations are shown only when readable; they are not asserted to be
 current physical locations. The PDF uses the existing Dompdf dependency with
 remote resources/PHP/JS disabled. See `docs/FINDING_AIDS.md` for field mappings,
 source boundaries, real-render verification and pending archives-team decisions.
+The theme endpoint is `/CollectionFindingAid/Download/collection_id/<id>`;
+`FindingAid` is a reserved bundled-plugin prefix in native URL parsing. The renamed
+controller and collection link must be deployed together. Optional native
+dispatcher verification is documented in `docs/FINDING_AIDS.md`.
 
 ### Asset cache versions
 

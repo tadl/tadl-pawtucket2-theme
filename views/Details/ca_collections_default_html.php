@@ -58,7 +58,7 @@
 					{{{<ifdef code="ca_collections.parent_id"><div class="unit">Part of: <unit relativeTo="ca_collections.hierarchy" delimiter=" &gt; "><l>^ca_collections.preferred_labels.name</l></unit></div></ifdef>}}}
 <?php					
 					if ($vn_pdf_enabled) {
-						$finding_aid_url = caNavUrl($this->request, '', 'FindingAid', 'Download', ['collection_id' => (int)$t_item->get('collection_id')]);
+						$finding_aid_url = caNavUrl($this->request, '', 'CollectionFindingAid', 'Download', ['collection_id' => (int)$t_item->get('collection_id')]);
 						print "<div class='exportCollection'><span class='glyphicon glyphicon-file' aria-hidden='true'></span> <a href=\"".htmlspecialchars($finding_aid_url, ENT_QUOTES, 'UTF-8')."\">".htmlspecialchars(_t('Download Finding Aid'), ENT_QUOTES, 'UTF-8')."</a></div>";
 					}
 ?>

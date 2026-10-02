@@ -83,7 +83,7 @@ foreach ([[], ['ca_collections.description' => '<p>&nbsp;</p>', 'ca_collections.
 	checkDetailScripts(!preg_match('~<label>(Description|Dates|Related collections|Related people|Related events|Related places)</label>~', $html), 'Empty collection fields or relationships emitted headings.');
 }
 $html = (new DetailScriptView(0, ['ca_collections.description' => 'Synthetic description', 'ca_collections.date.dates_value' => '1930', 'relativeTo="ca_places"' => '<a href="/synthetic/place">Synthetic place</a>']))->render('ca_collections');
-checkDetailScripts(str_contains($html, 'Download Finding Aid') && str_contains($html, '/synthetic/FindingAid/Download/collection_id/42'), 'Finding aid must download the selected collection.');
+checkDetailScripts(str_contains($html, 'Download Finding Aid') && str_contains($html, '/synthetic/CollectionFindingAid/Download/collection_id/42'), 'Finding aid must download the selected collection.');
 checkDetailScripts(!str_contains($html, 'Download as PDF') && !str_contains($html, '_pdf_ca_collections_summary'), 'Collection still links to the generic summary export.');
 checkDetailScripts(str_contains($html, '<label>Description</label>Synthetic description') && str_contains($html, '<label>Dates</label>1930') && str_contains($html, '<label>Related places</label><a href="/synthetic/place">Synthetic place</a>'), 'Populated collection fields lost headings or native links.');
 

@@ -2,7 +2,8 @@
 require_once(__CA_LIB_DIR__.'/pawtucket/BasePawtucketController.php');
 require_once(__DIR__.'/../helpers/finding_aid.php');
 
-class FindingAidController extends BasePawtucketController {
+// "FindingAid" is reserved by Pawtucket's bundled plugin during URL parsing.
+class CollectionFindingAidController extends BasePawtucketController {
 	public function Download() {
 		if ($this->request->getRequestMethod() !== 'GET') {
 			$this->response->addHeader('Allow', 'GET');

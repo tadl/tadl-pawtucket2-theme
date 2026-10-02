@@ -52,7 +52,15 @@ records, including their own label/identifier bundle permissions. Set
 
 ## Implementation and access
 
-- `controllers/FindingAidController.php`: GET-only download, selected collection
+The theme download URL is `/CollectionFindingAid/Download/collection_id/<id>`.
+Do not use `FindingAid` as the controller name: Pawtucket's native dispatcher
+treats that prefix as its bundled plugin, even when the plugin is disabled, and
+looks for a plugin `DownloadController` instead of the theme controller. Deploy
+the renamed controller and updated collection detail view together; then reload
+the collection page and use its updated link. The original `/FindingAid/Download/`
+URL is not the theme endpoint.
+
+- `controllers/CollectionFindingAidController.php`: GET-only download, selected collection
   validation, login requirements, configuration, generation and safe filename.
 - `helpers/finding_aid.php`: native model traversal, record/type/source/bundle/ACL
   checks, accessible metadata, unique inventory and Dompdf rendering.
@@ -85,6 +93,18 @@ limit; infrastructure timeouts still apply.
 Run `php tests/finding_aid_test.php` for synthetic controller, access, hierarchy,
 duplicate-membership, field, location, escaping and renderer boundaries. It
 includes a 4,105-object inventory to catch default-cap regressions.
+
+Optionally verify URL parsing through the actual Pawtucket dispatcher:
+
+```sh
+TADL_TEST_REQUEST_DISPATCHER=/path/to/pawtucket/app/lib/Controller/RequestDispatcher.php \
+php tests/finding_aid_test.php
+```
+
+This uses synthetic controller/plugin directories, reproduces the bundled
+`FindingAid` collision and verifies that the new route resolves to the existing
+theme controller/action with the selected collection ID. It does not bootstrap
+the application, invoke the plugin or connect to a database.
 
 To verify with an available reference Composer runtime:
 

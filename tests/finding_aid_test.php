@@ -100,6 +100,7 @@ mkdir($directory.'/pawtucket', 0700, true);
 file_put_contents($directory.'/pawtucket/BasePawtucketController.php', '<?php');
 define('__CA_LIB_DIR__', $directory);
 register_shutdown_function(function () use ($directory) {
+	if (isset($GLOBALS['aidRoutingCleanup'])) { ($GLOBALS['aidRoutingCleanup'])(); }
 	foreach (['/pawtucket/BasePawtucketController.php', '/pdf_stub.php'] as $file) { if (is_file($directory.$file)) { unlink($directory.$file); } }
 	rmdir($directory.'/pawtucket'); rmdir($directory);
 });
@@ -124,8 +125,11 @@ class Dompdf {
 PHP);
 	require $directory.'/pdf_stub.php';
 }
-require dirname(__DIR__).'/controllers/FindingAidController.php';
+require dirname(__DIR__).'/controllers/CollectionFindingAidController.php';
 $GLOBALS['aidConfig'] = new AidConfig();
+if ($dispatcher_path = getenv('TADL_TEST_REQUEST_DISPATCHER')) {
+	require __DIR__.'/support/finding_aid_routing.php';
+}
 function aidRow($id, $table, $title, $identifier = '', $extra = []) {
 	return array_replace_recursive(['id' => $id, 'access' => 1, 'deleted' => 0, 'values' => [$table.'.preferred_labels.name' => $title, $table.'.idno' => $identifier]], $extra);
 }
@@ -210,22 +214,22 @@ foreach ([
 	[new AidRequest(['collection_id' => 999]), 404], [new AidRequest(['collection_id' => 8]), 404],
 	[new AidRequest(['collection_id' => 10]), 404]
 ] as [$case, $expected]) {
-	$response = new AidResponse(); $controller = new FindingAidController($case, $response); $controller->Download();
+	$response = new AidResponse(); $controller = new CollectionFindingAidController($case, $response); $controller->Download();
 	aidCheck($response->status === $expected && !$controller->rendered, 'Invalid/missing/unreadable request must not export.');
 }
 $case = new AidRequest(); $case->config->values['pawtucket_requires_login'] = 1;
-$response = new AidResponse(); (new FindingAidController($case, $response))->Download(); aidCheck($response->status === 403, 'Required login must be enforced.');
+$response = new AidResponse(); (new CollectionFindingAidController($case, $response))->Download(); aidCheck($response->status === 403, 'Required login must be enforced.');
 $GLOBALS['aidConfig']->values['enabled'] = 0;
-$response = new AidResponse(); (new FindingAidController(new AidRequest(), $response))->Download(); aidCheck($response->status === 404, 'Disabled finding aids must be rejected.');
+$response = new AidResponse(); (new CollectionFindingAidController(new AidRequest(), $response))->Download(); aidCheck($response->status === 404, 'Disabled finding aids must be rejected.');
 $GLOBALS['aidConfig']->values['enabled'] = 1;
-$response = new AidResponse(); $controller = new FindingAidController(new AidRequest(), $response); $controller->Download();
+$response = new AidResponse(); $controller = new CollectionFindingAidController(new AidRequest(), $response); $controller->Download();
 aidCheck($response->status === 200 && $controller->rendered && $response->headers['Cache-Control'] === 'private, no-store', 'Valid download must produce an uncached PDF attachment.');
 aidCheck($controller->view->getVar('finding_aid_name') === 'SYN-42-finding-aid.pdf', 'Filename must be safe and identify the collection.');
 aidCheck(str_starts_with($controller->view->getVar('finding_aid_bytes'), '%PDF-'), 'Download bytes must be PDF.');
 if (!$autoload) {
 	aidCheck($GLOBALS['aidPDFOptions'] === ['isRemoteEnabled' => false, 'isPhpEnabled' => false, 'isJavascriptEnabled' => false], 'Unsafe PDF features must remain disabled.');
 	aidCheck($GLOBALS['aidPDFFooter'] === '{PAGE_NUM} / {PAGE_COUNT}', 'Page numbering must be present.');
-	$GLOBALS['aidPDFFail'] = true; $response = new AidResponse(); $failed = new FindingAidController(new AidRequest(), $response); $failed->Download();
+	$GLOBALS['aidPDFFail'] = true; $response = new AidResponse(); $failed = new CollectionFindingAidController(new AidRequest(), $response); $failed->Download();
 	aidCheck($response->status === 503 && !$failed->rendered && !str_contains($response->body, 'Synthetic renderer failure'), 'Renderer failure must be safe and actionable.');
 }
 if ($output = getenv('TADL_TEST_FINDING_AID_PDF')) {
