@@ -303,6 +303,12 @@ and role text use the surrounding metadata size and normal weight, with the role
 inheriting the metadata text color. Native directional names and access checks
 remain unchanged. Synthetic desktop and 390px browser previews verified inline
 roles, matching 18px/normal-weight text and natural wrapping without overflow.
+Authority sidebars also use the shared Detail metadata styling: uppercase dark
+field/relationship headings, normal weight, 18px values, 12px field spacing and
+the same muted links as object records. The redundant visible About heading is
+replaced by the section's accessible name. Desktop sidebars have no extra left
+border/padding, and relationships have no individual row separators; the mobile
+section separator and expandable relationship groups remain.
 Individual entities (the `ind` type and its descendants) show **Occupation** with
 each optional occupation date in parentheses. Native structured `occupation`
 attributes preserve name/date pairing; empty names are skipped and the bundle's

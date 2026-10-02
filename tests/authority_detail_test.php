@@ -251,6 +251,7 @@ checkAuthority(array_map(fn($node) => $node->textContent, iterator_to_array($vis
 $additional = $xpath->query('//details[contains(@class,"tadl-authority-more")]/ul/li/span/a');
 checkAuthority(array_map(fn($node) => $node->textContent, iterator_to_array($additional)) === ['Foxtrot', 'Golf'], 'Native details disclosure should contain all remaining sorted relationships.');
 checkAuthority($xpath->query('//details[contains(@class,"tadl-authority-more")]/summary')->item(0)->textContent === 'Show 2 more places', 'Disclosure should describe its additional relationships.');
+checkAuthority($xpath->query('//aside[contains(@class,"tadl-detail-metadata")]//h2[contains(@class,"tadl-metadata-heading")]')->length === 1, 'Relationship headings must use shared Detail metadata styling.');
 checkAuthority(!str_contains($html, 'tadl-authority-about'), 'Empty metadata should not create an empty About section.');
 
 $nodeFixtures = [];
@@ -284,7 +285,9 @@ $item = new AuthorityItem('ca_entities', 21, 'Synthetic studio');
 $item->fields['^ca_entities.biography'] = '<p>Synthetic studio description.</p>';
 $item->fields['^ca_entities.date.dates_value'] = '1900–1950';
 $html = (new AuthorityView(new AuthorityRequest('all'), $item, ['commentsEnabled' => true, 'comments' => ['synthetic'], 'itemComments' => '<p>Synthetic comment.</p>', 'shareEnabled' => true, 'shareLink' => '<a href="/synthetic/share">Share</a>']))->render();
-checkAuthority(str_contains($html, 'About this organization') && str_contains($html, 'Synthetic studio description.') && str_contains($html, '1900–1950'), 'Organization metadata fields or About heading were lost.');
+checkAuthority(str_contains($html, 'aria-label="About this organization"') && str_contains($html, 'Synthetic studio description.') && str_contains($html, '1900–1950'), 'Organization metadata fields or accessible section name were lost.');
+$metadataXPath = authorityDocument($html);
+checkAuthority($metadataXPath->query('//aside[contains(@class,"tadl-detail-metadata")]//section[contains(@class,"tadl-authority-about")]/h2')->length === 0, 'Metadata must start with field labels, without a redundant visible About heading.');
 checkAuthority(str_contains($html, 'Comments (1)') && str_contains($html, 'Synthetic comment.') && str_contains($html, '/synthetic/share'), 'Native comment/share content was lost.');
 
 $item = new AuthorityItem('ca_entities', 12, 'Synthetic photographer');

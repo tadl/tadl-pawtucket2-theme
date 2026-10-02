@@ -66,9 +66,42 @@ body.tadl-interior {
 }
 
 .tadl-interior .detail .unit,
-.tadl-interior .detail .unit .trimText {
+.tadl-interior .detail .unit .trimText,
+.tadl-interior .tadl-detail-metadata .unit {
     font-size: 18px;
     line-height: 1.6;
+}
+
+/* Native Detail fields and authority sidebars share one metadata presentation. */
+.tadl-detail-metadata {
+    color: #454545;
+}
+
+.tadl-detail-metadata .unit {
+    margin-bottom: 12px;
+}
+
+.detail .unit label,
+.tadl-detail-metadata .unit label,
+.tadl-detail-metadata .tadl-metadata-heading {
+    display: block;
+    margin: 10px 0 5px;
+    padding: 0;
+    color: #454545;
+    font-size: max(var(--tadl-text-min, 0px), 12px);
+    font-weight: normal;
+    line-height: inherit;
+    text-transform: uppercase;
+}
+
+.tadl-detail-metadata a {
+    color: #757575;
+    text-decoration: none;
+}
+
+.tadl-detail-metadata a:hover {
+    color: #737373;
+    text-decoration: underline;
 }
 
 a,
@@ -2040,8 +2073,7 @@ div.tadl-image-viewer-controls .close {
     margin-bottom: 20px;
 }
 
-.tadl-authority-section-heading h2,
-.tadl-authority-sidebar h2 {
+.tadl-authority-section-heading h2 {
     margin: 0;
     color: var(--tadl-primary-dark);
     font-size: 21px;
@@ -2056,32 +2088,17 @@ div.tadl-image-viewer-controls .close {
 }
 
 .tadl-authority-sidebar {
-    padding-left: 28px;
-    border-left: 1px solid var(--tadl-border);
     overflow-wrap: anywhere;
 }
 
-.tadl-authority-about,
 .tadl-authority-related {
-    margin-bottom: 28px;
+    margin-bottom: 12px;
 }
 
-.tadl-authority-sidebar h2 {
-    margin-bottom: 16px;
-}
-
-.tadl-authority-about .unit {
-    margin-bottom: 18px;
-    font-size: max(var(--tadl-text-min, 0px), 14px);
-    line-height: 1.6;
-}
-
-.tadl-authority-about .unit label {
-    margin: 0 0 5px;
-    color: var(--tadl-muted);
-    font-size: max(var(--tadl-text-min, 0px), 12px);
-    font-weight: 700;
-    text-transform: none;
+.tadl-authority-about + .tadl-authority-related {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #ededed;
 }
 
 .tadl-authority-relationships {
@@ -2091,14 +2108,9 @@ div.tadl-image-viewer-controls .close {
 }
 
 .tadl-authority-relationships > li {
-    padding: 10px 0;
-    border-bottom: 1px solid var(--tadl-border);
+    padding: 0;
     font-size: max(var(--tadl-text-min, 0px), 14px);
-    line-height: 1.5;
-}
-
-.tadl-authority-relationships > li:first-child {
-    padding-top: 0;
+    line-height: 1.6;
 }
 
 .tadl-authority-relationship-label {

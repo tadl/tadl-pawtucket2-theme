@@ -31,16 +31,15 @@ $error_html = '<p class="tadl-authority-error">'.tadlAuthorityEscape(_t('Related
 			<noscript><p><?= tadlAuthorityEscape(_t('Open “View all related items” to explore this record’s items.')); ?></p></noscript>
 		</section>
 		<?php if ($has_sidebar): ?>
-		<aside class="tadl-authority-sidebar" aria-label="<?= tadlAuthorityEscape(_t('Record information')); ?>">
+		<aside class="tadl-authority-sidebar tadl-detail-metadata" aria-label="<?= tadlAuthorityEscape(_t('Record information')); ?>">
 			<?php if ($authority_fields): ?>
-			<section class="tadl-authority-about">
-				<h2><?= tadlAuthorityEscape($authority['about']); ?></h2>
+			<section class="tadl-authority-about" aria-label="<?= tadlAuthorityEscape($authority['about']); ?>">
 				<?= $authority_fields; ?>
 			</section>
 			<?php endif; ?>
 			<?php foreach ($authority_groups as $group): ?>
 			<section class="tadl-authority-related">
-				<h2><?= tadlAuthorityEscape($group['heading']); ?></h2>
+				<h2 class="tadl-metadata-heading"><?= tadlAuthorityEscape($group['heading']); ?></h2>
 				<ul class="tadl-authority-relationships"><?= join('', array_slice($group['links'], 0, 5)); ?></ul>
 				<?php if (count($group['links']) > 5): ?>
 				<details class="tadl-authority-more">
