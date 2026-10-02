@@ -31,4 +31,15 @@ function tadlPlaceViewerDownload(overlay) {
     const rotation = column.querySelector('[id$="ControlRotation"]');
     if (rotation) { column.insertBefore(menu, rotation); }
     else { column.prepend(menu); }
+    // This control is inserted after TileViewer initializes its native tooltips.
+    if (typeof jQuery !== 'undefined' && jQuery.fn.uitooltip) {
+        jQuery(menu.querySelector('summary')).uitooltip({
+            tooltipClass: 'tileviewerTooltipFormat',
+            hide: false,
+            position: {my: 'right top+5', at: 'left top', collision: 'flipfit'}
+        }).on('click', function () {
+            // The tooltip sits beside this icon, where the download menu opens.
+            jQuery(this).uitooltip('close');
+        });
+    }
 }

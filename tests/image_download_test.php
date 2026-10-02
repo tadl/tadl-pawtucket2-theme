@@ -409,7 +409,14 @@ assert.equal(clears, 4);
 const listeners = {};
 const focused = {};
 const menu = {open:true, contains(node) { return node === focused; }, querySelector() { return {focus() {menu.focused=true;}}; }};
-const menusContext = vm.createContext({document:{
+const tooltipCalls = [];
+let tooltipClick;
+const tooltipJQuery = element => ({
+ uitooltip(options) {tooltipCalls.push({element, options}); return this;},
+ on(event, callback) {assert.equal(event,'click');tooltipClick=callback;return this;}
+});
+tooltipJQuery.fn = {uitooltip() {}};
+const menusContext = vm.createContext({jQuery:tooltipJQuery,document:{
  activeElement: focused,
  addEventListener(type, callback, capture) { assert.equal(capture,true); listeners[type]=callback; },
  querySelectorAll() { return menu.open ? [menu] : []; }
@@ -431,8 +438,16 @@ let placed=null;
 const column = {contains(node){return placed===node;},querySelector(){return rotation;},insertBefore(node,before){assert.equal(before,rotation);placed=node;},prepend(node){placed=node;}};
 const overlay = {querySelector(selector){return selector === '.tadl-viewer-downloads' ? menu : column;}};
 menusContext.tadlPlaceViewerDownload(overlay); assert.equal(placed,menu);
+assert.equal(tooltipCalls.length,1);
+assert.equal(typeof tooltipCalls[0].element.focus,'function');
+assert.equal(tooltipCalls[0].options.tooltipClass,'tileviewerTooltipFormat');
+assert.equal(tooltipCalls[0].options.hide,false);
+assert.equal(tooltipCalls[0].options.position.collision,'flipfit');
+tooltipClick.call(tooltipCalls[0].element);
+assert.equal(tooltipCalls[1].options,'close'); // The opened menu is not obscured by its tooltip.
 column.insertBefore=()=>assert.fail('Already placed menu moved twice');
 menusContext.tadlPlaceViewerDownload(overlay);
+assert.equal(tooltipCalls.length,2); // Repeated placement does not initialize another tooltip.
 column.querySelector=()=>null; placed=null;
 menusContext.tadlPlaceViewerDownload(overlay); assert.equal(placed,menu);
 menusContext.tadlPlaceViewerDownload(null);

@@ -187,6 +187,10 @@ line numbers. Native application behavior can be inspected in the nearby
 - The enlarged viewer uses an accessible Download icon immediately above Rotate
   in the native TileViewer control column. The wrapper moves the existing menu
   after native initialization; normal object/gallery page buttons stay labeled.
+  Its tooltip uses the native jQuery UI tooltip styling and positioning. Fixed
+  padding reserves its toolbar space so opening the menu cannot shift Rotate,
+  Fit or Help. The zoom buttons have opaque dark squares, centered on the slider,
+  with visible white symbols even when native handlers change their opacity.
   `conf/assets.conf` loads `image-downloads.js` site-wide. Its delegated capture
   handler closes open download menus on outside clicks, including canvas clicks
   and AJAX-loaded content. Escape closes menus before the viewer; Tab remains a

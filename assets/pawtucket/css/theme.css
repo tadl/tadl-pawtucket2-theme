@@ -1347,6 +1347,9 @@ h6 {
 
 .tileviewer .tadl-viewer-downloads {
     width: auto;
+    height: 45px;
+    box-sizing: border-box;
+    padding: 5px 0 8px;
     margin: 0;
 }
 
@@ -1355,7 +1358,7 @@ h6 {
     align-items: center;
     justify-content: center;
     min-height: 32px;
-    margin: 5px 0 8px;
+    margin: 0;
     color: #fff;
     font-size: 24px;
     line-height: 1;
@@ -1383,9 +1386,22 @@ h6 {
     justify-content: center;
     width: 40px;
     height: 40px;
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    border-radius: 3px;
+    background: #333;
+    /* Native zoom handlers set inline opacity; keep both buttons legible. */
+    opacity: 1 !important;
     color: #fff;
     font-size: 28px;
+    font-weight: 600;
     line-height: 1;
+}
+
+.tileviewer .tileviewerControlZoomIn:is(:hover, :focus-visible),
+.tileviewer .tileviewerControlZoomOut:is(:hover, :focus-visible) {
+    background: #111;
+    color: #fff;
 }
 
 .tileviewerControlZoomIn i,
@@ -1409,7 +1425,8 @@ h6 {
 
 .tileviewer .tileviewerToolbarZoomSlider {
     left: 44px;
-    top: 18px;
+    top: 50%;
+    transform: translateY(-50%);
     width: calc(100% - 88px);
 }
 
