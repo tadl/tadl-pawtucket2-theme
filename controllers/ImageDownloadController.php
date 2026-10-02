@@ -14,7 +14,7 @@ class ImageDownloadController extends BasePawtucketController {
 		$objectID = (int)$this->request->getParameter('object_id', pInteger);
 		$representationID = (int)$this->request->getParameter('representation_id', pInteger);
 		$format = $this->request->getParameter('format', pString);
-		if ($objectID < 1 || $representationID < 1 || !in_array($format, ['jpg', 'tiff'], true)) {
+		if ($objectID < 1 || $representationID < 1 || !in_array($format, ['jpg', 'tiff', 'pdf'], true)) {
 			$this->response->setHTTPResponseCode(400, 'Bad Request'); return;
 		}
 		$object = Datamodel::getInstance('ca_objects', true);

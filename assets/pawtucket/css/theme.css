@@ -1178,6 +1178,7 @@ h6 {
     margin: 12px 0;
 }
 
+.detail .tadl-image-toolbar,
 .detail .repViewerCont .tadl-image-toolbar,
 .detail .repViewerCont:hover .tadl-image-toolbar,
 .gallery #galleryDetailImageArea #galleryDetailImageWrapper .tadl-image-toolbar,
@@ -1186,19 +1187,89 @@ h6 {
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
-    top: 12px;
-    left: 12px;
-    max-width: calc(100% - 24px);
+    position: static;
+    max-width: 100%;
     box-sizing: border-box;
-    padding: 10px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, .96);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+    padding: 12px 0;
+    background: transparent;
 }
 
 .tadl-image-toolbar .tadl-image-downloads {
     margin: 0;
     flex: 0 0 auto;
+}
+
+#tadlObjectMediaActions:empty {
+    display: none;
+}
+
+.tadl-object-action-rail .navLeftRight {
+    width: 100%;
+    float: none;
+}
+
+.detail .tadl-object-action-rail .detailNavBgLeft {
+    position: static;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    width: 100%;
+    height: auto;
+    margin: 0 0 12px;
+    padding: 16px 8px 0;
+}
+
+.tadl-object-action-rail .tadl-image-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+}
+
+.tadl-object-action-rail .tadl-image-downloads,
+.tadl-object-action-rail .tadl-image-downloads summary {
+    width: 100%;
+}
+
+@media (min-width: 768px) {
+    .tadl-object-detail {
+        display: grid;
+        grid-template-columns: 190px minmax(0, 1fr) 45px;
+        gap: 16px;
+    }
+
+    .tadl-object-detail::before,
+    .tadl-object-detail::after {
+        display: none;
+    }
+
+    .tadl-object-detail > .tadl-object-main,
+    .tadl-object-detail > .navLeftRight {
+        width: 100%;
+        min-width: 0;
+        padding: 0;
+        float: none;
+    }
+}
+
+@media (max-width: 767px) {
+    .tadl-object-action-rail {
+        padding: 0 15px;
+    }
+
+    .tadl-object-action-rail .tadl-image-toolbar {
+        flex-direction: row;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .tadl-object-action-rail .tadl-image-downloads,
+    .tadl-object-action-rail .tadl-image-downloads summary {
+        width: auto;
+    }
+
+    .tadl-object-action-rail .tadl-image-downloads ul {
+        position: static;
+        margin-top: 8px;
+    }
 }
 
 .tadl-image-downloads summary,
@@ -1368,7 +1439,7 @@ h6 {
 
 @media (min-width: 768px) {
     .tadl-object-content > .row {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 

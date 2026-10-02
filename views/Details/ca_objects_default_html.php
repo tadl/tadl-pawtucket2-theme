@@ -45,12 +45,15 @@
 	<div class='col-xs-12 navTop'><!--- only shown at small screen size -->
 		{{{previousLink}}}<?php print $vs_history_back_link; ?>{{{nextLink}}}
 	</div><!-- end detailTop -->
-	<div class='navLeftRight col-xs-1 col-sm-1 col-md-1 col-lg-1'>
+	<aside class="tadl-object-action-rail">
+	<div class='navLeftRight'>
 		<div class="detailNavBgLeft">
 			{{{previousLink}}}<?php print $vs_history_back_link; ?>
 		</div><!-- end detailNavBgLeft -->
-	</div><!-- end col -->
-	<div class='col-xs-12 col-sm-10 col-md-10 col-lg-10'>
+	</div><!-- end navigation -->
+	<div id="tadlObjectMediaActions" role="group" aria-label="<?= htmlspecialchars(_t('Image actions'), ENT_QUOTES, 'UTF-8'); ?>"></div>
+	</aside>
+	<div class='col-xs-12 col-sm-10 col-md-10 col-lg-10 tadl-object-main'>
 		<div class="container tadl-object-content"><div class="row">
 			<div class='col-sm-6 col-md-6 col-lg-6 tadl-object-media'>
 				{{{representationViewer}}}
@@ -179,6 +182,7 @@
 	</div><!-- end col -->
 </div><!-- end row -->
 
+<?php require __DIR__.'/image_actions_script.php'; ?>
 <script type='text/javascript'>
 	jQuery(document).ready(function() {
 		$('.trimText').readmore({

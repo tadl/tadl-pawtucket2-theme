@@ -150,12 +150,19 @@ line numbers. Native application behavior can be inspected in the nearby
 - Multi-representation objects use side arrows and a position counter. Changing
   slides stops active media; thumbnails remain functional. Avoid colliding with
   native callback/count variable names.
-- Object and gallery image toolbars are always visible, larger, and wrap on narrow
-  screens. Keep native **Open media view**/compare callbacks; omit the image's
+- Object image actions sit in a left column below **Previous/Back**, outside the
+  image. On phones they appear below navigation and above the image; opening
+  Download pushes the image down. Gallery image actions sit below their image.
+  Keep native **Open media view**/compare callbacks; omit the image's
   Lightbox action and replace its original-download link with one native HTML
   disclosure menu. Video toolbar behavior and account Lightbox remain unchanged.
+- `views/Details/image_actions_script.php` moves the current toolbar node into
+  `tadlObjectMediaActions`, preserving callbacks. The representation bundle calls
+  it after each slide change so downloads follow the selected image, and clears
+  image actions on video slides. Repeated ready callbacks preserve single-image
+  controls. Without JavaScript the toolbar stays below the image, outside it.
 - Image downloads use **TIFF (to print)** when the original is TIFF, plus
-  **JPG (to share)**. The enlarged TileViewer has the same menu; preserve both
+  **JPG (to share)** and **PDF**. The enlarged TileViewer has the same menu; preserve both
   `id` and native `object_id` navigation URLs and replace its native download
   form while keeping viewer navigation/close controls.
 - JPG uses the original image dimensions, never the display-size derivative.
@@ -164,6 +171,12 @@ line numbers. Native application behavior can be inspected in the nearby
   background, without scaling. Native ImageMagick selects the first frame/page;
   TIFF downloads preserve the complete original file. No TIFF is synthesized for
   other source formats. Originals and permanent derivatives are unchanged.
+- PDF embeds that full-resolution JPEG on one letter-size page, with half-inch
+  margins and orientation matching the image. It contains the selected image,
+  rather than an object metadata report; multi-page TIFFs use the same first
+  frame/page as JPG. Pawtucket's bundled `Dompdf` dependency renders the PDF with
+  remote resources, PHP and JavaScript disabled. Its scratch files use the same
+  private request-local workspace and shutdown cleanup as image conversions.
 - The download endpoint rechecks object/representation access, ACLs, attachment,
   bundle visibility, the native download policy and permission for `original`.
   Private temporary conversions are removed at request shutdown. Byte MIME and
@@ -264,7 +277,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |
 | `tests/result_context_heading_test.php` | Results context, headings, removable criteria and Subjects browse/refine rendering |
 | `tests/object_detail_metadata_test.php` | Structured TGM pairing, safe links, escaping and permissions |
-| `tests/image_download_test.php` | Toolbar/bundle/overlay menus, download policy/ACL/attachment checks, original TIFF/JPEG bytes, conversion validation and failure handling |
+| `tests/image_download_test.php` | Toolbar/bundle/overlay menus, current image action relocation, download policy/ACL/attachment checks, TIFF/JPEG/PDF bytes, conversion validation and failure handling |
 | `tests/subjects_test.php` | Subject relationship rendering, escaping, native browse links, bundle access and Pawtucket ACL filtering |
 
 All eight original suites passed during handoff preparation, as did PHP lint.
@@ -298,6 +311,23 @@ TADL_TEST_MAGICK=/path/to/magick php tests/image_download_test.php
 
 This checks real conversion bytes/dimensions,
 but does not bootstrap the installed CollectiveAccess processor or database.
+
+Optionally use an existing Pawtucket Composer autoloader to test actual bundled
+Dompdf output, without bootstrapping the application or connecting to a database:
+
+```sh
+TADL_TEST_COMPOSER_AUTOLOAD=/path/to/pawtucket/vendor/autoload.php \
+TADL_TEST_MAGICK=/path/to/magick php tests/image_download_test.php
+```
+
+This path verifies a single PDF page, letter paper, and embedded original pixel
+dimensions. The normal suite uses a synthetic PDF renderer and also checks
+renderer failures. The optional suite ignores PHP 8.5 deprecations from `vendor/`
+while keeping theme warnings strict. Real Dompdf 2.0.8/ImageMagick checks passed
+locally; Poppler inspection and rendering confirmed one page with the unchanged
+JPEG pixel dimensions. Desktop, tablet and 390px mobile previews verified controls
+outside the image, menu expansion, no horizontal overflow, and download URLs
+updating when the selected representation changes. Production remains unverified.
 
 Full browser QA still needs a configured local application with a safe database
 and media setup, or an intentionally constructed synthetic local preview. Merely

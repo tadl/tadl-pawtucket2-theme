@@ -33,6 +33,7 @@ function tadlImageDownloadLinks($request, $object, $representationID) {
 		$formats['tiff'] = _t('TIFF (to print)');
 	}
 	$formats['jpg'] = _t('JPG (to share)');
+	$formats['pdf'] = _t('PDF');
 	$html = '<details class="tadl-image-downloads"><summary class="btn btn-default btn-sm"><i class="fa fa-download" aria-hidden="true"></i> '.htmlspecialchars(_t('Download'), ENT_QUOTES, 'UTF-8').' <span class="caret" aria-hidden="true"></span></summary><ul>';
 	foreach ($formats as $format => $label) {
 		$url = caNavUrl($request, '', 'ImageDownload', 'Download', [
@@ -68,8 +69,52 @@ function tadlImageViewerSlide($request, $object, $representationID, $slide) {
 	return $matched ? $slide : $slide.tadlImageToolbar($request, $object, $representationID, '');
 }
 
+/** Private request-local workspace for conversions and renderer scratch files. */
+function tadlImageDownloadTemporaryDirectory() {
+	$directory = sys_get_temp_dir().'/tadl-image-download-'.bin2hex(random_bytes(16));
+	if (!mkdir($directory, 0700)) { return null; }
+	$cleanup = static function () use ($directory) {
+		foreach (glob($directory.'/*') ?: [] as $file) { if (is_file($file)) { unlink($file); } }
+		if (is_dir($directory)) { rmdir($directory); }
+	};
+	register_shutdown_function($cleanup);
+	return [$directory, $cleanup];
+}
+
+/** Single-page image PDF using the Dompdf dependency supplied by Pawtucket. */
+function tadlPrepareImagePDF($source) {
+	if (!class_exists('Dompdf\\Dompdf') || !class_exists('Dompdf\\Options')) { return null; }
+	$jpeg = tadlPrepareImageDownload($source, 'jpg');
+	if (!$jpeg || !($dimensions = @getimagesize($jpeg['path']))) { return null; }
+	$workspace = tadlImageDownloadTemporaryDirectory();
+	if (!$workspace) { return null; }
+	[$directory, $cleanup] = $workspace;
+	try {
+		$landscape = $dimensions[0] > $dimensions[1];
+		$pageWidth = $landscape ? 792 : 612;
+		$pageHeight = $landscape ? 612 : 792;
+		$scale = min(($pageWidth - 72) / $dimensions[0], ($pageHeight - 72) / $dimensions[1]);
+		$width = $dimensions[0] * $scale;
+		$height = $dimensions[1] * $scale;
+		// CSS changes the printed size; the JPEG's full pixel dimensions are retained.
+		$options = new \Dompdf\Options(['tempDir' => $directory, 'isRemoteEnabled' => false, 'isPhpEnabled' => false, 'isJavascriptEnabled' => false]);
+		$pdf = new \Dompdf\Dompdf($options);
+		$pdf->setPaper('letter', $landscape ? 'landscape' : 'portrait');
+		$data = base64_encode(file_get_contents($jpeg['path']));
+		$pdf->loadHtml('<!doctype html><html><head><style>@page{margin:36pt}body{margin:0;text-align:center;font-size:0}img{display:block;margin:0 auto}</style></head><body><img alt="" src="data:image/jpeg;base64,'.$data.'" style="width:'.sprintf('%.4F', $width).'pt;height:'.sprintf('%.4F', $height).'pt"></body></html>');
+		$pdf->render();
+		$path = $directory.'/image.pdf';
+		$bytes = $pdf->output();
+		if (!is_string($bytes) || !str_starts_with($bytes, '%PDF-') || !str_ends_with(rtrim($bytes), '%%EOF')
+			|| file_put_contents($path, $bytes) !== strlen($bytes)
+			|| (new finfo(FILEINFO_MIME_TYPE))->file($path) !== 'application/pdf') { $cleanup(); return null; }
+		return ['path' => $path, 'mime' => 'application/pdf', 'extension' => 'pdf', 'temporary' => true];
+	} catch (Throwable $error) { $cleanup(); throw $error; }
+}
+
 /** Convert the original with the installed native media plugin, without scaling. */
 function tadlPrepareImageDownload($source, $format) {
+	if ($format === 'pdf') { return tadlPrepareImagePDF($source); }
 	$mime = (new finfo(FILEINFO_MIME_TYPE))->file($source['path']);
 	if ($format === 'tiff') {
 		return in_array($mime, ['image/tiff', 'image/x-tiff'], true)
@@ -79,13 +124,9 @@ function tadlPrepareImageDownload($source, $format) {
 	if ($mime === 'image/jpeg') {
 		return ['path' => $source['path'], 'mime' => 'image/jpeg', 'extension' => 'jpg', 'temporary' => false];
 	}
-	$directory = sys_get_temp_dir().'/tadl-image-download-'.bin2hex(random_bytes(16));
-	if (!mkdir($directory, 0700)) { return null; }
-	$cleanup = static function () use ($directory) {
-		foreach (glob($directory.'/*') ?: [] as $file) { if (is_file($file)) { unlink($file); } }
-		if (is_dir($directory)) { rmdir($directory); }
-	};
-	register_shutdown_function($cleanup);
+	$workspace = tadlImageDownloadTemporaryDirectory();
+	if (!$workspace) { return null; }
+	[$directory, $cleanup] = $workspace;
 	$media = new Media();
 	try {
 		if (!$media->read($source['path'])) { $cleanup(); return null; }

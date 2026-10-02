@@ -99,6 +99,7 @@ if ($rendered_count > 1 || $representation_count > 1) {
 			// Stop outgoing playback before the native slide scripts initialize the next player.
 			jQuery('#repViewerItemDisplay video, #repViewerItemDisplay audio').each(function () { this.pause(); });
 			jQuery('#repViewerItemDisplay').html(slide_list[i]);
+			if (typeof tadlPlaceImageToolbar === 'function') { tadlPlaceImageToolbar(true); }
 
 			let repid = jQuery('#repViewerItemDisplay').children(":first").attr('data-representation_id');
 			let thumbnails = jQuery('#detailRepresentationThumbnails .repThumb');

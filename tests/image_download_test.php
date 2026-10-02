@@ -3,6 +3,8 @@
 error_reporting(E_ALL);
 set_error_handler(function ($severity, $message, $file, $line) {
 	if (!(error_reporting() & $severity)) { return false; }
+	// Older bundled dependencies emit PHP 8.5 deprecations; keep theme warnings strict.
+	if ($severity === E_DEPRECATED && getenv('TADL_TEST_COMPOSER_AUTOLOAD') && str_contains($file, '/vendor/')) { return true; }
 	throw new ErrorException($message, 0, $severity, $file, $line);
 });
 define('pInteger', 1);
@@ -97,6 +99,26 @@ class Media {
 	}
 	function cleanup() { self::$calls[] = ['cleanup']; }
 }
+class DownloadPDFOptions { function __construct(public array $values) {} }
+class DownloadPDFRenderer {
+	static public string $failure = '';
+	static public array $calls = [];
+	private string $html;
+	function __construct($options) { self::$calls[] = ['options', $options->values]; }
+	function setPaper($size, $orientation) { self::$calls[] = ['paper', $size, $orientation]; }
+	function loadHtml($html) { $this->html = $html; self::$calls[] = ['html', $html]; }
+	function render() { if (self::$failure === 'render') { throw new RuntimeException('Synthetic renderer failure'); } }
+	function output() {
+		if (self::$failure === 'bytes') { return '<html>Not a PDF</html>'; }
+		preg_match('~data:image/jpeg;base64,([^\"]+)~', $this->html, $match);
+		return "%PDF-1.4\n".base64_decode($match[1])."\n%%EOF\n";
+	}
+}
+if ($autoload = getenv('TADL_TEST_COMPOSER_AUTOLOAD')) { require $autoload; }
+else {
+	class_alias(DownloadPDFOptions::class, 'Dompdf\\Options');
+	class_alias(DownloadPDFRenderer::class, 'Dompdf\\Dompdf');
+}
 class Downloadlog { static public array $entries = []; function log($entry) { self::$entries[] = $entry; } }
 class DownloadView {
 	public array $values = [];
@@ -139,6 +161,7 @@ foreach (['png', 'tiff', 'jpg'] as $format) {
 	$html = tadlImageDownloadLinks($request, $object, 101);
 	checkDownload(str_contains($html, '<details') && str_contains($html, '<summary') && str_contains($html, 'JPG (to share)'), 'Native dropdown/JPG missing.');
 	checkDownload(str_contains($html, 'TIFF (to print)') === ($format === 'tiff'), 'TIFF offered without a TIFF original.');
+	checkDownload(str_contains($html, '>PDF</a>') && str_contains($html, 'format=pdf'), 'Image menu is missing PDF.');
 	$controller = runDownload($request);
 	$download = $controller->view->getVar('image_download');
 	checkDownload($controller->rendered && $download['mime'] === 'image/jpeg', 'JPG download failed.');
@@ -150,11 +173,57 @@ foreach (['png', 'tiff', 'jpg'] as $format) {
 	if ($format === 'jpg') { checkDownload(!Media::$calls, 'JPEG original should stream without re-encoding.'); }
 	else { checkDownload(Media::$calls[1] === ['read', $rep->path] && end(Media::$calls) === ['cleanup'], 'Conversion did not read/clean up native media.'); }
 }
+foreach (['png', 'tiff', 'jpg'] as $format) {
+	[$object, $rep, $request] = resetDownload($format); $request->params['format'] = 'pdf';
+	$originalHash = hash_file('sha256', $rep->path);
+	$controller = runDownload($request); $download = $controller->view->getVar('image_download');
+	if (!$controller->rendered && $autoload) { tadlPrepareImageDownload(['path' => $rep->path], 'pdf'); }
+	checkDownload($controller->rendered && $download['mime'] === 'application/pdf' && $download['temporary'], $format.': PDF download failed.');
+	$bytes = file_get_contents($download['path']);
+	checkDownload(str_starts_with($bytes, '%PDF-') && str_ends_with(rtrim($bytes), '%%EOF') && (new finfo(FILEINFO_MIME_TYPE))->file($download['path']) === 'application/pdf', 'PDF response has wrong bytes.');
+	checkDownload(str_ends_with($controller->view->getVar('image_download_name'), '.pdf') && count(Downloadlog::$entries) === 1, 'PDF filename/logging missing.');
+	checkDownload(hash_file('sha256', $rep->path) === $originalHash, 'PDF conversion modified the original.');
+	if (!$autoload) {
+		$options = DownloadPDFRenderer::$calls[count(DownloadPDFRenderer::$calls) - 3][1];
+		checkDownload(!$options['isRemoteEnabled'] && !$options['isPhpEnabled'] && !$options['isJavascriptEnabled'] && fileperms($options['tempDir']) % 512 === 0700, 'PDF renderer must use private scratch files and disable remote content/scripts.');
+		$paper = DownloadPDFRenderer::$calls[count(DownloadPDFRenderer::$calls) - 2];
+		checkDownload($paper === ['paper', 'letter', 'landscape'], 'Landscape image did not use landscape letter paper.');
+		$html = end(DownloadPDFRenderer::$calls)[1];
+		preg_match('~data:image/jpeg;base64,([^\"]+)~', $html, $match);
+		$dimensions = getimagesizefromstring(base64_decode($match[1]));
+		checkDownload($dimensions[0] === 13 && $dimensions[1] === 7, 'PDF lost full-resolution image pixels.');
+	} else {
+		checkDownload(preg_match_all('~/Type /Page\b~', $bytes) === 1, 'Image PDF must contain exactly one page.');
+		checkDownload(preg_match('~/Subtype /Image\s*/Width 13\s*/Height 7~', $bytes) === 1, 'Actual PDF did not retain full-resolution image pixels.');
+		checkDownload(preg_match('~/MediaBox \[0(?:\.\d+)? 0(?:\.\d+)? 792(?:\.\d+)? 612(?:\.\d+)?\]~', $bytes) === 1, 'Actual PDF used wrong paper size/orientation.');
+		if ($format === 'jpg') { checkDownload(str_contains($bytes, file_get_contents($rep->path)), 'PDF re-encoded the JPEG original.'); }
+	}
+}
+if ($autoload && ($magick = getenv('TADL_TEST_MAGICK'))) {
+	$process = proc_open([$magick, $directory.'/image.jpg', '-rotate', '90', $directory.'/portrait.jpg'], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+	fclose($pipes[0]); stream_get_contents($pipes[1]); fclose($pipes[1]);
+	$error = stream_get_contents($pipes[2]); fclose($pipes[2]);
+	checkDownload(proc_close($process) === 0, 'Portrait fixture could not be generated: '.$error);
+	$portrait = tadlPrepareImageDownload(['path' => $directory.'/portrait.jpg'], 'pdf');
+	$bytes = file_get_contents($portrait['path']);
+	checkDownload(preg_match('~/Subtype /Image\s*/Width 7\s*/Height 13~', $bytes) === 1, 'Portrait PDF resized the image.');
+	checkDownload(preg_match('~/MediaBox \[0(?:\.\d+)? 0(?:\.\d+)? 612(?:\.\d+)? 792(?:\.\d+)?\]~', $bytes) === 1 && preg_match_all('~/Type /Page\b~', $bytes) === 1, 'Portrait image did not fit on one portrait letter page.');
+}
+if (!$autoload) {
+	foreach (['render', 'bytes'] as $failure) {
+		[$object, $rep, $request] = resetDownload(); $request->params['format'] = 'pdf'; DownloadPDFRenderer::$failure = $failure;
+		$controller = runDownload($request);
+		checkDownload($controller->response->status === 503 && !$controller->rendered && !Downloadlog::$entries, 'PDF renderer failure was served/logged as a download.');
+	}
+	DownloadPDFRenderer::$failure = '';
+}
 [$object, $rep, $request] = resetDownload(); $request->params['format'] = 'tiff';
 $controller = runDownload($request); $download = $controller->view->getVar('image_download');
 checkDownload($controller->rendered && $download['path'] === $rep->path && $download['mime'] === 'image/tiff' && !Media::$calls, 'TIFF must stream the original unchanged.');
+foreach (['jpg', 'pdf'] as $requestedFormat) {
 foreach (['method', 'format', 'objectID', 'repID', 'load', 'objectAccess', 'objectACL', 'objectDeleted', 'repACL', 'repDeleted', 'unattached', 'bundle', 'policy', 'version', 'missing', 'queued', 'icon', 'nonimage', 'login'] as $case) {
 	[$object, $rep, $request] = resetDownload();
+	$request->params['format'] = $requestedFormat;
 	switch ($case) {
 		case 'method': $request->method = 'POST'; break;
 		case 'format': $request->params['format'] = 'original'; break;
@@ -179,10 +248,14 @@ foreach (['method', 'format', 'objectID', 'repID', 'load', 'objectAccess', 'obje
 	$controller = runDownload($request);
 	checkDownload($controller->response->status >= 400 && !$controller->rendered && !Media::$calls && !Downloadlog::$entries, $case.': rejected request reached conversion/download.');
 }
+}
+foreach (['jpg', 'pdf'] as $requestedFormat) {
 foreach (['read', 'write', 'dimensions', 'format'] as $failure) {
 	[$object, $rep, $request] = resetDownload(); Media::$failure = $failure;
+	$request->params['format'] = $requestedFormat;
 	$controller = runDownload($request);
 	checkDownload($controller->response->status === 503 && !$controller->rendered && !Downloadlog::$entries, $failure.': conversion failed open.');
+}
 }
 [$object, $rep, $request] = resetDownload('png'); $request->params['format'] = 'tiff';
 checkDownload(runDownload($request)->response->status === 503, 'PNG must not be renamed to TIFF.');
@@ -225,4 +298,41 @@ foreach (['id', 'object_id'] as $idParameter) {
 	$html = $renderOverlay->call($view);
 	checkDownload(substr_count($html, '<details') === 1 && str_contains($html, 'TIFF (to print)') && !str_contains($html, 'Native download') && str_contains($html, 'Native navigation'), $idParameter.': overlay dropdown or native navigation was lost.');
 }
-echo json_encode(['status' => 'passed', 'assertions' => $assertions, 'boundaries' => 'actual helper/controller; synthetic access/ACL/download/media-plugin APIs; real JPEG/TIFF/PNG bytes'], JSON_PRETTY_PRINT).PHP_EOL;
+$actionsScript = file_get_contents(dirname(__DIR__).'/views/Details/image_actions_script.php');
+preg_match('~<script>(.*?)</script>~s', $actionsScript, $scriptMatch);
+$js = <<<'JS'
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+let current = null, visible = true, ready, clears = 0;
+const target = {
+ children: [],
+ replaceChildren() { this.children = []; clears++; },
+ appendChild(toolbar) { this.children.push(toolbar); current = null; }
+};
+const document = {
+ querySelector() { return visible ? { querySelector() { return current; } } : null; },
+ getElementById() { return target; }
+};
+const context = vm.createContext({document, jQuery: () => ({ready(callback) {ready = callback;}})});
+new vm.Script(fs.readFileSync(0, 'utf8')).runInContext(context);
+const first = {representation:101}, second = {representation:102};
+current = first; ready();
+assert.equal(target.children[0], first); // Preserve the actual node and its callbacks.
+ready(); assert.equal(target.children[0], first); // Repeated ready callbacks keep controls.
+current = second; context.tadlPlaceImageToolbar(true);
+assert.deepEqual(target.children, [second]); // A new slide replaces stale download links.
+context.tadlPlaceImageToolbar(true);
+assert.equal(target.children.length, 0); // Switching to video removes image-only actions.
+current = first; context.tadlPlaceImageToolbar(true);
+assert.deepEqual(target.children, [first]);
+visible = false; context.tadlPlaceImageToolbar(true);
+assert.equal(target.children[0], first); // No object-detail page means no relocation.
+assert.equal(clears, 4);
+JS;
+$process = proc_open([getenv('TADL_TEST_NODE') ?: 'node', '-e', $js], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+fwrite($pipes[0], $scriptMatch[1]); fclose($pipes[0]);
+$output = stream_get_contents($pipes[1]); fclose($pipes[1]);
+$errors = stream_get_contents($pipes[2]); fclose($pipes[2]);
+checkDownload(proc_close($process) === 0, 'Image action relocation failed: '.$errors.$output);
+echo json_encode(['status' => 'passed', 'assertions' => $assertions, 'boundaries' => 'actual helper/controller/action script; synthetic access/ACL/media/DOM APIs; real image bytes; '.($autoload ? 'real bundled Dompdf' : 'synthetic PDF renderer')], JSON_PRETTY_PRINT).PHP_EOL;
