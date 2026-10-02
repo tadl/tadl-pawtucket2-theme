@@ -103,6 +103,9 @@ line numbers. Native application behavior can be inspected in the nearby
   non-image records, counts and ordinary links to full results. It is not a carousel.
 - Result headings identify search/browse context and authority names. Active
   criteria are removable with visible controls and accessible labels.
+- The shared search/browse **Options** menu omits Lightbox bulk-add and selection
+  actions. Sorting, Start Over and eligible downloads remain available. This is
+  a menu change; per-item Lightbox controls and the account Lightbox remain intact.
 - Entity types distinguish people and organizations; places and events have
   explicit headings. The shared authority layout gives related objects priority
   and collapses long relationship groups instead of leaving tall empty columns.

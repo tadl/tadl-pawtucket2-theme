@@ -75,7 +75,6 @@
 	$va_browse_type_info = $o_config->get($va_browse_info["table"]);
 	$va_all_facets = (array)($va_browse_type_info['facets'] ?? []);
 	if ($o_browse = $this->getVar('browse')) { $va_all_facets = $o_browse->getInfoForFacets(); }
-	$va_add_to_set_link_info = caGetAddToSetInfo($this->request);
 	require_once(__DIR__.'/tadl_result_helpers.php');
 	require_once(__DIR__.'/tadl_result_context_helpers.php');
 	$va_result_context = null;
@@ -142,11 +141,6 @@ if (!$vb_ajax) {	// !ajax
 				<a href="#" class="tadl-results-action tadl-results-options" data-toggle="dropdown" aria-label="<?php print _t('Result options'); ?>" aria-haspopup="true" aria-expanded="false"><i class="fa fa-cog bGear" aria-hidden="true"></i><span class="tadl-results-action-label"><?php print _t('Options'); ?></span></a>
 				<ul class="dropdown-menu" role="menu">
 <?php
-					if(($vs_table == "ca_objects") && $vn_result_size && (is_array($va_add_to_set_link_info) && sizeof($va_add_to_set_link_info))){
-						print "<li role='menuitem'><a href='#' onclick='caMediaPanel.showPanel(\"".caNavUrl($this->request, '', $va_add_to_set_link_info['controller'], 'addItemForm', array("saveLastResults" => 1))."\"); return false;'>"._t("Add all results to %1", $va_add_to_set_link_info['name_singular'])."</a></li>";
-						print "<li role='menuitem'><a href='#' onclick='jQuery(\".bSetsSelectMultiple\").toggle(); return false;'>"._t("Select results to add to %1", $va_add_to_set_link_info['name_singular'])."</a></li>";
-						print "<li class='divider' role='menuitem'></li>";
-					}
 					if($vs_sort_control_type == 'dropdown'){
 						if(is_array($va_sorts = $this->getVar('sortBy')) && sizeof($va_sorts)) {
 							print "<li class='dropdown-header' role='menuitem'>"._t("Sort by:")."</li>\n";
@@ -188,9 +182,6 @@ if (!$vb_ajax) {	// !ajax
 ?>
 			<a href='#' id='bRefineButton' class='tadl-results-action tadl-results-filter' aria-controls='bRefine' aria-expanded='false' aria-label='<?php print _t("Toggle filters"); ?>' onclick='var expanded = jQuery("#bRefine").is(":visible"); jQuery("#bRefine").toggle(); jQuery(this).attr("aria-expanded", expanded ? "false" : "true"); return false;'><i class="fa fa-filter" aria-hidden="true"></i><span class="tadl-results-action-label"><?php print _t('Filters'); ?></span></a>
 <?php
-			}
-			if(is_array($va_add_to_set_link_info) && sizeof($va_add_to_set_link_info)){
-				print "<button type='button' class='btn btn-default btn-sm bSetsSelectMultiple' id='bSetsSelectMultipleButton' onclick='jQuery(\"#setsSelectMultiple\").submit(); return false;'>"._t("Add selected results to %1", $va_add_to_set_link_info['name_singular'])."</button>";
 			}
 ?>
 		</div>
@@ -245,7 +236,6 @@ if (!$vb_ajax) {	// !ajax
 			print "</div>";
 		}
 ?>
-		<form id="setsSelectMultiple">
 		<div class="row">
 			<div id="browseResultsContainer">
 <?php
@@ -266,7 +256,6 @@ if (!$vb_ajax) {	// !ajax
 ?>
 			</div><!-- end browseResultsContainer -->
 		</div><!-- end row -->
-		</form>
 	</div><!-- end col-8 -->
 	<div class="<?php print ($vs_refine_col_class) ? $vs_refine_col_class : "col-sm-4 col-md-3 col-md-offset-1 col-lg-3 col-lg-offset-1"; ?>">
 <?php
@@ -285,20 +274,6 @@ if (!$vb_ajax) {	// !ajax
 			window.setTimeout(function() {
 				$("window,body,html").scrollTop( $("#row<?php print $vn_row_id; ?>").offset().top);
 			}, 0);
-<?php
-		}
-		if(is_array($va_add_to_set_link_info) && sizeof($va_add_to_set_link_info)){
-?>
-		jQuery('#setsSelectMultiple').on('submit', function(e){		
-			objIDs = [];
-			jQuery('#setsSelectMultiple input:checkbox:checked').each(function() {
-			   objIDs.push($(this).val());
-			});
-			objIDsAsString = objIDs.join(';');
-			caMediaPanel.showPanel('<?php print caNavUrl($this->request, '', $va_add_to_set_link_info['controller'], 'addItemForm', array("saveSelectedResults" => 1)); ?>/object_ids/' + objIDsAsString);
-			e.preventDefault();
-			return false;
-		});
 <?php
 		}
 ?>
