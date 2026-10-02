@@ -118,7 +118,7 @@
 					</div>
 					<a class="tadl-section-link" href="https://www.tadl.org/posts?field_bl_type_target_id%5B295%5D=295&amp;field_bl_tags_target_id%5B414%5D=414">View More</a>
 				</div>
-				<div class="tadl-blog-grid">
+				<div class="tadl-blog-grid" id="tadl-recent-writing">
 					<a class="tadl-blog-card" href="https://www.tadl.org/posts/traverse-city-psychiatrist-makes-history-shocking-career-dr-paul-h-wilcox">
 						<span class="tadl-blog-image"><img src="https://www.tadl.org/sites/default/files/styles/post_gallery_teaser/public/2026-02/ArticleThumbnail.png?itok=t_f2Rgl3" alt="Traverse City Psychiatrist Makes History: The Shocking Career of Dr. Paul H. Wilcox"></span>
 						<span class="tadl-blog-title">Traverse City Psychiatrist Makes History: The "Shocking" Career of Dr. Paul H. Wilcox</span>

@@ -53,6 +53,7 @@ before calling an issue deployed or still broken.
 | Collections | `conf/collections.conf`, `conf/browse.conf`, `views/Collections/`, `views/Browse/collection_thumbnail_helpers.php` |
 | Browse/results/pagers | `views/Browse/browse_results_html.php`, `tadl_result_helpers.php`, `tadl_result_context_helpers.php`, image/list/refine subviews |
 | Search previews | `conf/search.conf`, `views/Search/multisearch_results_html.php`, `tadl_search_results_subview_html.php` |
+| Home-page writing | `views/Front/front_page_html.php`, `assets/pawtucket/js/recent-writing.js`; companion TADLFeeds `/local_history_posts.json` |
 | Object media | `helpers/object_detail_media.php`, `views/bundles/representation_viewer_html.php` |
 | Image downloads | `helpers/image_downloads.php`, `controllers/ImageDownloadController.php`, `views/Details/image_download_binary.php`, `views/mediaViewers/viewerWrapper.php`, `assets/pawtucket/js/image-downloads.js` |
 | Enlarged viewer help | `views/Details/viewer_help_html.php` |
@@ -277,6 +278,32 @@ permissions, escape the label and build a fixed
 Invalid/missing IDs stay plain text. Do not use the stored URI as an arbitrary
 link, flatten the value arrays, patch core, or repair catalog data as a side effect.
 
+## Home-page local-history writing
+
+**Recent Local History Writing** progressively replaces its two fallback cards
+with the latest two entries from
+`https://feeds.tools.tadl.org/local_history_posts.json?limit=2`. `View More` retains
+the source's type 295/tag 414 filters. The companion `TADLFeeds` source repository
+adds a separate cache/job using those fixed filters and the existing 15-minute
+background refresh pattern; news `/posts.json` remains independent. Deploy that
+app first: its existing `feeds:refresh` postdeploy warmup includes this feed.
+Deploying or pushing theme source does not deploy TADLFeeds.
+
+The client loads through `conf/assets.conf` but fetches only when the home-page
+grid exists. It omits credentials/referrers, limits the request to eight seconds,
+renders titles as text, and accepts article/image URLs only on HTTPS
+`www.tadl.org` under `/posts/` and `/sites/`. It preserves fallback cards on errors,
+empty/malformed data or disabled JavaScript. A cold-cache 503 gets one retry after
+60 seconds. The feed refreshes on subsequent visits, rather than scraping Drupal
+on the Pawtucket request path. `tests/recent_writing_test.php` checks the actual
+home template and client with synthetic browser/feed boundaries; desktop/mobile
+preview uses synthetic feed entries.
+
+All eleven theme suites and changed PHP/JavaScript checks passed for this change.
+The companion TADLFeeds suite passed 30 tests/128 assertions and eager-load checks;
+a read-only live scrape verified two posts from the exact filtered source. Those
+checks do not establish production deployment or the new endpoint's availability.
+
 ## Subjects
 
 Catalog subjects are related `ca_list_items` vocabulary records through
@@ -356,6 +383,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/object_detail_metadata_test.php` | Empty/populated rich-text fields and fallback values; structured TGM pairing, safe links, escaping and permissions |
 | `tests/image_download_test.php` | Toolbar/bundle/overlay menus, viewer icon placement, outside-click/Escape/Tab handling, current image action relocation, gallery AJAX navigation and media callbacks, download policy/ACL/attachment checks, TIFF/JPEG/PDF bytes, conversion validation and failure handling |
 | `tests/subjects_test.php` | Subject relationship rendering, escaping, native browse links, bundle access and Pawtucket ACL filtering |
+| `tests/recent_writing_test.php` | Actual home fallback/View More filters; client refresh, URL/text safety, cold-cache retry and feed-error fallback |
 
 All eight original suites passed during handoff preparation, as did PHP lint.
 The nine suites passed after the image-download change on PHP 8.5.10 and Node
