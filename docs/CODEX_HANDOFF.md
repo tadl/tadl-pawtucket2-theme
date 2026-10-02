@@ -159,8 +159,11 @@ line numbers. Native application behavior can be inspected in the nearby
 - Multi-representation objects use side arrows and a position counter. Changing
   slides stops active media; thumbnails remain functional. Avoid colliding with
   native callback/count variable names.
-- Object image actions sit in a left column below **Previous/Back**, outside the
-  image. On phones they appear below navigation and above the image; opening
+- Object pages omit the rectangular **Back/Previous/Next** navigation blocks on
+  desktop and mobile. Media-switching arrows/counter and thumbnail controls remain.
+  The desktop layout has no empty right navigation column.
+- Object image actions sit in a left column, outside the
+  image. On phones they appear above the image; opening
   Download pushes the image down. Gallery image actions sit below their image.
   Keep native **Open media view**/compare callbacks; omit the image's
   Lightbox action and replace its original-download link with one native HTML

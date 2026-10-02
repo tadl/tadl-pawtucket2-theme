@@ -35,23 +35,10 @@
 	$vn_share_enabled = 	$this->getVar("shareEnabled");
 	$vn_pdf_enabled = 		$this->getVar("pdfEnabled");
 	$vn_id =				$t_object->get('ca_objects.object_id');
-	$vs_results_url = 		$this->getVar('resultsURL');
-	if (!$vs_results_url) {
-		$vs_results_url = caNavUrl($this->request, '', 'Browse', 'objects');
-	}
-	$vs_history_back_link = '<a href="'.htmlspecialchars($vs_results_url, ENT_QUOTES, 'UTF-8').'" aria-label="'.htmlspecialchars(_t('Back'), ENT_QUOTES, 'UTF-8').'" onclick="if (window.history.length > 1) { window.history.go(-1); return false; }"><i class="fa fa-angle-double-left" aria-hidden="true"></i><div class="small">'.htmlspecialchars(_t('Back'), ENT_QUOTES, 'UTF-8').'</div></a>';
 ?>
 <div class="row tadl-object-detail">
-	<div class='col-xs-12 navTop'><!--- only shown at small screen size -->
-		{{{previousLink}}}<?php print $vs_history_back_link; ?>{{{nextLink}}}
-	</div><!-- end detailTop -->
 	<aside class="tadl-object-action-rail">
-	<div class='navLeftRight'>
-		<div class="detailNavBgLeft">
-			{{{previousLink}}}<?php print $vs_history_back_link; ?>
-		</div><!-- end detailNavBgLeft -->
-	</div><!-- end navigation -->
-	<div id="tadlObjectMediaActions" role="group" aria-label="<?= htmlspecialchars(_t('Image actions'), ENT_QUOTES, 'UTF-8'); ?>"></div>
+		<div id="tadlObjectMediaActions" role="group" aria-label="<?= htmlspecialchars(_t('Image actions'), ENT_QUOTES, 'UTF-8'); ?>"></div>
 	</aside>
 	<div class='col-xs-12 col-sm-10 col-md-10 col-lg-10 tadl-object-main'>
 		<div class="container tadl-object-content"><div class="row">
@@ -174,11 +161,6 @@
 						
 			</div><!-- end col -->
 		</div><!-- end row --></div><!-- end container -->
-	</div><!-- end col -->
-	<div class='navLeftRight col-xs-1 col-sm-1 col-md-1 col-lg-1'>
-		<div class="detailNavBgRight">
-			{{{nextLink}}}
-		</div><!-- end detailNavBgLeft -->
 	</div><!-- end col -->
 </div><!-- end row -->
 
