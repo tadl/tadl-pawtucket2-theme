@@ -236,6 +236,19 @@ field helper treats HTML-only markup, encoded nonbreaking spaces and invisible
 Unicode whitespace as empty; numeric `0` remains populated. Relationship headings
 on object, collection and gallery records use the same rendered-value check,
 with native access filtering preserved. Authority metadata uses the shared helper.
+Individual entities (the `ind` type and its descendants) show **Occupation** with
+each optional occupation date in parentheses. Native structured `occupation`
+attributes preserve name/date pairing; empty names are skipped and the bundle's
+read permission, current record access, display labels and no-default option
+remain enforced. **Birth date** and **Death date** read populated leaves from
+`individual_dates`: current `individual_dates_birth`/`individual_dates_death`,
+with older `individual_birthdate`/`individual_deathdate` as fallbacks. Do not
+read the entire dates container: its delimiter-only value can be `;`, which
+looks populated to the general rich-text helper. Generic `date.dates_value`
+remains supported as **Dates**. Empty dates produce neither headings nor
+punctuation. The authority suite covers these fields, paired occupations,
+escaping, permissions, individual subtypes and older date aliases; desktop and
+phone-width synthetic previews verified populated/empty layouts.
 Browse/search resolves deferred facets and applies the media preference before
 rendering facet headings. When no facets remain, omit the entire **Filter by**
 panel and its toggle and give results the full row width. Preserve the Subjects

@@ -83,6 +83,7 @@ class AuthorityItem {
 	public array $intrinsicReads = [];
 	public array $relationships = [];
 	public array $fields = [];
+	public array $occupations = [];
 	public array $types = [
 		10 => ['idno' => 'ind', 'parent_id' => 1],
 		11 => ['idno' => 'synthetic_artist', 'parent_id' => 10],
@@ -97,6 +98,11 @@ class AuthorityItem {
 	function get($name, $options = []) {
 		$this->intrinsicReads[] = $name;
 		if ($name === 'type_id') { return $this->typeID; }
+		if ($name === 'ca_entities.occupation') {
+			checkAuthority(($options['checkAccess'] ?? null) === [1] && ($options['convertCodesToDisplayText'] ?? false) === true, 'Occupation reads must retain access checks and display labels.');
+			checkAuthority(($options['returnWithStructure'] ?? false) === true && ($options['dontReturnDefault'] ?? false) === true, 'Occupation dates must stay paired with their names without default values.');
+			return [42 => $this->occupations];
+		}
 		if (in_array($name, ['entity_id', 'place_id', 'occurrence_id'], true)) { return 42; }
 		if ($name === 'ca_objects.object_id') { return $this->objectCount ? range(101, 100 + $this->objectCount) : []; }
 		throw new RuntimeException('Unexpected intrinsic read: '.$name);
@@ -273,10 +279,46 @@ foreach (['ca_entities' => ['entity_id', 'Person'], 'ca_places' => ['place_id', 
 
 $item = new AuthorityItem('ca_entities', 21, 'Synthetic studio');
 $item->fields['^ca_entities.biography'] = '<p>Synthetic studio description.</p>';
-$item->fields['^ca_entities.individual_dates.dates_value'] = '1900–1950';
+$item->fields['^ca_entities.date.dates_value'] = '1900–1950';
 $html = (new AuthorityView(new AuthorityRequest('all'), $item, ['commentsEnabled' => true, 'comments' => ['synthetic'], 'itemComments' => '<p>Synthetic comment.</p>', 'shareEnabled' => true, 'shareLink' => '<a href="/synthetic/share">Share</a>']))->render();
 checkAuthority(str_contains($html, 'About this organization') && str_contains($html, 'Synthetic studio description.') && str_contains($html, '1900–1950'), 'Organization metadata fields or About heading were lost.');
 checkAuthority(str_contains($html, 'Comments (1)') && str_contains($html, 'Synthetic comment.') && str_contains($html, '/synthetic/share'), 'Native comment/share content was lost.');
+
+$item = new AuthorityItem('ca_entities', 12, 'Synthetic photographer');
+$item->occupations = [
+	301 => ['occupation_name' => 'Photographer', 'occupation_date' => '1940–1960'],
+	302 => ['occupation_name' => 'Archivist', 'occupation_date' => ''],
+	303 => ['occupation_name' => '', 'occupation_date' => ''],
+	304 => ['occupation_name' => '', 'occupation_date' => '1970'],
+	305 => ['occupation_name' => '<script>synthetic</script> & "writer"', 'occupation_date' => '<b>1980</b>']
+];
+$item->fields['^ca_entities.individual_dates'] = ';'; // Reproduce the native empty container display.
+$html = (new AuthorityView(new AuthorityRequest(), $item))->render();
+checkAuthority(str_contains($html, 'Photographer (1940–1960)<br/>Archivist<br/>'), 'Occupations must retain row pairing and omit missing date punctuation.');
+checkAuthority(!str_contains($html, '1970') && !str_contains($html, 'Archivist ()'), 'Blank occupation names or dates must not produce orphan values or punctuation.');
+checkAuthority(str_contains($html, '&lt;script&gt;synthetic&lt;/script&gt; &amp; &quot;writer&quot; (&lt;b&gt;1980&lt;/b&gt;)'), 'Occupation name/date output must be escaped.');
+checkAuthority(!str_contains($html, '<label>Dates</label>') && !str_contains($html, '<label>Birth date</label>') && !str_contains($html, '<label>Death date</label>'), 'Empty life dates must omit headings.');
+checkAuthority(!in_array('^ca_entities.individual_dates', $item->templateReads, true), 'Entity dates must not use the delimiter-only container fallback.');
+
+foreach (['individual_dates_birth' => 'Birth date', 'individual_birthdate' => 'Birth date', 'individual_dates_death' => 'Death date', 'individual_deathdate' => 'Death date'] as $code => $label) {
+	$dated = new AuthorityItem();
+	$dated->fields['^ca_entities.individual_dates.'.$code] = '1901';
+	$html = (new AuthorityView(new AuthorityRequest(), $dated))->render();
+	checkAuthority(str_contains($html, '<label>'.$label.'</label>1901'), 'Current/legacy individual date subfield missing: '.$code);
+	checkAuthority(!str_contains($html, '<label>'.($label === 'Birth date' ? 'Death date' : 'Birth date').'</label>'), 'A missing companion date must not create a heading.');
+}
+$dated->fields['^ca_entities.individual_dates.individual_dates_death'] = '1988';
+$html = (new AuthorityView(new AuthorityRequest(), $dated))->render();
+checkAuthority(substr_count($html, '<label>Death date</label>') === 1 && str_contains($html, '<label>Death date</label>1988') && !str_contains($html, '<label>Death date</label>1901'), 'Current and legacy date aliases must not duplicate a field.');
+$GLOBALS['authorityBundleAccess']['ca_entities:occupation'] = 0;
+$item->intrinsicReads = [];
+$html = (new AuthorityView(new AuthorityRequest(), $item))->render();
+checkAuthority(!str_contains($html, '<label>Occupation</label>') && !in_array('ca_entities.occupation', $item->intrinsicReads, true), 'Denied occupations must not be read or displayed.');
+$GLOBALS['authorityBundleAccess'] = [];
+$organization = new AuthorityItem('ca_entities', 20, 'Organization');
+$organization->occupations = $item->occupations;
+$html = (new AuthorityView(new AuthorityRequest(), $organization))->render();
+checkAuthority(!str_contains($html, '<label>Occupation</label>') && !in_array('ca_entities.occupation', $organization->intrinsicReads, true), 'Occupation display belongs only to individual entity types.');
 
 $GLOBALS['authorityUrlOverride'] = "/synthetic/Search/objects?search=place_id:42&note=collector's \"quoted\" \\ </script> <>& \u{2028}\u{2029}";
 $html = (new AuthorityView(new AuthorityRequest(), new AuthorityItem('ca_places')))->render();

@@ -9,6 +9,26 @@ function tadlAuthorityEscape($value) {
 	return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+/** Keep each occupation and its optional date within the same attribute row. */
+function tadlAuthorityOccupations($request, $item) {
+	if (caGetBundleAccessLevel('ca_entities', 'occupation') < __CA_BUNDLE_ACCESS_READONLY__) { return ''; }
+	$rows = $item->get('ca_entities.occupation', [
+		'returnWithStructure' => true, 'convertCodesToDisplayText' => true,
+		'checkAccess' => caGetUserAccessValues($request), 'dontReturnDefault' => true
+	])[(int)$item->get('entity_id')] ?? [];
+	$occupations = [];
+	foreach ($rows as $row) {
+		$name = $row['occupation_name'] ?? '';
+		if (!tadlDetailHasContent($name)) { continue; }
+		$value = tadlAuthorityEscape($name);
+		$date = $row['occupation_date'] ?? '';
+		if (tadlDetailHasContent($date)) { $value .= ' ('.tadlAuthorityEscape($date).')'; }
+		$occupations[] = $value;
+	}
+	if (!$occupations) { return ''; }
+	return "<div class='unit'><label>".tadlAuthorityEscape(_t('Occupation'))."</label>".join('<br/>', $occupations)."</div>\n";
+}
+
 /** Recognize configured entity subtypes without calling an unknown type a person. */
 function tadlAuthorityEntityKind($item) {
 	$type_id = (int)$item->get('type_id');

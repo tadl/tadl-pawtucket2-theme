@@ -32,7 +32,13 @@ $authority_table = 'ca_entities';
 $authority = tadlAuthorityDetailInfo($this->request, $t_item, $authority_table);
 $authority_fields = '';
 $authority_fields .= tadlDetailField($this->request, $t_item, 'Alternate names', '<unit relativeTo="ca_entities.nonpreferred_labels" delimiter="<br/>">^ca_entities.nonpreferred_labels.displayname<ifdef code="ca_entities.nonpreferred_labels.type_id"> (^ca_entities.nonpreferred_labels.type_id)</ifdef><ifdef code="ca_entities.nonpreferred_labels.effective_date">, ^ca_entities.nonpreferred_labels.effective_date</ifdef></unit>');
-$authority_fields .= tadlDetailFirstAvailableField($this->request, $t_item, 'Dates', ['^ca_entities.individual_dates.dates_value', '^ca_entities.individual_dates', '^ca_entities.date.dates_value']);
+if ($authority['browse'] === 'people') {
+	$authority_fields .= tadlAuthorityOccupations($this->request, $t_item);
+	// Read populated leaves, not the container's delimiter-only display value.
+	$authority_fields .= tadlDetailFirstAvailableField($this->request, $t_item, 'Birth date', ['^ca_entities.individual_dates.individual_dates_birth', '^ca_entities.individual_dates.individual_birthdate']);
+	$authority_fields .= tadlDetailFirstAvailableField($this->request, $t_item, 'Death date', ['^ca_entities.individual_dates.individual_dates_death', '^ca_entities.individual_dates.individual_deathdate']);
+}
+$authority_fields .= tadlDetailField($this->request, $t_item, 'Dates', '^ca_entities.date.dates_value');
 $authority_fields .= tadlDetailFirstAvailableField($this->request, $t_item, 'Description', ['^ca_entities.biography', '^ca_entities.description']);
 $authority_fields .= tadlDetailFirstAvailableField($this->request, $t_item, 'Source of description', ['^ca_entities.biography_source', '^ca_entities.description_source']);
 $authority_fields .= tadlDetailField($this->request, $t_item, 'External links', '<unit relativeTo="ca_entities.external_link" delimiter="<br/>"><ifdef code="ca_entities.external_link.url_source">^ca_entities.external_link.url_source: </ifdef><a href="^ca_entities.external_link.url_entry">^ca_entities.external_link.url_entry</a></unit>');
