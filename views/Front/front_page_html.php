@@ -82,6 +82,8 @@
 				</div>
 			</section>
 
+			<?= $this->render('Front/faq_html.php'); ?>
+
 			<section class="tadl-home-section tadl-access-section">
 				<div class="tadl-access-card">
 					<h2 class="tadl-section-title">Online Anytime, In Person by Request</h2>

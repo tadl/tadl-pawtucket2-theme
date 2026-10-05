@@ -45,6 +45,7 @@ function tadlMediaPreference($request) { return $request->mediaMode; }
 function tadlMediaResultContext($view, $result, $type, $block = null) {}
 function tadlMediaFacetItems($request, $items, $info) { return ($info['synthetic_media_filtered'] ?? false) ? [] : $items; }
 function caGetAddToSetInfo($request) { return []; }
+function caDisplayLightbox($request) { return false; }
 function caBusyIndicatorIcon($request) { return '<span class="synthetic-spinner"></span>'; }
 function caNavUrl($request, $module, $controller, $action, $params = []) {
 	return '/synthetic/'.($action === '*' ? 'objects' : $action).'?'.http_build_query($params);

@@ -27,28 +27,7 @@
  */
 require_once(__DIR__.'/media_preference_toggle.php');
 require_once(__DIR__.'/../../helpers/asset_versions.php');
-$lightboxDisplayName = caGetLightboxDisplayName();
-$lightbox_sectionHeading = ucFirst($lightboxDisplayName["section_heading"]);
-
-# Collect the user links: they are output twice, once for toggle menu and once for nav
-$user_links = array();
-if($this->request->isLoggedIn()){
-	$user_links[] = '<li role="presentation" class="dropdown-header">'.trim($this->request->user->get("fname")." ".$this->request->user->get("lname")).', '.$this->request->user->get("email").'</li>';
-	$user_links[] = '<li class="divider nav-divider"></li>';
-	if(caDisplayLightbox($this->request)){
-		$user_links[] = "<li>".caNavLink($this->request, $lightbox_sectionHeading, '', '', 'Lightbox', 'Index', array())."</li>";
-	}
-	$user_links[] = "<li>".caNavLink($this->request, _t('User Profile'), '', '', 'LoginReg', 'profileForm', array())."</li>";
-	
-	if ($this->request->config->get('use_submission_interface')) {
-		$user_links[] = "<li>".caNavLink($this->request, _t('Submit content'), '', '', 'Contribute', 'List', array())."</li>";
-	}
-	$user_links[] = "<li>".caNavLink($this->request, _t('Logout'), '', '', 'LoginReg', 'Logout', array())."</li>";
-} else {	
-	if (!$this->request->config->get(['dontAllowRegistrationAndLogin', 'dont_allow_registration_and_login']) || $this->request->config->get('pawtucket_requires_login')) { $user_links[] = "<li><a href='#' onclick='caMediaPanel.showPanel(\"".caNavUrl($this->request, '', 'LoginReg', 'LoginForm', array())."\"); return false;' >"._t("Login")."</a></li>"; }
-	if (!$this->request->config->get(['dontAllowRegistrationAndLogin', 'dont_allow_registration_and_login']) && !$this->request->config->get('dontAllowRegistration')) { $user_links[] = "<li><a href='#' onclick='caMediaPanel.showPanel(\"".caNavUrl($this->request, '', 'LoginReg', 'RegisterForm', array())."\"); return false;' >"._t("Register")."</a></li>"; }
-}
-$has_user_links = (sizeof($user_links) > 0);
+require_once(__DIR__.'/../../helpers/user_features.php');
 
 if (!function_exists('tadlMetaClean')) {
 	function tadlMetaClean($value, $limit = 220) {
@@ -332,6 +311,7 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
 					<li <?= ($this->request->getController() == "Gallery") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Gallery"), "", "", "Gallery", "Index"); ?></li>
 					<li <?= ($this->request->getController() == "Collections") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Collections"), "", "", "Collections", "index"); ?></li>
 					<li <?= ($this->request->getController() == "Contact") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Contact"), "", "", "Contact", "Form"); ?></li>
+					<?= tadlUserMenu($this->request); ?>
 				</ul>
 			</div><!-- /.navbar-collapse -->
 		</div><!-- end container -->

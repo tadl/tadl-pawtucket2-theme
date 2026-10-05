@@ -1,11 +1,11 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-02. This document carries the recent coding context to another
+Updated: 2026-10-05. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
 
-The implementation checkpoint is `e3ae5b4` on `main`, pushed to
+The original handoff checkpoint was `e3ae5b4` on `main`, pushed to
 `git@github.com:tadl/tadl-pawtucket2-theme.git`. The worktree was clean before
 adding these documents. Documentation commits follow that checkpoint; use
 `git status` and `git log` for the current state.
@@ -53,6 +53,8 @@ before calling an issue deployed or still broken.
 | Collections | `conf/collections.conf`, `conf/browse.conf`, `views/Collections/`, `views/Browse/collection_thumbnail_helpers.php` |
 | Browse/results/pagers | `views/Browse/browse_results_html.php`, `tadl_result_helpers.php`, `tadl_result_context_helpers.php`, image/list/refine subviews |
 | Search previews | `conf/search.conf`, `views/Search/multisearch_results_html.php`, `tadl_search_results_subview_html.php` |
+| Accounts/lightboxes | `helpers/user_features.php`, `assets/pawtucket/js/user-features.js`, shared header, native LoginReg/Lightbox views, object detail and browse result views; `docs/USER_FEATURES.md` |
+| Home-page FAQ | `templates/faq_entry.tmpl`, `conf/templates.conf`, `helpers/home_faq.php`, `views/Front/faq_html.php`; Providence Site Pages content |
 | Home-page writing | `views/Front/front_page_html.php`, `assets/pawtucket/js/recent-writing.js`; companion TADLFeeds `/local_history_posts.json` |
 | Object media | `helpers/object_detail_media.php`, `views/bundles/representation_viewer_html.php` |
 | Image downloads | `helpers/image_downloads.php`, `controllers/ImageDownloadController.php`, `views/Details/image_download_binary.php`, `views/mediaViewers/viewerWrapper.php`, `assets/pawtucket/js/image-downloads.js` |
@@ -434,7 +436,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The thirteen committed tests are portable and use synthetic boundaries. They do not
+The fifteen committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -459,6 +461,8 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 
 | Test | Coverage |
 | --- | --- |
+| `tests/user_features_test.php` | Anonymous/authenticated navigation and result actions, native login POST/CSRF, registration policy, password-manager fields and cache separation |
+| `tests/home_faq_test.php` | Published/readable Site Pages, drafts, incomplete entries, locale, rank, escaped questions and purified answers; optional real HTMLPurifier |
 | `tests/finding_aid_test.php` | Selected collection export, descendants, access/ACL/bundle restrictions, complete unique inventories over native caps, field mappings, locations, escaped PDF text and safe failure; optional real Dompdf |
 | `tests/asset_versions_test.php` | Stable/changed CSS and JS URLs, preserved timestamps, native loader options, subdirectory/absolute theme URLs, escaping, inline-code preservation and path boundaries |
 | `tests/media_preferences_test.php` | Eligibility SQL, filtered result adapter, result rendering |
@@ -542,9 +546,15 @@ included in a workspace rsync and are not required by the committed tests.
   viewing records without media to logged-in researchers. That permission and
   account-preference design is not implemented. It needs server-side enforcement;
   hiding the toggle or trusting its cookie is not access control.
-- Login/registration UI and mechanism were explicitly deferred. Native lightbox
-  functionality exists, but do not redesign authentication or add account
-  capabilities merely to finish a layout task.
+- The native account/lightbox pilot is now wired into the theme. Anonymous login
+  links remain hidden; use the bookmarked `/LoginReg/LoginForm`. Registration is
+  disabled. Signed-in users get account navigation and individual object additions.
+  Bulk additions remain omitted until they respect filtered results. See
+  `docs/USER_FEATURES.md` for native features, access caveats and live checks.
+- The home FAQ scaffold is ready but stays hidden until staff publish entries.
+  Activation requires the native template scan (a database write, not performed)
+  and Providence Site Pages setup. Routine content edits then need no theme deploy.
+  Public researcher sessions do not grant FAQ editing permissions.
 - Continue iterative responsive/browser QA as real media is added. Do not
   collapse distinct related records just because their titles match.
 - Production deployment and final live smoke checks are separate user-controlled

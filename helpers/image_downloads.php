@@ -49,12 +49,16 @@ function tadlImageDownloadLinks($request, $object, $representationID, $inViewer 
 
 /** Normalize image/PDF actions while preserving native callbacks and PDF downloads. */
 function tadlImageToolbar($request, $object, $representationID, $toolbar) {
+	// Object-level Lightbox controls live below the viewer for logged-in users.
+	// Remove native representation links, including anonymous video login prompts.
+	$toolbar = preg_replace('~<a\b(?=[^>]*\bclass=[\'\"][^\'\"]*\bsetsButton\b)[^>]*>.*?</a>~is', '', $toolbar);
 	$rows = (array)$object->getRepresentations([], null, ['simple' => true, 'checkAccess' => caGetUserAccessValues($request)]);
 	$mime = strtolower((string)($rows[$representationID]['mimetype'] ?? ''));
 	$isImage = (bool)preg_match('!^image/!', $mime);
 	if (!$isImage && $mime !== 'application/pdf') { return $toolbar; }
-	$replacedActions = $isImage ? '(?:setsButton|dlButton)' : 'setsButton';
-	$toolbar = preg_replace('~<a\b(?=[^>]*\bclass=[\'\"][^\'\"]*\b'.$replacedActions.'\b)[^>]*>.*?</a>~is', '', $toolbar);
+	if ($isImage) {
+		$toolbar = preg_replace('~<a\b(?=[^>]*\bclass=[\'\"][^\'\"]*\bdlButton\b)[^>]*>.*?</a>~is', '', $toolbar);
+	}
 	// PDFs already have a native, permission-checked original download link.
 	// Keep the complete document; do not send it through single-image conversion.
 	if (!$isImage) {

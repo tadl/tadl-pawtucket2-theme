@@ -37,7 +37,7 @@
 			<H1><?php print _t("Login"); ?></H1>
 <?php
 	if($this->getVar("message")){
-		print "<div class='alert alert-danger'>".$this->getVar("message")."</div>";
+		print "<div class='alert alert-danger'>".htmlspecialchars((string)$this->getVar("message"), ENT_QUOTES, 'UTF-8')."</div>";
 	}
 ?>
 			<form id="LoginForm" action="<?php print caNavUrl($this->request, "", "LoginReg", "login"); ?>" class="form-horizontal" method="POST">
@@ -45,18 +45,18 @@
 				<div class="form-group">
 					<label for="username" class="col-sm-<?php print $vn_label_col; ?> control-label"><?php print _t("Username"); ?></label>
 					<div class="col-sm-7">
-						<input type="text" class="form-control" id="username" name="username" autocomplete="off" />
+						<input type="text" class="form-control" id="username" name="username" autocomplete="username" required />
 					</div><!-- end col-sm-7 -->
 				</div><!-- end form-group -->
 				<div class="form-group">
 					<label for="password" class="col-sm-<?php print $vn_label_col; ?> control-label"><?php print _t("Password"); ?></label>
 					<div class="col-sm-7">
-						<input type="password" name="password" class="form-control" id="password" autocomplete="off"/>
+						<input type="password" name="password" class="form-control" id="password" autocomplete="current-password" required />
 					</div><!-- end col-sm-7 -->
 				</div><!-- end form-group -->
 				<div class="form-group">
 					<div class="col-sm-offset-<?php print $vn_label_col; ?> col-sm-7">
-						<button type="submit" class="btn btn-default">login</button>
+						<button type="submit" class="btn btn-default"><?= _t('Log in'); ?></button>
 					</div>
 				</div>
 				<div class="form-group">

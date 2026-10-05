@@ -65,7 +65,8 @@
 	$vs_default_placeholder_tag = "<div class='bResultItemImgPlaceholder'>".$vs_default_placeholder."</div>";
 
 	
-	$va_add_to_set_link_info = caGetAddToSetInfo($this->request);
+	require_once(__DIR__.'/../../helpers/user_features.php');
+	$vb_tadl_lightbox = caDisplayLightbox($this->request);
 	
 		$vn_col_span = 12;
 		$vn_col_span_sm = 12;
@@ -120,7 +121,7 @@
 				}
 				# --- check if this result has been cached
 				# --- key is MD5 of table, id, view, refine(vb_refine)
-				$vs_cache_key = md5('tadl_list_v3'.$vs_table.$vn_id."list".$vb_refine);
+				$vs_cache_key = md5('tadl_list_v4'.$vs_table.$vn_id."list".$vb_refine.(int)$vb_tadl_lightbox);
 				if(($o_config->get("cache_timeout") > 0) && ExternalCache::contains($vs_cache_key,'browse_result')){
 					print ExternalCache::fetch($vs_cache_key, 'browse_result');
 				}else{
@@ -147,25 +148,21 @@
 					}
 					$vs_rep_detail_link 	= caDetailLink($this->request, $vs_image, '', $vs_table, $vn_id);
 				
-					$vs_add_to_set_link = "";
-					if(($vs_table == 'ca_objects') && is_array($va_add_to_set_link_info) && sizeof($va_add_to_set_link_info)){
-						$vs_add_to_set_link = "<a href='#' onclick='caMediaPanel.showPanel(\"".caNavUrl($this->request, '', $va_add_to_set_link_info["controller"], 'addItemForm', array($vs_pk => $vn_id))."\"); return false;' title='".$va_add_to_set_link_info["link_text"]."'>".$va_add_to_set_link_info["icon"]."</a>";
-					}
-				
+					$vs_add_to_set_link = $vs_table === 'ca_objects' ? tadlAddToLightboxLink($this->request, $vn_id) : '';
 					$vs_expanded_info = $qr_res->getWithTemplate($vs_extended_info_template);
 
 					$vs_result_output = "
 		<div class='bResultListItemCol col-xs-{$vn_col_span_xs} col-sm-{$vn_col_span_sm} col-md-{$vn_col_span}'>
 			<div class='bResultListItem' id='row{$vn_id}' onmouseover='jQuery(\"#bResultListItemExpandedInfo{$vn_id}\").show();'  onmouseout='jQuery(\"#bResultListItemExpandedInfo{$vn_id}\").hide();'>
-				<div class='bSetsSelectMultiple'><input type='checkbox' name='object_ids[]' value='{$vn_id}'></div>
 				<div class='bResultListItemContent'><div class='text-center bResultListItemImg'>{$vs_rep_detail_link}</div>
 					<div class='bResultListItemText'>
 						<small>{$vs_idno_detail_link}</small><br/>{$vs_label_detail_link}
+						{$vs_add_to_set_link}
 					</div><!-- end bResultListItemText -->
 				</div><!-- end bResultListItemContent -->
 				<div class='bResultListItemExpandedInfo' id='bResultListItemExpandedInfo{$vn_id}'>
 					<hr>
-					{$vs_expanded_info}{$vs_add_to_set_link}
+					{$vs_expanded_info}
 				</div><!-- bResultListItemExpandedInfo -->
 			</div><!-- end bResultListItem -->
 		</div><!-- end col -->";
@@ -180,10 +177,3 @@
 			print tadlBrowseResultPager($this->request, $qr_res->numHits(), $vn_start, $vn_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $this->getVar('is_advanced') ? true : false);
 		}
 ?>
-<script type="text/javascript">
-	jQuery(document).ready(function() {
-		if($("#bSetsSelectMultipleButton").is(":visible")){
-			$(".bSetsSelectMultiple").show();
-		}
-	});
-</script>

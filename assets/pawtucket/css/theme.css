@@ -3178,6 +3178,82 @@ div.tadl-image-viewer-controls .close {
     display: none !important;
 }
 
+.tadl-add-lightbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.tadl-object-lightbox-action {
+    text-align: center;
+}
+
+.tadl-faq-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px;
+}
+
+.tadl-faq-category h3 {
+    margin: 20px 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--tadl-border, #ccc);
+    font-size: 24px;
+}
+
+.tadl-faq-item {
+    margin-bottom: 12px;
+}
+
+.tadl-faq-item summary {
+    position: relative;
+    padding: 18px 54px 18px 20px;
+    color: #fff;
+    background: #496b91;
+    border-radius: 8px;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.4;
+    cursor: pointer;
+    list-style: none;
+}
+
+.tadl-faq-item summary::-webkit-details-marker {
+    display: none;
+}
+
+.tadl-faq-item summary::after {
+    content: '+';
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 26px;
+}
+
+.tadl-faq-item[open] summary::after {
+    content: '−';
+}
+
+.tadl-faq-item summary:focus-visible {
+    outline: 3px solid var(--tadl-navy, #12345a);
+    outline-offset: 3px;
+}
+
+.tadl-faq-answer {
+    padding: 16px 20px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 767px) {
+    .tadl-faq-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+    }
+}
+
 .bResultListItemCol {
     height: auto;
     margin-bottom: 12px;
