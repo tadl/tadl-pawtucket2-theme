@@ -89,15 +89,12 @@
 				}
 			
 				$qr_res->seek($vn_start);
-				$va_images = caGetDisplayImagesForAuthorityItems($vs_table, $va_ids, array('version' => 'small', 'relationshipTypes' => caGetOption('selectMediaUsingRelationshipTypes', $va_options, null), 'objectTypes' => caGetOption('selectMediaUsingTypes', $va_options, null), 'checkAccess' => $va_access_values));
+				$va_image_options = array('version' => 'small', 'relationshipTypes' => caGetOption('selectMediaUsingRelationshipTypes', $va_options, null), 'objectTypes' => caGetOption('selectMediaUsingTypes', $va_options, null), 'checkAccess' => $va_access_values);
 				if ($vs_table === 'ca_collections') {
 					require_once(__DIR__.'/collection_thumbnail_helpers.php');
-					$va_descendant_images = tadlGetDescendantCollectionImages($va_ids, array('version' => 'small', 'checkAccess' => $va_access_values));
-					foreach($va_descendant_images as $vn_collection_id => $vs_descendant_image) {
-						if (!$va_images[$vn_collection_id]) {
-							$va_images[$vn_collection_id] = $vs_descendant_image;
-						}
-					}
+					$va_images = tadlGetCollectionImages($va_ids, $va_image_options);
+				} else {
+					$va_images = caGetDisplayImagesForAuthorityItems($vs_table, $va_ids, $va_image_options);
 				}
 			} else {
 				$va_images = null;
@@ -129,7 +126,7 @@
 					$vs_thumbnail = "";
 					$vs_type_placeholder = "";
 					$vs_typecode = "";
-					$vs_image = ($vs_table === 'ca_objects') ? $qr_res->getMediaTag("ca_object_representations.media", 'small', array("checkAccess" => $va_access_values)) : $va_images[$vn_id];
+					$vs_image = ($vs_table === 'ca_objects') ? $qr_res->getMediaTag("ca_object_representations.media", 'small', array("checkAccess" => $va_access_values)) : ($va_images[$vn_id] ?? '');
 				
 					if(!$vs_image){
 						if ($vs_table == 'ca_objects') {

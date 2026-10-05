@@ -69,7 +69,7 @@ function tadlMediaEligibleIDs($table, array $candidateIDs, array $accessValues) 
 				)
 			";
 			$sql = "
-				SELECT DISTINCT p.collection_id candidate_id, r.representation_id, r.media
+				SELECT DISTINCT p.collection_id candidate_id, r.representation_id
 				FROM ca_collections p
 				{$collectionJoin}
 				INNER JOIN ca_objects_x_collections oc ON oc.collection_id = c.collection_id
@@ -90,36 +90,17 @@ function tadlMediaEligibleIDs($table, array $candidateIDs, array $accessValues) 
 		if (!$result) {
 			throw new RuntimeException('Unable to check media availability.');
 		}
-		while ($result->nextRow()) {
-			$id = (int)$result->get('candidate_id');
-			if (isset($eligible[$id])) {
-				continue;
-			}
-			$representationID = (int)$result->get('representation_id');
-			if (!isset($representationHasMedia[$representationID])) {
-				$original = $result->getMediaInfo('media', 'original');
-				$hasMedia = $result->hasMedia('media');
-				$hasOriginal = $hasMedia
-					&& is_array($original)
-					&& (!empty($original['FILENAME']) || !empty($original['EXTERNAL_URL']))
-					&& (bool)$result->getMediaUrl('media', 'original');
-				if (!$hasOriginal && $hasMedia) {
-					$mediaInfo = $result->getMediaInfo('media');
-					$source = $mediaInfo['INPUT']['FETCHED_FROM'] ?? null;
-					if (!empty($mediaInfo['IS_EMBEDDED']) && is_string($source) && strlen(trim($source))) {
-						if (!$mediaURL) {
-							if (!class_exists('\\CA\\MediaUrl')) {
-								require_once(__CA_LIB_DIR__.'/MediaUrl.php');
-							}
-							$mediaURL = new \CA\MediaUrl();
-						}
-						$hasOriginal = (bool)$mediaURL->embedTag($source);
-					}
+		if ($table === 'ca_collections') {
+			$eligible += tadlCollectionMediaCandidates($db, $result, $access, $representationHasMedia);
+		} else {
+			while ($result->nextRow()) {
+				$id = (int)$result->get('candidate_id');
+				if (isset($eligible[$id])) { continue; }
+				$representationID = (int)$result->get('representation_id');
+				if (!isset($representationHasMedia[$representationID])) {
+					$representationHasMedia[$representationID] = tadlRepresentationHasUsableMedia($result, $mediaURL);
 				}
-				$representationHasMedia[$representationID] = $hasOriginal;
-			}
-			if ($representationHasMedia[$representationID]) {
-				$eligible[$id] = true;
+				if ($representationHasMedia[$representationID]) { $eligible[$id] = true; }
 			}
 		}
 		foreach ($chunk as $id) {
@@ -130,6 +111,65 @@ function tadlMediaEligibleIDs($table, array $candidateIDs, array $accessValues) 
 	return array_values(array_filter($ids, function ($id) use ($eligibilityCache, $cacheKey) {
 		return $eligibilityCache[$cacheKey][$id];
 	}));
+}
+
+/** Use native media decoding for originals and supported embeds, including legacy descriptors. */
+function tadlRepresentationHasUsableMedia($result, &$mediaURL) {
+	$original = $result->getMediaInfo('media', 'original');
+	$hasMedia = $result->hasMedia('media');
+	if ($hasMedia && is_array($original)
+		&& (!empty($original['FILENAME']) || !empty($original['EXTERNAL_URL']))
+		&& (bool)$result->getMediaUrl('media', 'original')) { return true; }
+	if ($hasMedia) {
+		$mediaInfo = $result->getMediaInfo('media');
+		$source = $mediaInfo['INPUT']['FETCHED_FROM'] ?? null;
+		if (!empty($mediaInfo['IS_EMBEDDED']) && is_string($source) && strlen(trim($source))) {
+			if (!$mediaURL) {
+				if (!class_exists('\\CA\\MediaUrl')) { require_once(__CA_LIB_DIR__.'/MediaUrl.php'); }
+				$mediaURL = new \CA\MediaUrl();
+			}
+			return (bool)$mediaURL->embedTag($source);
+		}
+	}
+	return false;
+}
+
+/**
+ * The hierarchy query returns only ID pairs, not thousands of repeated media
+ * blobs. Fetch one untested descriptor per unresolved collection at a time and
+ * stop as soon as it qualifies. Shared representations are decoded only once.
+ */
+function tadlCollectionMediaCandidates($db, $relationships, array $access, array &$hasMedia) {
+	$pending = []; $positions = []; $eligible = []; $mediaURL = null;
+	while ($relationships->nextRow()) {
+		$id = (int)$relationships->get('candidate_id');
+		$pending[$id][] = (int)$relationships->get('representation_id');
+		$positions[$id] = 0;
+	}
+	while ($pending) {
+		$fetch = [];
+		foreach ($pending as $id => $representationIDs) {
+			while (isset($representationIDs[$positions[$id]])) {
+				$representationID = $representationIDs[$positions[$id]];
+				if (!array_key_exists($representationID, $hasMedia)) {
+					$fetch[$representationID] = $representationID;
+					break;
+				}
+				if ($hasMedia[$representationID]) { $eligible[$id] = true; break; }
+				$positions[$id]++;
+			}
+			if (isset($eligible[$id]) || !isset($representationIDs[$positions[$id]])) { unset($pending[$id]); }
+		}
+		if (!$fetch) { break; }
+		$result = $db->query("SELECT representation_id, media FROM ca_object_representations
+			WHERE representation_id IN (?) AND deleted = 0 AND access IN (?)", [array_values($fetch), $access]);
+		if (!$result) { throw new RuntimeException('Unable to check collection media availability.'); }
+		foreach ($fetch as $representationID) { $hasMedia[$representationID] = false; }
+		while ($result->nextRow()) {
+			$hasMedia[(int)$result->get('representation_id')] = tadlRepresentationHasUsableMedia($result, $mediaURL);
+		}
+	}
+	return $eligible;
 }
 
 /**

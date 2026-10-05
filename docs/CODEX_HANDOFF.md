@@ -175,6 +175,32 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
 
 ### Results and authority pages
 
+- Collection browse performance: `tadlMediaEligibleIDs()` first fetches only
+  collection/representation ID pairs, then decodes one untested descriptor per
+  unresolved collection until it qualifies. Shared representations are decoded
+  once per call; inaccessible/deleted, metadata-only and unsupported media still
+  fail eligibility. Preserve filtering before counts, paging and result contexts.
+  No persistent eligibility cache or new database index was introduced.
+- `tadlGetCollectionImages()` uses native directly attached collection primary
+  media first, then primary object images directly in that collection, then
+  descendant images only for unresolved cards. Its SQL selects one relation ID
+  per collection before retrieving the media blob, with stable hierarchy/name/
+  rank/relation order. Object/relationship selectors remain enforced for direct
+  object images; access/deletion checks and focal-point rendering remain intact.
+  Tiles, List and multisearch previews use this helper. The Collections index
+  retains its existing descendant selection through the same bounded SQL.
+  The direct-object fallback previously rendered all linked images and repeatedly
+  loaded the same collection model, keeping only the last tag; its thumbnail may
+  change now that selection follows a deterministic first-image order.
+- Read-only native checks on 2026-10-05 returned identical eligible IDs before/
+  after the optimization. The eligibility helper took approximately 2.05s versus
+  0.69s; a nine-card thumbnail lookup took 1.63s versus 0.06s. These are helper
+  timings on the production database with proposed source evaluated in a separate
+  CLI process, not full-page timings after deployment. No installed source,
+  database records, indexes or production services were changed. The standalone
+  suites include large synthetic collections, bounded descriptor/media rows,
+  invalid descriptors, primary precedence and actual Tiles/List routes. Public
+  page timing and authenticated navigation remain deployment-time checks.
 - Collection entry lists sort by name. The detail-page Collection Browser now
   defaults to the preferred collection name rather than Providence's manual rank.
   `views/Collections/hierarchy_helpers.php` normalizes access/media-filtered sibling
@@ -502,7 +528,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The twenty committed tests are portable and use synthetic boundaries. They do not
+The twenty-one committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -528,6 +554,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | Test | Coverage |
 | --- | --- |
 | `tests/collection_hierarchy_test.php` | Initial/recursive hierarchy rendering, natural name order, numeric labels, access/media-filtered siblings, stable ties and history/direct links |
+| `tests/collection_thumbnail_test.php` | Actual SQL and Tiles/List rendering, bounded media rows, stable selection, access/deletion, native collection primary precedence and direct/descendant fallbacks |
 | `tests/thumbnail_focus_test.php` | Native image-tag preservation, manual focal priority, invalid/stale cache rejection, responsive cover geometry and multiple faces |
 | `tests/thumbnail_detector_test.php` | Actual CLI/SQL with synthetic catalogues, global keyset scans, public/shared/nonprimary selection, bounded runs, durable migration/purge survival, locks and retries |
 | `tests/faq_setup_test.php` | Read-only setup plans, targeted native template registration, additive editor placements, private pre-change backup, no-op reruns, preserving unrelated configuration and transactional rollback |
@@ -536,7 +563,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/home_faq_test.php` | Published/readable Site Pages, drafts, incomplete entries, locale, rank, escaped questions and purified answers; optional real HTMLPurifier |
 | `tests/finding_aid_test.php` | Selected collection export, descendants, access/ACL/bundle restrictions, complete unique inventories over native caps, field mappings, locations, escaped PDF text and safe failure; optional real Dompdf |
 | `tests/asset_versions_test.php` | Stable/changed CSS and JS URLs, preserved timestamps, native loader options, subdirectory/absolute theme URLs, escaping, inline-code preservation and path boundaries |
-| `tests/media_preferences_test.php` | Eligibility SQL, filtered result adapter, result rendering |
+| `tests/media_preferences_test.php` | Eligibility SQL, lazy collection descriptor fetching, invalid-media exhaustion, filtered result adapter and result rendering |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |
 | `tests/collection_detail_scripts_test.php` | Collection detail loader JavaScript and empty/populated field/relationship headings |
 | `tests/object_detail_media_test.php` | Media selection, viewer controls and callbacks |

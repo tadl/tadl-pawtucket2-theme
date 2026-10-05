@@ -78,6 +78,7 @@ function caDetailUrl($request, $table, $id, $asPieces = false, $params = [], $op
 }
 function caUcFirstUTF8Safe($text) { return ucfirst($text); }
 function tadlGetDescendantCollectionImages($ids, $options = []) { return []; }
+function tadlGetCollectionImages($ids, $options = []) { return []; }
 function caGetDisplayImagesForAuthorityItems($table, $ids, $options = []) { return []; }
 class ca_objects {
     function getPrimaryMediaForIDs($ids, $versions, $options = []) {
@@ -132,6 +133,7 @@ class TestDbResult {
 class Db {
     static public PDO $pdo;
     static public array $queries = [];
+    static public int $mediaRows = 0;
     function query($sql, $params = [], $options = null) {
         self::$queries[] = ['sql' => $sql, 'params' => $params];
         // CollectiveAccess permits array values for a single IN (?) placeholder.
@@ -145,7 +147,9 @@ class Db {
         }, $sql);
         $statement = self::$pdo->prepare($sql);
         $statement->execute($bindings);
-        return new TestDbResult($statement->fetchAll(PDO::FETCH_ASSOC));
+        $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
+        self::$mediaRows += count(array_filter($rows, static fn($row) => array_key_exists('media', $row)));
+        return new TestDbResult($rows);
     }
 }
 class TestModel {
@@ -366,6 +370,18 @@ foreach (range(1000,1600) as $id) { testObject($id); testRelation($id, 1); }
 $queryCount = count(Db::$queries);
 testAssert(tadlMediaEligibleIDs('ca_objects', range(1000,1600), [1]) === range(1000,1600), 'Chunked candidate batch dropped results.');
 testAssert(count(Db::$queries) - $queryCount === 2, '601 candidates should execute two bounded batches.');
+
+// A large collection needs one playable descriptor, not every attached media blob.
+testCollection(7000, 7000, 1, 2);
+foreach (range(7000,7999) as $id) { testObject($id); testRepresentation($id); testRelation($id,$id); testCollectionObject(7000,$id); }
+$mediaRows = Db::$mediaRows;
+testAssert(tadlMediaEligibleIDs('ca_collections',[7000],[1]) === [7000], 'Large collection did not qualify.');
+testAssert(Db::$mediaRows - $mediaRows === 1, 'Collection eligibility fetched all media descriptors instead of stopping at the first playable one.');
+// Invalid descriptors must be exhausted without treating them as playable.
+testCollection(8000,8000,1,2); testCollectionObject(8000,6); testCollectionObject(8000,7); testCollectionObject(8000,1);
+testAssert(tadlMediaEligibleIDs('ca_collections',[8000],[1]) === [8000], 'Invalid initial descriptors blocked a later usable file.');
+testCollection(8001,8001,1,2); testCollectionObject(8001,6); testCollectionObject(8001,7);
+testAssert(tadlMediaEligibleIDs('ca_collections',[8001],[1]) === [], 'All-invalid descriptors did not terminate as an empty result.');
 
 // Native embedding can be playable even when no original derivative exists.
 foreach ([1700 => ['IS_EMBEDDED' => 1, 'INPUT' => ['FETCHED_FROM' => 'https://example.org/synthetic-embeddable']], 1701 => ['IS_EMBEDDED' => 1, 'INPUT' => ['FETCHED_FROM' => 'https://example.org/unsupported']], 1702 => ['IS_EMBEDDED' => 0, 'INPUT' => ['FETCHED_FROM' => 'https://example.org/synthetic-embeddable']]] as $id => $media) {
