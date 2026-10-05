@@ -394,6 +394,11 @@ h6 {
     position: relative;
 }
 
+/* The account menu is local to its item; override Yamm's static dropdowns. */
+.tadl-main-nav .tadl-menu-items > .tadl-account-menu {
+    position: relative;
+}
+
 .tadl-menu-items > li > a {
     position: relative;
     z-index: 2;

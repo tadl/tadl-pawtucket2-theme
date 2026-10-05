@@ -11,6 +11,8 @@ can log in. Self-registration is disabled with `dontAllowRegistration = 1`;
 the public catalog does not require authentication.
 
 After login, **My account** offers **My lightboxes**, **My profile** and **Log out**.
+Its positioning overrides the inherited Yamm mega-menu rule so the green
+hover/focus/open marker and dropdown stay attached to the account item.
 **Add to lightbox** appears below object media and on full object result cards/list
 rows, including related-item and collection contents that use those result
 views. The native modal lets the user choose or create a lightbox. The action
