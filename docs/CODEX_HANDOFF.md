@@ -212,7 +212,9 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
   criteria are removable with visible controls and accessible labels.
 - The shared search/browse **Options** menu omits Lightbox bulk-add and selection
   actions. Sorting, Start Over and eligible downloads remain available. This is
-  a menu change; per-item Lightbox controls and the account Lightbox remain intact.
+  consistent with result tiles/list rows, which omit individual Lightbox buttons
+  for everyone. Signed-in users can add objects from object details and use
+  **My lightboxes**. Result-card and result-block cache versions bypass old buttons.
 - Object browse, regular search and advanced search offer **Date**, using the
   same `ca_objects.date.dates_value` field displayed on object details and native
   date-range sorting. Date defaults to ascending; the normal descending control
@@ -600,7 +602,8 @@ included in a workspace rsync and are not required by the committed tests.
   hiding the toggle or trusting its cookie is not access control.
 - The native account/lightbox pilot is now wired into the theme. Anonymous login
   links remain hidden; use the bookmarked `/LoginReg/LoginForm`. Registration is
-  disabled. Signed-in users get account navigation and individual object additions.
+  disabled. Signed-in users get account navigation and additions on object details;
+  thumbnail/list results omit Lightbox buttons for everyone.
   Bulk additions remain omitted until they respect filtered results. See
   `docs/USER_FEATURES.md` for native features, access caveats and live checks.
 - FAQ template/editor activation was authorized and completed in production on

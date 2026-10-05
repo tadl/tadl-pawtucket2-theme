@@ -93,16 +93,16 @@ foreach (['images', 'list'] as $viewName) {
 		$request = new FeatureRequest($loggedIn);
 		$view = new FeatureView($request, ['result' => new FeatureResult(), 'facets' => [], 'criteria' => [], 'key' => 'synthetic-key', 'start' => 0, 'row_id' => 0, 'options' => [], 'table' => 'ca_objects', 'primaryKey' => 'object_id', 'config' => $request->config, 'view' => $viewName]);
 		$html = $view->render('Browse/browse_results_'.$viewName.'_html.php');
-		checkUserFeature(str_contains($html, 'tadl-add-lightbox') === $loggedIn, $viewName.': result actions must follow authentication.');
+		checkUserFeature(!str_contains($html, 'tadl-add-lightbox') && !str_contains($html, '/Lightbox/addItemForm'), $viewName.': results must omit Lightbox actions for every session.');
 		checkUserFeature(!str_contains($html, 'Login to') && !str_contains($html, 'LoginForm'), $viewName.': result leaked a login prompt.');
 		if ($loggedIn) {
 			$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 			$xpath = new DOMXPath($document);
-			checkUserFeature($xpath->query('//div[contains(@class,"ItemText")]//a[contains(@class,"tadl-add-lightbox")]')->length === 1, $viewName.': Lightbox button is still in the hidden hover panel.');
+			checkUserFeature($xpath->query('//div[contains(@class,"ItemText")]//a[@href="/Detail/objects/42" and text()="Synthetic object"]')->length === 1, $viewName.': removing the action must preserve the object title link.');
 		}
 		$keys[] = end(ExternalCache::$keys);
 	}
-	checkUserFeature($keys[0] !== $keys[1], $viewName.': cached account controls crossed session state.');
+	checkUserFeature($keys[0] !== $keys[1], $viewName.': native session separation must remain in result caches.');
 }
 foreach ([false, true] as $ajax) {
 	$request = new FeatureRequest(false, $ajax);

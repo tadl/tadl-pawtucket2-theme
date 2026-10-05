@@ -60,8 +60,6 @@
 	$vn_page_size = tadlBrowseResultPageSize('images');
 	
 
-	require_once(__DIR__.'/../../helpers/user_features.php');
-	$vb_tadl_lightbox = caDisplayLightbox($this->request);
 
 	$o_icons_conf = caGetIconsConfig();
 	$va_object_type_specific_icons = $o_icons_conf->getAssoc("placeholders");
@@ -124,7 +122,7 @@
 				
 				# --- check if this result has been cached
 				# --- key is MD5 of table, id, list, refine(vb_refine)
-				$vs_cache_key = md5('tadl_images_v4'.$vs_table.$vn_id."images".$vb_refine.(int)$vb_tadl_lightbox);
+				$vs_cache_key = md5('tadl_images_v5'.$vs_table.$vn_id."images".$vb_refine.(int)caDisplayLightbox($this->request));
 				if(($o_config->get("cache_timeout") > 0) && ExternalCache::contains($vs_cache_key,'browse_result')){
 					print ExternalCache::fetch($vs_cache_key, 'browse_result');
 				}else{			
@@ -153,7 +151,6 @@
 						}
 						$vs_rep_detail_link 	= caDetailLink($this->request, tadlFocusThumbnail($vs_thumbnail), '', $vs_table, $vn_id);
 					}
-					$vs_add_to_set_link = $vs_table === 'ca_objects' ? tadlAddToLightboxLink($this->request, $vn_id) : '';
 					$vs_expanded_info = $qr_res->getWithTemplate($vs_extended_info_template);
 
 					$vs_result_output = "
@@ -162,7 +159,6 @@
 				<div class='bResultItemContent'><div class='text-center bResultItemImg'>{$vs_rep_detail_link}</div>
 					<div class='bResultItemText'>
 						<small>{$vs_idno_detail_link}</small><br/>{$vs_label_detail_link}
-						{$vs_add_to_set_link}
 					</div><!-- end bResultItemText -->
 				</div><!-- end bResultItemContent -->
 				<div class='bResultItemExpandedInfo' id='bResultItemExpandedInfo{$vn_id}'>

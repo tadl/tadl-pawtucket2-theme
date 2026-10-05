@@ -14,9 +14,9 @@ the public catalog does not require authentication.
 After login, **My account** offers **My lightboxes**, **My profile** and **Log out**.
 Its positioning overrides the inherited Yamm mega-menu rule so the green
 hover/focus/open marker and dropdown stay attached to the account item.
-**Add to lightbox** appears below object media and on full object result cards/list
-rows, including related-item and collection contents that use those result
-views. The native modal lets the user choose or create a lightbox. The action
+**Add to lightbox** appears below object media on object details. Result tiles
+and list rows omit it for every user, including related-item and collection
+contents. The native modal lets the user choose or create a lightbox. The action
 adds the object, rather than a particular representation. Native authentication,
 CSRF, set ownership and sharing checks remain in charge. No credentials or users
 were created by this source change.
@@ -92,11 +92,12 @@ review set publication/export/presentation routes before offering private
 research storage. Do not broaden catalog access statuses just to show lightboxes.
 Existing sets and permissions are not changed by this theme.
 
-Bulk selection / Add all results remain omitted. Individual additions work with
-the theme's filtered result pages; native bulk-add would need to respect that
-same media filter before restoration. Result HTML cache keys distinguish sessions
-with and without lightbox controls. Keep whole-page caching disabled because
-navigation and other page content depend on session/preference state.
+Bulk selection / Add all results remain omitted. Individual additions are
+available on object details; native bulk-add would need to respect the media
+filter before restoration. Result-card cache versions were bumped when their
+Lightbox buttons were removed, so existing cached buttons are bypassed after
+deployment. Keep whole-page caching disabled because navigation and other page
+content depend on session/preference state.
 
 ## FAQ content editing
 

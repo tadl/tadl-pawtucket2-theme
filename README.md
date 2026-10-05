@@ -38,8 +38,9 @@ suggestions live outside `app/tmp` and survive its routine clearing. See
 [Thumbnail focus](docs/THUMBNAIL_FOCUS.md) for installation and operation.
 
 Existing accounts can use the bookmarked `/LoginReg/LoginForm` page. Signed-in
-users get **My account** navigation and **Add to lightbox** actions; anonymous
-visitors get no login links. Self-registration is disabled for the initial pilot.
+users get **My account** navigation and **Add to lightbox** on object details.
+Result tiles and list rows omit those buttons for everyone. Anonymous visitors
+get no login links. Self-registration is disabled for the initial pilot.
 The homepage FAQ scaffold uses Providence Site Pages for content editing after a
 one-time registration. See [Accounts and FAQ setup](docs/USER_FEATURES.md) and
 [Repeatable FAQ activation](docs/FAQ_SETUP.md).
