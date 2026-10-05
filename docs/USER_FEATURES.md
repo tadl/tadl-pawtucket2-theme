@@ -140,7 +140,7 @@ Edits appear on the next home-page request; there is no additional FAQ cache.
    This **writes template metadata to the database**, including updates to other
    scanned templates. It was not run as part of this source task. Review existing
    template state and the command output before continuing.
-2. In Providence, open **Manage > Pawtucket > Site Pages** and create an entry
+2. In Providence, open **Manage > Content Management > Site pages** and create an entry
    using `faq_entry`. If the editor is missing, configure the native Site Pages
    editing UI with page metadata and Page content bundles; grant only the
    necessary Site Pages permissions to the staff role. Existing public/researcher
