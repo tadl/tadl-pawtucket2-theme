@@ -51,16 +51,24 @@ staff can always correct it with **Set center**.
 Use a separate Python 3.11+ virtual environment outside the web roots, maintained
 alongside the site's other tools. Do not install packages into system Python.
 The theme has no new Composer dependency, browser ML download or CDN dependency.
+On Linux, create/install the runtime as root under `/opt/tadl-thumbnail-faces`.
+Keep it root-owned; the application user needs read/execute access, not write
+access. The runtime sits outside theme/application upgrades and cache purges.
 
 ```sh
-python3 -m venv /private/tools/tadl-thumbnail-faces/venv
-/private/tools/tadl-thumbnail-faces/venv/bin/python -m pip install \
-  --only-binary=:all: -r /path/to/tadl/support/thumbnail-faces/requirements.txt
+# As root, for a new installation:
+umask 022
+install -d -m 0755 /opt/tadl-thumbnail-faces
+python3 -m venv /opt/tadl-thumbnail-faces/venv
+/opt/tadl-thumbnail-faces/venv/bin/python -m pip --isolated install \
+  --no-cache-dir --only-binary=:all: --index-url https://pypi.org/simple \
+  -r /path/to/tadl/support/thumbnail-faces/requirements.txt
+/opt/tadl-thumbnail-faces/venv/bin/python -m pip check
 ```
 
 Download `face_detection_yunet_2023mar.onnx` from
 [OpenCV Zoo](https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet)
-to `/private/tools/tadl-thumbnail-faces/yunet.onnx`. The direct model URL is
+to `/opt/tadl-thumbnail-faces/yunet.onnx`. The direct model URL is
 `https://media.githubusercontent.com/media/opencv/opencv_zoo/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx`.
 The detector requires the pinned SHA-256
 `8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4`
@@ -70,6 +78,15 @@ and this YuNet model is [MIT licensed](https://github.com/opencv/opencv_zoo/blob
 upstream notices with the installed runtime/model. Runtime and model installation
 are separate from deploying the theme.
 
+Save the model's upstream `LICENSE` alongside it as `YUNET-LICENSE`, with both
+files root-owned and mode 0644. Verify the checksum and application-user access:
+
+```sh
+printf '%s\n' '8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4  /opt/tadl-thumbnail-faces/yunet.onnx' | sha256sum --check
+sudo -u www-data /opt/tadl-thumbnail-faces/venv/bin/python -c \
+  'import cv2; cv2.FaceDetectorYN.create("/opt/tadl-thumbnail-faces/yunet.onnx", "", (320, 320)); print("Model loaded")'
+```
+
 ### Inspect and process a collection
 
 Run as the application maintenance user, normally `www-data`, with media read
@@ -77,13 +94,13 @@ access and write access to Pawtucket's application `app/tmp` directory. Start wi
 inspection; no detector or cache write occurs without `--apply`:
 
 ```sh
-php /path/to/tadl/support/detect-thumbnail-faces.php \
+sudo -u www-data php /path/to/tadl/support/detect-thumbnail-faces.php \
   --pawtucket-root=/path/to/pawtucket --collection-id=123 --limit=100
 
-php /path/to/tadl/support/detect-thumbnail-faces.php \
+sudo -u www-data php /path/to/tadl/support/detect-thumbnail-faces.php \
   --pawtucket-root=/path/to/pawtucket --collection-id=123 --limit=100 \
-  --apply --python=/private/tools/tadl-thumbnail-faces/venv/bin/python \
-  --model=/private/tools/tadl-thumbnail-faces/yunet.onnx
+  --apply --python=/opt/tadl-thumbnail-faces/venv/bin/python \
+  --model=/opt/tadl-thumbnail-faces/yunet.onnx
 ```
 
 `limit` bounds uncached derivatives per invocation (1–1000), not object count.
@@ -120,3 +137,8 @@ The user's selected center was read through native production APIs and decorated
 successfully by the new helper without deploying it. Desktop/phone browser previews
 kept cover while displaying the subjects' heads. These are read-only/live-source
 and local-preview checks, not proof of theme deployment or a production batch run.
+
+The isolated Linux runtime was subsequently installed and verified as `www-data`
+with Python 3.12, OpenCV 4.13.0 and NumPy 2.4.3. The deployed detector passed
+synthetic blank/unreadable-image checks, and the application user cannot write to
+the runtime/model. No collection batch was run as part of runtime installation.
