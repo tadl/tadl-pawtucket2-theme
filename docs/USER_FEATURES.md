@@ -2,8 +2,9 @@
 
 ## Current account pilot
 
-The theme uses Pawtucket's existing `LoginReg` and `Lightbox` controllers;
-there is no separate authentication system or custom account database.
+The theme uses Pawtucket's existing `LoginReg` and `Lightbox` controllers, with
+a focused `AccountProfile` controller for profile saves. There is no separate
+authentication system or custom account database.
 
 Bookmark `/LoginReg/LoginForm` on the archive site. Anonymous visitors see no
 login, registration, account menu or Add to lightbox links. Existing accounts
@@ -21,12 +22,49 @@ CSRF, set ownership and sharing checks remain in charge. No credentials or users
 were created by this source change.
 
 The native login form retains password reset and now supports password managers.
-Profile forms support contact details and password changes. Email delivery and
-successful real-account login/reset remain deployment-time checks. Pawtucket and
-Providence use the configured CollectiveAccess users/authentication adapter;
+Profile forms support contact details and password changes. Email delivery,
+password reset and the corrected profile-save endpoint need live checks after
+deployment. Pawtucket and Providence use the configured CollectiveAccess
+users/authentication adapter;
 the applications have separate login sessions. Prefer public-access accounts
 for researchers and deliberate staff roles for editors. A Pawtucket login is
 not permission to edit FAQ content or the collection catalog.
+
+### Profile-save validation
+
+Keep profile GET links at `/LoginReg/profileForm`. Both the full-page and modal
+forms POST to `/AccountProfile/profileSave`; deploy the controller and form
+together. This controller inherits native form rendering and authentication
+setup, requires POST, a logged-in session and a valid native CSRF token, and
+loads only the authenticated user ID. Submitted account IDs or privilege fields
+are ignored; only configured `profile` preferences are editable.
+
+Native `LoginReg::profileSave()` compares the submitted email with `user_name`,
+which need not equal a staff account's contact email. The corrected save checks
+login-name collisions only when a public user's email changes, excluding that
+same user ID. Unchanged email preserves the current login name for every account;
+staff contact-email changes also preserve the staff login name.
+
+Validate fields, password confirmation, public-use group invitations and profile
+preferences before applying changes. Proposed edits use a separate `ca_users`
+model, never the request's session user: native `RequestHTTP::close()` calls
+`ca_users::close()`, which saves that user even after controller validation fails.
+Reload the request user after a successful save so its stale preferences cannot
+overwrite the new values. Failed validation/setters leave profile data unchanged.
+The form displays stored values again after an error; passwords are never echoed.
+
+Native model update still enforces password policy, complexity and authentication
+adapter support. This is not a transaction across an external authentication
+service. Group membership is attempted after a successful profile save; if that
+write fails, the form explicitly says the profile saved but the group was not
+joined. Invalid group codes block the profile save during validation.
+
+`tests/profile_save_test.php` exercises the actual theme controller and both forms
+with synthetic ORM/session/CSRF boundaries, including an end-of-request user save.
+It does not connect to a real database or edit a real account. No core patch is
+required. Existing bookmarked or stale forms posting to native
+`/LoginReg/profileSave` still use upstream behavior; reload the profile form after
+deploying this change.
 
 ## Native feature inventory
 
@@ -41,7 +79,7 @@ Inspected against the nearby Pawtucket 2.0.10 source, not just old screenshots.
 | Presentation | Native lightbox slideshow/presentation views |
 | Exports | Native configured export formats; available formats depend on installation/export setup |
 | Map and timeline | Existing lightbox views; useful only with corresponding location/date data and supporting services |
-| Profile and password reset | Native forms retained; reset requires working email configuration |
+| Profile and password reset | Native forms retained with corrected theme profile saves; reset requires working email configuration |
 | Object comments/tags, content submission | Optional native capabilities; not enabled by this task |
 | Researcher media preference | Still the existing browser cookie, not an account permission |
 

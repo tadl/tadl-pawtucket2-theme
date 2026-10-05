@@ -53,7 +53,7 @@ before calling an issue deployed or still broken.
 | Collections | `conf/collections.conf`, `conf/browse.conf`, `views/Collections/`, `views/Browse/collection_thumbnail_helpers.php` |
 | Browse/results/pagers | `views/Browse/browse_results_html.php`, `tadl_result_helpers.php`, `tadl_result_context_helpers.php`, image/list/refine subviews |
 | Search previews | `conf/search.conf`, `views/Search/multisearch_results_html.php`, `tadl_search_results_subview_html.php` |
-| Accounts/lightboxes | `helpers/user_features.php`, `assets/pawtucket/js/user-features.js`, shared header, native LoginReg/Lightbox views, object detail and browse result views; `docs/USER_FEATURES.md` |
+| Accounts/lightboxes | `helpers/user_features.php`, `controllers/AccountProfileController.php`, `assets/pawtucket/js/user-features.js`, shared header, native LoginReg/Lightbox views, object detail and browse result views; `docs/USER_FEATURES.md` |
 | Home-page FAQ | `templates/faq_entry.tmpl`, `conf/templates.conf`, `helpers/home_faq.php`, `views/Front/faq_html.php`; Providence Site Pages content |
 | Home-page writing | `views/Front/front_page_html.php`, `assets/pawtucket/js/recent-writing.js`; companion TADLFeeds `/local_history_posts.json` |
 | Object media | `helpers/object_detail_media.php`, `views/bundles/representation_viewer_html.php` |
@@ -74,6 +74,26 @@ line numbers. Native application behavior can be inspected in the nearby
 `pawtucket2/app/` reference tree without editing it.
 
 ## Behavior and implementation contracts
+
+### Profile saves
+
+Profile GET remains `/LoginReg/profileForm`; both the normal and AJAX forms now
+POST to the theme's `/AccountProfile/profileSave`. Deploy the controller and view
+together. Native login/reset, CSRF and `ca_users` password policy stay in charge.
+The endpoint loads the authenticated user ID, permits only configured profile
+preferences and native public-use group invitations, and ignores submitted IDs
+or privilege fields. Unchanged email never triggers a username collision check
+or login rename. Changed public-account email checks other usernames while
+excluding the current ID; staff contact-email changes preserve staff usernames.
+
+Upstream profileSave modified `request->user` before completing validation;
+native request close saves that model even on an error. The theme validates first
+and stages edits on a separate model, refreshing the request user only after
+success. Validation/setter failures cannot leak phone/preference edits through
+request close. A group write failure after profile success gets distinct, honest
+feedback. Native external password adapters are not wrapped in a cross-service
+transaction. Forms escape field/group errors and omit obsolete undefined sum data.
+See `docs/USER_FEATURES.md` for limitations and live verification boundaries.
 
 ### Collection finding aids
 
@@ -436,7 +456,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The fifteen committed tests are portable and use synthetic boundaries. They do not
+The sixteen committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -461,6 +481,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 
 | Test | Coverage |
 | --- | --- |
+| `tests/profile_save_test.php` | Own-email/staff-public login behavior, collisions, separate user staging, request-close persistence, validation/setter/model failures, native password delegation, POST/session/CSRF boundaries, public-use groups and direct/AJAX profile form error escaping |
 | `tests/user_features_test.php` | Anonymous/authenticated navigation and result actions, native login POST/CSRF, registration policy, password-manager fields and cache separation |
 | `tests/home_faq_test.php` | Published/readable Site Pages, drafts, incomplete entries, locale, rank, escaped questions and purified answers; optional real HTMLPurifier |
 | `tests/finding_aid_test.php` | Selected collection export, descendants, access/ACL/bundle restrictions, complete unique inventories over native caps, field mappings, locations, escaped PDF text and safe failure; optional real Dompdf |

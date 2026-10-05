@@ -26,7 +26,7 @@
  * ----------------------------------------------------------------------
  */
  
-	$va_errors = $this->getVar("errors");
+	$va_errors = (array)$this->getVar("errors");
 	$t_user = $this->getVar("t_user");
 	if($this->request->isAjax()){
 ?>
@@ -41,46 +41,50 @@
 <div class="row"><div class="col-sm-4"><H1<?php print (!$this->request->isAjax()) ? ' class="text-right"' : ''; ?>><?php print _t("User information"); ?></H1></div></div>
 
 <?php
-	if($va_errors["general"]){
-		print "<div class='alert alert-danger'>".$va_errors["general"]."</div>";
+	if(!empty($va_errors["general"])){
+		print "<div class='alert alert-danger'>".htmlspecialchars($va_errors["general"], ENT_QUOTES, "UTF-8")."</div>";
 	}
 ?>
-	<form id="ProfileForm" action="<?php print caNavUrl($this->request, "", "LoginReg", "profileSave"); ?>" class="form-horizontal" method="POST">
-        <input type="hidden" name="csrfToken" value="<?php print caGenerateCSRFToken($this->request); ?>"/>
+	<form id="ProfileForm" action="<?php print caNavUrl($this->request, "", "AccountProfile", "profileSave"); ?>" class="form-horizontal" method="POST">
+        <input type="hidden" name="csrfToken" value="<?php print htmlspecialchars(caGenerateCSRFToken($this->request), ENT_QUOTES, "UTF-8"); ?>"/>
 <?php
 		foreach(array("fname", "lname", "email") as $vs_field){
-			if($va_errors[$vs_field]){
-				print "<div class='alert alert-danger'>".$va_errors[$vs_field]."</div>";
+			if(!empty($va_errors[$vs_field])){
+				print "<div class='alert alert-danger'>".htmlspecialchars($va_errors[$vs_field], ENT_QUOTES, "UTF-8")."</div>";
 			}	
-			print $t_user->htmlFormElement($vs_field,"<div class='form-group".(($va_errors[$vs_field]) ? " has-error" : "")."'><label for='".$vs_field."' class='col-sm-4 control-label'>^LABEL</label><div class='col-sm-7'>^ELEMENT</div><!-- end col-sm-7 --></div><!-- end form-group -->\n", array("classname" => "form-control"));
+			print $t_user->htmlFormElement($vs_field,"<div class='form-group".((!empty($va_errors[$vs_field])) ? " has-error" : "")."'><label for='".$vs_field."' class='col-sm-4 control-label'>^LABEL</label><div class='col-sm-7'>^ELEMENT</div><!-- end col-sm-7 --></div><!-- end form-group -->\n", array("classname" => "form-control"));
 		}
 		$va_profile_settings = $this->getVar("profile_settings");
 		if(is_array($va_profile_settings) and sizeof($va_profile_settings)){
 			foreach($va_profile_settings as $vs_field => $va_profile_element){
-				if($va_errors[$vs_field]){
-					print "<div class='alert alert-danger'>".$va_errors[$vs_field]."</div>";
+				if(!empty($va_errors[$vs_field])){
+					print "<div class='alert alert-danger'>".htmlspecialchars($va_errors[$vs_field], ENT_QUOTES, "UTF-8")."</div>";
 				}
-				print "<div class='form-group".(($va_errors[$vs_field]) ? " has-error" : "")."'>";
+				print "<div class='form-group".((!empty($va_errors[$vs_field])) ? " has-error" : "")."'>";
 				print $va_profile_element["bs_formatted_element"];
 				print "</div><!-- end form-group -->";
 			}
 		}
-		if($va_errors["password"]){
-			print "<div class='alert alert-danger'>".$va_errors["password"]."</div>";
+		if(!empty($va_errors["password"])){
+			print "<div class='alert alert-danger'>".htmlspecialchars($va_errors["password"], ENT_QUOTES, "UTF-8")."</div>";
 		}		
 ?>
-		<div class="form-group<?php print (($va_errors["password"]) ? " has-error" : ""); ?>">
+		<div class="form-group<?php print ((!empty($va_errors["password"])) ? " has-error" : ""); ?>">
 			<label for='password' class='col-sm-4 control-label'><?php print _t('Reset Password'); ?></label>
 			<div class="col-sm-7"><p class="help-block"><?php print _t("Only enter if you would like to change your current password"); ?></p><input type="password" name="password" id="password" size="40" class="form-control"  autocomplete="off" /></div><!-- end col-sm-7 -->
 		</div><!-- end form-group -->
-		<div class="form-group<?php print (($va_errors["password"]) ? " has-error" : ""); ?>">
+		<div class="form-group<?php print ((!empty($va_errors["password"])) ? " has-error" : ""); ?>">
 			<label for='password2' class='col-sm-4 control-label'><?php print _t('Re-Type password'); ?></label>
 			<div class="col-sm-7"><input type="password" name="password2" id="password2" size="40" class="form-control" /></div><!-- end col-sm-7 -->
 		</div><!-- end form-group -->
-		<input type="hidden" name="sum" value="<?php print $vn_sum; ?>">
 
+<?php
+	if (!empty($va_errors["group_code"])) {
+		print "<div class='alert alert-danger'>".htmlspecialchars($va_errors["group_code"], ENT_QUOTES, "UTF-8")."</div>";
+	}
+?>
 	<div class="row"><div class="col-sm-4"><H2<?php print (!$this->request->isAjax()) ? ' class="text-right"' : ''; ?>><?php print _t("Groups"); ?></H2></div></div>
-		<div class="form-group<?php print (($va_errors["group_code"]) ? " has-error" : ""); ?>">
+		<div class="form-group<?php print ((!empty($va_errors["group_code"])) ? " has-error" : ""); ?>">
 			<label for='group_code' class='col-sm-4 control-label'><?php print _t('Join group'); ?></label>
 			<div class="col-sm-7"><p class="help-block"><?php print _t("If you have been provided with a group code enter it here to join the group."); ?></p><input type="text" name="group_code" id="group_code" size="40" class="form-control"  autocomplete="off" /></div><!-- end col-sm-7 -->
 		</div><!-- end form-group -->
@@ -94,7 +98,7 @@
 				<ul style="list-style: none; padding: 3px;">
 <?php
 					foreach($groups as $group) {
-						print "<li><label>{$group['name']}</label> <blockquote class='help-block'>{$group['description']}</blockquote></li>";
+						print "<li><label>".htmlspecialchars($group['name'], ENT_QUOTES, 'UTF-8')."</label> <blockquote class='help-block'>".htmlspecialchars($group['description'], ENT_QUOTES, 'UTF-8')."</blockquote></li>";
 					}
 ?>
 				</ul>
@@ -117,7 +121,7 @@
 	jQuery(document).ready(function() {
 		jQuery('#ProfileForm').on('submit', function(e){		
 			jQuery('#caMediaPanelContentArea').load(
-				'<?php print caNavUrl($this->request, '', 'LoginReg', 'profileSave', null); ?>',
+				<?php print json_encode(caNavUrl($this->request, '', 'AccountProfile', 'profileSave'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
 				jQuery('#ProfileForm').serialize()
 			);
 			e.preventDefault();
