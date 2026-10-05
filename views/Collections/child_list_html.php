@@ -1,4 +1,5 @@
 <?php
+	require_once __DIR__.'/hierarchy_helpers.php';
 	$va_access_values = $this->getVar("access_values");
 	$o_collections_config = $this->getVar("collections_config");
 	$vs_desc_template = $o_collections_config->get("description_template");
@@ -17,6 +18,8 @@ function printLevel($po_request, $va_collection_ids, $o_config, $vn_level, $va_o
 	$vb_only_media = (tadlMediaPreference($po_request) === 'only');
 	$vs_output = "";
 	$vs_desc_template = $o_config->get("description_template");
+	$vs_child_collection_sort = $o_config->get("detail_child_collection_sort") ?: "ca_collections.preferred_labels.name";
+	$va_collection_ids = tadlCollectionHierarchyIDs((array)$va_collection_ids, $vs_child_collection_sort);
 	$qr_collections = caMakeSearchResult("ca_collections", $va_collection_ids);
 	
 	if($qr_collections->numHits()){
@@ -30,10 +33,6 @@ function printLevel($po_request, $va_collection_ids, $o_config, $vn_level, $va_o
 			$vn_rel_object_count = sizeof($va_related_object_ids);
 			if(is_array($va_options["collection_type_icons"])){
 				$vs_icon = $va_options["collection_type_icons"][$qr_collections->get("ca_collections.type_id")];
-			}
-			$vs_child_collection_sort = $o_config->get("detail_child_collection_sort");
-			if(!$vs_child_collection_sort) {
-				$vs_child_collection_sort = "ca_collections.rank";
 			}
 			$va_child_ids = (array)$qr_collections->get("ca_collections.children.collection_id", array("returnAsArray" => true, "checkAccess" => $va_access_values, "sort" => $vs_child_collection_sort));
 			if ($vb_only_media) {

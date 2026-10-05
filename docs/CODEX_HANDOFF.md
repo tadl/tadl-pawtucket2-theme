@@ -175,8 +175,17 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
 
 ### Results and authority pages
 
-- Collection entry lists sort by name. Do not assume every child hierarchy or
-  export sort is alphabetical: those configuration settings are separate.
+- Collection entry lists sort by name. The detail-page Collection Browser now
+  defaults to the preferred collection name rather than Providence's manual rank.
+  `views/Collections/hierarchy_helpers.php` normalizes access/media-filtered sibling
+  IDs with case-insensitive natural ordering at every rendered level (Drawer 2
+  before Drawer 10). Both the initial browser and recursive AJAX child list use it.
+  Explicit non-name configuration sorts are still respected. Hierarchy structure,
+  exclusions, media/access filtering, expansion/history and direct links stay native.
+  The finding-aid/export sort is separate. Rendered synthetic hierarchy tests cover
+  numeric labels, recursive order, filtered siblings, ties and history links.
+  All twenty suites and changed PHP lint passed; a read-only native collection
+  check confirmed result ordering. This hierarchy change has not been deployed.
 - Collection index pagination uses normal links with page/view state. Browse
   retains native keys, criteria, sorting and result contexts; do not strip them
   just because URLs look complicated. Browser Back and direct page links matter.
@@ -474,7 +483,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The nineteen committed tests are portable and use synthetic boundaries. They do not
+The twenty committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -499,6 +508,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 
 | Test | Coverage |
 | --- | --- |
+| `tests/collection_hierarchy_test.php` | Initial/recursive hierarchy rendering, natural name order, numeric labels, access/media-filtered siblings, stable ties and history/direct links |
 | `tests/thumbnail_focus_test.php` | Native image-tag preservation, manual focal priority, invalid/stale cache rejection, responsive cover geometry and multiple faces |
 | `tests/thumbnail_detector_test.php` | Actual CLI/SQL with synthetic catalogues, global keyset scans, public/shared/nonprimary selection, bounded runs, durable migration/purge survival, locks and retries |
 | `tests/faq_setup_test.php` | Read-only setup plans, targeted native template registration, additive editor placements, private pre-change backup, no-op reruns, preserving unrelated configuration and transactional rollback |

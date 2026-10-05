@@ -1,4 +1,5 @@
 <?php
+	require_once __DIR__.'/hierarchy_helpers.php';
 	$va_access_values = (array)$this->getVar("access_values");
 	$vb_only_media = (tadlMediaPreference($this->request) === 'only');
 	$o_collections_config = $this->getVar("collections_config");
@@ -8,7 +9,7 @@
 	$va_collection_type_icons = $this->getVar("collection_type_icons");
 	$vs_child_collection_sort = $o_collections_config->get("detail_child_collection_sort");
 	if(!$vs_child_collection_sort) {
-		$vs_child_collection_sort = "ca_collections.rank";
+		$vs_child_collection_sort = "ca_collections.preferred_labels.name";
 	}
 	$vb_has_children = false;
 	$vb_has_grandchildren = false;
@@ -17,6 +18,7 @@
 	if ($vb_only_media) {
 		$va_collection_children = tadlMediaEligibleIDs('ca_collections', $va_collection_children, $va_access_values);
 	}
+	$va_collection_children = tadlCollectionHierarchyIDs($va_collection_children, $vs_child_collection_sort);
 	if($va_collection_children){
 		$vb_has_children = true;
 		$qr_collection_children = caMakeSearchResult("ca_collections", $va_collection_children);
