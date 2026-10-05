@@ -223,9 +223,18 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
   No whole-image fallback or per-page inference is used; default cover remains when
   no focal metadata is available. AJAX results and resized cards are recalculated.
   See `docs/THUMBNAIL_FOCUS.md` for scope, runtime installation, bounded maintenance
-  batches and disposable-cache behavior. Source/native integration and local
-  desktop/phone previews passed; theme deployment and production batch processing
-  have not been performed for this change.
+  batches and durable-cache behavior. The local runtime was installed on the
+  server; the user successfully processed the initial collection proof of concept.
+  The follow-up CLI adds `--all` for every public attached image representation,
+  including nonprimary and uncollected media, streaming keyset pages to one local
+  detector in a single invocation. `--limit` remains optional in all mode; the
+  existing collection mode retains its primary-only selection and default limit.
+  `conf/thumbnail_focus.conf` shares the durable directory between rendering and
+  maintenance (default `/var/cache/tadl-thumbnail-faces`). Provision ownership
+  and preserve old JSON before any deployment that clears `app/tmp`; apply can
+  also migrate valid surviving legacy results. Detection has no HTTP/API calls.
+  SQL selection, migration/purge survival, retry and lock tests pass. The global
+  scan and durable-storage change have not been deployed/applied in production.
 - Without an explicit `representation_id`, object detail selects the first
   accessible, rendered playable video when one exists. A valid attached/rendered
   requested representation takes precedence; an invalid explicit ID falls back
@@ -491,7 +500,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | Test | Coverage |
 | --- | --- |
 | `tests/thumbnail_focus_test.php` | Native image-tag preservation, manual focal priority, invalid/stale cache rejection, responsive cover geometry and multiple faces |
-| `tests/thumbnail_detector_test.php` | Actual CLI with synthetic native selection/detector boundaries, bounded batches, private atomic cache writes and no-op repeats |
+| `tests/thumbnail_detector_test.php` | Actual CLI/SQL with synthetic catalogues, global keyset scans, public/shared/nonprimary selection, bounded runs, durable migration/purge survival, locks and retries |
 | `tests/faq_setup_test.php` | Read-only setup plans, targeted native template registration, additive editor placements, private pre-change backup, no-op reruns, preserving unrelated configuration and transactional rollback |
 | `tests/profile_save_test.php` | Own-email/staff-public login behavior, collisions, separate user staging, request-close persistence, validation/setter/model failures, native password delegation, POST/session/CSRF boundaries, public-use groups and direct/AJAX profile form error escaping |
 | `tests/user_features_test.php` | Anonymous/authenticated navigation and result actions, native login POST/CSRF, registration policy, password-manager fields and cache separation |

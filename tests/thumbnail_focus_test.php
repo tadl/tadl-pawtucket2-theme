@@ -7,10 +7,16 @@ set_error_handler(function ($severity, $message, $file, $line) {
 });
 $temp = sys_get_temp_dir().'/tadl-focus-'.bin2hex(random_bytes(8));
 mkdir($temp.'/tmp/tadl-thumbnail-faces', 0700, true);
+mkdir($temp.'/durable', 0700);
 define('__CA_APP_DIR__', $temp);
+class Configuration {
+	static function load($path) { return new self(); }
+	function get($field) { return __CA_APP_DIR__.'/durable'; }
+}
 register_shutdown_function(function () use ($temp) {
+	foreach (glob($temp.'/durable/*') as $file) { unlink($file); }
 	foreach (glob($temp.'/tmp/tadl-thumbnail-faces/*') as $file) { unlink($file); }
-	rmdir($temp.'/tmp/tadl-thumbnail-faces'); rmdir($temp.'/tmp'); rmdir($temp);
+	rmdir($temp.'/durable'); rmdir($temp.'/tmp/tadl-thumbnail-faces'); rmdir($temp.'/tmp'); rmdir($temp);
 });
 $assertions = 0;
 function checkFocus($condition, $message) { global $assertions; $assertions++; if (!$condition) { throw new RuntimeException($message); } }
@@ -37,6 +43,17 @@ $key = tadlThumbnailFaceCacheKey($info, 'medium');
 checkFocus(tadlThumbnailFocusData($info, 'medium', $directory) === null, 'Empty cache must keep default cover');
 file_put_contents($directory.'/'.$key.'.json', json_encode(['schema' => 1, 'faces' => [[0.2, 0.1, 0.2, 0.25], [0.6, 0.12, 0.15, 0.2]]]));
 checkFocus(count(tadlThumbnailFocusData($info, 'medium', $directory)['faces']) === 2, 'Group face boxes lost');
+$legacy = tadlThumbnailLegacyFaceCacheDirectory();
+rename($directory.'/'.$key.'.json', $legacy.'/'.$key.'.json');
+checkFocus(count(tadlThumbnailFocusData($info, 'medium', $directory)['faces']) === 2, 'Legacy suggestions disappeared before migration');
+copy($legacy.'/'.$key.'.json', $directory.'/'.$key.'.json');
+unlink($legacy.'/'.$key.'.json');
+checkFocus(count(tadlThumbnailFocusData($info, 'medium', $directory)['faces']) === 2, 'Durable suggestions depend on temporary cache');
+file_put_contents($directory.'/'.$key.'.json', json_encode(['schema'=>1,'faces'=>[]]));
+file_put_contents($legacy.'/'.$key.'.json', json_encode(['schema'=>1,'faces'=>[[0.2,0.1,0.2,0.2]]]));
+checkFocus(tadlThumbnailFocusData($info, 'medium', $directory) === null, 'Valid durable no-face result was overridden by legacy cache');
+unlink($legacy.'/'.$key.'.json');
+file_put_contents($directory.'/'.$key.'.json', json_encode(['schema' => 1, 'faces' => [[0.2, 0.1, 0.2, 0.25], [0.6, 0.12, 0.15, 0.2]]]));
 foreach ([['x' => 0.42, 'y' => 0.2], ['x' => 0.5, 'y' => 0.5], ['x' => 0, 'y' => 1]] as $point) {
 	$manualInfo = $info + ['_CENTER' => $point];
 	checkFocus(tadlThumbnailFocusData($manualInfo, 'medium', $directory) === ['point' => tadlThumbnailValidPoint($point), 'source' => 'manual'], 'Manual point must override cached faces, including center/edges');

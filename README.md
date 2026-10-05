@@ -33,7 +33,9 @@ media. Field mappings and open archives-team decisions are documented in
 Result thumbnails keep the filled cover layout and respect Providence's **Set
 center** focal points. An optional offline OpenCV batch tool supplies face-based
 suggestions without changing those staff selections or processing images on page
-loads. See [Thumbnail focus](docs/THUMBNAIL_FOCUS.md) for installation and operation.
+loads. `--all --apply` processes every eligible public attached image in one run;
+suggestions live outside `app/tmp` and survive its routine clearing. See
+[Thumbnail focus](docs/THUMBNAIL_FOCUS.md) for installation and operation.
 
 Existing accounts can use the bookmarked `/LoginReg/LoginForm` page. Signed-in
 users get **My account** navigation and **Add to lightbox** actions; anonymous

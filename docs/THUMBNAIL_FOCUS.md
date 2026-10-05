@@ -31,16 +31,22 @@ Missing/corrupt face caches and images with no faces retain the centered cover c
 ## Automatic suggestions
 
 `support/detect-thumbnail-faces.php` is an explicit maintenance CLI, not a public
-endpoint or a page-load job. It reads public primary representations from a chosen
-public collection and its public descendants. Object/representation deletion and
-public access are checked. The CLI is an operator tool, not a visitor endpoint;
+endpoint or a page-load job. `--all` reads every image representation attached to
+a public object, including nonprimary media and objects without collections. The
+optional collection mode retains public primary representations from that public
+collection and its public descendants. Shared representations are scanned once.
+Deleted/private objects and representations, unattached media, and video/audio/PDF
+previews are excluded. Object/representation deletion and public access are checked.
+The CLI is an operator tool, not a visitor endpoint;
 cached boxes can only reach the browser through an image already selected by the
 native access-filtered view. It never expands the site's record/media visibility.
 
-The detector uses OpenCV YuNet locally. It sends no collection images to external
-services and performs face detection only, without identifying people. It reads
-existing bounded JPEG `medium`/`small` derivatives, skips staff-selected centers,
-and stores normalized face boxes in disposable cache files. Multiple faces guide
+The detector uses OpenCV YuNet locally. Detection makes no HTTP/API calls and
+sends no collection images to external services. Installation downloads packages
+and the model once; processing uses that local model and performs face detection
+only, without identifying people. It reads existing bounded JPEG `medium`/`small`
+derivatives, skips staff-selected centers, and stores normalized face boxes in
+durable cache files outside the application. Multiple faces guide
 the crop together; if all faces fit the crop they are retained. If the group cannot
 fit the required aspect ratio, the crop centers on the group and still fills the
 card. Detection remains fallible on small, damaged or unusual historical images;
@@ -87,49 +93,111 @@ sudo -u www-data /opt/tadl-thumbnail-faces/venv/bin/python -c \
   'import cv2; cv2.FaceDetectorYN.create("/opt/tadl-thumbnail-faces/yunet.onnx", "", (320, 320)); print("Model loaded")'
 ```
 
-### Inspect and process a collection
+### Durable storage and upgrading the proof of concept
 
-Run as the application maintenance user, normally `www-data`, with media read
-access and write access to Pawtucket's application `app/tmp` directory. Start with
-inspection; no detector or cache write occurs without `--apply`:
+`conf/thumbnail_focus.conf` sets the shared web/CLI `face_cache_directory`, default
+`/var/cache/tadl-thumbnail-faces`. Provision it once as root:
 
 ```sh
-sudo -u www-data php /path/to/tadl/support/detect-thumbnail-faces.php \
-  --pawtucket-root=/path/to/pawtucket --collection-id=123 --limit=100
-
-sudo -u www-data php /path/to/tadl/support/detect-thumbnail-faces.php \
-  --pawtucket-root=/path/to/pawtucket --collection-id=123 --limit=100 \
-  --apply --python=/opt/tadl-thumbnail-faces/venv/bin/python \
-  --model=/opt/tadl-thumbnail-faces/yunet.onnx
+install -d -o www-data -g www-data -m 0750 /var/cache/tadl-thumbnail-faces
 ```
 
-`limit` bounds uncached derivatives per invocation (1–1000), not object count.
-Repeat to advance through the collection: valid cached results, including no-face
-results, are skipped. `pending: 0` indicates no remaining eligible uncached
-derivatives. The summary reports manual/cached/pending/written/failed counts,
-without printing catalog titles, media paths or image data. A failed detection
-is reported, is not cached, and makes the command exit unsuccessfully.
+**Before deploying with a helper that clears `app/tmp`**, preserve the existing
+proof-of-concept suggestions. Substitute the actual application root below:
 
-Caches live under `app/tmp/tadl-thumbnail-faces`, with directory mode 0750 and
-atomic mode-0640 files. Preserve normal maintenance/web-user ownership. They contain
-boxes only, not copies of media. Keys include detector generation, derivative
-filename/magic/checksum/dimensions and original checksum; replacing/reprocessing
-media invalidates stale boxes automatically. Manual points always take precedence
-without having to remove an existing suggestion.
+```sh
+sudo -u www-data find /path/to/pawtucket/app/tmp/tadl-thumbnail-faces \
+  -maxdepth 1 -type f -name '*.json' \
+  -exec cp -n -- {} /var/cache/tadl-thumbnail-faces/ \;
+```
 
-A native/application cache purge that removes this directory also removes automatic
-suggestions. Re-run the batch command after such a deployment/purge. Manual focal
-points remain in the database and need no detection runtime. Nothing automatically
-installs a scheduler, changes catalog records, regenerates derivatives, or restarts
-production. A future scheduled job can reuse this same bounded command.
+This copies only cache JSON, preserves existing destination files and leaves the
+sources in place. Their private modes/ownership are retained when run as the same
+application user. Deploy the helper, CLI and new configuration together. If old
+files survive deployment, `--apply` also validates and copies eligible legacy
+entries automatically, including cached no-face results, without inference.
+Read-only inspection never migrates files. Web rendering temporarily reads legacy
+files when no valid durable entry exists; a valid durable no-face result wins.
+
+The durable directory is outside the application and web roots; ordinary theme
+upgrades and `app/tmp` clearing do not remove it. Include it in operational backups
+and do not include it in purge scripts. If that directory itself is deleted,
+detection must run again. No automatic pruning or scheduler is installed.
+
+### Inspect and process everything
+
+Run as `www-data`, with media read access and write access to the durable directory.
+When installed under `themes/tadl`, the script detects its Pawtucket root. The
+runtime/model default to the `/opt/tadl-thumbnail-faces` paths above; all paths can
+still be overridden with `--pawtucket-root`, `--python` and `--model`.
+
+```sh
+# Read-only: count uncached eligible thumbnails across the whole catalogue.
+sudo -u www-data php /path/to/pawtucket/themes/tadl/support/detect-thumbnail-faces.php --all
+
+# Process the complete catalogue in one invocation.
+sudo -u www-data php /path/to/pawtucket/themes/tadl/support/detect-thumbnail-faces.php --all --apply
+```
+
+`--all` requires no collection loop or repeated invocation. It uses keyset pages of
+250 representations and streams one derivative at a time to one detector process,
+with one OpenCV worker thread. It reports progress every 100 processed/migrated
+entries to stderr, retaining a final JSON summary on stdout. Existing valid caches
+are skipped; Ctrl-C/interruption leaves completed atomic writes usable on rerun.
+Only one maintenance writer can hold the durable directory's lock at a time.
+
+For a bounded pilot, add `--limit=100`. The limit counts uncached derivatives
+(1–1000), not objects or cached/migrated entries. Choose `--all` or `--collection-id`,
+never both. There is no default broad scope when scope arguments are missing.
+
+### Inspect and process a collection
+
+Collection mode remains compatible and defaults to 100 uncached derivatives:
+
+```sh
+sudo -u www-data php /path/to/pawtucket/themes/tadl/support/detect-thumbnail-faces.php \
+  --collection-id=123 --limit=100
+
+sudo -u www-data php /path/to/pawtucket/themes/tadl/support/detect-thumbnail-faces.php \
+  --collection-id=123 --limit=100 --apply
+```
+
+Repeat limited runs to advance. The final summary includes:
+
+- `manual`: representations skipped for a stored staff center.
+- `cached`: valid durable/legacy derivative results skipped, including no faces.
+- `pending`: uncached derivatives selected during this invocation, including those
+  subsequently written; it is not the remaining count after processing.
+- `written`: newly detected derivative results saved.
+- `failed`: derivative detection errors, which are not cached and cause exit 1.
+- `migrated`: existing valid legacy results copied to durable storage.
+- `complete`: the scope was fully scanned, rather than stopped at a limit. This
+  does not imply no failures; check `failed` and the exit status too.
+
+`pending: 0` on a repeat means no remaining eligible uncached derivatives.
+The tool does not print catalogue titles, media paths or image data in summaries.
+Missing/unreadable, queued, icon, non-JPEG or oversized derivatives are skipped.
+
+Cache files contain boxes only, not images, and use atomic mode-0640 writes. Keys
+include detector generation, derivative filename/magic/checksum/dimensions and
+original checksum; media replacement/reprocessing invalidates stale boxes. Staff
+centers always win without deleting suggestions. Nothing changes database records,
+regenerates media or restarts services.
 
 ## Verification
 
 `tests/thumbnail_focus_test.php` checks native tag preservation, saved-point
 priority, stale/corrupt caches and responsive cover geometry. The companion
-`tests/thumbnail_detector_test.php` exercises the actual CLI against synthetic
-native selection and detector boundaries, bounded batches, private cache writes
-and no-op repeats. Both run with the normal portable PHP suites and Node.js.
+`tests/thumbnail_detector_test.php` exercises the actual CLI and SQL against
+synthetic catalogues, multi-page global scans, bounded
+runs, shared/nonprimary media, private/deleted record exclusion, atomic cache
+writes, legacy migration, temporary-cache purge survival, lock conflicts, detector
+failures and no-op repeats. Both run with the normal portable PHP suites and Node.js.
+
+The new global/collection SQL was also run read-only through native production
+models, including two keyset pages and a query-plan check. All nineteen portable
+suites passed. Durable-cache migration and the global detector have not been
+deployed/applied in production by this change.
 
 The pinned OpenCV runtime/model were also tested locally: the selected live test
 portrait produced two face detections and a generated blank image produced none.

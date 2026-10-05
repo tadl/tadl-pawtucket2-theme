@@ -1,7 +1,25 @@
 <?php
 /** Focal metadata only: never select media or replace native access-filtered tags. */
 function tadlThumbnailFaceCacheDirectory() {
+	$directory = class_exists('Configuration')
+		? Configuration::load(dirname(__DIR__).'/conf/thumbnail_focus.conf')->get('face_cache_directory')
+		: '/var/cache/tadl-thumbnail-faces';
+	return is_string($directory) && str_starts_with($directory, '/') && $directory !== '/' ? rtrim($directory, '/') : null;
+}
+
+function tadlThumbnailLegacyFaceCacheDirectory() {
 	return defined('__CA_APP_DIR__') ? __CA_APP_DIR__.'/tmp/tadl-thumbnail-faces' : null;
+}
+
+/** A valid empty result is cached too; null means missing/invalid. */
+function tadlThumbnailReadFaceCache($directory, $key) {
+	if (!$directory) { return null; }
+	$path = $directory.'/'.$key.'.json';
+	if (!is_file($path) || !is_readable($path) || filesize($path) > 65536) { return null; }
+	$data = json_decode(file_get_contents($path), true);
+	if (($data['schema'] ?? null) !== 1 || !is_array($data['faces'] ?? null)
+		|| ($data['faces'] && !tadlThumbnailValidFaces($data['faces']))) { return null; }
+	return ['schema' => 1, 'faces' => $data['faces']];
 }
 
 function tadlThumbnailFaceCacheKey(array $info, $version) {
@@ -45,10 +63,13 @@ function tadlThumbnailFocusData(array $info, $version, $cacheDirectory = null) {
 	}
 	// Even if the derivative was cropped, do not substitute an automatic suggestion for a staff choice.
 	if ($manual || !$cacheDirectory) { return null; }
-	$path = $cacheDirectory.'/'.tadlThumbnailFaceCacheKey($info, $version).'.json';
-	if (!is_file($path) || !is_readable($path) || filesize($path) > 65536) { return null; }
-	$data = json_decode(file_get_contents($path), true);
-	$faces = ($data['schema'] ?? null) === 1 ? tadlThumbnailValidFaces($data['faces'] ?? null) : [];
+	$key = tadlThumbnailFaceCacheKey($info, $version);
+	$data = tadlThumbnailReadFaceCache($cacheDirectory, $key);
+	// Keep old suggestions readable until a maintenance run copies them to durable storage.
+	if ($data === null && $cacheDirectory === tadlThumbnailFaceCacheDirectory()) {
+		$data = tadlThumbnailReadFaceCache(tadlThumbnailLegacyFaceCacheDirectory(), $key);
+	}
+	$faces = $data['faces'] ?? [];
 	return $faces ? ['faces' => $faces, 'source' => 'faces'] : null;
 }
 
