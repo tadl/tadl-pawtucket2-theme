@@ -127,8 +127,8 @@
 				</div>
 				<?php if ($collection_fields || $collection_relationships): ?>
 				<div class="tadl-collection-metadata">
-    				<?php if ($collection_fields): ?><div class="tadl-collection-fields"><?php print $collection_fields; ?></div><?php endif; ?>
-    				<?php if ($collection_relationships): ?><div class="tadl-collection-relationships"><?php print $collection_relationships; ?></div><?php endif; ?>
+					<?php if ($collection_fields): ?><div class="tadl-collection-fields"><?php print $collection_fields; ?></div><?php endif; ?>
+					<?php if ($collection_relationships): ?><div class="tadl-collection-relationships"><?php print $collection_relationships; ?></div><?php endif; ?>
 				</div>
 				<?php endif; ?>
 			</div>
