@@ -135,6 +135,11 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
 
 ### Typography
 
+- The shared `.tadl-main-nav` has its own 18px text size/floor, including
+  dropdown choices. Homepage and interior navigation therefore match in normal,
+  hover, focus and open states at desktop/mobile widths. Do not let the menu
+  inherit Front's smaller body size or scope its dropdown sizing only to
+  `.tadl-interior`; landing-page content retains its separate established scale.
 - Interior pages have an **18px minimum** for readable text, including object
   descriptions/metadata, result titles/captions, galleries, navigation, forms,
   download menus and footer text. Larger headings retain their existing sizes.

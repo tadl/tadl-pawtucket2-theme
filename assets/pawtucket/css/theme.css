@@ -368,6 +368,9 @@ h6 {
 }
 
 .tadl-main-nav.navbar {
+    /* Shared navigation keeps the same scale on Front and interior pages. */
+    --tadl-text-min: 18px;
+    font-size: 18px;
     min-height: 0;
     margin-bottom: 0;
     background: rgba(255, 255, 255, 0.98);
