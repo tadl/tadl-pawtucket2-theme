@@ -25,6 +25,9 @@ remain cacheable. The shared header and standalone lightbox presentation use
 `helpers/asset_versions.php` around the native asset loader. This versions local
 theme CSS/JS only, preserving native load order and any configured `asset_suffix`.
 
+Collection contents keep paging, sorting and Tiles/List controls on the collection
+detail URL. A compact overview and results toolbar use the available page width.
+
 Collection details offer **Download Finding Aid**, an initial collection PDF with
 metadata and a complete accessible-object inventory, including records without
 media. Field mappings and open archives-team decisions are documented in

@@ -189,15 +189,22 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
 - Collection index pagination uses normal links with page/view state. Browse
   retains native keys, criteria, sorting and result contexts; do not strip them
   just because URLs look complicated. Browser Back and direct page links matter.
-- Collection detail's initial object search is an AJAX response, which normally
-  omits the full results header. Its loader now requests `tadl_collection_controls=1`
-  so object-search AJAX includes a compact **Tiles/List** control and top pager.
-  The normal bottom pager remains. Both use the media-filtered count and native
-  key, view, sort, direction and page sizes; their links open full search pages.
-  The flag affects only this explicit AJAX object-search response, avoiding
-  duplicate headers on full pages and other AJAX result blocks. Loader and
-  rendered-header regressions cover the first page and both views. A synthetic
-  browser preview verified page 2, List, Back and no overflow at 390px.
+- Collection details place their heading/finding-aid link beside populated metadata
+  in an adaptive overview; empty metadata columns are omitted. The contents toolbar
+  aligns **Collection items**, the filtered count, **Options**, **Tiles/List** and
+  pagination. Metadata and tools stack on narrower screens.
+- The collection loader requests `tadl_collection_controls=1` and its selected
+  `tadl_collection_id`. Sorting uses the shared Options partial. View, sort/order
+  and both pagers link to `/Detail/collections/<id>` with ordinary result-state
+  parameters, retaining the collection overview on every page. Reload, bookmarks
+  and browser Back use those URLs. The loader validates view/sort/direction/offset
+  and rebuilds the object search from the loaded collection ID; incoming search/key
+  parameters cannot replace it. Other search/browse and authority AJAX routes stay
+  native. Result-block cache keys include collection context to avoid reusing a
+  pager from another route. Native access, ACL and media filtering remain in charge.
+- Rendered regressions cover later pages, both views, sort/order and invalid loader
+  state. Desktop/tablet/phone synthetic browser previews check layout and dropdown
+  interactions; production navigation remains a deployment-time check.
 - Multisearch has up to six previews per category, sensible text layouts for
   non-image records, counts and ordinary links to full results. It is not a carousel.
 - Shared Tiles results use a responsive grid with equal-height cards within each

@@ -97,7 +97,13 @@
 		$va_criteria = tadlResultDisplayCriteria($this->request, $va_criteria, $va_all_facets);
 		$va_result_context = tadlResultContext($vs_table, $va_criteria);
 	}
-	if ($vb_ajax && $vb_is_search) {
+	$vb_collection_controls = $vb_ajax && $vb_is_search && $vs_table === 'ca_objects'
+		&& $this->request->getParameter('tadl_collection_controls', pInteger) === 1;
+	if ($vb_collection_controls) { $vs_sort_control_type = 'dropdown'; }
+	ob_start();
+	include __DIR__.'/result_options_html.php';
+	$vs_tadl_result_options = ob_get_clean();
+	if ($vb_ajax && $vb_is_search && !$vb_collection_controls) {
 		// This summary is outside the cached cards and reflects the media-filtered result.
 		print '<p class="tadl-related-results-summary" data-tadl-result-count="'.(int)$vn_result_size.'">'.htmlspecialchars(tadlResultItemCount($vn_result_size), ENT_QUOTES, 'UTF-8').'</p>';
 	}
@@ -111,15 +117,17 @@
 		tadlMediaResultContext($this, $qr_res, 'multisearch', $this->getVar('browse_type'));
 	}
 	$vs_tadl_result_view_controls = tadlBrowseResultViewControls($this->request, $va_views, $vs_current_view, $vs_browse_key, $vs_current_sort, $vs_sort_dir, $vn_hits_per_block_param, $vn_is_advanced ? true : false);
-	if ($vb_ajax && $vb_is_search && $vs_table === 'ca_objects'
-		&& $this->request->getParameter('tadl_collection_controls', pInteger) === 1) {
-		// Collection details request a compact header alongside the AJAX result cards.
-		print '<div class="tadl-results-tools tadl-collection-results-tools">'.$vs_tadl_result_view_controls;
+	if ($vb_collection_controls) {
+		print '<div class="tadl-collection-results-toolbar">';
+		print '<div class="tadl-collection-results-heading"><h2>'._t('Collection items').'</h2>';
+		print '<p class="tadl-related-results-summary" data-tadl-result-count="'.(int)$vn_result_size.'">'.htmlspecialchars(tadlResultItemCount($vn_result_size), ENT_QUOTES, 'UTF-8').'</p></div>';
+		print '<div class="tadl-collection-results-options">'.$vs_tadl_result_options.$vs_tadl_result_view_controls.'</div>';
 		if ($vn_tadl_page_size) {
 			print '<div class="tadl-results-top-pager">'.tadlBrowseResultPager($this->request, $vn_result_size, $vn_start, $vn_tadl_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $vn_is_advanced ? true : false).'</div>';
 		}
 		print '</div>';
 	}
+
 	
 if (!$vb_ajax) {	// !ajax
 ?>
@@ -162,46 +170,7 @@ if (!$vb_ajax) {	// !ajax
 		</H1>
 		<?php if ($va_result_context) { print '<p class="tadl-results-context-count">'.htmlspecialchars(tadlResultItemCount($vn_result_size), ENT_QUOTES, 'UTF-8').'</p>'; } ?>
 		<div class="tadl-results-title-actions">
-			<div class="btn-group">
-				<a href="#" class="tadl-results-action tadl-results-options" data-toggle="dropdown" aria-label="<?php print _t('Result options'); ?>" aria-haspopup="true" aria-expanded="false"><i class="fa fa-cog bGear" aria-hidden="true"></i><span class="tadl-results-action-label"><?php print _t('Options'); ?></span></a>
-				<ul class="dropdown-menu" role="menu">
-<?php
-					if($vs_sort_control_type == 'dropdown'){
-						if(is_array($va_sorts = $this->getVar('sortBy')) && sizeof($va_sorts)) {
-							print "<li class='dropdown-header' role='menuitem'>"._t("Sort by:")."</li>\n";
-							foreach($va_sorts as $vs_sort => $vs_sort_flds) {
-								if ($vs_current_sort === $vs_sort) {
-									print "<li role='menuitem'><a href='#'><em>{$vs_sort}</em></a></li>\n";
-								} else {
-									print "<li role='menuitem'>".caNavLink($this->request, $vs_sort, '', '*', '*', '*', array('view' => $vs_current_view, 'key' => $vs_browse_key, 'sort' => $vs_sort, '_advanced' => $vn_is_advanced ? 1 : 0))."</li>\n";
-								}
-							}
-							print "<li class='divider' role='menuitem'></li>\n";
-							print "<li class='dropdown-header' role='menuitem'>"._t("Sort order:")."</li>\n";
-							print "<li role='menuitem'>".caNavLink($this->request, (($vs_sort_dir == 'asc') ? '<em>' : '')._t("Ascending").(($vs_sort_dir == 'asc') ? '</em>' : ''), '', '*', '*', '*', array('view' => $vs_current_view, 'key' => $vs_browse_key, 'direction' => 'asc', '_advanced' => $vn_is_advanced ? 1 : 0))."</li>";
-							print "<li role='menuitem'>".caNavLink($this->request, (($vs_sort_dir == 'desc') ? '<em>' : '')._t("Descending").(($vs_sort_dir == 'desc') ? '</em>' : ''), '', '*', '*', '*', array('view' => $vs_current_view, 'key' => $vs_browse_key, 'direction' => 'desc', '_advanced' => $vn_is_advanced ? 1 : 0))."</li>";
-						}
-						
-						if ((sizeof($va_criteria) > ($vb_is_search ? 1 : 0)) && is_array($va_sorts) && sizeof($va_sorts)) {
-?>
-						<li class="divider" role='menuitem'></li>
-<?php
-						}
-					}
-					if (sizeof($va_criteria) > ($vb_is_search ? 1 : 0)) {
-						print "<li role='menuitem'>".caNavLink($this->request, _t("Start Over"), '', '*', '*', '*', array('view' => $vs_current_view, 'key' => $vs_browse_key, 'clear' => 1, '_advanced' => $vn_is_advanced ? 1 : 0))."</li>";
-					}
-					if(($vs_media_preference === 'all') && is_array($va_export_formats) && sizeof($va_export_formats)){
-						// Native exports bypass theme filtering; offer them in All items mode.
-						print "<li class='divider' role='menuitem'></li>\n";
-						print "<li class='dropdown-header' role='menuitem'>"._t("Download results as:")."</li>\n";
-						foreach($va_export_formats as $va_export_format){
-							print "<li class='".$va_export_format["code"]."' role='menuitem'>".caNavLink($this->request, $va_export_format["name"], "", "*", "*", "*", array("view" => "pdf", "download" => true, "export_format" => $va_export_format["code"], "key" => $vs_browse_key))."</li>";
-						}
-					}
-?>
-				</ul>
-			</div><!-- end btn-group -->
+			<?php print $vs_tadl_result_options; ?>
 <?php
 			if ($vb_has_filters) {
 ?>
@@ -268,7 +237,7 @@ if (!$vb_ajax) {	// !ajax
 
 # --- check if this result page has been cached
 # --- key is MD5 of browse key, sort, sort direction, view, page/start, items per page, row_id
-$vs_cache_key = md5('tadl_results_v8'.$vs_browse_key.$vs_current_sort.$vs_sort_dir.$vs_current_view.$vn_start.$vn_hits_per_block.$vn_row_id.$vs_letter.$vs_media_preference.serialize($va_access_values).serialize($qr_res->getPrimaryKeyValues()).(int)caDisplayLightbox($this->request));
+$vs_cache_key = md5('tadl_results_v9'.tadlBrowseResultCollectionID($this->request).$vs_browse_key.$vs_current_sort.$vs_sort_dir.$vs_current_view.$vn_start.$vn_hits_per_block.$vn_row_id.$vs_letter.$vs_media_preference.serialize($va_access_values).serialize($qr_res->getPrimaryKeyValues()).(int)caDisplayLightbox($this->request));
 if(($o_config->get("cache_timeout") > 0) && ExternalCache::contains($vs_cache_key,'browse_results')){
 	print ExternalCache::fetch($vs_cache_key, 'browse_results');
 }else{

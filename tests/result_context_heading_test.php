@@ -48,7 +48,7 @@ function caGetAddToSetInfo($request) { return []; }
 function caDisplayLightbox($request) { return false; }
 function caBusyIndicatorIcon($request) { return '<span class="synthetic-spinner"></span>'; }
 function caNavUrl($request, $module, $controller, $action, $params = []) {
-	return '/synthetic/'.($action === '*' ? 'objects' : $action).'?'.http_build_query($params);
+	return '/synthetic/'.($controller === 'Detail' ? 'Detail/' : '').($action === '*' ? 'objects' : $action).'?'.http_build_query($params);
 }
 function caNavLink($request, $text, $class, $module, $controller, $action, $params = []) {
 	return '<a class="'.htmlspecialchars($class, ENT_QUOTES, 'UTF-8').'" href="'.htmlspecialchars(caNavUrl($request, $module, $controller, $action, $params), ENT_QUOTES, 'UTF-8').'">'.$text.'</a>';
@@ -121,7 +121,7 @@ class ContextView {
 			'views' => ['images' => [], 'list' => []], 'view' => 'images', 'sort' => 'Identifier',
 			'sort_direction' => 'asc', 'table' => 'ca_objects', 't_instance' => new ContextSubject('ca_objects'),
 			'options' => [], 'browseInfo' => ['table' => 'ca_objects', 'labelSingular' => 'object', 'labelPlural' => 'objects'],
-			'config' => new ContextConfig(), 'export_formats' => [], 'sortBy' => ['Identifier' => 'ca_objects.idno'],
+			'config' => new ContextConfig(), 'export_formats' => [], 'sortBy' => ['Identifier' => 'ca_objects.idno', 'Title' => 'ca_object_labels.name'],
 			'browse' => new ContextBrowse(contextFacetDefinitions()), 'browse_type' => 'objects'
 		], $extra);
 	}
@@ -204,18 +204,33 @@ foreach ([0, 1, 8] as $filteredCount) {
 $html = (new ContextView(new ContextRequest('Browse', true), [], 45))->render('Browse/browse_results_html.php');
 checkContext(!str_contains($html, 'tadl-related-results-summary'), 'Browse AJAX must not gain Search-only related summary.');
 foreach (['images' => 9, 'list' => 24] as $view => $pageSize) {
-	$html = (new ContextView(new ContextRequest('Search', true, 45, ['tadl_collection_controls' => 1]), [], 90, ['view' => $view]))->render('Browse/browse_results_html.php');
+	$html = (new ContextView(new ContextRequest('Search', true, 45, ['tadl_collection_controls' => 1, 'tadl_collection_id' => 42]), [], 90, ['view' => $view]))->render('Browse/browse_results_html.php');
 	$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 	$xpath = new DOMXPath($document);
-	checkContext($xpath->query('//div[contains(@class,"tadl-collection-results-tools")]')->length === 1 && $xpath->query('//div[@aria-label="Result display options"]')->length === 1, 'Embedded collection needs exactly one Tiles/List toolbar.');
+	checkContext($xpath->query('//div[contains(@class,"tadl-collection-results-toolbar")]')->length === 1 && $xpath->query('//div[@aria-label="Result display options"]')->length === 1, 'Embedded collection needs exactly one Tiles/List toolbar.');
 	checkContext(str_contains($html, 'Page 1 of '.(int)ceil(45 / $pageSize)) && str_contains($html, 's='.$pageSize), 'Embedded top pager must use filtered count and current view page size.');
-	checkContext(strpos($html, 'tadl-collection-results-tools') < strpos($html, 'data-synthetic-cards'), 'Embedded collection controls must precede its first-page cards.');
-	checkContext(str_contains($html, 'key=synthetic-key') && str_contains($html, 'sort=Identifier') && !str_contains($html, 'tadl_collection_controls='), 'View/page links must preserve native state and open ordinary full results.');
+	checkContext(strpos($html, 'tadl-collection-results-toolbar') < strpos($html, 'data-synthetic-cards'), 'Embedded collection controls must precede its first-page cards.');
+	checkContext(str_contains($html, '/Detail/collections/42?') && str_contains($html, 'sort=Identifier') && !str_contains($html, 'tadl_collection_controls=') && !str_contains($html, '/Search/'), 'Collection view/page links must retain the collection detail route and sort.');
+}
+// Both pagers and sort/view actions stay on the collection for later pages.
+foreach (['images' => 9, 'list' => 24] as $view => $pageSize) {
+    $request = new ContextRequest('Search', true, 45, ['tadl_collection_controls' => 1, 'tadl_collection_id' => 42]);
+    $html = (new ContextView($request, [], 90, ['view' => $view, 'start' => $pageSize, 'sort' => 'Title', 'sort_direction' => 'desc']))->render('Browse/browse_results_html.php');
+    $document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+    $xpath = new DOMXPath($document);
+    checkContext($xpath->query('//button[contains(@class,"tadl-results-options")]')->length === 1, 'Every collection page must have Options.');
+    checkContext(str_contains($html, 'Page 2 of ') && str_contains($html, 'data-tadl-result-count="45"'), 'Later pages must keep filtered counts and current page.');
+    foreach ($xpath->query('//div[contains(@class,"tadl-collection-results-toolbar")]//a[@href!="#"]') as $anchor) {
+        $url = $anchor->getAttribute('href');
+        checkContext(str_starts_with($url, '/synthetic/Detail/collections/42?') && !str_contains($url, 'key=') && !str_contains($url, 'tadl_collection_'), 'Collection controls leaked Search state or lost collection route.');
+    }
+    $pager = tadlBrowseResultPager($request, 45, $pageSize, $pageSize, 'synthetic-key', $view, 'Title', 'desc', false);
+    checkContext(str_contains($pager, 'sort=Title') && str_contains($pager, 'direction=desc') && str_contains($pager, 's=0'), 'Bottom pager must retain sort/direction and allow Previous.');
 }
 $html = (new ContextView(new ContextRequest('Search', true), [], 45))->render('Browse/browse_results_html.php');
-checkContext(!str_contains($html, 'tadl-collection-results-tools'), 'Ordinary AJAX result blocks gained collection-only controls.');
+checkContext(!str_contains($html, 'tadl-collection-results-toolbar'), 'Ordinary AJAX result blocks gained collection-only controls.');
 $html = (new ContextView(new ContextRequest('Search', false, null, ['tadl_collection_controls' => 1]), [], 45))->render('Browse/browse_results_html.php');
-checkContext(!str_contains($html, 'tadl-collection-results-tools') && substr_count($html, "aria-label='Result display options'") === 1, 'Full search pages gained duplicate controls.');
+checkContext(!str_contains($html, 'tadl-collection-results-toolbar') && substr_count($html, "aria-label='Result display options'") === 1, 'Full search pages gained duplicate controls.');
 $facets = contextFacetDefinitions();
 $facets['entity_facet']['content'] = [['id' => 42, 'label' => 'Synthetic Studio']];
 $facets['place_facet'] = array_merge($facets['place_facet'], ['group_mode' => 'hierarchical', 'description' => 'Generic hierarchy copy should not appear', 'content' => []]);

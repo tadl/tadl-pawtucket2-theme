@@ -9,6 +9,8 @@ set_error_handler(function ($severity, $message, $file, $line) {
 	throw new ErrorException($message, 0, $severity, $file, $line);
 });
 
+define('pString', 1);
+define('pInteger', 2);
 $GLOBALS['detailScriptAssertions'] = 0;
 $GLOBALS['detailScriptMode'] = 'only';
 $GLOBALS['detailScriptShowHierarchy'] = true;
@@ -24,13 +26,19 @@ function caGetUserAccessValues($request) { return array(1); }
 function tadlMediaPreference($request) { return $GLOBALS['detailScriptMode']; }
 function tadlMediaEligibleIDs($table, $ids, $access) { return $ids; }
 function caBusyIndicatorIcon($request) { return $GLOBALS['detailScriptIcon']; }
+function caGetBrowseConfig() { return new DetailScriptConfig(); }
 function caGetCollectionsConfig() { return new DetailScriptConfig(); }
 function caNavUrl($request, $module, $controller, $action, $params = array(), $options = array()) {
 	$url = '/synthetic/'.$controller.'/'.$action;
 	foreach ($params as $name => $value) { $url .= '/'.$name.'/'.(($options['dontURLEncodeParameters'] ?? false) ? $value : rawurlencode((string)$value)); }
 	return $url;
 }
+class DetailScriptRequest {
+    public function __construct(public array $params = []) {}
+    public function getParameter($name, $type, $options = []) { return $this->params[$name] ?? null; }
+}
 class DetailScriptConfig {
+    public function getAssoc($name) { return ['objects' => ['sortBy' => ['Identifier' => 'idno', 'Title' => 'name']]]; }
 	public function get($name) { return $name === 'do_not_display_collection_browser' && !$GLOBALS['detailScriptShowHierarchy']; }
 }
 class DetailScriptItem {
@@ -59,8 +67,8 @@ class DetailScriptItem {
 class DetailScriptView {
 	public $request;
 	private array $values;
-	public function __construct($objectCount, array $templates = []) {
-		$this->request = new stdClass();
+	public function __construct($objectCount, array $templates = [], array $params = []) {
+		$this->request = new DetailScriptRequest($params);
 		$this->values = array('item' => new DetailScriptItem($objectCount, $templates), 'comments' => array(), 'pdfEnabled' => true);
 	}
 	public function getVar($name) { return $this->values[$name] ?? null; }
@@ -87,6 +95,20 @@ checkDetailScripts(str_contains($html, 'Download Finding Aid') && str_contains($
 checkDetailScripts(!str_contains($html, 'Download as PDF') && !str_contains($html, '_pdf_ca_collections_summary'), 'Collection still links to the generic summary export.');
 checkDetailScripts(str_contains($html, '<label>Description</label>Synthetic description') && str_contains($html, '<label>Dates</label>1930') && str_contains($html, '<label>Related places</label><a href="/synthetic/place">Synthetic place</a>'), 'Populated collection fields lost headings or native links.');
 
+// Reload/direct collection links forward only supported result state, never a supplied search/key.
+foreach ([
+    [['view' => 'list', 'sort' => 'Title', 'direction' => 'desc', 's' => 24, 'search' => 'unrelated', 'key' => 'unrelated'], '/view/list/sort/Title/direction/desc/s/24/n/24'],
+    [['view' => 'unknown', 'sort' => 'unknown', 'direction' => 'unknown', 's' => -9], '/view/images/sort/Identifier/direction/asc/s/0/n/9']
+] as [$params, $suffix]) {
+    $html = (new DetailScriptView(2, [], $params))->render('ca_collections');
+    checkDetailScripts(str_contains(str_replace('\\/', '/', $html), 'collection_id%3A42/tadl_collection_controls/1/tadl_collection_id/42'.$suffix), 'Collection loader failed to validate/forward its own result state.');
+    checkDetailScripts(!str_contains($html, 'unrelated'), 'Caller search/key must not replace this collection.');
+}
+$html = (new DetailScriptView(2))->render('ca_collections');
+checkDetailScripts(!str_contains($html, 'class="tadl-collection-metadata"'), 'Empty collection metadata must not reserve columns.');
+$html = (new DetailScriptView(2, ['ca_collections.extent_text' => 'Synthetic extent', 'relativeTo="ca_places"' => '<a href="/synthetic/place">Synthetic place</a>']))->render('ca_collections');
+checkDetailScripts(strpos($html, 'tadl-collection-metadata') < strpos($html, 'collectionHierarchy') && str_contains($html, 'tadl-collection-fields') && str_contains($html, 'tadl-collection-relationships'), 'Populated metadata must sit beside the heading above contents.');
+
 $cases = array();
 foreach (array(
 	array('name' => 'multiple objects and hierarchy', 'table' => 'ca_collections', 'objects' => 2, 'hierarchy' => true, 'mode' => 'only', 'objectSearch' => 'collection_id%3A42'),
@@ -107,7 +129,7 @@ foreach (array(
 		'name' => $case['name'],
 		'scripts' => $scripts[1],
 		'hierarchyUrl' => $case['hierarchy'] ? '/synthetic/Collections/collectionHierarchy/collection_id/42' : null,
-		'objectsUrl' => $case['objects'] >= 2 ? '/synthetic/Search/objects/search/'.$case['objectSearch'].'/tadl_collection_controls/1' : null,
+		'objectsUrl' => $case['objects'] >= 2 ? '/synthetic/Search/objects/search/'.$case['objectSearch'].'/tadl_collection_controls/1/tadl_collection_id/42/view/images/sort/Identifier/direction/asc/s/0/n/9' : null,
 		'loadingHtml' => $GLOBALS['detailScriptIcon'].' '.$GLOBALS['detailScriptLoading']
 	);
 }

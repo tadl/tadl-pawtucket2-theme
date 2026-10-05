@@ -1,4 +1,20 @@
 <?php
+/** Collection contents use ordinary detail URLs; other results retain native routes. */
+function tadlBrowseResultCollectionID($request) {
+	if (!method_exists($request, 'getParameter') || !method_exists($request, 'getController')
+		|| !$request->isAjax() || $request->getController() !== 'Search'
+		|| $request->getParameter('tadl_collection_controls', pInteger) !== 1) { return 0; }
+	return max(0, (int)$request->getParameter('tadl_collection_id', pInteger));
+}
+
+function tadlBrowseResultLink($request, $label, $class, $params) {
+	if ($id = tadlBrowseResultCollectionID($request)) {
+		$params = array_intersect_key($params, array_flip(['view', 'sort', 'direction', 's']));
+		return caNavLink($request, $label, $class, '', 'Detail', 'collections/'.$id, $params);
+	}
+	return caNavLink($request, $label, $class, '*', '*', '*', $params);
+}
+
 if (!function_exists('tadlBrowseResultPager')) {
 	function tadlBrowseResultPager($po_request, $pn_total, $pn_start, $pn_per_page, $ps_browse_key, $ps_view, $ps_sort, $ps_sort_dir, $pb_is_advanced) {
 		$pn_total = (int)$pn_total;
@@ -27,7 +43,7 @@ if (!function_exists('tadlBrowseResultPager')) {
 		$vs_output .= "<span class='tadl-results-page-status'>"._t('Page %1 of %2', $vn_current_page, $vn_total_pages)."</span>";
 
 		if ($vn_current_page > 1) {
-			$vs_output .= caNavLink($po_request, _t('Previous'), 'btn btn-default tadl-results-page', '*', '*', '*', array_merge($va_base_params, array('s' => max(0, $pn_start - $pn_per_page))));
+			$vs_output .= tadlBrowseResultLink($po_request, _t('Previous'), 'btn btn-default tadl-results-page', array_merge($va_base_params, array('s' => max(0, $pn_start - $pn_per_page))));
 		} else {
 			$vs_output .= "<span class='btn btn-default tadl-results-page disabled' aria-disabled='true'>"._t('Previous')."</span>";
 		}
@@ -40,13 +56,13 @@ if (!function_exists('tadlBrowseResultPager')) {
 			if ($vn_page == $vn_current_page) {
 				$vs_output .= "<span class='btn btn-default tadl-results-page active' aria-current='page'>".$vn_page."</span>";
 			} else {
-				$vs_output .= caNavLink($po_request, (string)$vn_page, 'btn btn-default tadl-results-page', '*', '*', '*', array_merge($va_base_params, array('s' => ($vn_page - 1) * $pn_per_page)));
+				$vs_output .= tadlBrowseResultLink($po_request, (string)$vn_page, 'btn btn-default tadl-results-page', array_merge($va_base_params, array('s' => ($vn_page - 1) * $pn_per_page)));
 			}
 			$vn_previous_page = $vn_page;
 		}
 
 		if ($vn_current_page < $vn_total_pages) {
-			$vs_output .= caNavLink($po_request, _t('Next'), 'btn btn-default tadl-results-page', '*', '*', '*', array_merge($va_base_params, array('s' => $pn_start + $pn_per_page)));
+			$vs_output .= tadlBrowseResultLink($po_request, _t('Next'), 'btn btn-default tadl-results-page', array_merge($va_base_params, array('s' => $pn_start + $pn_per_page)));
 		} else {
 			$vs_output .= "<span class='btn btn-default tadl-results-page disabled' aria-disabled='true'>"._t('Next')."</span>";
 		}
@@ -90,13 +106,10 @@ if (!function_exists('tadlBrowseResultViewControls')) {
 			if ($ps_current_view === $vs_view) {
 				$vs_output .= '<span class="btn btn-default tadl-result-view-toggle active" aria-current="true" aria-disabled="true">'.$vs_link_content.'</span>';
 			} else {
-				$vs_output .= caNavLink(
+				$vs_output .= tadlBrowseResultLink(
 					$po_request,
 					$vs_link_content,
 					'btn btn-default tadl-result-view-toggle',
-					'*',
-					'*',
-					'*',
 					array(
 						'view' => $vs_view,
 						'key' => $ps_browse_key,
