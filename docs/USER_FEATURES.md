@@ -129,6 +129,16 @@ Edits appear on the next home-page request; there is no additional FAQ cache.
 
 ### One-time activation after theme deployment
 
+Use the focused, repeatable setup in [FAQ activation](FAQ_SETUP.md). It defaults
+to inspection, takes a private backup before applying, registers only the FAQ
+template and adds missing editor fields without replacing existing configuration.
+Authorized production activation was completed on 2026-10-05. Reload Providence
+**Manage > Content Management > Site pages**, select **FAQ entry** in the upper
+right New page control, and click its plus icon. No FAQ entries were created.
+
+The broad native alternative remains available for administrators who intend to
+register/update every template, rather than only FAQs:
+
 1. Confirm the installed Pawtucket theme is `tadl` and uses the intended shared
    database. As the application's normal maintenance user, from the Pawtucket
    installation root, run:
@@ -138,7 +148,7 @@ Edits appear on the next home-page request; there is no additional FAQ cache.
    ```
 
    This **writes template metadata to the database**, including updates to other
-   scanned templates. It was not run as part of this source task. Review existing
+   scanned templates. The FAQ activation uses the targeted script instead. Review existing
    template state and the command output before continuing.
 2. In Providence, open **Manage > Content Management > Site pages** and create an entry
    using `faq_entry`. If the editor is missing, configure the native Site Pages
@@ -170,5 +180,6 @@ Synthetic browser previews verify accordion interaction, responsive layout and
 account navigation (keyboard, Escape, outside-click dismissal and expanded state).
 The small `user-features.js` asset synchronizes that state for Bootstrap 3.0. They are not proof of a successful login, lightbox save,
 sharing, password email or Providence editing session. Those require a configured
-safe application/database or separately authorized live pilot. No deployment,
-production cache purge, template scan or production database write occurred.
+safe application/database or separately authorized live pilot. The later,
+authorized FAQ activation changed production template/editor configuration;
+details and verification limits are in `FAQ_SETUP.md`. No FAQ content was published.

@@ -54,7 +54,7 @@ before calling an issue deployed or still broken.
 | Browse/results/pagers | `views/Browse/browse_results_html.php`, `tadl_result_helpers.php`, `tadl_result_context_helpers.php`, image/list/refine subviews |
 | Search previews | `conf/search.conf`, `views/Search/multisearch_results_html.php`, `tadl_search_results_subview_html.php` |
 | Accounts/lightboxes | `helpers/user_features.php`, `controllers/AccountProfileController.php`, `assets/pawtucket/js/user-features.js`, shared header, native LoginReg/Lightbox views, object detail and browse result views; `docs/USER_FEATURES.md` |
-| Home-page FAQ | `templates/faq_entry.tmpl`, `conf/templates.conf`, `helpers/home_faq.php`, `views/Front/faq_html.php`; Providence Site Pages content |
+| Home-page FAQ | `templates/faq_entry.tmpl`, `conf/templates.conf`, `helpers/home_faq.php`, `views/Front/faq_html.php`; `support/activate-faq.php`, `helpers/faq_setup.php`, `docs/FAQ_SETUP.md`; Providence Site Pages content |
 | Home-page writing | `views/Front/front_page_html.php`, `assets/pawtucket/js/recent-writing.js`; companion TADLFeeds `/local_history_posts.json` |
 | Object media | `helpers/object_detail_media.php`, `views/bundles/representation_viewer_html.php` |
 | Image downloads | `helpers/image_downloads.php`, `controllers/ImageDownloadController.php`, `views/Details/image_download_binary.php`, `views/mediaViewers/viewerWrapper.php`, `assets/pawtucket/js/image-downloads.js` |
@@ -456,7 +456,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The sixteen committed tests are portable and use synthetic boundaries. They do not
+The seventeen committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -481,6 +481,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 
 | Test | Coverage |
 | --- | --- |
+| `tests/faq_setup_test.php` | Read-only setup plans, targeted native template registration, additive editor placements, private pre-change backup, no-op reruns, preserving unrelated configuration and transactional rollback |
 | `tests/profile_save_test.php` | Own-email/staff-public login behavior, collisions, separate user staging, request-close persistence, validation/setter/model failures, native password delegation, POST/session/CSRF boundaries, public-use groups and direct/AJAX profile form error escaping |
 | `tests/user_features_test.php` | Anonymous/authenticated navigation and result actions, native login POST/CSRF, registration policy, password-manager fields and cache separation |
 | `tests/home_faq_test.php` | Published/readable Site Pages, drafts, incomplete entries, locale, rank, escaped questions and purified answers; optional real HTMLPurifier |
@@ -572,10 +573,14 @@ included in a workspace rsync and are not required by the committed tests.
   disabled. Signed-in users get account navigation and individual object additions.
   Bulk additions remain omitted until they respect filtered results. See
   `docs/USER_FEATURES.md` for native features, access caveats and live checks.
-- The home FAQ scaffold is ready but stays hidden until staff publish entries.
-  Activation requires the native template scan (a database write, not performed)
-  and Providence Site Pages setup. Routine content edits then need no theme deploy.
-  Public researcher sessions do not grant FAQ editing permissions.
+- FAQ template/editor activation was authorized and completed in production on
+  2026-10-05 using the focused setup script. The native selector offers **FAQ entry**,
+  all three content fields are registered, and sort order/locale were added to the
+  existing editor. Reapplying is a no-op; no content was created/published. The FAQ
+  stays hidden until staff publish complete entries. See `docs/FAQ_SETUP.md` for
+  repeatable setup, backups, upgrade preservation and live verification limits.
+  Routine content edits need no theme deploy; public researcher sessions do not
+  grant FAQ editing permissions.
 - Continue iterative responsive/browser QA as real media is added. Do not
   collapse distinct related records just because their titles match.
 - Production deployment and final live smoke checks are separate user-controlled

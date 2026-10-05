@@ -4,7 +4,7 @@ Standalone source repository for the `tadl` Pawtucket2 theme used for TADL local
 
 For Codex or a new workstation, start with [AGENTS.md](AGENTS.md) and the
 [current handoff](docs/CODEX_HANDOFF.md). The handoff explains the source map,
-recent changes, design decisions and all sixteen standalone regression suites.
+recent changes, design decisions and all seventeen standalone regression suites.
 It uses relative paths and does not require an application database for those tests.
 
 Deployment is a separate, explicitly authorized step. A source commit/push does
@@ -34,7 +34,8 @@ Existing accounts can use the bookmarked `/LoginReg/LoginForm` page. Signed-in
 users get **My account** navigation and **Add to lightbox** actions; anonymous
 visitors get no login links. Self-registration is disabled for the initial pilot.
 The homepage FAQ scaffold uses Providence Site Pages for content editing after a
-one-time template scan. See [Accounts and FAQ setup](docs/USER_FEATURES.md).
+one-time registration. See [Accounts and FAQ setup](docs/USER_FEATURES.md) and
+[Repeatable FAQ activation](docs/FAQ_SETUP.md).
 
 The header's **Only items with media | All items** control is a site-wide browser
 preference, defaulting to **Only items with media**. The toggle posts to the theme's
