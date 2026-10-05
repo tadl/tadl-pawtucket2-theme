@@ -59,6 +59,7 @@
 		}
 ?>
 					</div>
+					<?php print tadlCollectionIndexPager($this->request, $vn_page, $vn_total_pages, $vs_collection_view); ?>
 				</div>
 <?php
 	}

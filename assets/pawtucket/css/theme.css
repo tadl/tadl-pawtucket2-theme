@@ -2469,12 +2469,26 @@ div.tadl-image-viewer-controls .close {
     margin-bottom: 24px;
 }
 
+.tadl-collections-header > :first-child {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
 .tadl-collections-tools {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 14px;
-    flex: 0 0 auto;
+    flex: 0 1 480px;
+    max-width: 55%;
     margin-top: 8px;
+}
+
+.tadl-collections-tools .tadl-collections-pagination {
+    flex-basis: 100%;
+    justify-content: flex-end;
+    margin-top: 0;
 }
 
 .tadl-collections-count {
@@ -3610,6 +3624,17 @@ div.tadl-image-viewer-controls .close {
     .tadl-collections-tools {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    .tadl-collections-header > :first-child,
+    .tadl-collections-tools {
+        flex: none;
+        max-width: none;
+    }
+
+    .tadl-collections-tools .tadl-collections-pagination {
+        flex-basis: auto;
+        justify-content: flex-start;
     }
 
     .tadl-collections-grid {

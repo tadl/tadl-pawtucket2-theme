@@ -417,6 +417,12 @@ foreach (['only' => [10, 1, 609], 'all' => [30, 9, 609]] as $mode => $expected) 
     testAssert(strpos($html, '/Collections/Index/page/') !== false, $mode.': collection canonical URL lost page state.');
     testAssert(strpos($html, '&lt;sample&gt; &amp; archive') !== false, $mode.': collection label escaping failed.');
     testAssert(count(ResultContext::$saved['ca_collections:collections:']['ids']) === $expected[0], $mode.': detail navigation context contains wrong IDs.');
+    $document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+    $xpath = new DOMXPath($document);
+    $pagers = $xpath->query('//nav[@class="tadl-collections-pagination"]');
+    testAssert($pagers->length === 2, $mode.': collections require matching top and bottom pagers.');
+    testAssert($xpath->query('//div[@class="tadl-collections-tools"]/nav[@class="tadl-collections-pagination"]')->length === 1, $mode.': top pager must sit with the count and view controls.');
+    testAssert($document->saveHTML($pagers->item(0)) === $document->saveHTML($pagers->item(1)), $mode.': pagers disagree about page/view state.');
 }
 $emptyView = new TestView(testMediaRequest('only', [], 'Collections', 'Index'), ['collection_results' => new SearchResult('ca_collections', [200,201,202,203,204,205]), 'collections_config' => $collectionConfig, 'section_name' => 'Example collections']);
 $html = $emptyView->render(TEST_THEME.'/views/Collections/index_html.php');

@@ -215,6 +215,10 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
 - Collection index pagination uses normal links with page/view state. Browse
   retains native keys, criteria, sorting and result contexts; do not strip them
   just because URLs look complicated. Browser Back and direct page links matter.
+  The Collections index repeats its pager at the top beside the count and
+  Tiles/List controls, with a flexible introduction column and stacked controls
+  on phones. Both pagers use the same helper/page state and disappear for a
+  single page; adding the top pager requires no additional catalogue query.
 - Collection details place their heading/finding-aid link beside populated metadata
   in an adaptive overview; empty metadata columns are omitted. The contents toolbar
   aligns **Collection items**, the filtered count, **Options**, **Tiles/List** and
