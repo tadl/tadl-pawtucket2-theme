@@ -64,6 +64,7 @@ before calling an issue deployed or still broken.
 | Authority details | `views/Details/authority_detail_helpers.php`, `authority_detail_html.php`, entity/place/occurrence detail templates |
 | Galleries | `views/Gallery/index_html.php`, `set_info_html.php`, `detail_html.php`, `set_item_rep_html.php`, `set_item_info_html.php` |
 | Styling | `assets/pawtucket/css/theme.css`, with the existing `main.css` foundation |
+| Thumbnail focus | `helpers/thumbnail_focus.php`, `assets/pawtucket/js/thumbnail-focus.js`, shared result/collection views; `support/detect-thumbnail-faces.php`, `support/thumbnail-faces/`; `docs/THUMBNAIL_FOCUS.md` |
 | Asset cache versions | `helpers/asset_versions.php`, shared header and standalone Lightbox presentation |
 | Collection finding aids | `controllers/CollectionFindingAidController.php`, `helpers/finding_aid.php`, `conf/finding_aid.conf`, PDF/binary detail views; `docs/FINDING_AIDS.md` |
 | Regression checks | `tests/*_test.php` |
@@ -217,6 +218,14 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
 ### Object media and gallery navigation
 
 - Browse/search use the primary representation for their thumbnail.
+- Cover thumbnails now carry Providence `_CENTER` points into browser crop geometry.
+  Staff selections take priority over optional offline YuNet face-box suggestions.
+  No whole-image fallback or per-page inference is used; default cover remains when
+  no focal metadata is available. AJAX results and resized cards are recalculated.
+  See `docs/THUMBNAIL_FOCUS.md` for scope, runtime installation, bounded maintenance
+  batches and disposable-cache behavior. Source/native integration and local
+  desktop/phone previews passed; theme deployment and production batch processing
+  have not been performed for this change.
 - Without an explicit `representation_id`, object detail selects the first
   accessible, rendered playable video when one exists. A valid attached/rendered
   requested representation takes precedence; an invalid explicit ID falls back
@@ -456,7 +465,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The seventeen committed tests are portable and use synthetic boundaries. They do not
+The nineteen committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -481,6 +490,8 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 
 | Test | Coverage |
 | --- | --- |
+| `tests/thumbnail_focus_test.php` | Native image-tag preservation, manual focal priority, invalid/stale cache rejection, responsive cover geometry and multiple faces |
+| `tests/thumbnail_detector_test.php` | Actual CLI with synthetic native selection/detector boundaries, bounded batches, private atomic cache writes and no-op repeats |
 | `tests/faq_setup_test.php` | Read-only setup plans, targeted native template registration, additive editor placements, private pre-change backup, no-op reruns, preserving unrelated configuration and transactional rollback |
 | `tests/profile_save_test.php` | Own-email/staff-public login behavior, collisions, separate user staging, request-close persistence, validation/setter/model failures, native password delegation, POST/session/CSRF boundaries, public-use groups and direct/AJAX profile form error escaping |
 | `tests/user_features_test.php` | Anonymous/authenticated navigation and result actions, native login POST/CSRF, registration policy, password-manager fields and cache separation |

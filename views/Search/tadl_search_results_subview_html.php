@@ -1,4 +1,5 @@
 <?php
+	require_once(__DIR__.'/../../helpers/thumbnail_focus.php');
 	$qr_results = $this->getVar('result');
 	tadlFilterMediaResult($this->request, $qr_results);
 	if (!$qr_results || !($vn_result_count = (int)$qr_results->numHits())) { return; }
@@ -30,7 +31,7 @@
 		$va_object_media = $t_object->getPrimaryMediaForIDs(array_column($va_preview_items, 'id'), array('medium'), array('checkAccess' => $va_access_values));
 		foreach ($va_preview_items as &$va_item) {
 			if ($vs_image_url = $va_object_media[$va_item['id']]['urls']['medium'] ?? '') {
-				$va_item['image'] = '<img src="'.htmlspecialchars($vs_image_url, ENT_QUOTES, 'UTF-8').'" alt="" loading="lazy">';
+			$va_item['image'] = tadlFocusThumbnail('<img src="'.htmlspecialchars($vs_image_url, ENT_QUOTES, 'UTF-8').'" alt="" loading="lazy">');
 			}
 		}
 		unset($va_item);
@@ -46,7 +47,7 @@
 		require_once(__DIR__.'/../Browse/collection_thumbnail_helpers.php');
 		$va_descendant_images = tadlGetDescendantCollectionImages($va_collection_ids, array('version' => 'small', 'checkAccess' => $va_access_values));
 		foreach ($va_preview_items as &$va_item) {
-			$va_item['image'] = ($va_images[$va_item['id']] ?? '') ?: ($va_descendant_images[$va_item['id']] ?? '');
+			$va_item['image'] = tadlFocusThumbnail(($va_images[$va_item['id']] ?? '') ?: ($va_descendant_images[$va_item['id']] ?? ''));
 		}
 		unset($va_item);
 	}

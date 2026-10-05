@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__.'/../../helpers/thumbnail_focus.php');
 if (!function_exists('tadlGetDescendantCollectionImages')) {
 	/**
 	 * Return representative thumbnails for collection records using media attached
@@ -68,9 +69,9 @@ if (!function_exists('tadlGetDescendantCollectionImages')) {
 			}
 
 			$alt = trim((string)$qr_res->get('collection_label'));
-			$images[$collection_id] = $qr_res->getMediaTag('media', $version, [
+			$images[$collection_id] = tadlFocusThumbnail($qr_res->getMediaTag('media', $version, [
 				'alt' => $alt ? $alt : _t('Collection image')
-			]);
+			]));
 		}
 
 		return $images;

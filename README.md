@@ -4,7 +4,7 @@ Standalone source repository for the `tadl` Pawtucket2 theme used for TADL local
 
 For Codex or a new workstation, start with [AGENTS.md](AGENTS.md) and the
 [current handoff](docs/CODEX_HANDOFF.md). The handoff explains the source map,
-recent changes, design decisions and all seventeen standalone regression suites.
+recent changes, design decisions and all nineteen standalone regression suites.
 It uses relative paths and does not require an application database for those tests.
 
 Deployment is a separate, explicitly authorized step. A source commit/push does
@@ -29,6 +29,11 @@ Collection details offer **Download Finding Aid**, an initial collection PDF wit
 metadata and a complete accessible-object inventory, including records without
 media. Field mappings and open archives-team decisions are documented in
 [Finding aids](docs/FINDING_AIDS.md).
+
+Result thumbnails keep the filled cover layout and respect Providence's **Set
+center** focal points. An optional offline OpenCV batch tool supplies face-based
+suggestions without changing those staff selections or processing images on page
+loads. See [Thumbnail focus](docs/THUMBNAIL_FOCUS.md) for installation and operation.
 
 Existing accounts can use the bookmarked `/LoginReg/LoginForm` page. Signed-in
 users get **My account** navigation and **Add to lightbox** actions; anonymous

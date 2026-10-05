@@ -56,6 +56,7 @@
 
 	$vb_ajax			= (bool)$this->request->isAjax();
 	require_once(__DIR__.'/tadl_result_helpers.php');
+	require_once(__DIR__.'/../../helpers/thumbnail_focus.php');
 	$vn_page_size = tadlBrowseResultPageSize('images');
 	
 
@@ -143,14 +144,14 @@
 							}
 						}
 						$vs_info = null;
-						$vs_rep_detail_link 	= caDetailLink($this->request, $vs_thumbnail, '', $vs_table, $vn_id);
+						$vs_rep_detail_link 	= caDetailLink($this->request, tadlFocusThumbnail($vs_thumbnail), '', $vs_table, $vn_id);
 					} else {
 						if($va_images[$vn_id]){
 							$vs_thumbnail = $va_images[$vn_id];
 						}else{
 							$vs_thumbnail = $vs_default_placeholder_tag;
 						}
-						$vs_rep_detail_link 	= caDetailLink($this->request, $vs_thumbnail, '', $vs_table, $vn_id);
+						$vs_rep_detail_link 	= caDetailLink($this->request, tadlFocusThumbnail($vs_thumbnail), '', $vs_table, $vn_id);
 					}
 					$vs_add_to_set_link = $vs_table === 'ca_objects' ? tadlAddToLightboxLink($this->request, $vn_id) : '';
 					$vs_expanded_info = $qr_res->getWithTemplate($vs_extended_info_template);
