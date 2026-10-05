@@ -55,50 +55,32 @@
 		print "<a href='#' class='pull-right' id='bRefineClose' aria-label='"._t("Close filters")."' onclick='jQuery(\"#bRefine\").toggle(); jQuery(\"#bRefineButton\").attr(\"aria-expanded\", \"false\"); return false;'><span class='glyphicon glyphicon-remove-circle' aria-hidden='true'></span></a>";
 		print "<H2>"._t("Filter by")."</H2>";
 		foreach($va_facets as $vs_facet_name => $va_facet_info) {
+			print "<h3>".htmlspecialchars(tadlResultFacetHeading($va_facet_info), ENT_QUOTES, 'UTF-8')."</h3>";
 			if (caGetOption('deferred_load', $va_facet_info, false) || (($va_facet_info['group_mode'] ?? '') === 'hierarchical')) {
-				print "<H3>".htmlspecialchars(tadlResultFacetHeading($va_facet_info), ENT_QUOTES, 'UTF-8')."</H3>";
+				$facet_dom_id = 'bHierarchyList_'.$vs_facet_name;
+				$remote_dom_id = $facet_dom_id.'_remote';
+				print '<div id="'.htmlspecialchars($facet_dom_id, ENT_QUOTES, 'UTF-8').'">';
+				include __DIR__.'/refine_facet_values_html.php';
+				print '</div>';
+				print '<div id="'.htmlspecialchars($remote_dom_id, ENT_QUOTES, 'UTF-8').'" hidden></div>';
 ?>
-					<script type="text/javascript">
-						jQuery(document).ready(function() {
-							jQuery("#bHierarchyList_<?php print $vs_facet_name; ?>").load("<?php print caNavUrl($this->request, '*', '*', 'getFacetHierarchyLevel', array('facet' => $vs_facet_name, 'browseType' => $vs_browse_type, 'key' => $vs_key, 'linkTo' => 'morePanel')); ?>");
-						});
-					</script>
-					<div id='bHierarchyList_<?php print $vs_facet_name; ?>'><?php print caBusyIndicatorIcon($this->request).' '.addslashes(_t('Loading...')); ?></div>
-<?php
-			} else {				
-				if (!is_array($va_facet_info['content']) || !sizeof($va_facet_info['content'])) { continue; }
-				print "<h3>".htmlspecialchars(tadlResultFacetHeading($va_facet_info), ENT_QUOTES, 'UTF-8')."</h3>";
-				switch($va_facet_info["group_mode"]){
-					case "alphabetical":
-					case "list":
-					default:
-						$vn_facet_size = sizeof($va_facet_info['content']);
-						$vn_c = 0;
-						foreach($va_facet_info['content'] as $va_item) {
-						    $vs_content_count = (isset($va_item['content_count']) && ($va_item['content_count'] > 0)) ? " (".$va_item['content_count'].")" : "";
-							print "<div>".caNavLink($this->request, $va_item['label'].$vs_content_count, '', '*', '*','*', array('key' => $vs_key, 'facet' => $vs_facet_name, 'id' => $va_item['id'], 'view' => $vs_view))."</div>";
-							$vn_c++;
-						
-							if (($vn_c == $vn_facet_display_length_initial) && ($vn_facet_size > $vn_facet_display_length_initial) && ($vn_facet_size <= $vn_facet_display_length_maximum)) {
-								print "<span id='{$vs_facet_name}_more' style='display: none;'>";
-							} else {
-								if(($vn_c == $vn_facet_display_length_initial) && ($vn_facet_size > $vn_facet_display_length_maximum))  {
-									break;
-								}
+				<script type="text/javascript">
+					jQuery(document).ready(function() {
+						var choices = jQuery(<?php print json_encode('#'.$facet_dom_id); ?>);
+						var hierarchy = jQuery(<?php print json_encode('#'.$remote_dom_id); ?>);
+						// A hierarchy root can yield only scripts, even when values exist.
+						// Keep the usable links unless the response contains choices.
+						hierarchy.load(<?php print json_encode(caNavUrl($this->request, '*', '*', 'getFacetHierarchyLevel', array('facet' => $vs_facet_name, 'browseType' => $vs_browse_type, 'key' => $vs_key, 'linkTo' => 'morePanel')), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, function(response, status) {
+							if ((status === 'success' || status === 'notmodified') && hierarchy.find('a').length) {
+								choices.empty().append(hierarchy.contents());
 							}
-						}
-						if (($vn_facet_size > $vn_facet_display_length_initial) && ($vn_facet_size <= $vn_facet_display_length_maximum)) {
-							print "</span>\n";
-						
-							$vs_link_open_text = _t("and %1 more", $vn_facet_size - $vn_facet_display_length_initial);
-							$vs_link_close_text = _t("close", $vn_facet_size - $vn_facet_display_length_initial);
-							print "<div><a href='#' class='more' id='{$vs_facet_name}_more_link' onclick='jQuery(\"#{$vs_facet_name}_more\").slideToggle(250, function() { jQuery(this).is(\":visible\") ? jQuery(\"#{$vs_facet_name}_more_link\").text(\"".addslashes($vs_link_close_text)."\") : jQuery(\"#{$vs_facet_name}_more_link\").text(\"".addslashes($vs_link_open_text)."\")}); return false;'><em>{$vs_link_open_text}</em></a></div>";
-						} elseif (($vn_facet_size > $vn_facet_display_length_initial) && ($vn_facet_size > $vn_facet_display_length_maximum)) {
-							print "<div><a href='#' class='more' onclick='jQuery(\"#bMorePanel\").load(\"".caNavUrl($this->request, '*', '*', '*', array('getFacet' => 1, 'facet' => $vs_facet_name, 'view' => $vs_view, 'key' => $vs_key))."\", function(){jQuery(\"#bMorePanel\").show(); jQuery(\"#bMorePanel\").mouseleave(function(){jQuery(\"#bMorePanel\").hide();});}); return false;'><em>"._t("and %1 more", $vn_facet_size - $vn_facet_display_length_initial)."</em></a></div>";
-						}
-					break;
-					# ---------------------------------------------
-				}
+							hierarchy.remove();
+						});
+					});
+				</script>
+<?php
+			} else {
+				include __DIR__.'/refine_facet_values_html.php';
 			}
 		}
 		print "</div><!-- end bRefine -->\n";

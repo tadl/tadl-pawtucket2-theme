@@ -393,6 +393,16 @@ Browse/search resolves deferred facets and applies the media preference before
 rendering facet headings. When no facets remain, omit the entire **Filter by**
 panel and its toggle and give results the full row width. Preserve the Subjects
 directory's empty-state message and editable search-form labels.
+Deferred/hierarchical facets render their already resolved, access/media-filtered
+choices immediately through `views/Browse/refine_facet_values_html.php`. Load the
+native hierarchy into a hidden staging container and replace those choices only
+when a successful response contains links. Empty/script-only responses and
+request failures retain the usable native filter links; populated responses keep
+their native hierarchy click handlers. This prevents a lone **Places** heading
+when the hierarchy endpoint returns no choices despite a populated facet.
+The results-context suite covers these response states, and synthetic browser
+checks with the installed jQuery verified fallback links and hierarchy handlers.
+Deployment and authenticated live filtering remain deployment-time checks.
 
 Object-detail relationships use the full metadata-column width. Any map follows
 below them, so an absent map does not reserve half the sidebar or force related
@@ -532,7 +542,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/object_detail_media_test.php` | Media selection, viewer controls and callbacks |
 | `tests/object_detail_video_poster_test.php` | Covers, playback, player fallback and access |
 | `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |
-| `tests/result_context_heading_test.php` | Results context, headings, removable criteria, empty flat/deferred/media-filtered facets and Subjects browse/refine rendering |
+| `tests/result_context_heading_test.php` | Results context, headings, removable criteria, empty flat/deferred/media-filtered facets, hierarchy-response fallback and Subjects browse/refine rendering |
 | `tests/object_detail_metadata_test.php` | Empty/populated rich-text fields and fallback values; structured TGM pairing, safe links, escaping and permissions |
 | `tests/image_download_test.php` | Toolbar/bundle/overlay menus, visible native PDF actions, viewer icon placement, outside-click/Escape/Tab handling, current image action relocation, gallery AJAX navigation and media callbacks, download policy/ACL/attachment checks, TIFF/JPEG/BMP/PDF bytes, BMP MIME aliases, conversion validation and failure handling |
 | `tests/subjects_test.php` | Subject relationship rendering, escaping, native browse links, bundle access and Pawtucket ACL filtering |

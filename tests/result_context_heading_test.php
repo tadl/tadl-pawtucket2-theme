@@ -235,10 +235,65 @@ $facets = contextFacetDefinitions();
 $facets['entity_facet']['content'] = [['id' => 42, 'label' => 'Synthetic Studio']];
 $facets['place_facet'] = array_merge($facets['place_facet'], ['group_mode' => 'hierarchical', 'description' => 'Generic hierarchy copy should not appear', 'content' => []]);
 $html = (new ContextView(new ContextRequest(), [], 45, ['facets' => $facets]))->render('Browse/browse_refine_subview_html.php');
-checkContext(str_contains($html, '<h3>People and organizations</h3>') && str_contains($html, '<H3>Places</H3>'), 'Sidebar authority terminology is incorrect.');
+checkContext(str_contains($html, '<h3>People and organizations</h3>') && str_contains($html, '<h3>Places</h3>'), 'Sidebar authority terminology is incorrect.');
 checkContext(!str_contains($html, 'Generic hierarchy copy'), 'Generic hierarchy description remains.');
-checkContext(str_contains($html, 'getFacetHierarchyLevel?facet=place_facet') && str_contains($html, 'linkTo=morePanel') && str_contains($html, "id='bHierarchyList_place_facet'"), 'Hierarchy AJAX behavior changed.');
+checkContext(str_contains($html, 'getFacetHierarchyLevel?facet=place_facet') && str_contains($html, 'linkTo=morePanel') && str_contains($html, 'id="bHierarchyList_place_facet"'), 'Hierarchy AJAX behavior changed.');
+$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+$xpath = new DOMXPath($document);
+checkContext($xpath->query('//div[@id="bHierarchyList_place_facet"]//a[contains(@href,"facet=place_facet") and contains(@href,"id=42")]')->length === 1, 'Deferred Places must contain a usable native filter before AJAX.');
+checkContext($xpath->query('//div[@id="bHierarchyList_place_facet_remote" and @hidden]')->length === 1, 'Hierarchy response must not overwrite usable links while loading.');
 checkContext(str_contains($html, 'facet=entity_facet&amp;id=42&amp;view=images'), 'Flat facet navigation changed.');
+
+// Run the actual loader across empty, script-only, failed and populated responses.
+preg_match_all('~<script\b[^>]*>(.*?)</script\s*>~is', $html, $facetScripts);
+$hierarchyScripts = array_values(array_filter($facetScripts[1], static fn($script) => str_contains($script, 'var choices =')));
+checkContext(count($hierarchyScripts) === 1, 'Exactly one deferred Places loader is expected.');
+$facetLoaderCode = <<<'JS'
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const script = JSON.parse(fs.readFileSync(0, 'utf8'));
+let assertions = 0;
+for (const fixture of [
+    { status: 'success', links: [] },
+    { status: 'success', links: [], response: '<script>synthetic();</script>' },
+    { status: 'error', links: ['Error page link'] },
+    { status: 'success', links: ['Synthetic hierarchy choice'] },
+    { status: 'notmodified', links: ['Synthetic cached hierarchy choice'] }
+]) {
+    const choices = { links: ['Synthetic native filter'], empty() { this.links = []; return this; }, append(links) { this.links.push(...links); return this; } };
+    const hierarchy = {
+        removed: false,
+        load(url, callback) {
+            assert.ok(url.includes('facet=place_facet') && url.includes('key=synthetic-key') && url.includes('linkTo=morePanel'));
+            assertions++;
+            callback.call(this, fixture.response || '', fixture.status);
+        },
+        find(selector) { assert.equal(selector, 'a'); return fixture.links; },
+        contents() { return fixture.links; },
+        remove() { this.removed = true; }
+    };
+    const document = {};
+    const jQuery = selector => {
+        if (selector === document) return { ready(callback) { callback(); } };
+        if (selector === '#bHierarchyList_place_facet') return choices;
+        if (selector === '#bHierarchyList_place_facet_remote') return hierarchy;
+        throw Error('Unexpected selector: ' + selector);
+    };
+    new vm.Script(script).runInNewContext({ jQuery, document }, { timeout: 1000 });
+    assert.deepEqual(choices.links, fixture.status !== 'error' && fixture.links.length ? fixture.links : ['Synthetic native filter']);
+    assert.equal(hierarchy.removed, true);
+    assertions += 2;
+}
+process.stdout.write(String(assertions));
+JS;
+$process = proc_open([getenv('TADL_TEST_NODE') ?: 'node', '-e', $facetLoaderCode], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+if (!is_resource($process)) { throw new RuntimeException('Node.js is required for the hierarchy loader regression.'); }
+fwrite($pipes[0], json_encode($hierarchyScripts[0], JSON_THROW_ON_ERROR)); fclose($pipes[0]);
+$loaderAssertions = stream_get_contents($pipes[1]); $loaderErrors = stream_get_contents($pipes[2]);
+fclose($pipes[1]); fclose($pipes[2]);
+checkContext(proc_close($process) === 0, 'Hierarchy fallback failed: '.$loaderErrors);
+$GLOBALS['contextAssertions'] += (int)$loaderAssertions;
 
 foreach ([
 	['content' => []],
