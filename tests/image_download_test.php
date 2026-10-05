@@ -21,6 +21,11 @@ $fixtures = [
 	'jpg' => '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAAHAA0DAREAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAZEAABBQAAAAAAAAAAAAAAAAAEAAIYVJH/xAAWAQEBAQAAAAAAAAAAAAAAAAAABQb/xAAYEQADAQEAAAAAAAAAAAAAAAAAAhZRAf/aAAwDAQACEQMRAD8Ar8RgK4+tVWubemdlVwRGArj61K5t6JVcP//Z',
 	'tiff' => 'SUkqACoCAAAkJGhomJgkJGhomJgkJGhomJgkJGhomJgkJGhomJgkJGhomJgkJGhomJgkJGhomJgkJGhomJgkJGhomJgkJGhomJgkJGhomJgkJGhomJjFRPx7IKDFRPx7IKDFRPx7IKDFRPx7IKDFRPx7IKDFRPx7IKDFRPx7IKDFRPx7IKDFRPx7IKDFRPx7IKDFRPx7IKDFRPx7IKDFRPx7IKBlZY+Pp6dlZY+Pp6dlZY+Pp6dlZY+Pp6dlZY+Pp6dlZY+Pp6dlZY+Pp6dlZY+Pp6dlZY+Pp6dlZY+Pp6dlZY+Pp6dlZY+Pp6dlZY+Pp6cGhiOjL68GhiOjL68GhiOjL68GhiOjL68GhiOjL68GhiOjL68GhiOjL68GhiOjL68GhiOjL68GhiOjL68GhiOjL68GhiOjL68GhiOjL6+mpra2trampra2trampra2trampra2trampra2trampra2trampra2trampra2trampra2trampra2trampra2trampra2trampra2trZHx0rKPr5Hx0rKPr5Hx0rKPr5Hx0rKPr5Hx0rKPr5Hx0rKPr5Hx0rKPr5Hx0rKPr5Hx0rKPr5Hx0rKPr5Hx0rKPr5Hx0rKPr5Hx0rKPr7n593dxcXn593dxcXn593dxcXn593dxcXn593dxcXn593dxcXn593dxcXn593dxcXn593dxcXn593dxcXn593dxcXn593dxcXn593dxcUPAAABAwABAAAADQAAAAEBAwABAAAABwAAAAIBAwADAAAA5AIAAAMBAwABAAAAAQAAAAYBAwABAAAAAgAAAAoBAwABAAAAAQAAABEBBAABAAAACAAAABIBAwABAAAAAQAAABUBAwABAAAAAwAAABYBAwABAAAABwAAABcBBAABAAAAIgIAABwBAwABAAAAAQAAACkBAwACAAAAAAABAD4BBQACAAAAGgMAAD8BBQAGAAAA6gIAAAAAAAAQABAAEACF61EAAACAAMP1qAAAAAACzcxMAAAAAAHNzEwAAACAAM3MTAAAAAACj8L1AAAAABA3GqAAAAAAAiuHCgAAACAA'
 ];
+// Synthetic 13x7, 24-bit BMP with padded rows. Exercise actual BMP bytes rather
+// than relabeling another image, including conversion through ImageMagick.
+$bmpPixels = str_repeat(str_repeat("\x33\x66\x99", 13)."\0", 7);
+$fixtures['bmp'] = base64_encode('BM'.pack('VvvV', 54 + strlen($bmpPixels), 0, 0, 54)
+	.pack('V3v2V6', 40, 13, 7, 1, 24, 0, strlen($bmpPixels), 0, 0, 0, 0).$bmpPixels);
 foreach ($fixtures as $format => $bytes) { file_put_contents($directory.'/image.'.$format, base64_decode($bytes, true)); }
 file_put_contents($directory.'/not-image', 'Synthetic non-image content');
 register_shutdown_function(function () use ($directory) {
@@ -160,7 +165,7 @@ function resetDownload($format = 'tiff') {
 function runDownload($request) {
 	$controller = new ImageDownloadController($request, new DownloadResponse()); $controller->Download(); return $controller;
 }
-foreach (['png', 'tiff', 'jpg'] as $format) {
+foreach (['png', 'tiff', 'jpg', 'bmp'] as $format) {
 	[$object, $rep, $request] = resetDownload($format);
 	$originalHash = hash_file('sha256', $rep->path);
 	$html = tadlImageDownloadLinks($request, $object, 101);
@@ -178,7 +183,7 @@ foreach (['png', 'tiff', 'jpg'] as $format) {
 	if ($format === 'jpg') { checkDownload(!Media::$calls, 'JPEG original should stream without re-encoding.'); }
 	else { checkDownload(Media::$calls[1] === ['read', $rep->path] && end(Media::$calls) === ['cleanup'], 'Conversion did not read/clean up native media.'); }
 }
-foreach (['png', 'tiff', 'jpg'] as $format) {
+foreach (['png', 'tiff', 'jpg', 'bmp'] as $format) {
 	[$object, $rep, $request] = resetDownload($format); $request->params['format'] = 'pdf';
 	$originalHash = hash_file('sha256', $rep->path);
 	$controller = runDownload($request); $download = $controller->view->getVar('image_download');
@@ -278,6 +283,24 @@ checkDownload(!str_contains($html, 'setsButton') && !str_contains($html, 'lightb
 checkDownload(str_contains($html, 'nativeZoom()') && str_contains($html, 'compare_link') && str_contains($html, 'Media viewer'), 'Native zoom/compare actions changed.');
 checkDownload(str_contains($html, 'aria-label="Media viewer"') && str_contains($html, 'title="Media viewer"'), 'Media viewer accessible name and tooltip must match its visible label.');
 checkDownload(substr_count($html, '<details') === 1 && str_contains($html, 'TIFF (to print)') && str_contains($html, 'JPG (to share)'), 'Toolbar must have one labeled dropdown.');
+foreach (['image/bmp', 'image/x-bmp', 'image/x-ms-bmp'] as $bmpMime) {
+	[$bmpObject, $bmpRep, $bmpRequest] = resetDownload('bmp');
+	$bmpObject->rows[101]['mimetype'] = $bmpMime;
+	$bmpRep->info['MIMETYPE'] = $bmpMime;
+	$bmpToolbar = tadlImageToolbar($bmpRequest, $bmpObject, 101, $toolbar);
+	checkDownload(str_contains($bmpToolbar, 'Media viewer') && str_contains($bmpToolbar, 'JPG (to share)') && str_contains($bmpToolbar, '>PDF</a>') && !str_contains($bmpToolbar, 'TIFF (to print)'), $bmpMime.': BMP originals must retain viewer/JPG/PDF controls.');
+}
+[$object, $rep, $request] = resetDownload();
+$object->rows[101]['mimetype'] = 'application/pdf';
+$pdfToolbar = tadlImageToolbar($request, $object, 101, $toolbar);
+checkDownload(str_contains($pdfToolbar, 'tadl-image-toolbar') && str_contains($pdfToolbar, 'Media viewer') && str_contains($pdfToolbar, 'nativeZoom()'), 'PDF actions must be visible and retain the native viewer.');
+checkDownload(str_contains($pdfToolbar, 'class="dlButton" href="/original"') && str_contains($pdfToolbar, 'Download PDF'), 'PDF must preserve its native complete-document download.');
+checkDownload(!str_contains($pdfToolbar, 'setsButton') && !str_contains($pdfToolbar, '<details') && !str_contains($pdfToolbar, '/ImageDownload/'), 'PDF toolbar must not expose Lightbox or image conversions.');
+$restrictedPDFToolbar = tadlImageToolbar($request, $object, 101, str_replace('<a class="dlButton" href="/original">Download</a>', '', $toolbar));
+checkDownload(!str_contains($restrictedPDFToolbar, 'dlButton') && !str_contains($restrictedPDFToolbar, 'Download PDF') && str_contains($restrictedPDFToolbar, 'Media viewer'), 'PDF without native download permission must retain viewer but gain no download link.');
+$pdfSlide = '<div data-representation_id="101"><img src="/synthetic/pdf-preview.jpg">'.$toolbar.'</div>';
+checkDownload(str_contains(tadlImageViewerSlide($request, $object, 101, $pdfSlide), 'tadl-image-toolbar'), 'PDF preview slide did not normalize its toolbar for relocation.');
+[$object, $rep, $request] = resetDownload();
 $slide = '<div data-representation_id="101"><img src="/synthetic/still.jpg">'.$toolbar.'</div><script>nativeInitialization()</script>';
 $html = tadlImageViewerSlide($request, $object, 101, $slide);
 checkDownload(str_starts_with($html, '<div data-representation_id="101">') && str_contains($html, '<script>nativeInitialization()</script>') && substr_count($html, '<details') === 1, 'Slide wrappers/scripts were altered or dropdown duplicated.');

@@ -47,11 +47,21 @@ function tadlImageDownloadLinks($request, $object, $representationID, $inViewer 
 	return $html.'</ul></details>';
 }
 
-/** Keep native zoom/compare actions and replace the image toolbar's set/download links. */
+/** Normalize image/PDF actions while preserving native callbacks and PDF downloads. */
 function tadlImageToolbar($request, $object, $representationID, $toolbar) {
 	$rows = (array)$object->getRepresentations([], null, ['simple' => true, 'checkAccess' => caGetUserAccessValues($request)]);
-	if (!preg_match('!^image/!i', (string)($rows[$representationID]['mimetype'] ?? ''))) { return $toolbar; }
-	$toolbar = preg_replace('~<a\b(?=[^>]*\bclass=[\'\"][^\'\"]*\b(?:setsButton|dlButton)\b)[^>]*>.*?</a>~is', '', $toolbar);
+	$mime = strtolower((string)($rows[$representationID]['mimetype'] ?? ''));
+	$isImage = (bool)preg_match('!^image/!', $mime);
+	if (!$isImage && $mime !== 'application/pdf') { return $toolbar; }
+	$replacedActions = $isImage ? '(?:setsButton|dlButton)' : 'setsButton';
+	$toolbar = preg_replace('~<a\b(?=[^>]*\bclass=[\'\"][^\'\"]*\b'.$replacedActions.'\b)[^>]*>.*?</a>~is', '', $toolbar);
+	// PDFs already have a native, permission-checked original download link.
+	// Keep the complete document; do not send it through single-image conversion.
+	if (!$isImage) {
+		$toolbar = preg_replace_callback('~(<a\b(?=[^>]*\bclass=[\'\"][^\'\"]*\bdlButton\b)[^>]*>)(.*?)(</a>)~is', static function ($match) {
+			return $match[1].$match[2].'<span>'.htmlspecialchars(_t('Download PDF'), ENT_QUOTES, 'UTF-8').'</span>'.$match[3];
+		}, $toolbar);
+	}
 	$toolbar = preg_replace_callback('~(<a\b(?=[^>]*\bclass=[\'\"][^\'\"]*\bzoomButton\b)[^>]*>)(.*?)(</a>)~is', static function ($match) {
 		$label = htmlspecialchars(_t('Media viewer'), ENT_QUOTES, 'UTF-8');
 		$link = preg_replace_callback('~\b(aria-label|title)\s*=\s*([\'\"])(.*?)\2~is', static function ($attribute) use ($label) {
@@ -59,7 +69,7 @@ function tadlImageToolbar($request, $object, $representationID, $toolbar) {
 		}, $match[1]);
 		return $link.$match[2].'<span>'.$label.'</span>'.$match[3];
 	}, $toolbar);
-	$menu = tadlImageDownloadLinks($request, $object, $representationID);
+	$menu = $isImage ? tadlImageDownloadLinks($request, $object, $representationID) : '';
 	if (preg_match('~<div\b[^>]*\bclass=[\'\"]detailMediaToolbar[\'\"][^>]*>~i', $toolbar)) {
 		$toolbar = preg_replace('~\bclass=[\'\"]detailMediaToolbar[\'\"]~i', 'class="detailMediaToolbar tadl-image-toolbar"', $toolbar, 1);
 		return str_replace('</div><!-- end detailMediaToolbar -->', $menu.'</div><!-- end detailMediaToolbar -->', $toolbar);

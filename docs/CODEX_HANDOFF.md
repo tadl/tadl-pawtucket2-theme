@@ -211,7 +211,7 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
 - Object pages omit the rectangular **Back/Previous/Next** navigation blocks on
   desktop and mobile. Media-switching arrows/counter and thumbnail controls remain.
   The desktop layout has no empty right navigation column.
-- Object image actions sit in a centered row below the media/counter, before
+- Object image and PDF actions sit in a centered row below the media/counter, before
   annotations and thumbnails, matching gallery actions below their image.
   The former left action column is removed so desktop media can use that width.
   Download menus overlay the content below their buttons without changing the
@@ -219,6 +219,11 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
   Keep native **Media viewer**/compare callbacks; omit the image's
   Lightbox action and replace its original-download link with one native HTML
   disclosure menu. Video toolbar behavior and account Lightbox remain unchanged.
+  PDF previews use the same visible **Media viewer** button and a **Download PDF**
+  link to the native original-download endpoint, only when the native toolbar
+  supplies that link. The PDF viewer and complete document stay native; PDFs do
+  not use the single-image JPG/PDF conversion endpoint. Previously PDF preview
+  actions retained the hidden native toolbar because only images were normalized.
 - **Media viewer** and **Download** share the same regular font and black text.
   The viewer's visible label, accessible name and tooltip use the shorter label.
 - `views/Details/image_actions_script.php` moves the current toolbar node into
@@ -255,6 +260,10 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
   Help describes public image navigation/download controls and actual shortcuts;
   it omits annotation-editing tools unavailable in the public viewer.
 - JPG uses the original image dimensions, never the display-size derivative.
+  BMP originals remain eligible for viewing and JPG/PDF exports, including the
+  `image/bmp`, `image/x-bmp` and `image/x-ms-bmp` metadata aliases. Synthetic BMP
+  bytes and real ImageMagick conversion are covered by the image-download suite.
+  No representation is automatically hidden by file type.
   Existing JPEG originals stream unchanged. Other image originals convert on
   demand through CollectiveAccess `Media` to quality-90 JPEG with a white
   background, without scaling. Native ImageMagick selects the first frame/page;
@@ -460,7 +469,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |
 | `tests/result_context_heading_test.php` | Results context, headings, removable criteria, empty flat/deferred/media-filtered facets and Subjects browse/refine rendering |
 | `tests/object_detail_metadata_test.php` | Empty/populated rich-text fields and fallback values; structured TGM pairing, safe links, escaping and permissions |
-| `tests/image_download_test.php` | Toolbar/bundle/overlay menus, viewer icon placement, outside-click/Escape/Tab handling, current image action relocation, gallery AJAX navigation and media callbacks, download policy/ACL/attachment checks, TIFF/JPEG/PDF bytes, conversion validation and failure handling |
+| `tests/image_download_test.php` | Toolbar/bundle/overlay menus, visible native PDF actions, viewer icon placement, outside-click/Escape/Tab handling, current image action relocation, gallery AJAX navigation and media callbacks, download policy/ACL/attachment checks, TIFF/JPEG/BMP/PDF bytes, BMP MIME aliases, conversion validation and failure handling |
 | `tests/subjects_test.php` | Subject relationship rendering, escaping, native browse links, bundle access and Pawtucket ACL filtering |
 | `tests/recent_writing_test.php` | Actual home fallback/View More filters; client refresh, URL/text safety, cold-cache retry and feed-error fallback |
 

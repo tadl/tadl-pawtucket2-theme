@@ -1,5 +1,5 @@
 <script>
-// Move the current image's native actions without rebuilding its callbacks.
+// Move the current image/PDF's native actions without rebuilding its callbacks.
 function tadlPlaceImageToolbar(reset = false) {
 	const detail = document.querySelector('.tadl-object-detail');
 	const target = document.getElementById('tadlObjectMediaActions');

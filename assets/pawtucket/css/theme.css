@@ -1296,7 +1296,9 @@ h6 {
 
 .tadl-image-downloads summary.btn,
 .detail .tadl-image-toolbar a.zoomButton,
-.gallery .tadl-image-toolbar a.zoomButton {
+.gallery .tadl-image-toolbar a.zoomButton,
+.detail .tadl-image-toolbar a.dlButton,
+.gallery .tadl-image-toolbar a.dlButton {
     display: inline-flex;
     align-items: center;
     gap: 8px;
