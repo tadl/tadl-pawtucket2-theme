@@ -7,6 +7,31 @@ alter originals, or introduce a whole-image/letterbox fallback. Authority-relate
 object results use the same shared result views. Detail and gallery viewers are
 unchanged.
 
+## Share with another Pawtucket site
+
+`support/package-thumbnail-faces.py` creates a standalone directory and optional
+ZIP from an explicit allowlist of the working helper, CLI, detector, browser JS,
+configuration and tests. It adds general installation/operation instructions,
+exact template/asset/CSS integration examples, GPL license/dependency notices and
+file hashes/source provenance. It never includes media, detections, a venv, model
+weights, private application configuration or other theme features.
+
+From this theme checkout, using Python 3.11+ and new output paths:
+
+```sh
+python3 support/package-thumbnail-faces.py \
+  --output-dir=../thumbnail-faces --archive=../thumbnail-faces.zip
+```
+
+The directory sits alongside this theme under `pawtucket2-theme/` and can be copied
+or shared independently. The theme remains the canonical runtime source; guides
+and snippets live in `support/thumbnail-faces/share/`. Export again after source
+changes, choosing new paths; existing outputs are never overwritten. For a
+release, export from a clean, tested source commit. The package's integration
+guide explains other-theme filenames, native derivative/access assumptions and
+the current `medium`/`small` batch scope. `tests/thumbnail_package_test.php` verifies
+the export and runs its independent tests outside this checkout.
+
 ## Staff-selected centers
 
 Providence's media representation editor has **Set center**. Save the object after

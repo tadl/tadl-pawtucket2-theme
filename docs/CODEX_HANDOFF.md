@@ -1,6 +1,6 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-05. This document carries the recent coding context to another
+Updated: 2026-10-06. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
@@ -65,6 +65,7 @@ before calling an issue deployed or still broken.
 | Galleries | `views/Gallery/index_html.php`, `set_info_html.php`, `detail_html.php`, `set_item_rep_html.php`, `set_item_info_html.php` |
 | Styling | `assets/pawtucket/css/theme.css`, with the existing `main.css` foundation |
 | Thumbnail focus | `helpers/thumbnail_focus.php`, `assets/pawtucket/js/thumbnail-focus.js`, shared result/collection views; `support/detect-thumbnail-faces.php`, `support/thumbnail-faces/`; `docs/THUMBNAIL_FOCUS.md` |
+| Shareable thumbnail tools | `support/package-thumbnail-faces.py`, `support/thumbnail-faces/share/`; allowlisted runtime export to a sibling `thumbnail-faces/` directory/ZIP, with independent setup/integration guides, snippets, license and tests |
 | Asset cache versions | `helpers/asset_versions.php`, shared header and standalone Lightbox presentation |
 | Collection finding aids | `controllers/CollectionFindingAidController.php`, `helpers/finding_aid.php`, `conf/finding_aid.conf`, PDF/binary detail views; `docs/FINDING_AIDS.md` |
 | Regression checks | `tests/*_test.php` |
@@ -537,12 +538,13 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The twenty-one committed tests are portable and use synthetic boundaries. They do not
+The twenty-two committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
 Requirements: PHP 8+ CLI with DOM, PDO SQLite, JSON and fileinfo; `proc_open` enabled;
-Node.js available on PATH. The theme header additionally needs mbstring, though
+Node.js and Python 3.11+ available on PATH. The package suite uses Python to export
+and verify a standalone source snapshot. The theme header additionally needs mbstring, though
 these standalone suites do not. The original handoff checks passed on PHP 8.5.7 and
 Node 24.13.0. Those are observed workstation versions, not a required production
 upgrade.
@@ -552,6 +554,7 @@ From the theme repository:
 ```sh
 php --version
 node --version
+python3 --version
 php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $extension) { echo $extension, ": ", extension_loaded($extension) ? "yes" : "no", PHP_EOL; }'
 (
   for test_file in tests/*_test.php; do
@@ -581,6 +584,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/result_context_heading_test.php` | Results context, headings, removable criteria, empty flat/deferred/media-filtered facets, hierarchy-response fallback and Subjects browse/refine rendering |
 | `tests/object_detail_metadata_test.php` | Empty/populated rich-text fields and fallback values; structured TGM pairing, safe links, escaping and permissions |
 | `tests/image_download_test.php` | Toolbar/bundle/overlay menus, visible native PDF actions, viewer icon placement, outside-click/Escape/Tab handling, current image action relocation, gallery AJAX navigation and media callbacks, download policy/ACL/attachment checks, TIFF/JPEG/BMP/PDF bytes, BMP MIME aliases, conversion validation and failure handling |
+| `tests/thumbnail_package_test.php` | Source allowlist/hashes, safe existing-output refusal, ZIP contents and independent exported PHP/Python tests; additionally requires Python 3.11+ |
 | `tests/subjects_test.php` | Subject relationship rendering, escaping, native browse links, bundle access and Pawtucket ACL filtering |
 | `tests/recent_writing_test.php` | Actual home fallback/View More filters; client refresh, URL/text safety, cold-cache retry and feed-error fallback |
 

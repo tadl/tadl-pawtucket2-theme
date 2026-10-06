@@ -4,7 +4,7 @@ Standalone source repository for the `tadl` Pawtucket2 theme used for TADL local
 
 For Codex or a new workstation, start with [AGENTS.md](AGENTS.md) and the
 [current handoff](docs/CODEX_HANDOFF.md). The handoff explains the source map,
-recent changes, design decisions and all twenty-one standalone regression suites.
+recent changes, design decisions and all twenty-two standalone regression suites.
 It uses relative paths and does not require an application database for those tests.
 
 Deployment is a separate, explicitly authorized step. A source commit/push does
@@ -44,6 +44,20 @@ loads. `--all --apply` processes every eligible public attached image in one run
 suggestions live outside `app/tmp` and survive its routine clearing. See
 [Thumbnail focus](docs/THUMBNAIL_FOCUS.md) for installation and operation.
 
+To share the face detection and focal-point integration with another Pawtucket
+site, export the standalone source package with Python 3.11+:
+
+```sh
+python3 support/package-thumbnail-faces.py \
+  --output-dir=../thumbnail-faces --archive=../thumbnail-faces.zip
+```
+
+It includes the exact runtime scripts/helpers, portable tests, license notices,
+detailed setup instructions and a file-by-file theme integration guide/snippets.
+The output paths must be new. The exporter uses an explicit source allowlist,
+includes hashes/provenance and leaves the theme's installed paths unchanged. See
+the [package guide source](support/thumbnail-faces/share/README.md).
+
 Existing accounts can use the bookmarked `/LoginReg/LoginForm` page. Signed-in
 users get **My account** navigation and **Add to lightbox** on object details.
 Result tiles and list rows omit those buttons for everyone. Anonymous visitors
@@ -75,7 +89,8 @@ keys do not include this preference or the current access mask.
 Whole-page content caching is also disabled in `app.conf` because rendered pages
 include the visitor's selected preference.
 
-Run the standalone synthetic regression checks with PHP and PDO SQLite:
+Run the standalone synthetic regression checks with PHP/PDO SQLite, Node.js and
+Python 3.11+:
 
 ```sh
 for test_file in tests/*_test.php; do

@@ -1,0 +1,12 @@
+/* Example only: use your actual card image class and existing box dimensions. */
+.collection-card-thumbnail {
+    display: block;
+    width: 100%;
+    height: 210px;
+    object-fit: cover;
+    object-position: 50% 50%;
+}
+
+/* Do not apply this globally to detail/gallery images or media viewers.
+   The JS adjusts object-position only on decorated images using cover.
+   Avoid object-position !important rules, which override its inline positioning. */
