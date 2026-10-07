@@ -84,6 +84,9 @@
 			<div class='col-sm-6 col-md-6 col-lg-6 tadl-object-info'>
 				<H1>{{{<unit relativeTo="ca_collections" delimiter="<br/>"><l>^ca_collections.preferred_labels.name</l></unit><ifcount min="1" code="ca_collections"><br/>➔ </ifcount>}}}{{{ca_objects.preferred_labels.name}}}</H1>
 				<H2>{{{<unit>^ca_objects.type_id</unit>}}}</H2>
+				<?php if ($providence_link = tadlProvidenceObjectLink($this->request, $t_object->getPrimaryKey())): ?>
+				<div class="tadl-object-staff-actions"><?= $providence_link; ?></div>
+				<?php endif; ?>
 				<HR>
 				
 				

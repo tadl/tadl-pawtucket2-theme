@@ -22,6 +22,9 @@ function caNavLink($request, $label, $class, $module, $controller, $action, $par
 function caGenerateCSRFToken($request) { return 'synthetic-token'; }
 function caGetOption($name, $options, $default) { return $options[$name] ?? $default; }
 function caGetUserAccessValues($request) { return [1]; }
+define('__CA_BUNDLE_ACCESS_READONLY__', 1);
+function caGetBundleAccessLevel($table, $bundle) { return 0; }
+function caObjectRepresentationThumbnails($request, $representationID, $object, $options) { return []; }
 function caGetIconsConfig() { return new FeatureConfig(); }
 function caDetailLink($request, $label, $class, $table, $id) { return '<a href="/Detail/objects/'.(int)$id.'">'.$label.'</a>'; }
 class FeatureConfig {
@@ -32,9 +35,17 @@ class FeatureConfig {
 	}
 	function getAssoc($key) { return []; }
 }
+class FeatureUser {
+	function __construct(public int $userclass = 1) {}
+	function isStandardUser() { return $this->userclass === 0; }
+}
 class FeatureRequest {
 	public FeatureConfig $config;
-	function __construct(public bool $loggedIn = false, public bool $ajax = false) { $this->config = new FeatureConfig(['dontAllowRegistration' => 1, 'cache_timeout' => 0]); }
+	public FeatureUser $user;
+	function __construct(public bool $loggedIn = false, public bool $ajax = false, int $userclass = 1) {
+		$this->config = new FeatureConfig(['dontAllowRegistration' => 1, 'cache_timeout' => 0]);
+		$this->user = new FeatureUser($userclass);
+	}
 	function isLoggedIn() { return $this->loggedIn; }
 	function isAjax() { return $this->ajax; }
 }
@@ -56,6 +67,11 @@ class FeatureResult {
 	function getWithTemplate($template) { return ''; }
 }
 class ca_list_items {}
+class FeatureDetailObject {
+	function __construct(private int $id = 42) {}
+	function getPrimaryKey() { return $this->id; }
+	function getWithTemplate($template, $options = []) { return $template === '^ca_objects.idno' ? 'SYNTHETIC.'.$this->id : ''; }
+}
 class ExternalCache {
 	static public array $keys = [];
 	static function contains($key, $group) { return false; }
@@ -86,6 +102,32 @@ checkUserFeature($anchor->getAttribute('href') === '/Lightbox/addItemForm?object
 checkUserFeature(tadlAddToLightboxLink($request, 0) === '', 'Invalid object IDs must not get actions.');
 $request->config->values['disable_lightbox'] = 1;
 checkUserFeature(!str_contains(tadlUserMenu($request), 'Lightbox') && str_contains(tadlUserMenu($request), 'profileForm') && tadlAddToLightboxLink($request, 42) === '', 'Native disabled-Lightbox policy must keep profile/logout.');
+
+// Use the actual object view, including an object without media or readable bundles.
+foreach ([[false, 0], [false, 1], [true, 1], [true, 255], [true, 99], [true, 0]] as [$loggedIn, $userclass]) {
+	$request = new FeatureRequest($loggedIn, false, $userclass);
+	$staff = $loggedIn && $userclass === 0;
+	$link = tadlProvidenceObjectLink($request, 42);
+	checkUserFeature(($link !== '') === $staff, 'Editor link must require both a login and native full-access user class.');
+	$html = (new FeatureView($request, ['item' => new FeatureDetailObject()]))->render('Details/ca_objects_default_html.php');
+	$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+	$xpath = new DOMXPath($document);
+	$links = $xpath->query('//div[contains(@class,"tadl-object-info")]//a[contains(@class,"tadl-providence-object")]');
+	checkUserFeature($links->length === ($staff ? 1 : 0), 'Object metadata column must render the editor action only for staff.');
+	checkUserFeature($staff || !str_contains($html, 'collections.tadl.org'), 'Nonstaff HTML must omit the editor URL entirely.');
+	checkUserFeature($staff || !str_contains($html, 'tadl-object-staff-actions'), 'Nonstaff HTML must omit the staff action wrapper.');
+	if ($staff) {
+		$anchor = $links->item(0);
+		checkUserFeature($anchor->getAttribute('href') === 'https://collections.tadl.org/index.php/editor/objects/ObjectEditor/Edit/Screen49/object_id/42', 'Editor URL must use the currently displayed object ID.');
+		checkUserFeature($anchor->getAttribute('target') === '_blank' && $anchor->getAttribute('rel') === 'noopener noreferrer', 'Editor must open a new tab without access to the opener.');
+		checkUserFeature(str_contains($anchor->textContent, 'View in Providence') && str_contains($anchor->textContent, '(opens in a new tab)'), 'Editor action must have a useful label and accessible new-tab hint.');
+	}
+}
+$request = new FeatureRequest(true, false, 0);
+checkUserFeature(str_contains(tadlProvidenceObjectLink($request, '123'), '/object_id/123"'), 'Native numeric-string object IDs must be supported.');
+foreach ([null, 0, -1, '', '42/other', '42" onclick="synthetic()', '42.5', [], true, 42.5] as $invalidID) {
+	checkUserFeature(tadlProvidenceObjectLink($request, $invalidID) === '', 'Invalid object IDs must not get Providence actions.');
+}
 
 foreach (['images', 'list'] as $viewName) {
 	$keys = [];

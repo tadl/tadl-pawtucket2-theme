@@ -1,6 +1,6 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-06. This document carries the recent coding context to another
+Updated: 2026-10-07. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
@@ -77,6 +77,18 @@ line numbers. Native application behavior can be inspected in the nearby
 `pawtucket2/app/` reference tree without editing it.
 
 ## Behavior and implementation contracts
+
+### Staff object editor shortcut
+
+`tadlProvidenceObjectLink()` in `helpers/user_features.php` renders **View in
+Providence** beneath the object title in the metadata column. It requires a
+logged-in Pawtucket session and native `ca_users::isStandardUser()` (full-access,
+`userclass = 0`); public, deleted and other account classes get no link markup.
+The displayed object's positive numeric ID is used in the fixed Providence
+`ObjectEditor/Edit/Screen49/object_id/ID` route on `collections.tadl.org`. The
+link opens a new tab with `noopener noreferrer` and an accessible new-tab hint.
+It requires no media and leaves Providence authentication/permissions in charge.
+Keep whole-page caching disabled for this session-dependent control.
 
 ### Profile saves
 
@@ -583,7 +595,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/thumbnail_detector_test.php` | Actual CLI/SQL with synthetic catalogues, global keyset scans, public/shared/nonprimary selection, bounded runs, durable migration/purge survival, locks and retries |
 | `tests/faq_setup_test.php` | Read-only setup plans, targeted native template registration, additive editor placements, private pre-change backup, no-op reruns, preserving unrelated configuration and transactional rollback |
 | `tests/profile_save_test.php` | Own-email/staff-public login behavior, collisions, separate user staging, request-close persistence, validation/setter/model failures, native password delegation, POST/session/CSRF boundaries, public-use groups and direct/AJAX profile form error escaping |
-| `tests/user_features_test.php` | Anonymous/authenticated navigation and result actions, native login POST/CSRF, registration policy, password-manager fields and cache separation |
+| `tests/user_features_test.php` | Anonymous/authenticated navigation and result actions, staff-only Providence shortcut in actual object detail HTML, valid object IDs/new-tab safety, native login POST/CSRF, registration policy, password-manager fields and cache separation |
 | `tests/home_faq_test.php` | Published/readable Site Pages, drafts, incomplete entries, locale, rank, escaped questions and purified answers; optional real HTMLPurifier |
 | `tests/finding_aid_test.php` | Selected collection export, descendants, access/ACL/bundle restrictions, complete unique inventories over native caps, field mappings, locations, escaped PDF text and safe failure; optional real Dompdf |
 | `tests/asset_versions_test.php` | Stable/changed CSS and JS URLs, preserved timestamps, native loader options, subdirectory/absolute theme URLs, escaping, inline-code preservation and path boundaries |

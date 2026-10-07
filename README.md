@@ -68,6 +68,10 @@ Existing accounts can use the bookmarked `/LoginReg/LoginForm` page. Signed-in
 users get **My account** navigation and **Add to lightbox** on object details.
 Result tiles and list rows omit those buttons for everyone. Anonymous visitors
 get no login links. Self-registration is disabled for the initial pilot.
+Signed-in staff (native full-access accounts) also get **View in Providence**
+beneath the object title; it opens that object in a new tab on the collection
+management site. Public-access accounts never receive this link. Providence
+retains its own login session and editor permissions.
 The homepage FAQ scaffold uses Providence Site Pages for content editing after a
 one-time registration. See [Accounts and FAQ setup](docs/USER_FEATURES.md) and
 [Repeatable FAQ activation](docs/FAQ_SETUP.md).

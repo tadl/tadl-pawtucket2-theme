@@ -22,3 +22,15 @@ function tadlAddToLightboxLink($request, $objectID) {
 	return '<a class="btn btn-default btn-sm tadl-add-lightbox" href="'.htmlspecialchars($url, ENT_QUOTES, 'UTF-8').'" onclick="'.htmlspecialchars($callback, ENT_QUOTES, 'UTF-8').'">'
 		.'<i class="fa fa-folder-plus" aria-hidden="true"></i> '.htmlspecialchars(_t('Add to lightbox'), ENT_QUOTES, 'UTF-8').'</a>';
 }
+
+/** Full-access accounts are staff; public accounts must not get editor links. */
+function tadlProvidenceObjectLink($request, $objectID) {
+	if (!$request->isLoggedIn() || !$request->user->isStandardUser()) { return ''; }
+	if (!is_int($objectID) && !is_string($objectID)) { return ''; }
+	$id = filter_var($objectID, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+	if ($id === false) { return ''; }
+	$url = 'https://collections.tadl.org/index.php/editor/objects/ObjectEditor/Edit/Screen49/object_id/'.$id;
+	return '<a class="btn btn-default btn-sm tadl-providence-object" href="'.htmlspecialchars($url, ENT_QUOTES, 'UTF-8').'" target="_blank" rel="noopener noreferrer">'
+		.'<i class="fa fa-external-link" aria-hidden="true"></i> '.htmlspecialchars(_t('View in Providence'), ENT_QUOTES, 'UTF-8')
+		.'<span class="sr-only"> '.htmlspecialchars(_t('(opens in a new tab)'), ENT_QUOTES, 'UTF-8').'</span></a>';
+}

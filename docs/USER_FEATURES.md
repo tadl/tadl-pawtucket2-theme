@@ -30,6 +30,17 @@ the applications have separate login sessions. Prefer public-access accounts
 for researchers and deliberate staff roles for editors. A Pawtucket login is
 not permission to edit FAQ content or the collection catalog.
 
+Object details show a small **View in Providence** button beneath the title only
+when the Pawtucket session is logged in and `request->user->isStandardUser()` is
+true (native `userclass = 0`, full-access). Public-access (`1`), deleted (`255`),
+other user classes and anonymous sessions receive neither the button nor its URL.
+The link uses the displayed object's numeric ID and opens
+`https://collections.tadl.org/index.php/editor/objects/ObjectEditor/Edit/Screen49/object_id/ID`
+in a new tab with `noopener noreferrer`. It works on objects without media too.
+This shortcut does not grant editor access or transfer the Pawtucket session;
+Providence still enforces its own authentication and permissions. Keep whole-page
+caching disabled so staff controls cannot be served to other visitors.
+
 ### Profile-save validation
 
 Keep profile GET links at `/LoginReg/profileForm`. Both the full-page and modal
