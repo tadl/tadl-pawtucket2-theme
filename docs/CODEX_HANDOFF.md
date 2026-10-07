@@ -65,6 +65,7 @@ before calling an issue deployed or still broken.
 | Galleries | `views/Gallery/index_html.php`, `set_info_html.php`, `detail_html.php`, `set_item_rep_html.php`, `set_item_info_html.php` |
 | Styling | `assets/pawtucket/css/theme.css`, with the existing `main.css` foundation |
 | Thumbnail focus | `helpers/thumbnail_focus.php`, `assets/pawtucket/js/thumbnail-focus.js`, shared result/collection views; `support/detect-thumbnail-faces.php`, `support/thumbnail-faces/`; `docs/THUMBNAIL_FOCUS.md` |
+| Object thumbnail fallback | `helpers/object_thumbnails.php`, Browse Tiles/List views and multisearch previews |
 | Shareable thumbnail tools | `support/package-thumbnail-faces.py`, `support/thumbnail-faces/share/`; allowlisted runtime export to a sibling `thumbnail-faces/` directory/ZIP, with independent setup/integration guides, snippets, license and tests |
 | Asset cache versions | `helpers/asset_versions.php`, shared header and standalone Lightbox presentation |
 | Collection finding aids | `controllers/CollectionFindingAidController.php`, `helpers/finding_aid.php`, `conf/finding_aid.conf`, PDF/binary detail views; `docs/FINDING_AIDS.md` |
@@ -271,7 +272,17 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
 
 ### Object media and gallery navigation
 
-- Browse/search use the primary representation for their thumbnail.
+- Browse/search object tiles, list rows and multisearch previews prefer the
+  primary representation. If its thumbnail is unavailable, `tadlObjectThumbnail()`
+  uses native `getRepresentations()` with the current request's access mask,
+  preserving ACL and bundle checks. It chooses a usable image derivative with
+  primary/rank/representation-ID precedence, skipping icons and queued media.
+  The normal primary path needs no additional model lookup. Neither catalogue
+  links nor access values are changed. This handles a private primary JPEG whose
+  public paired TIFF still has generated JPEG thumbnails.
+  Read-only native validation on 2026-10-07 selected the public TIFF derivative
+  for the affected ticket record. Installed theme source was not changed by that
+  validation; deployment remains separate.
 - Cover thumbnails now carry Providence `_CENTER` points into browser crop geometry.
   Staff selections take priority over optional offline YuNet face-box suggestions.
   No whole-image fallback or per-page inference is used; default cover remains when
@@ -538,7 +549,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The twenty-two committed tests are portable and use synthetic boundaries. They do not
+The twenty-three committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -567,6 +578,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | --- | --- |
 | `tests/collection_hierarchy_test.php` | Initial/recursive hierarchy rendering, natural name order, numeric labels, access/media-filtered siblings, stable ties and history/direct links |
 | `tests/collection_thumbnail_test.php` | Actual SQL and Tiles/List rendering, bounded media rows, stable selection, access/deletion, native collection primary precedence and direct/descendant fallbacks |
+| `tests/object_thumbnail_test.php` | Primary preference, native access/ACL/deletion delegation, deterministic fallback, usable derivatives and actual object Tiles/List/multisearch rendering |
 | `tests/thumbnail_focus_test.php` | Native image-tag preservation, manual focal priority, invalid/stale cache rejection, responsive cover geometry and multiple faces |
 | `tests/thumbnail_detector_test.php` | Actual CLI/SQL with synthetic catalogues, global keyset scans, public/shared/nonprimary selection, bounded runs, durable migration/purge survival, locks and retries |
 | `tests/faq_setup_test.php` | Read-only setup plans, targeted native template registration, additive editor placements, private pre-change backup, no-op reruns, preserving unrelated configuration and transactional rollback |

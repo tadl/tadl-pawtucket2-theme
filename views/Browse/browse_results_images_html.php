@@ -57,6 +57,7 @@
 	$vb_ajax			= (bool)$this->request->isAjax();
 	require_once(__DIR__.'/tadl_result_helpers.php');
 	require_once(__DIR__.'/../../helpers/thumbnail_focus.php');
+	require_once(__DIR__.'/../../helpers/object_thumbnails.php');
 	$vn_page_size = tadlBrowseResultPageSize('images');
 	
 
@@ -129,7 +130,9 @@
 					$vs_type_placeholder = "";
 					$vs_typecode = "";
 					if ($vs_table == 'ca_objects') {
-						if(!($vs_thumbnail = $qr_res->get('ca_object_representations.media.medium', array("checkAccess" => $va_access_values)))){
+						$vs_thumbnail = tadlObjectThumbnail($vn_id, 'medium', $va_access_values,
+							$qr_res->get('ca_object_representations.media.medium', array("checkAccess" => $va_access_values)));
+						if(!$vs_thumbnail){
 							$t_list_item->load($qr_res->get("type_id"));
 							$vs_typecode = $t_list_item->get("idno");
 							if($vs_type_placeholder = caGetPlaceholder($vs_typecode, "placeholder_media_icon")){

@@ -1,5 +1,6 @@
 <?php
 	require_once(__DIR__.'/../../helpers/thumbnail_focus.php');
+	require_once(__DIR__.'/../../helpers/object_thumbnails.php');
 	$qr_results = $this->getVar('result');
 	tadlFilterMediaResult($this->request, $qr_results);
 	if (!$qr_results || !($vn_result_count = (int)$qr_results->numHits())) { return; }
@@ -30,9 +31,11 @@
 		$t_object = new ca_objects();
 		$va_object_media = $t_object->getPrimaryMediaForIDs(array_column($va_preview_items, 'id'), array('medium'), array('checkAccess' => $va_access_values));
 		foreach ($va_preview_items as &$va_item) {
+			$vs_primary_tag = '';
 			if ($vs_image_url = $va_object_media[$va_item['id']]['urls']['medium'] ?? '') {
-			$va_item['image'] = tadlFocusThumbnail('<img src="'.htmlspecialchars($vs_image_url, ENT_QUOTES, 'UTF-8').'" alt="" loading="lazy">');
+				$vs_primary_tag = '<img src="'.htmlspecialchars($vs_image_url, ENT_QUOTES, 'UTF-8').'" alt="" loading="lazy">';
 			}
+			$va_item['image'] = tadlFocusThumbnail(tadlObjectThumbnail($va_item['id'], 'medium', $va_access_values, $vs_primary_tag));
 		}
 		unset($va_item);
 	} elseif ($vs_table === 'ca_collections') {

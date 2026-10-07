@@ -4,7 +4,7 @@ Standalone source repository for the `tadl` Pawtucket2 theme used for TADL local
 
 For Codex or a new workstation, start with [AGENTS.md](AGENTS.md) and the
 [current handoff](docs/CODEX_HANDOFF.md). The handoff explains the source map,
-recent changes, design decisions and all twenty-two standalone regression suites.
+recent changes, design decisions and all twenty-three standalone regression suites.
 It uses relative paths and does not require an application database for those tests.
 
 Deployment is a separate, explicitly authorized step. A source commit/push does
@@ -31,6 +31,12 @@ Collection browse eligibility fetches media descriptors only until each collecti
 qualifies; thumbnail queries select one primary image per card instead of rendering
 every attached object image. No additional service, database index or shared page
 cache is required.
+
+Object result tiles, list rows and multisearch previews prefer the primary
+representation. When it is unavailable (for example, a paired JPEG made private),
+they fall back to an accessible image derivative using the native representation
+model's access, ACL and bundle checks. This does not change catalogue primary links,
+access flags or files; TIFF representations use their generated JPEG thumbnails.
 
 Collection details offer **Download Finding Aid**, an initial collection PDF with
 metadata and a complete accessible-object inventory, including records without
