@@ -178,9 +178,17 @@ function tadlRelatedMediaCandidates($db, array $pending, array $access, array &$
 	return $eligible;
 }
 
-/** People qualify through readable related objects, rather than their own portraits. */
-function tadlPeopleMediaEligibleIDs($request, array $candidateIDs) {
+/** Authorities qualify through readable related objects, not their own attached media. */
+function tadlAuthorityMediaEligibleIDs($request, $table, array $candidateIDs) {
 	static $cache = [];
+	// Only these native tables/keys may become SQL identifiers.
+	$definition = [
+		'ca_entities' => ['entity_id', 'ca_objects_x_entities'],
+		'ca_places' => ['place_id', 'ca_objects_x_places'],
+		'ca_occurrences' => ['occurrence_id', 'ca_objects_x_occurrences']
+	][$table] ?? null;
+	if (!$definition) { return []; }
+	[$primaryKey, $relationshipTable] = $definition;
 	if (caGetBundleAccessLevel('ca_objects', 'ca_object_representations') < __CA_BUNDLE_ACCESS_READONLY__
 		|| caGetBundleAccessLevel('ca_object_representations', 'media') < __CA_BUNDLE_ACCESS_READONLY__) { return []; }
 	$ids = [];
@@ -194,32 +202,32 @@ function tadlPeopleMediaEligibleIDs($request, array $candidateIDs) {
 	if (!$ids || !$access) { return []; }
 	$access = array_values($access);
 	sort($access, SORT_NUMERIC);
-	$key = (int)$request->getUserID().':'.join(',', $access);
+	$key = $table.':'.(int)$request->getUserID().':'.join(',', $access);
 	$cache[$key] = $cache[$key] ?? [];
 	$uncached = array_filter($ids, static function ($id) use ($cache, $key) { return !array_key_exists($id, $cache[$key]); });
-	$db = Datamodel::getInstanceByTableName('ca_entities', true)->getDb();
+	$db = Datamodel::getInstanceByTableName($table, true)->getDb();
 	$hasMedia = [];
 	foreach (array_chunk(array_values($uncached), 500) as $chunk) {
-		$result = $db->query("SELECT DISTINCT e.entity_id candidate_id, o.object_id, r.representation_id
-			FROM ca_entities e
-			INNER JOIN ca_objects_x_entities oe ON oe.entity_id = e.entity_id
-			INNER JOIN ca_objects o ON o.object_id = oe.object_id
+		$result = $db->query("SELECT DISTINCT a.{$primaryKey} candidate_id, o.object_id, r.representation_id
+			FROM {$table} a
+			INNER JOIN {$relationshipTable} oa ON oa.{$primaryKey} = a.{$primaryKey}
+			INNER JOIN ca_objects o ON o.object_id = oa.object_id
 			INNER JOIN ca_objects_x_object_representations oxr ON oxr.object_id = o.object_id
 			INNER JOIN ca_object_representations r ON r.representation_id = oxr.representation_id
-			WHERE e.entity_id IN (?) AND e.deleted = 0 AND e.access IN (?)
+			WHERE a.{$primaryKey} IN (?) AND a.deleted = 0 AND a.access IN (?)
 				AND o.deleted = 0 AND o.access IN (?) AND r.deleted = 0 AND r.access IN (?)
 				AND r.media IS NOT NULL AND r.media <> ''", [$chunk, $access, $access, $access]);
-		if (!$result) { throw new RuntimeException('Unable to check people media availability.'); }
+		if (!$result) { throw new RuntimeException('Unable to check authority media availability.'); }
 		$rows = [];
 		while ($result->nextRow()) {
 			$rows[] = ['candidate_id' => (int)$result->get('candidate_id'), 'object_id' => (int)$result->get('object_id'), 'representation_id' => (int)$result->get('representation_id')];
 		}
-		// The browse already checks person ACLs. Related objects and representations
-		// also need native Pawtucket ACL filtering before they can qualify a person.
-		foreach (['ca_objects' => 'object_id', 'ca_object_representations' => 'representation_id'] as $table => $field) {
-			if (!$rows || !caACLIsEnabled($table, ['forPawtucket' => true])) { continue; }
-			$browse = caGetBrowseInstance($table);
-			$model = Datamodel::getInstanceByTableName($table, true);
+		// The browse already checks authority ACLs. Related objects and representations
+		// also need native Pawtucket ACL filtering before they can qualify a record.
+		foreach (['ca_objects' => 'object_id', 'ca_object_representations' => 'representation_id'] as $relatedTable => $field) {
+			if (!$rows || !caACLIsEnabled($relatedTable, ['forPawtucket' => true])) { continue; }
+			$browse = caGetBrowseInstance($relatedTable);
+			$model = Datamodel::getInstanceByTableName($relatedTable, true);
 			if (!$browse || !$model) { throw new RuntimeException('Unable to check related media permissions.'); }
 			$readable = array_fill_keys($browse->filterHitsByACL(array_values(array_unique(array_column($rows, $field))), $model->tableNum(), $request->getUserID()), true);
 			$rows = array_filter($rows, static function ($row) use ($field, $readable) { return isset($readable[$row[$field]]); });
@@ -242,8 +250,8 @@ function tadlFilterMediaResult($request, $result) {
 		return $result;
 	}
 	$table = $result->tableName();
-	if ($table === 'ca_entities' && tadlIsPeopleBrowse($request)) {
-		$ids = tadlPeopleMediaEligibleIDs($request, $result->getPrimaryKeyValues());
+	if ($table === tadlMediaAuthorityBrowseTable($request)) {
+		$ids = tadlAuthorityMediaEligibleIDs($request, $table, $result->getPrimaryKeyValues());
 	} elseif (in_array($table, ['ca_objects', 'ca_collections'], true)) {
 		$ids = tadlMediaEligibleIDs($table, $result->getPrimaryKeyValues(), (array)caGetUserAccessValues($request));
 	} else {
@@ -268,7 +276,7 @@ function tadlMediaFacetItems($request, $items, $info) {
 		$browseInfo = caGetInfoForBrowseType($browseType);
 		$subjectTable = $browseInfo['table'] ?? null;
 	}
-	if ($subjectTable === 'ca_entities' && tadlIsPeopleBrowse($request)) {
+	if ($subjectTable && $subjectTable === tadlMediaAuthorityBrowseTable($request)) {
 		foreach ($items as &$item) { if (is_array($item)) { unset($item['content_count']); } }
 		unset($item);
 		return $items;

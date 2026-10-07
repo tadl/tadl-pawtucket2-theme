@@ -183,12 +183,13 @@ class TestModel {
     function __construct(private string $table) {}
     function getDb() { return new Db(); }
     function tableName() { return $this->table; }
-    function tableNum() { return ['ca_objects' => 57, 'ca_collections' => 67, 'ca_entities' => 20, 'ca_object_representations' => 56][$this->table]; }
-    function primaryKey() { return ['ca_objects' => 'object_id', 'ca_collections' => 'collection_id', 'ca_entities' => 'entity_id'][$this->table]; }
+    // Synthetic table numbers only identify models within this test adapter.
+    function tableNum() { return ['ca_objects' => 57, 'ca_collections' => 67, 'ca_entities' => 20, 'ca_places' => 72, 'ca_occurrences' => 68, 'ca_object_representations' => 56][$this->table]; }
+    function primaryKey() { return ['ca_objects' => 'object_id', 'ca_collections' => 'collection_id', 'ca_entities' => 'entity_id', 'ca_places' => 'place_id', 'ca_occurrences' => 'occurrence_id'][$this->table]; }
 }
 class Datamodel {
     static function getInstanceByTableName($table, $cached = null) { return new TestModel($table); }
-    static function getInstanceByTableNum($number, $cached = null) { return new TestModel([57 => 'ca_objects', 67 => 'ca_collections', 20 => 'ca_entities'][$number]); }
+    static function getInstanceByTableNum($number, $cached = null) { return new TestModel([57 => 'ca_objects', 67 => 'ca_collections', 20 => 'ca_entities', 72 => 'ca_places', 68 => 'ca_occurrences'][$number]); }
 }
 // SearchResult adapter boundary; production uses the native BrowseResult engine.
 class WLPlugSearchEngineBrowseEngine {
@@ -232,6 +233,10 @@ Db::$pdo->exec('CREATE TABLE ca_collections_x_object_representations (relation_i
 Db::$pdo->exec('CREATE TABLE ca_entities (entity_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_objects_x_entities (relation_id INTEGER PRIMARY KEY, object_id INTEGER, entity_id INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_entities_x_object_representations (relation_id INTEGER PRIMARY KEY, entity_id INTEGER, representation_id INTEGER)');
+Db::$pdo->exec('CREATE TABLE ca_places (place_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER)');
+Db::$pdo->exec('CREATE TABLE ca_objects_x_places (relation_id INTEGER PRIMARY KEY, object_id INTEGER, place_id INTEGER)');
+Db::$pdo->exec('CREATE TABLE ca_occurrences (occurrence_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER)');
+Db::$pdo->exec('CREATE TABLE ca_objects_x_occurrences (relation_id INTEGER PRIMARY KEY, object_id INTEGER, occurrence_id INTEGER)');
 function testInsert($table, $row) {
     $columns = array_keys($row);
     $statement = Db::$pdo->prepare('INSERT INTO '.$table.' ('.implode(',', $columns).') VALUES ('.implode(',', array_fill(0, count($row), '?')).')');
@@ -282,6 +287,19 @@ testPerson(20015, 1, 1); testPersonObject(20015, 1);
 testPerson(20016); testPersonObject(20016, 2); testPersonObject(20016, 1); testPersonObject(20016, 1);
 testPerson(20017); // A directly attached portrait alone must not qualify a person.
 testInsert('ca_entities_x_object_representations', ['entity_id' => 20017, 'representation_id' => 1]);
+$authorityBrowses = [
+    'people' => ['ca_entities', 'entity_id', 'person', 'people'],
+    'organizations' => ['ca_entities', 'entity_id', 'organization', 'organizations'],
+    'places' => ['ca_places', 'place_id', 'place', 'places'],
+    'occurrences' => ['ca_occurrences', 'occurrence_id', 'event', 'events']
+];
+foreach (['ca_places' => 'place_id', 'ca_occurrences' => 'occurrence_id'] as $table => $primaryKey) {
+    foreach (range(1, 17) as $id) {
+        testInsert($table, [$primaryKey => 20000 + $id, 'access' => $id === 14 ? 0 : 1, 'deleted' => $id === 15 ? 1 : 0]);
+        $objects = $id <= 13 ? [$id] : ($id === 16 ? [2, 1, 1] : ($id === 17 ? [] : [1]));
+        foreach ($objects as $objectID) { testInsert('ca_objects_x_'.substr($table, 3), [$primaryKey => 20000 + $id, 'object_id' => $objectID]); }
+    }
+}
 
 // Root 100 has image/media objects only in grandchildren; 106 is an empty sibling.
 testCollection(100, 100, 1, 20);
@@ -407,29 +425,29 @@ testAssert($emptyResult->numHits() === 0 && $emptyResult->getPrimaryKeyValues() 
 $peopleRequest = testMediaRequest('only', [], 'Browse', 'people');
 $peopleCandidates = range(20001, 20017);
 $peopleExpected = [20001, 20008, 20009, 20010, 20011, 20013, 20016];
-testAssert(tadlPeopleMediaEligibleIDs($peopleRequest, $peopleCandidates) === $peopleExpected, 'People retained inaccessible/deleted objects, unavailable media, or a portrait without related objects.');
-testAssert(tadlPeopleMediaEligibleIDs($peopleRequest, [20016, 20002, 20001, 20016, '20008', null, '20001 OR 1=1', -1]) === [20016, 20001, 20008], 'People eligibility must validate IDs and preserve native order without duplicates.');
+testAssert(tadlAuthorityMediaEligibleIDs($peopleRequest, 'ca_entities', $peopleCandidates) === $peopleExpected, 'People retained inaccessible/deleted objects, unavailable media, or a portrait without related objects.');
+testAssert(tadlAuthorityMediaEligibleIDs($peopleRequest, 'ca_entities', [20016, 20002, 20001, 20016, '20008', null, '20001 OR 1=1', -1]) === [20016, 20001, 20008], 'People eligibility must validate IDs and preserve native order without duplicates.');
 $queryCount = count(Db::$queries);
-testAssert(tadlPeopleMediaEligibleIDs($peopleRequest, $peopleCandidates) === $peopleExpected && count(Db::$queries) === $queryCount, 'People eligibility did not reuse its request cache.');
+testAssert(tadlAuthorityMediaEligibleIDs($peopleRequest, 'ca_entities', $peopleCandidates) === $peopleExpected && count(Db::$queries) === $queryCount, 'People eligibility did not reuse its request cache.');
 $privateAccessRequest = testMediaRequest('only', [], 'Browse', 'people');
 $privateAccessRequest->access = [0, 1];
-testAssert(tadlPeopleMediaEligibleIDs($privateAccessRequest, [20002, 20003, 20014, 20015]) === [20002, 20003, 20014], 'People cache mixed access masks or admitted a deleted person.');
+testAssert(tadlAuthorityMediaEligibleIDs($privateAccessRequest, 'ca_entities', [20002, 20003, 20014, 20015]) === [20002, 20003, 20014], 'People cache mixed access masks or admitted a deleted person.');
 $deniedAccessRequest = testMediaRequest('only', [], 'Browse', 'people');
 $deniedAccessRequest->access = [];
-testAssert(tadlPeopleMediaEligibleIDs($deniedAccessRequest, $peopleCandidates) === [], 'People eligibility with an empty access mask must deny.');
+testAssert(tadlAuthorityMediaEligibleIDs($deniedAccessRequest, 'ca_entities', $peopleCandidates) === [], 'People eligibility with an empty access mask must deny.');
 $GLOBALS['mediaACL'] = ['ca_objects' => true, 'ca_object_representations' => true];
 $GLOBALS['mediaACLBlocked'][11] = ['ca_objects' => [1], 'ca_object_representations' => [18]];
 $aclPeopleRequest = testMediaRequest('only', [], 'Browse', 'people');
 $aclPeopleRequest->userID = 11;
 $beforeMediaRows = Db::$mediaRows;
-testAssert(tadlPeopleMediaEligibleIDs($aclPeopleRequest, $peopleCandidates) === [20009, 20010, 20011, 20013], 'People qualified through ACL-denied objects or representations.');
+testAssert(tadlAuthorityMediaEligibleIDs($aclPeopleRequest, 'ca_entities', $peopleCandidates) === [20009, 20010, 20011, 20013], 'People qualified through ACL-denied objects or representations.');
 testAssert(array_column($GLOBALS['mediaACLCalls'], 2) === [11, 11], 'People ACL filtering did not use the current user in one batch per table.');
 testAssert(Db::$mediaRows - $beforeMediaRows <= 7, 'People ACL-denied media was decoded or shared descriptors were repeatedly fetched.');
 $GLOBALS['mediaACL'] = [];
 foreach (['ca_objects:ca_object_representations', 'ca_object_representations:media'] as $bundle) {
     $GLOBALS['mediaBundleAccess'][$bundle] = 0;
     $queryCount = count(Db::$queries);
-    testAssert(tadlPeopleMediaEligibleIDs($peopleRequest, $peopleCandidates) === [] && count(Db::$queries) === $queryCount, 'Denied media bundle must suppress people without reading media, including cached eligibility.');
+    testAssert(tadlAuthorityMediaEligibleIDs($peopleRequest, 'ca_entities', $peopleCandidates) === [] && count(Db::$queries) === $queryCount, 'Denied media bundle must suppress people without reading media, including cached eligibility.');
     $GLOBALS['mediaBundleAccess'] = [];
 }
 $peopleResult = new SearchResult('ca_entities', array_reverse($peopleCandidates));
@@ -439,7 +457,7 @@ testAssert($peopleResult->seek(3) && $peopleResult->nextHit() && $peopleResult->
 $peopleContextView = new TestView($peopleRequest, ['start' => 0]);
 tadlMediaResultContext($peopleContextView, $peopleResult, 'browse');
 testAssert(ResultContext::$saved['ca_entities:browse:']['ids'] === array_reverse($peopleExpected) && ResultContext::$saved['ca_entities:browse:']['count'] === 7, 'People detail navigation retained excluded people.');
-foreach ([['Browse', 'people', 'all'], ['Browse', 'organizations', 'only'], ['Search', 'people', 'only'], ['MultiSearch', 'Index', 'only']] as [$controller, $action, $mode]) {
+foreach ([['Browse', 'people', 'all'], ['Browse', 'Index', 'only'], ['Search', 'people', 'only'], ['MultiSearch', 'Index', 'only']] as [$controller, $action, $mode]) {
     $result = new SearchResult('ca_entities', $peopleCandidates);
     $queryCount = count(Db::$queries);
     tadlFilterMediaResult(testMediaRequest($mode, [], $controller, $action), $result);
@@ -449,44 +467,116 @@ $ajaxPeopleResult = new SearchResult('ca_entities', $peopleCandidates);
 tadlFilterMediaResult(testMediaRequest('only', ['browseType' => 'people'], 'Browse', 'getFacetHierarchyLevel'), $ajaxPeopleResult);
 testAssert($ajaxPeopleResult->getPrimaryKeyValues() === $peopleExpected, 'People AJAX route lost its browse type.');
 
-// Large people lists share descriptors and filter before actual Tiles/List paging.
+// All authority routes qualify through the correct related-object table.
+foreach ($authorityBrowses as $route => [$table, $primaryKey, $singular, $plural]) {
+    $request = testMediaRequest('only', [], 'Browse', $route);
+    testAssert(tadlMediaAuthorityBrowseTable($request) === $table, $route.': authority browse resolves to the wrong table.');
+    testAssert(tadlAuthorityMediaEligibleIDs($request, $table, $peopleCandidates) === $peopleExpected, $route.': related-object access, deletion or usable-media rules differ from People.');
+    $privateRequest = testMediaRequest('only', [], 'Browse', $route);
+    $privateRequest->access = [0, 1];
+    testAssert(tadlAuthorityMediaEligibleIDs($privateRequest, $table, [20002, 20003, 20014, 20015]) === [20002, 20003, 20014], $route.': access masks or deleted authorities are mishandled.');
+    $GLOBALS['mediaACL'] = ['ca_objects' => true, 'ca_object_representations' => true];
+    $aclRequest = testMediaRequest('only', [], 'Browse', $route);
+    $aclRequest->userID = 11;
+    testAssert(tadlAuthorityMediaEligibleIDs($aclRequest, $table, $peopleCandidates) === [20009, 20010, 20011, 20013], $route.': authority qualified through ACL-denied media.');
+    $GLOBALS['mediaACL'] = [];
+    foreach (['ca_objects:ca_object_representations', 'ca_object_representations:media'] as $bundle) {
+        $GLOBALS['mediaBundleAccess'][$bundle] = 0;
+        $queryCount = count(Db::$queries);
+        testAssert(tadlAuthorityMediaEligibleIDs($request, $table, $peopleCandidates) === [] && count(Db::$queries) === $queryCount, $route.': denied media bundle must suppress cached eligibility without queries.');
+        $GLOBALS['mediaBundleAccess'] = [];
+    }
+    $result = new SearchResult($table, array_reverse($peopleCandidates));
+    tadlFilterMediaResult($request, $result);
+    testAssert($result->getPrimaryKeyValues() === array_reverse($peopleExpected), $route.': filter changed the native sort order.');
+    $ajaxResult = new SearchResult($table, $peopleCandidates);
+    tadlFilterMediaResult(testMediaRequest('only', ['browseType' => $route], 'Browse', 'getFacetHierarchyLevel'), $ajaxResult);
+    testAssert($ajaxResult->getPrimaryKeyValues() === $peopleExpected, $route.': AJAX browse type was lost.');
+    foreach (['Browse' => 'all', 'Search' => 'only', 'MultiSearch' => 'only'] as $controller => $mode) {
+        $result = new SearchResult($table, $peopleCandidates);
+        $queryCount = count(Db::$queries);
+        $unfilteredRequest = testMediaRequest($mode, [], $controller, $route);
+        tadlFilterMediaResult($unfilteredRequest, $result);
+        testAssert($result->getPrimaryKeyValues() === $peopleCandidates && count(Db::$queries) === $queryCount, $route.': authority policy changed All items, Search or MultiSearch.');
+        $facet = tadlMediaFacetItems($unfilteredRequest, [['id' => 1, 'content_count' => 100]], ['tadl_subject_table' => $table, 'type' => 'fieldList']);
+        testAssert(($facet[0]['content_count'] ?? null) === 100, $route.': unrelated facet count was removed.');
+    }
+    $facet = tadlMediaFacetItems($request, [['id' => 1, 'label' => 'Synthetic facet', 'content_count' => 100]], ['tadl_subject_table' => $table, 'type' => 'fieldList']);
+    testAssert(count($facet) === 1 && !isset($facet[0]['content_count']), $route.': facet displays inaccurate unfiltered counts.');
+    $emptyResult = new SearchResult($table, [20002, 20003, 20004, 20005, 20006, 20007, 20012, 20014, 20015, 20017]);
+    tadlFilterMediaResult($request, $emptyResult);
+    testAssert($emptyResult->numHits() === 0, $route.': all-excluded result did not become empty.');
+}
+// Same numeric IDs can have different eligibility in each authority table.
+foreach (['ca_entities' => ['entity_id', 1], 'ca_places' => ['place_id', 12], 'ca_occurrences' => ['occurrence_id', 2]] as $table => [$primaryKey, $objectID]) {
+    testInsert($table, [$primaryKey => 80000, 'access' => 1, 'deleted' => 0]);
+    testInsert('ca_objects_x_'.substr($table, 3), [$primaryKey => 80000, 'object_id' => $objectID]);
+    testAssert(tadlAuthorityMediaEligibleIDs($peopleRequest, $table, [80000]) === ($table === 'ca_entities' ? [80000] : []), 'Authority eligibility cache mixed tables with the same ID.');
+}
+$queryCount = count(Db::$queries);
+testAssert(tadlAuthorityMediaEligibleIDs($peopleRequest, 'ca_places; invalid SQL', [20001]) === [] && count(Db::$queries) === $queryCount, 'Unsupported SQL identifiers must be rejected before querying.');
+$mismatchedResult = new SearchResult('ca_places', $peopleCandidates);
+tadlFilterMediaResult($peopleRequest, $mismatchedResult);
+testAssert($mismatchedResult->getPrimaryKeyValues() === $peopleCandidates, 'Browse request filtered an unrelated authority table.');
+
+// Large authority lists share descriptors and filter before actual Tiles/List paging.
 foreach (range(30000, 30600) as $id) { testPerson($id); testPersonObject($id, $id % 2 ? 12 : 1); }
 $largePeopleExpected = range(30000, 30600, 2);
 $queryCount = count(Db::$queries); $beforeMediaRows = Db::$mediaRows;
-testAssert(tadlPeopleMediaEligibleIDs($peopleRequest, range(30000, 30600)) === $largePeopleExpected, 'Chunked people eligibility dropped results.');
+testAssert(tadlAuthorityMediaEligibleIDs($peopleRequest, 'ca_entities', range(30000, 30600)) === $largePeopleExpected, 'Chunked people eligibility dropped results.');
 testAssert(count(Db::$queries) - $queryCount === 3 && Db::$mediaRows - $beforeMediaRows === 1, 'People eligibility must batch relationships and decode shared media once, rather than query per person.');
-foreach (['images' => 9, 'list' => 24] as $displayView => $pageSize) {
-    foreach (['only' => 301, 'all' => 601] as $mode => $count) {
-        $result = new SearchResult('ca_entities', range(30000, 30600));
-        $view = new TestView(testMediaRequest($mode, ['view' => $displayView, 's' => $pageSize], 'Browse', 'people'), [
-            'result' => $result, 'criteria' => [], 'facets' => [], 'table' => 'ca_entities', 'primaryKey' => 'entity_id',
-            't_instance' => new TestModel('ca_entities'), 'browse_type' => 'people',
-            'browseInfo' => ['table' => 'ca_entities', 'labelSingular' => 'person', 'labelPlural' => 'people'],
-            'config' => new TestConfig(['cache_timeout' => 0]), 'access_values' => [1], 'options' => [],
-            'view' => $displayView, 'views' => ['images' => [], 'list' => []], 'key' => 'synthetic-people-key',
-            'sort' => 'Name', 'sort_direction' => 'asc', 'sortBy' => ['Name' => 'ca_entity_labels.surname'],
-            'start' => $pageSize, 'hits_per_block' => $pageSize, 'export_formats' => []
-        ]);
-        $html = $view->render('Browse/browse_results_html.php');
-        testAssert(str_contains($html, $count.' people') && str_contains($html, 'Page 2 of '.ceil($count / $pageSize)), $mode.': actual people heading/pager retained pre-filter counts.');
-        $document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
-        $xpath = new DOMXPath($document);
-        $cards = $xpath->query('//div[@id and starts-with(@id,"row")]');
-        $firstID = 30000 + $pageSize * ($mode === 'only' ? 2 : 1);
-        testAssert($cards->length === $pageSize && $cards->item(0)->getAttribute('id') === 'row'.$firstID, $mode.': actual people cards use the wrong page offset or size.');
-        testAssert(ResultContext::$saved['ca_entities:browse:']['count'] === $count && in_array($firstID, ResultContext::$saved['ca_entities:browse:']['ids'], true), $mode.': actual people detail context has the wrong count or page IDs.');
-        testAssert(!str_contains($html, 'media=') && !str_contains($html, '/media/'), 'People pager leaked the preference into URLs.');
+foreach (['ca_places' => 'place_id', 'ca_occurrences' => 'occurrence_id'] as $table => $primaryKey) {
+    foreach (range(30000, 30600) as $id) {
+        testInsert($table, [$primaryKey => $id, 'access' => 1, 'deleted' => 0]);
+        $hasMedia = $table === 'ca_places' ? $id % 2 !== 0 : $id % 3 === 0;
+        testInsert('ca_objects_x_'.substr($table, 3), [$primaryKey => $id, 'object_id' => $hasMedia ? 1 : 12]);
     }
 }
-$peopleFacets = tadlMediaFacetItems($peopleRequest, [['id' => 1, 'label' => 'Synthetic facet', 'content_count' => 100]], ['tadl_subject_table' => 'ca_entities', 'type' => 'fieldList']);
-testAssert(count($peopleFacets) === 1 && !isset($peopleFacets[0]['content_count']), 'People facets display inaccurate unfiltered counts.');
+$largeAuthorityExpected = ['ca_entities' => $largePeopleExpected, 'ca_places' => range(30001, 30599, 2), 'ca_occurrences' => range(30000, 30600, 3)];
+// Native ACL filtering remains batched even across multiple authority SQL chunks.
+$GLOBALS['mediaACL'] = ['ca_objects' => true, 'ca_object_representations' => true];
+$aclPlacesRequest = testMediaRequest('only', [], 'Browse', 'places');
+$aclPlacesRequest->userID = 12;
+$beforeACLCalls = count($GLOBALS['mediaACLCalls']);
+$queryCount = count(Db::$queries); $beforeMediaRows = Db::$mediaRows;
+testAssert(tadlAuthorityMediaEligibleIDs($aclPlacesRequest, 'ca_places', range(30000, 30600)) === $largeAuthorityExpected['ca_places'], 'Chunked Places eligibility with ACLs lost IDs or changed SQL tables.');
+testAssert(count($GLOBALS['mediaACLCalls']) - $beforeACLCalls === 4 && count(Db::$queries) - $queryCount === 3 && Db::$mediaRows - $beforeMediaRows === 1, 'Places must batch ACL checks and reuse shared media across chunks.');
+$GLOBALS['mediaACL'] = [];
+foreach ($authorityBrowses as $route => [$table, $primaryKey, $singular, $plural]) {
+    foreach (['images' => 9, 'list' => 24] as $displayView => $pageSize) {
+        foreach (['only', 'all'] as $mode) {
+            $expected = $mode === 'only' ? $largeAuthorityExpected[$table] : range(30000, 30600);
+            $count = count($expected);
+            $result = new SearchResult($table, range(30000, 30600));
+            $view = new TestView(testMediaRequest($mode, ['view' => $displayView, 's' => $pageSize], 'Browse', $route), [
+                'result' => $result, 'criteria' => [], 'facets' => [], 'table' => $table, 'primaryKey' => $primaryKey,
+                't_instance' => new TestModel($table), 'browse_type' => $route,
+                'browseInfo' => ['table' => $table, 'labelSingular' => $singular, 'labelPlural' => $plural],
+                'config' => new TestConfig(['cache_timeout' => 0]), 'access_values' => [1], 'options' => [],
+                'view' => $displayView, 'views' => ['images' => [], 'list' => []], 'key' => 'synthetic-authority-key',
+                'sort' => 'Name', 'sort_direction' => 'asc', 'sortBy' => ['Name' => $table.'.preferred_labels'],
+                'start' => $pageSize, 'hits_per_block' => $pageSize, 'export_formats' => []
+            ]);
+            $html = $view->render('Browse/browse_results_html.php');
+            testAssert(str_contains($html, $count.' '.$plural) && str_contains($html, 'Page 2 of '.ceil($count / $pageSize)), $route.' '.$mode.': actual heading/pager retained pre-filter counts.');
+            $document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+            $xpath = new DOMXPath($document);
+            $cards = $xpath->query('//div[@id and starts-with(@id,"row")]');
+            $firstID = $expected[$pageSize];
+            testAssert($cards->length === $pageSize && $cards->item(0)->getAttribute('id') === 'row'.$firstID, $route.' '.$mode.': actual cards use the wrong page offset or size.');
+            testAssert(ResultContext::$saved[$table.':browse:']['count'] === $count && ResultContext::$saved[$table.':browse:']['ids'] === $expected, $route.' '.$mode.': actual detail context has the wrong count or IDs.');
+            testAssert($xpath->query('//div[@id="row'.$firstID.'"]//a[starts-with(@href,"/Detail/'.substr($table, 3).'/'.$firstID.'")]')->length > 0, $route.': cards link to the wrong detail table.');
+            testAssert(!str_contains($html, 'media=') && !str_contains($html, '/media/'), $route.': pager leaked the preference into URLs.');
+        }
+    }
+}
 testPerson(70000); testObject(70000); testPersonObject(70000, 70000);
 testRepresentation(70000, 1, 0, 'stub'); testRelation(70000, 70000);
 testRepresentation(70001, 1, 0, 'pdf'); testRelation(70000, 70001, 0);
 $beforeMediaRows = Db::$mediaRows;
-testAssert(tadlPeopleMediaEligibleIDs($peopleRequest, [70000]) === [70000] && Db::$mediaRows - $beforeMediaRows === 2, 'People must try a usable secondary PDF after an invalid primary descriptor.');
+testAssert(tadlAuthorityMediaEligibleIDs($peopleRequest, 'ca_entities', [70000]) === [70000] && Db::$mediaRows - $beforeMediaRows === 2, 'People must try a usable secondary PDF after an invalid primary descriptor.');
 testPerson(70002); testPersonObject(70002, 6); testPersonObject(70002, 7);
-testAssert(tadlPeopleMediaEligibleIDs($peopleRequest, [70002]) === [], 'All-invalid related descriptors must terminate without qualifying a person.');
+testAssert(tadlAuthorityMediaEligibleIDs($peopleRequest, 'ca_entities', [70002]) === [], 'All-invalid related descriptors must terminate without qualifying a person.');
 
 // Self matching is essential while new collection bounds have not yet been built.
 testCollection(500, 0, 0, 0); testCollectionObject(500, 1);

@@ -11,10 +11,14 @@ function tadlMediaPreference($request) {
 	return Session::getVar('tadlMediaPreference') === 'all' ? 'all' : 'only';
 }
 
-/** Limit related-object eligibility to the requested People browse, including AJAX. */
-function tadlIsPeopleBrowse($request) {
-	return $request->getController() === 'Browse'
-		&& ($request->getParameter('browseType', pString) ?: $request->getAction()) === 'people';
+/** Match the supported authority browse routes, including their AJAX requests. */
+function tadlMediaAuthorityBrowseTable($request) {
+	if ($request->getController() !== 'Browse') { return null; }
+	$browseType = $request->getParameter('browseType', pString) ?: $request->getAction();
+	return [
+		'people' => 'ca_entities', 'organizations' => 'ca_entities',
+		'places' => 'ca_places', 'occurrences' => 'ca_occurrences'
+	][$browseType] ?? null;
 }
 
 /** The preference is not access control; only the two display modes are accepted. */
@@ -53,7 +57,7 @@ function tadlMediaPreferenceUrl($request) {
 /** Save the displayed (filtered) IDs for detail-page Previous/Next navigation. */
 function tadlMediaResultContext($view, $result, $findType, $block = null) {
 	if (!$result || (!in_array($result->tableName(), array('ca_objects', 'ca_collections'), true)
-		&& !($result->tableName() === 'ca_entities' && tadlIsPeopleBrowse($view->request)))) { return; }
+		&& $result->tableName() !== tadlMediaAuthorityBrowseTable($view->request))) { return; }
 	$context = new ResultContext($view->request, $result->tableName(), $findType, $block);
 	$limit = (int)$view->request->config->get('maximum_find_result_list_values');
 	if ($limit < 10) { $limit = 1000; }
