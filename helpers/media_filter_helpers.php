@@ -140,12 +140,18 @@ function tadlRepresentationHasUsableMedia($result, &$mediaURL) {
  * stop as soon as it qualifies. Shared representations are decoded only once.
  */
 function tadlCollectionMediaCandidates($db, $relationships, array $access, array &$hasMedia) {
-	$pending = []; $positions = []; $eligible = []; $mediaURL = null;
+	$pending = [];
 	while ($relationships->nextRow()) {
 		$id = (int)$relationships->get('candidate_id');
 		$pending[$id][] = (int)$relationships->get('representation_id');
-		$positions[$id] = 0;
 	}
+	return tadlRelatedMediaCandidates($db, $pending, $access, $hasMedia);
+}
+
+/** Decode one untested representation per unresolved record, shared across candidates. */
+function tadlRelatedMediaCandidates($db, array $pending, array $access, array &$hasMedia) {
+	$positions = array_fill_keys(array_keys($pending), 0);
+	$eligible = []; $mediaURL = null;
 	while ($pending) {
 		$fetch = [];
 		foreach ($pending as $id => $representationIDs) {
@@ -163,13 +169,68 @@ function tadlCollectionMediaCandidates($db, $relationships, array $access, array
 		if (!$fetch) { break; }
 		$result = $db->query("SELECT representation_id, media FROM ca_object_representations
 			WHERE representation_id IN (?) AND deleted = 0 AND access IN (?)", [array_values($fetch), $access]);
-		if (!$result) { throw new RuntimeException('Unable to check collection media availability.'); }
+		if (!$result) { throw new RuntimeException('Unable to check related media availability.'); }
 		foreach ($fetch as $representationID) { $hasMedia[$representationID] = false; }
 		while ($result->nextRow()) {
 			$hasMedia[(int)$result->get('representation_id')] = tadlRepresentationHasUsableMedia($result, $mediaURL);
 		}
 	}
 	return $eligible;
+}
+
+/** People qualify through readable related objects, rather than their own portraits. */
+function tadlPeopleMediaEligibleIDs($request, array $candidateIDs) {
+	static $cache = [];
+	if (caGetBundleAccessLevel('ca_objects', 'ca_object_representations') < __CA_BUNDLE_ACCESS_READONLY__
+		|| caGetBundleAccessLevel('ca_object_representations', 'media') < __CA_BUNDLE_ACCESS_READONLY__) { return []; }
+	$ids = [];
+	foreach ($candidateIDs as $id) {
+		if ((is_int($id) || (is_string($id) && ctype_digit($id))) && (int)$id > 0) { $ids[(int)$id] = (int)$id; }
+	}
+	$access = [];
+	foreach ((array)caGetUserAccessValues($request) as $value) {
+		if ((is_int($value) || (is_string($value) && ctype_digit($value))) && (int)$value >= 0) { $access[(int)$value] = (int)$value; }
+	}
+	if (!$ids || !$access) { return []; }
+	$access = array_values($access);
+	sort($access, SORT_NUMERIC);
+	$key = (int)$request->getUserID().':'.join(',', $access);
+	$cache[$key] = $cache[$key] ?? [];
+	$uncached = array_filter($ids, static function ($id) use ($cache, $key) { return !array_key_exists($id, $cache[$key]); });
+	$db = Datamodel::getInstanceByTableName('ca_entities', true)->getDb();
+	$hasMedia = [];
+	foreach (array_chunk(array_values($uncached), 500) as $chunk) {
+		$result = $db->query("SELECT DISTINCT e.entity_id candidate_id, o.object_id, r.representation_id
+			FROM ca_entities e
+			INNER JOIN ca_objects_x_entities oe ON oe.entity_id = e.entity_id
+			INNER JOIN ca_objects o ON o.object_id = oe.object_id
+			INNER JOIN ca_objects_x_object_representations oxr ON oxr.object_id = o.object_id
+			INNER JOIN ca_object_representations r ON r.representation_id = oxr.representation_id
+			WHERE e.entity_id IN (?) AND e.deleted = 0 AND e.access IN (?)
+				AND o.deleted = 0 AND o.access IN (?) AND r.deleted = 0 AND r.access IN (?)
+				AND r.media IS NOT NULL AND r.media <> ''", [$chunk, $access, $access, $access]);
+		if (!$result) { throw new RuntimeException('Unable to check people media availability.'); }
+		$rows = [];
+		while ($result->nextRow()) {
+			$rows[] = ['candidate_id' => (int)$result->get('candidate_id'), 'object_id' => (int)$result->get('object_id'), 'representation_id' => (int)$result->get('representation_id')];
+		}
+		// The browse already checks person ACLs. Related objects and representations
+		// also need native Pawtucket ACL filtering before they can qualify a person.
+		foreach (['ca_objects' => 'object_id', 'ca_object_representations' => 'representation_id'] as $table => $field) {
+			if (!$rows || !caACLIsEnabled($table, ['forPawtucket' => true])) { continue; }
+			$browse = caGetBrowseInstance($table);
+			$model = Datamodel::getInstanceByTableName($table, true);
+			if (!$browse || !$model) { throw new RuntimeException('Unable to check related media permissions.'); }
+			$readable = array_fill_keys($browse->filterHitsByACL(array_values(array_unique(array_column($rows, $field))), $model->tableNum(), $request->getUserID()), true);
+			$rows = array_filter($rows, static function ($row) use ($field, $readable) { return isset($readable[$row[$field]]); });
+		}
+		$pending = [];
+		foreach ($rows as $row) { $pending[$row['candidate_id']][$row['representation_id']] = $row['representation_id']; }
+		$pending = array_map('array_values', $pending);
+		$eligible = tadlRelatedMediaCandidates($db, $pending, $access, $hasMedia);
+		foreach ($chunk as $id) { $cache[$key][$id] = isset($eligible[$id]); }
+	}
+	return array_values(array_filter($ids, static function ($id) use ($cache, $key) { return $cache[$key][$id]; }));
 }
 
 /**
@@ -181,11 +242,14 @@ function tadlFilterMediaResult($request, $result) {
 		return $result;
 	}
 	$table = $result->tableName();
-	if (!in_array($table, ['ca_objects', 'ca_collections'], true)) {
+	if ($table === 'ca_entities' && tadlIsPeopleBrowse($request)) {
+		$ids = tadlPeopleMediaEligibleIDs($request, $result->getPrimaryKeyValues());
+	} elseif (in_array($table, ['ca_objects', 'ca_collections'], true)) {
+		$ids = tadlMediaEligibleIDs($table, $result->getPrimaryKeyValues(), (array)caGetUserAccessValues($request));
+	} else {
 		return $result;
 	}
 
-	$ids = tadlMediaEligibleIDs($table, $result->getPrimaryKeyValues(), (array)caGetUserAccessValues($request));
 	if (!class_exists('WLPlugSearchEngineBrowseEngine')) {
 		require_once(__CA_LIB_DIR__.'/Browse/BrowseResult.php');
 	}
@@ -203,6 +267,11 @@ function tadlMediaFacetItems($request, $items, $info) {
 		$browseType = $request->getParameter('browseType', pString) ?: $request->getAction();
 		$browseInfo = caGetInfoForBrowseType($browseType);
 		$subjectTable = $browseInfo['table'] ?? null;
+	}
+	if ($subjectTable === 'ca_entities' && tadlIsPeopleBrowse($request)) {
+		foreach ($items as &$item) { if (is_array($item)) { unset($item['content_count']); } }
+		unset($item);
+		return $items;
 	}
 	if ($subjectTable && !in_array($subjectTable, ['ca_objects', 'ca_collections'], true)) {
 		return $items;

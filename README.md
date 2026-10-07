@@ -91,7 +91,12 @@ video, audio, PDFs, and supported embedded media qualify. Private, deleted, and
 metadata-only representations do not.
 
 This controls display, not authorization. Direct detail URLs remain accessible.
-People, places, and other authority results retain their normal behavior. Native
+**Browse > People** also follows the preference: in Only items with media mode,
+a person needs at least one accessible related object with usable digital media.
+All items mode includes people without media. Filtering precedes counts, paging
+and detail navigation, preserves native sort order, and uses batched relationship
+queries with shared media decoding. Person portraits alone do not qualify.
+Other authority browse and search results retain their normal behavior. Native
 facet counts cover all items, so media-only views omit those counts. Result
 downloads are available in All items mode; they use the native unfiltered result.
 Keep `collections.conf`'s `cache_timeout = 0`: native collection-child HTML cache

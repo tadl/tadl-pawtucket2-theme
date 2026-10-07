@@ -181,9 +181,21 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
   A collection qualifies through accessible object media in itself or any
   descendant. Images, video, audio, PDFs and supported embedded media qualify;
   private, deleted or metadata-only representations do not.
+- **Browse > People** now follows the same preference through related objects.
+  `tadlPeopleMediaEligibleIDs()` qualifies only people with a nondeleted related
+  object and representation in the visitor's access mask, readable media bundles,
+  native object/representation Pawtucket ACLs and a usable original or embed.
+  Directly attached person portraits alone do not qualify. It fetches ID pairs in
+  batches of 500 people and reuses collection eligibility's lazy descriptor
+  decoding, stopping when each person qualifies. Eligibility caches are limited
+  to the request and scoped by user/access; no persistent cache or index is added.
+  Tiles/List counts and pagination use filtered IDs, as does the entity detail
+  Previous/Next result context. Native facet counts are suppressed on this browse
+  in media-only mode. All items mode remains unfiltered.
 - Preserve native record access and ACL filtering. This preference is not
   authorization, and direct object/collection detail URLs remain accessible.
-  People, places and other authority result records retain their native behavior.
+  Other authority browse/search routes retain native behavior; People search and
+  multisearch are not changed by the People browse policy.
 - Related result contexts must save the displayed IDs for Previous/Next.
   The preference is visitor-specific; a shared URL uses its recipient's setting.
 - Native facet counts include all records, so media-only pages omit those counts.
@@ -599,7 +611,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/home_faq_test.php` | Published/readable Site Pages, drafts, incomplete entries, locale, rank, escaped questions and purified answers; optional real HTMLPurifier |
 | `tests/finding_aid_test.php` | Selected collection export, descendants, access/ACL/bundle restrictions, complete unique inventories over native caps, field mappings, locations, escaped PDF text and safe failure; optional real Dompdf |
 | `tests/asset_versions_test.php` | Stable/changed CSS and JS URLs, preserved timestamps, native loader options, subdirectory/absolute theme URLs, escaping, inline-code preservation and path boundaries |
-| `tests/media_preferences_test.php` | Eligibility SQL, lazy collection descriptor fetching, invalid-media exhaustion, filtered result adapter and result rendering |
+| `tests/media_preferences_test.php` | Eligibility SQL, lazy collection/people descriptor fetching, related-object access/deletion/ACL/bundle checks, People Tiles/List counts/paging/detail context, route scope, invalid-media exhaustion, filtered result adapter and result rendering |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |
 | `tests/collection_detail_scripts_test.php` | Collection detail loader JavaScript and empty/populated field/relationship headings |
 | `tests/object_detail_media_test.php` | Media selection, viewer controls and callbacks |
