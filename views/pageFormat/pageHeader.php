@@ -28,6 +28,7 @@
 require_once(__DIR__.'/media_preference_toggle.php');
 require_once(__DIR__.'/../../helpers/asset_versions.php');
 require_once(__DIR__.'/../../helpers/user_features.php');
+require_once(__DIR__.'/../../helpers/crawler_policy.php');
 
 if (!function_exists('tadlMetaClean')) {
 	function tadlMetaClean($value, $limit = 220) {
@@ -206,6 +207,9 @@ if (!$meta_image) {
 $meta_type = ($meta_item && method_exists($meta_item, 'tableName')) ? 'article' : 'website';
 
 MetaTagManager::addMeta('description', $meta_description);
+if ($crawler_directives = tadlCrawlerPageDirectives($this->request)) {
+	MetaTagManager::addMeta('robots', $crawler_directives);
+}
 MetaTagManager::addMetaProperty('og:site_name', $site_name);
 MetaTagManager::addMetaProperty('og:type', $meta_type);
 MetaTagManager::addMetaProperty('og:title', $meta_title);
@@ -307,7 +311,7 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
 				<ul class="nav navbar-nav navbar-right menuItems tadl-menu-items" role="list" aria-label="<?= _t("Primary Navigation"); ?>">
 					<li <?= ($this->request->getController() == "About") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("About"), "", "", "About", "Index"); ?></li>
 					<?= $this->render("pageFormat/browseMenu.php"); ?>	
-					<li <?= (($this->request->getController() == "Search") && ($this->request->getAction() == "advanced")) ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Advanced Search"), "", "", "Search", "advanced/objects"); ?></li>
+					<li <?= (($this->request->getController() == "Search") && ($this->request->getAction() == "advanced")) ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Advanced Search"), "", "", "Search", "advanced/objects", null, ['rel' => 'nofollow']); ?></li>
 					<li <?= ($this->request->getController() == "Gallery") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Gallery"), "", "", "Gallery", "Index"); ?></li>
 					<li <?= ($this->request->getController() == "Collections") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Collections"), "", "", "Collections", "index"); ?></li>
 					<li <?= ($this->request->getController() == "Contact") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Contact"), "", "", "Contact", "Form"); ?></li>

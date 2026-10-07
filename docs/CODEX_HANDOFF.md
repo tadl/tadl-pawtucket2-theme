@@ -58,6 +58,7 @@ before calling an issue deployed or still broken.
 | Home-page writing | `views/Front/front_page_html.php`, `assets/pawtucket/js/recent-writing.js`; companion TADLFeeds `/local_history_posts.json` |
 | Object media | `helpers/object_detail_media.php`, `views/bundles/representation_viewer_html.php` |
 | Image downloads | `helpers/image_downloads.php`, `controllers/ImageDownloadController.php`, `views/Details/image_download_binary.php`, `views/mediaViewers/viewerWrapper.php`, `assets/pawtucket/js/image-downloads.js` |
+| Crawler policy | `helpers/crawler_policy.php`, shared header and download views; `support/site-root/robots.txt`, `docs/CRAWLER_POLICY.md` (root file installed separately) |
 | Enlarged viewer help | `views/Details/viewer_help_html.php` |
 | Object metadata | `views/Details/ca_objects_default_html.php`, `detail_field_helpers.php` |
 | Collection details | `views/Details/ca_collections_default_html.php` |
@@ -77,6 +78,20 @@ line numbers. Native application behavior can be inspected in the nearby
 `pawtucket2/app/` reference tree without editing it.
 
 ## Behavior and implementation contracts
+
+### Crawler hints and root robots policy
+
+Media controls/download/export links use `nofollow` without altering callbacks or
+existing `rel` tokens. Search/MultiSearch/Browse HTML uses `noindex, follow`; account
+pages use `noindex, nofollow`. Theme binary download views send `X-Robots-Tag`.
+Public record pages and preview media remain indexable. The tracked replacement
+`support/site-root/robots.txt` covers clean and `index.php` routes for dynamic
+searches, downloads, viewer data and sessions. Theme rsync does not install this
+at the site root: see `docs/CRAWLER_POLICY.md` for backup/install/verification.
+No production deployment or root-file replacement was performed for this change.
+These are cooperative crawler hints, not enforced request throttling. A robots
+disallow prevents crawlers from reading a noindex directive on that URL; the policy
+reduces crawl work rather than guaranteeing removal of already indexed URLs.
 
 ### Staff object editor shortcut
 
@@ -624,6 +639,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/result_context_heading_test.php` | Results context, headings, removable criteria, empty flat/deferred/media-filtered facets, hierarchy-response fallback and Subjects browse/refine rendering |
 | `tests/object_detail_metadata_test.php` | Empty/populated rich-text fields and fallback values; structured TGM pairing, safe links, escaping and permissions |
 | `tests/image_download_test.php` | Toolbar/bundle/overlay menus, visible native PDF actions, viewer icon placement, outside-click/Escape/Tab handling, current image action relocation, gallery AJAX navigation and media callbacks, download policy/ACL/attachment checks, TIFF/JPEG/BMP/PDF bytes, BMP MIME aliases, conversion validation and failure handling |
+| `tests/crawler_policy_test.php` | Media link rel/callback preservation, public versus search/account metadata, actual binary HTTP headers/bytes, clean/index.php robots rules and public record/asset/media allowances |
 | `tests/thumbnail_package_test.php` | Source allowlist/hashes, safe existing-output refusal, ZIP contents and independent exported PHP/Python tests; additionally requires Python 3.11+ |
 | `tests/subjects_test.php` | Subject relationship rendering, escaping, native browse links, bundle access and Pawtucket ACL filtering |
 | `tests/recent_writing_test.php` | Actual home fallback/View More filters; client refresh, URL/text safety, cold-cache retry and feed-error fallback |

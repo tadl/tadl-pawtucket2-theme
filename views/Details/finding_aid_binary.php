@@ -5,5 +5,6 @@ header('Content-Type: application/pdf');
 header('Content-Disposition: attachment; filename="'.$this->getVar('finding_aid_name').'"');
 header('Cache-Control: private, no-store');
 header('X-Content-Type-Options: nosniff');
+header('X-Robots-Tag: noindex, nofollow');
 print $bytes;
 exit();

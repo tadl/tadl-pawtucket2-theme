@@ -1,0 +1,53 @@
+# Install at the site's /robots.txt, not under /themes/.
+# Public records, Collections, Gallery, assets and media thumbnails stay crawlable.
+User-agent: *
+
+# Dynamic searches, facets, sorting and pagination (including result exports).
+Disallow: /Search
+Disallow: /MultiSearch
+Disallow: /Browse
+Disallow: /index.php/Search
+Disallow: /index.php/MultiSearch
+Disallow: /index.php/Browse
+
+# On-demand image conversions and collection finding-aid PDFs.
+Disallow: /ImageDownload
+Disallow: /CollectionFindingAid
+Disallow: /FindingAid
+Disallow: /index.php/ImageDownload
+Disallow: /index.php/CollectionFindingAid
+Disallow: /index.php/FindingAid
+
+# Native representation, attribute and summary downloads.
+# Include both action spellings used by native/generated links.
+Disallow: /Detail/Download
+Disallow: /Detail/download
+Disallow: /Detail/*/Download
+Disallow: /Detail/*/download
+Disallow: /index.php/Detail/Download
+Disallow: /index.php/Detail/download
+Disallow: /index.php/Detail/*/Download
+Disallow: /index.php/Detail/*/download
+
+# Viewer/AJAX data and search within media; keep normal /Detail/<type>/<id> pages.
+Disallow: /Detail/Get
+Disallow: /Detail/Search
+Disallow: /Detail/*/Get
+Disallow: /Detail/*/Search
+Disallow: /Detail/ViewerHelp
+Disallow: /index.php/Detail/Get
+Disallow: /index.php/Detail/Search
+Disallow: /index.php/Detail/*/Get
+Disallow: /index.php/Detail/*/Search
+Disallow: /index.php/Detail/ViewerHelp
+
+# Accounts and session actions are not public archive content.
+Disallow: /LoginReg
+Disallow: /Lightbox
+Disallow: /AccountProfile
+Disallow: /MediaPreference
+Disallow: /index.php/LoginReg
+Disallow: /index.php/Lightbox
+Disallow: /index.php/AccountProfile
+Disallow: /index.php/MediaPreference
+Disallow: /service.php

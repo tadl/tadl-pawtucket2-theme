@@ -41,6 +41,7 @@
 
 	<head>
 		<meta charset="utf-8">
+		<meta name="robots" content="noindex, nofollow">
 
 		<title><?php print $this->request->config->get('html_page_title'); ?></title>
 

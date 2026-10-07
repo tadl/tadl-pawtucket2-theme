@@ -99,7 +99,7 @@
 				$vs_obj_id = $qr_results->get("ca_objects.object_id");
 				$vs_download_link = "";
 				if ($vs_rep_id) {
-					$vs_download_link = caNavLink($this->request, '<i style="padding-left:10px;" class="fa fa-download"></i>', 'multiDl', '', 'Detail', 'DownloadRepresentation', array('representation_id' => $vs_rep_id, 'object_id' => $vs_obj_id, 'download' => 1, 'version' => 'original'));
+					$vs_download_link = caNavLink($this->request, '<i style="padding-left:10px;" class="fa fa-download"></i>', 'multiDl', '', 'Detail', 'DownloadRepresentation', array('representation_id' => $vs_rep_id, 'object_id' => $vs_obj_id, 'download' => 1, 'version' => 'original'), array('rel' => 'nofollow'));
 				}
 				$vs_expanded_info = "";
 				if($vs_extended_info_template){

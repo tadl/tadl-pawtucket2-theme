@@ -172,6 +172,7 @@ foreach (['png', 'tiff', 'jpg', 'bmp'] as $format) {
 	checkDownload(str_contains($html, '<details') && str_contains($html, '<summary') && str_contains($html, 'JPG (to share)'), 'Native dropdown/JPG missing.');
 	checkDownload(str_contains($html, 'TIFF (to print)') === ($format === 'tiff'), 'TIFF offered without a TIFF original.');
 	checkDownload(str_contains($html, '>PDF</a>') && str_contains($html, 'format=pdf'), 'Image menu is missing PDF.');
+	checkDownload(substr_count($html, 'rel="nofollow"') === ($format === 'tiff' ? 3 : 2), 'Every generated image download format must discourage crawler following.');
 	$controller = runDownload($request);
 	$download = $controller->view->getVar('image_download');
 	checkDownload($controller->rendered && $download['mime'] === 'image/jpeg', 'JPG download failed.');
@@ -295,6 +296,7 @@ $object->rows[101]['mimetype'] = 'application/pdf';
 $pdfToolbar = tadlImageToolbar($request, $object, 101, $toolbar);
 checkDownload(str_contains($pdfToolbar, 'tadl-image-toolbar') && str_contains($pdfToolbar, 'Media viewer') && str_contains($pdfToolbar, 'nativeZoom()'), 'PDF actions must be visible and retain the native viewer.');
 checkDownload(str_contains($pdfToolbar, 'class="dlButton" href="/original"') && str_contains($pdfToolbar, 'Download PDF'), 'PDF must preserve its native complete-document download.');
+checkDownload(str_contains($pdfToolbar, 'class="dlButton" href="/original" rel="nofollow"'), 'Native PDF downloads must discourage crawler following.');
 checkDownload(!str_contains($pdfToolbar, 'setsButton') && !str_contains($pdfToolbar, '<details') && !str_contains($pdfToolbar, '/ImageDownload/'), 'PDF toolbar must not expose Lightbox or image conversions.');
 $restrictedPDFToolbar = tadlImageToolbar($request, $object, 101, str_replace('<a class="dlButton" href="/original">Download</a>', '', $toolbar));
 checkDownload(!str_contains($restrictedPDFToolbar, 'dlButton') && !str_contains($restrictedPDFToolbar, 'Download PDF') && str_contains($restrictedPDFToolbar, 'Media viewer'), 'PDF without native download permission must retain viewer but gain no download link.');
@@ -310,6 +312,7 @@ checkDownload(!str_contains($html, '<details') && str_contains($html, 'nativeZoo
 $object->rows[101]['mimetype'] = 'video/mp4';
 $videoToolbar = tadlImageToolbar($request, $object, 101, $toolbar);
 checkDownload(!str_contains($videoToolbar, 'setsButton') && str_contains($videoToolbar, 'nativeZoom()') && str_contains($videoToolbar, 'dlButton') && str_contains($videoToolbar, 'compare_link'), 'Video must omit the duplicate/login Lightbox action and preserve its native media actions.');
+checkDownload(str_contains($videoToolbar, 'class="dlButton" href="/original" rel="nofollow"'), 'Native non-image downloads must discourage crawler following.');
 [$object, $rep, $request] = resetDownload();
 require dirname(__DIR__).'/helpers/object_detail_media.php';
 $view = new DownloadView($request);

@@ -121,7 +121,7 @@
 <?php
 					if ($vn_pdf_enabled) {
 						$finding_aid_url = caNavUrl($this->request, '', 'CollectionFindingAid', 'Download', ['collection_id' => (int)$t_item->get('collection_id')]);
-						print "<div class='exportCollection'><span class='glyphicon glyphicon-file' aria-hidden='true'></span> <a href=\"".htmlspecialchars($finding_aid_url, ENT_QUOTES, 'UTF-8')."\">".htmlspecialchars(_t('Download Finding Aid'), ENT_QUOTES, 'UTF-8')."</a></div>";
+						print "<div class='exportCollection'><span class='glyphicon glyphicon-file' aria-hidden='true'></span> <a href=\"".htmlspecialchars($finding_aid_url, ENT_QUOTES, 'UTF-8')."\" rel=\"nofollow\">".htmlspecialchars(_t('Download Finding Aid'), ENT_QUOTES, 'UTF-8')."</a></div>";
 					}
 ?>
 				</div>

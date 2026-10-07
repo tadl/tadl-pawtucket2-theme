@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__.'/crawler_policy.php');
 /** Resolve an attached image through native record, bundle, ACL and download checks. */
 function tadlImageDownloadSource($request, $object, $representationID) {
 	if ($request->config->get('pawtucket_requires_login') && !$request->isLoggedIn()) { return null; }
@@ -42,13 +43,14 @@ function tadlImageDownloadLinks($request, $object, $representationID, $inViewer 
 		$url = caNavUrl($request, '', 'ImageDownload', 'Download', [
 			'object_id' => (int)$object->getPrimaryKey(), 'representation_id' => (int)$representationID, 'format' => $format
 		]);
-		$html .= '<li><a href="'.htmlspecialchars($url, ENT_QUOTES, 'UTF-8').'">'.htmlspecialchars($label, ENT_QUOTES, 'UTF-8').'</a></li>';
+		$html .= '<li><a href="'.htmlspecialchars($url, ENT_QUOTES, 'UTF-8').'" rel="nofollow">'.htmlspecialchars($label, ENT_QUOTES, 'UTF-8').'</a></li>';
 	}
 	return $html.'</ul></details>';
 }
 
 /** Normalize image/PDF actions while preserving native callbacks and PDF downloads. */
 function tadlImageToolbar($request, $object, $representationID, $toolbar) {
+	$toolbar = tadlNofollowMediaLinks($toolbar);
 	// Object-level Lightbox controls live below the viewer for logged-in users.
 	// Remove native representation links, including anonymous video login prompts.
 	$toolbar = preg_replace('~<a\b(?=[^>]*\bclass=[\'\"][^\'\"]*\bsetsButton\b)[^>]*>.*?</a>~is', '', $toolbar);

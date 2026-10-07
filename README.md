@@ -4,11 +4,17 @@ Standalone source repository for the `tadl` Pawtucket2 theme used for TADL local
 
 For Codex or a new workstation, start with [AGENTS.md](AGENTS.md) and the
 [current handoff](docs/CODEX_HANDOFF.md). The handoff explains the source map,
-recent changes, design decisions and all twenty-three standalone regression suites.
+recent changes, design decisions and all twenty-four standalone regression suites.
 It uses relative paths and does not require an application database for those tests.
 
 Deployment is a separate, explicitly authorized step. A source commit/push does
 not authorize running the enclosing deployment helper or restarting production.
+
+Download links discourage crawler following, binary downloads send `noindex`
+response headers, and search/browse pages stay out of search indexes. A replacement
+root `robots.txt` covers clean and `index.php` routes while keeping public records
+and thumbnails crawlable. The root file requires a separate installation after
+theme deployment; see [Crawler policy](docs/CRAWLER_POLICY.md).
 
 Deploy flow after authorization:
 

@@ -30,7 +30,7 @@
  * ----------------------------------------------------------------------
  */
 require_once(__DIR__.'/../../helpers/image_downloads.php');
-$download_controls = $this->getVar('controls');
+$download_controls = tadlNofollowMediaLinks($this->getVar('controls'));
 $viewer_download = '';
 $viewer_object_heading = '';
 if ($this->getVar('viewer') === 'TileViewer' && in_array($this->getVar('context') ?: $this->request->getParameter('context', pString), ['objects', 'gallery'], true)

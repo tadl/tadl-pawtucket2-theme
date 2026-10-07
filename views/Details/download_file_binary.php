@@ -26,6 +26,7 @@
  * ----------------------------------------------------------------------
  */
  
+	header('X-Robots-Tag: noindex, nofollow');
 	header("Content-type: application/octet-stream");
 	header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
 	header("Cache-Control: no-store, no-cache, must-revalidate");

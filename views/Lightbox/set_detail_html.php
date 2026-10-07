@@ -148,7 +148,7 @@ if (!$vb_ajax) {	// !ajax
 							print "<li class='divider'></li>\n";
 							print "<li class='dropdown-header'>"._t("Download as:")."</li>\n";
 							foreach($va_export_formats as $va_export_format){
-								print "<li>".caNavLink($this->request, $va_export_format["name"]." [".$va_export_format["type"]."]", "", "", "Lightbox", "setDetail", array("view" => $va_export_format['type'], "download" => true, "export_format" => $va_export_format["code"]))."</li>";
+								print "<li>".caNavLink($this->request, $va_export_format["name"]." [".$va_export_format["type"]."]", "", "", "Lightbox", "setDetail", array("view" => $va_export_format['type'], "download" => true, "export_format" => $va_export_format["code"]), array('rel' => 'nofollow'))."</li>";
 							}
 						}
 ?>
