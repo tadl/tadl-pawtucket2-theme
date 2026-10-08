@@ -130,7 +130,7 @@
 						$switch_params['collection_view'] = $collection_mode === 'flat' ? 'hierarchy' : 'flat';
 						$switch_url = caNavUrl($this->request, '', 'Detail', 'collections/'.(int)$t_item->get('collection_id'), $switch_params);
 						$switch_label = $collection_mode === 'flat' ? _t('View collection hierarchy') : _t('View all collection items');
-						print '<div class="tadl-collection-view-switch"><a href="'.htmlspecialchars($switch_url, ENT_QUOTES, 'UTF-8').'">'.htmlspecialchars($switch_label, ENT_QUOTES, 'UTF-8').'</a></div>';
+						print '<div class="tadl-collection-view-switch"><a href="'.htmlspecialchars($switch_url, ENT_QUOTES, 'UTF-8').'"><span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span> '.htmlspecialchars($switch_label, ENT_QUOTES, 'UTF-8').'</a></div>';
 					}
 ?>
 				</div>

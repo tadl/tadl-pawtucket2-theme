@@ -358,6 +358,8 @@ below retain implementation details and historical verification evidence.
   items. **View all collection items** returns to flat mode. Unknown/missing mode
   defaults to flat; switching scope resets paging and retains sort/display state.
   Leaf collections omit the switch. Catalogue hierarchy and finding aids are unchanged.
+  Both view-switch links use a decorative eye icon hidden from assistive technology;
+  the finding-aid download retains its document icon.
 - Both hierarchy browser columns append **(42)** inside the collection title link
   (or nonlinked title), without `records` or a forced line break. Counts include
   unique visible objects in the selected branch and all readable descendants,

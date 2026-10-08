@@ -12,6 +12,7 @@ When readable children exist and the browser is enabled in configuration,
 **View collection hierarchy** appears beneath **Download finding aid**. It opens
 the hierarchy browser and restores directly attached items on the collection page.
 **View all collection items** returns to the flat list. Leaf collections omit the switch.
+Both view-switch links have an eye icon; the finding-aid download keeps its document icon.
 
 | Behavior | Flat view | Hierarchy view |
 | --- | --- | --- |
