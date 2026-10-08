@@ -83,19 +83,20 @@ line numbers. Native application behavior can be inspected in the nearby
 ### Object document text
 
 Object details have a collapsed **Document text** section after both media and
-metadata columns. A readable attached PDF is required for either source:
-populated `ca_objects.transcription` takes precedence, otherwise accessible PDFs'
-`ca_object_representations.media_content` supplies text. Private paired PDFs do
-not qualify a TIFF object. Empty/missing text produces no section. Native record
+metadata columns. A readable attached PDF is required for every source. Use
+populated accessible PDFs' `ca_object_representations.media_content` first, then
+`ca_objects.transcription`, then `ca_objects.pdf_text`. A missing, empty or
+restricted source falls through to the next; all unavailable produces no section.
+Private paired PDFs do not qualify a TIFF object. Native record
 access, deletion, type/source/bundle permissions and Pawtucket ACLs remain enforced;
 text/labels are escaped and line/page breaks retained. Multiple PDFs follow native
 rank/primary order with an ID tie break. Native `details` needs no new JavaScript,
 controller, extraction process or external service. The migrated Scripto source
-was corrected from `pdf_text` to `transcription` on 2026-10-08; the separate
-`ca_objects.pdf_text` field is not a display fallback. See `docs/DOCUMENT_TEXT.md`.
-The candidate helper passed read-only installed-model checks for both PDF extraction
-and the corrected transcription-field precedence, in addition to synthetic tests.
-No theme deployment or catalogue mutation was performed for the correction.
+is `transcription`; the separate `pdf_text` field is the final display fallback.
+See `docs/DOCUMENT_TEXT.md`. The candidate helper passed a read-only installed-model
+check for PDF extraction preceding populated transcription, in addition to
+synthetic checks for all three sources and permissions. No theme deployment or
+catalogue mutation was performed for this change.
 
 ### Crawler hints and root robots policy
 
@@ -663,7 +664,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |
 | `tests/result_context_heading_test.php` | Results context, headings, removable criteria, empty flat/deferred/media-filtered facets, hierarchy-response fallback and Subjects browse/refine rendering |
 | `tests/object_detail_metadata_test.php` | Empty/populated rich-text fields and fallback values; structured TGM pairing, safe links, escaping and permissions |
-| `tests/document_text_test.php` | PDF/imported text precedence, empty/missing fields, private pairs, native record/bundle/Pawtucket ACL boundaries, safe text/labels, Unicode/line/page breaks, multiple-PDF ordering and actual full-width detail template placement |
+| `tests/document_text_test.php` | media_content/transcription/pdf_text precedence and permission fallbacks, empty/missing fields, private pairs, native record/bundle/Pawtucket ACL boundaries, safe text/labels, Unicode/line/page breaks, multiple-PDF ordering and actual full-width detail template placement |
 | `tests/image_download_test.php` | Toolbar/bundle/overlay menus, visible native PDF actions, viewer icon placement, outside-click/Escape/Tab handling, current image action relocation, gallery AJAX navigation and media callbacks, download policy/ACL/attachment checks, TIFF/JPEG/BMP/PDF bytes, BMP MIME aliases, conversion validation and failure handling |
 | `tests/crawler_policy_test.php` | Media link rel/callback preservation, public versus search/account metadata, actual binary HTTP headers/bytes, clean/index.php robots rules and public record/asset/media allowances |
 | `tests/thumbnail_package_test.php` | Source allowlist/hashes, safe existing-output refusal, ZIP contents and independent exported PHP/Python tests; additionally requires Python 3.11+ |

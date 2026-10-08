@@ -14,7 +14,7 @@ function tadlDocumentTextNormalize($value) {
 	return preg_match('/[^\s\p{Z}\x{200B}\x{FEFF}]/u', $text) === 1 ? $text : '';
 }
 
-/** Imported text takes precedence; hidden paired PDFs never qualify an object. */
+/** PDF text precedes object metadata; hidden paired PDFs never qualify an object. */
 function tadlObjectDocumentText($request, $object) {
 	if (!$object || !method_exists($object, 'getRepresentations')) { return []; }
 	$access = array_map('intval', (array)caGetUserAccessValues($request));
@@ -37,23 +37,8 @@ function tadlObjectDocumentText($request, $object) {
 	}
 	if (!$pdfs) { return []; }
 
-	if ($object->hasElement('transcription') && $object->isReadable($request, 'transcription')) {
-		// Structured values avoid element display templates, defaults and flattening
-		// across records/locales. Disable reference substitution before HTML escaping.
-		$values = $object->get('ca_objects.transcription', [
-			'returnWithStructure' => true, 'checkAccess' => $access, 'dontReturnDefault' => true,
-			'convertLineBreaks' => false, 'highlighting' => false, 'doRefSubstitution' => false
-		]);
-		$parts = [];
-		foreach ((array)($values[$object->getPrimaryKey()] ?? []) as $value) {
-			$text = tadlDocumentTextNormalize($value['transcription'] ?? '');
-			if ($text !== '') { $parts[] = $text; }
-		}
-		if ($parts) { return [['source' => 'imported', 'label' => '', 'text' => join("\n\n", $parts)]]; }
-	}
-
 	$entries = [];
-	foreach ($pdfs as $id => $pdf) {
+	foreach ($pdfs as $pdf) {
 		$representation = $pdf['record'];
 		if (!$representation->isReadable($request, 'media_content')) { continue; }
 		$text = tadlDocumentTextNormalize($representation->get('media_content'));
@@ -62,7 +47,25 @@ function tadlObjectDocumentText($request, $object) {
 			? tadlDocumentTextNormalize($pdf['label']) : '';
 		$entries[] = ['source' => 'pdf', 'label' => $label, 'text' => $text];
 	}
-	return $entries;
+	if ($entries) { return $entries; }
+
+	foreach (['transcription', 'pdf_text'] as $bundle) {
+		if (!$object->hasElement($bundle) || !$object->isReadable($request, $bundle)) { continue; }
+		// Structured values avoid element display templates, defaults and flattening
+		// across records/locales. Disable reference substitution before HTML escaping.
+		$values = $object->get('ca_objects.'.$bundle, [
+			'returnWithStructure' => true, 'checkAccess' => $access, 'dontReturnDefault' => true,
+			'convertLineBreaks' => false, 'highlighting' => false, 'doRefSubstitution' => false
+		]);
+		$parts = [];
+		foreach ((array)($values[$object->getPrimaryKey()] ?? []) as $value) {
+			$text = tadlDocumentTextNormalize($value[$bundle] ?? '');
+			if ($text !== '') { $parts[] = $text; }
+		}
+		if ($parts) { return [['source' => 'imported', 'label' => '', 'text' => join("\n\n", $parts)]]; }
+	}
+
+	return [];
 }
 
 function tadlObjectDocumentTextHTML($request, $object) {

@@ -43,7 +43,9 @@ class TextRecord {
 class TextObject extends TextRecord {
 	public array $representationCalls = [];
 	function __construct(public array $rows = [], array $values = []) { parent::__construct('ca_objects', 42, $values); }
-	function hasElement($element) { return $element === 'transcription' && ($this->values['has_transcription'] ?? true); }
+	function hasElement($element) {
+		return in_array($element, ['transcription', 'pdf_text'], true) && ($this->values['has_'.$element] ?? true);
+	}
 	function getRepresentations($versions, $sizes, $options) {
 		$this->representationCalls[] = [$versions, $sizes, $options];
 		return $this->rows;
@@ -70,7 +72,9 @@ class Datamodel {
 function textPDFRow($id, $rank = 0, $primary = false, $label = '') {
 	return ['representation_id' => $id, 'mimetype' => 'application/pdf', 'rank' => $rank, 'is_primary' => $primary, 'label' => $label];
 }
-function textImport($text) { return [42 => [700 => ['transcription' => $text]], 999 => [800 => ['transcription' => 'Unrelated synthetic text']]]; }
+function textImport($text, $bundle = 'transcription') {
+	return [42 => [700 => [$bundle => $text]], 999 => [800 => [$bundle => 'Unrelated synthetic text']]];
+}
 function textDocument($html) {
 	$document = new DOMDocument();
 	$document->loadHTML('<meta charset="utf-8">'.$html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
@@ -87,36 +91,74 @@ $call = $object->representationCalls[0];
 checkDocumentText($call === [[], null, ['simple' => true, 'checkAccess' => [1]]], 'PDF discovery must use native access filtering without derivatives or a relationship cap.');
 
 $import = "Imported transcription: café <script>synthetic()</script> & text\nLine two";
+$legacy = "Legacy PDF text: café <b>synthetic</b> & text\nLine two";
 $object->values['ca_objects.transcription'] = textImport($import);
+$object->values['ca_objects.pdf_text'] = textImport($legacy, 'pdf_text');
+$object->reads = [];
+checkDocumentText(tadlObjectDocumentText($request, $object) === $entries, 'Extracted PDF text must win when all three sources are populated.');
+checkDocumentText(!array_intersect(['ca_objects.transcription', 'ca_objects.pdf_text'], array_column($object->reads, 0)), 'Populated extraction must not fetch lower-priority metadata.');
+
+ca_object_representations::$records[10]['media_content'] = " \n\f\u{00a0}\u{200b}";
+$object->reads = [];
 $html = tadlObjectDocumentTextHTML($request, $object);
 $xpath = new DOMXPath(textDocument($html));
 checkDocumentText($xpath->query('//details[@class="tadl-document-text" and not(@open)]/summary')->item(0)->textContent === 'Document text', 'Document text must start collapsed with a native keyboard-accessible summary.');
 checkDocumentText($xpath->query('//div[@class="tadl-document-text-content"]')->item(0)->textContent === $import, 'Imported text must retain Unicode and literal text after escaping.');
-checkDocumentText(!str_contains($html, '<script>') && !str_contains($html, 'First page') && !str_contains($html, 'Unrelated synthetic text'), 'Imported text must override extraction, omit other records and never execute HTML.');
-checkDocumentText(!in_array('media_content', array_column(ca_object_representations::$loaded[10]->reads, 0), true), 'Imported text must not fetch the longer extracted text unnecessarily.');
+checkDocumentText(!str_contains($html, '<script>') && !str_contains($html, 'Legacy PDF text') && !str_contains($html, 'Unrelated synthetic text'), 'Transcription must precede pdf_text, omit other records and never execute HTML.');
+checkDocumentText(in_array('media_content', array_column(ca_object_representations::$loaded[10]->reads, 0), true), 'Extraction must be checked before falling back to transcription.');
+checkDocumentText(!in_array('ca_objects.pdf_text', array_column($object->reads, 0), true), 'Populated transcription must not fetch lower-priority pdf_text.');
 $options = array_values(array_filter($object->reads, static fn($read) => $read[0] === 'ca_objects.transcription'))[0][1];
 foreach (['returnWithStructure' => true, 'checkAccess' => [1], 'dontReturnDefault' => true, 'convertLineBreaks' => false, 'highlighting' => false, 'doRefSubstitution' => false] as $key => $value) {
 	checkDocumentText(($options[$key] ?? null) === $value, 'Imported text must preserve native getter option: '.$key);
 }
 $object->values['ca_objects.transcription'] = textImport(" \n\t\u{00a0}\u{200b}");
-checkDocumentText(tadlObjectDocumentText($request, $object)[0]['source'] === 'pdf', 'Whitespace-only migrated text must fall back to extraction.');
+checkDocumentText(tadlObjectDocumentText($request, $object)[0]['text'] === $legacy, 'Blank extraction and whitespace-only transcription must fall back to pdf_text.');
+$html = tadlObjectDocumentTextHTML($request, $object);
+$xpath = new DOMXPath(textDocument($html));
+checkDocumentText($xpath->query('//div[@class="tadl-document-text-content"]')->item(0)->textContent === $legacy
+	&& !str_contains($html, '<b>') && !str_contains($html, 'Unrelated synthetic text'), 'pdf_text must preserve escaped Unicode/plain text and omit other records.');
+$options = array_values(array_filter($object->reads, static fn($read) => $read[0] === 'ca_objects.pdf_text'))[0][1];
+foreach (['returnWithStructure' => true, 'checkAccess' => [1], 'dontReturnDefault' => true, 'convertLineBreaks' => false, 'highlighting' => false, 'doRefSubstitution' => false] as $key => $value) {
+	checkDocumentText(($options[$key] ?? null) === $value, 'pdf_text must preserve native getter option: '.$key);
+}
+$object->values['ca_objects.pdf_text'] = [42 => [700 => ['pdf_text' => " \n"], 701 => ['pdf_text' => "First\r\nSecond\fThird"]]];
+checkDocumentText(tadlObjectDocumentText($request, $object)[0]['text'] === "First\nSecond\n\nThird", 'Fallback metadata must ignore empty repeat values and preserve normalized line/page breaks.');
+$object->values['ca_objects.pdf_text'] = textImport($legacy, 'pdf_text');
 $object->values['has_transcription'] = false;
 $object->values['ca_objects.transcription'] = textImport('Unavailable imported field');
-checkDocumentText(tadlObjectDocumentText($request, $object)[0]['source'] === 'pdf', 'Installations without transcription must still show extracted PDF text.');
+checkDocumentText(tadlObjectDocumentText($request, $object)[0]['text'] === $legacy, 'Installations without transcription must still support pdf_text.');
+$object->values['has_pdf_text'] = false;
+checkDocumentText(tadlObjectDocumentTextHTML($request, $object) === '', 'Missing fallback elements with blank extraction must produce no section.');
+$object->values['has_pdf_text'] = true;
 $object->values['has_transcription'] = true;
-checkDocumentText(tadlObjectDocumentText(new TextRequest([1], ['ca_objects:transcription']), $object)[0]['source'] === 'pdf', 'Denied migrated-text bundle must fall back to readable extracted text.');
-checkDocumentText(tadlObjectDocumentText(new TextRequest([1], ['ca_object_representations:media_content']), $object)[0]['source'] === 'imported', 'Readable imported text must not require access to extracted-text bundle.');
+$object->values['ca_objects.transcription'] = textImport($import);
+$object->reads = [];
+checkDocumentText(tadlObjectDocumentText(new TextRequest([1], ['ca_objects:transcription']), $object)[0]['text'] === $legacy, 'Denied transcription bundle must fall back to readable pdf_text.');
+checkDocumentText(!in_array('ca_objects.transcription', array_column($object->reads, 0), true), 'Denied transcription must not be fetched.');
+checkDocumentText(tadlObjectDocumentText(new TextRequest([1], ['ca_object_representations:media_content']), $object)[0]['text'] === $import, 'Readable transcription must not require access to extracted-text bundle.');
+$object->values['ca_objects.transcription'] = textImport(" \n\t\u{00a0}");
+checkDocumentText(tadlObjectDocumentText(new TextRequest([1], ['ca_object_representations:media_content']), $object)[0]['text'] === $legacy, 'Denied extraction and empty transcription must allow readable pdf_text.');
+$object->reads = [];
+checkDocumentText(tadlObjectDocumentTextHTML(new TextRequest([1], ['ca_objects:pdf_text']), $object) === '', 'Denied pdf_text with other sources blank must produce no section.');
+checkDocumentText(!in_array('ca_objects.pdf_text', array_column($object->reads, 0), true), 'Denied pdf_text must not be fetched.');
+$object->values['ca_objects.transcription'] = textImport($import);
+checkDocumentText(tadlObjectDocumentTextHTML(new TextRequest([1], ['ca_objects:transcription', 'ca_objects:pdf_text']), $object) === '', 'Denied metadata bundles must not leak either fallback.');
+ca_object_representations::$records[10]['media_content'] = 'Public extraction';
+checkDocumentText(tadlObjectDocumentText(new TextRequest([1], ['ca_objects:transcription', 'ca_objects:pdf_text']), $object)[0]['text'] === 'Public extraction', 'Readable extraction must not require access to either metadata bundle.');
+ca_object_representations::$records[10]['media_content'] = " \n\f\u{00a0}";
+$object->values['ca_objects.transcription'] = textImport("\u{200b}");
+$object->values['ca_objects.pdf_text'] = textImport(" \n\t\u{00a0}\u{FEFF}", 'pdf_text');
+checkDocumentText(tadlObjectDocumentTextHTML($request, $object) === '', 'All three whitespace-only sources must produce no section or heading.');
 unset($object->values['ca_objects.transcription']);
-$object->values['ca_objects.pdf_text'] = [42 => [900 => ['pdf_text' => 'Wrong migrated field']]];
-checkDocumentText(tadlObjectDocumentText($request, $object)[0]['source'] === 'pdf'
-	&& !in_array('ca_objects.pdf_text', array_column($object->reads, 0), true), 'The separate pdf_text field must not supply migrated transcription text.');
-checkDocumentText(tadlObjectDocumentTextHTML(new TextRequest([1], ['ca_object_representations:media_content']), $object) === '', 'Denied extracted-text bundle must emit no empty section or heading.');
+unset($object->values['ca_objects.pdf_text']);
+checkDocumentText(tadlObjectDocumentTextHTML($request, $object) === '', 'Blank extraction with no metadata values must produce no section.');
 
 // Deliberately return unfiltered rows to exercise the loaded-record checks too.
 foreach (['access' => 0, 'deleted' => 1, 'unreadable' => true, 'acl_access' => 0, 'mimetype' => 'image/tiff'] as $key => $value) {
 	ca_object_representations::$records[10] = ['media_content' => 'Hidden text', 'acl_enabled' => true, $key => $value];
 	$object->values['ca_objects.transcription'] = textImport('Must remain hidden without a readable PDF');
-	checkDocumentText(tadlObjectDocumentTextHTML($request, $object) === '', 'Ineligible PDF must hide both text sources: '.$key);
+	$object->values['ca_objects.pdf_text'] = textImport('Must also remain hidden without a readable PDF', 'pdf_text');
+	checkDocumentText(tadlObjectDocumentTextHTML($request, $object) === '', 'Ineligible PDF must hide all text sources: '.$key);
 }
 ca_object_representations::$records = [10 => ['media_content' => 'Public PDF text']];
 foreach (['access' => 0, 'deleted' => 1, 'unreadable' => true, 'acl_access' => 0] as $key => $value) {
@@ -132,11 +174,14 @@ $missing = new TextObject([textPDFRow(404)]);
 checkDocumentText(tadlObjectDocumentTextHTML($request, $missing) === '', 'Missing representation must have no document section.');
 $missing->id = 0;
 checkDocumentText(tadlObjectDocumentTextHTML($request, $missing) === '', 'Unloaded object must have no document section.');
-$tiff = new TextObject([['representation_id' => 20, 'mimetype' => 'image/tiff']], ['ca_objects.transcription' => textImport('Private pair transcript')]);
+$tiff = new TextObject([['representation_id' => 20, 'mimetype' => 'image/tiff']], [
+	'ca_objects.transcription' => textImport('Private pair transcript'),
+	'ca_objects.pdf_text' => textImport('Private pair PDF text', 'pdf_text')
+]);
 checkDocumentText(tadlObjectDocumentTextHTML($request, $tiff) === '', 'TIFF with no accessible PDF must not display migrated PDF text.');
 $tiff->rows[] = textPDFRow(10);
 ca_object_representations::$records[10]['access'] = 0;
-checkDocumentText(tadlObjectDocumentTextHTML($request, $tiff) === '', 'TIFF with a private paired PDF must not display either source.');
+checkDocumentText(tadlObjectDocumentTextHTML($request, $tiff) === '', 'TIFF with a private paired PDF must not display any text source.');
 ca_object_representations::$records[10] = ['media_content' => " \n\f\u{00a0}"];
 checkDocumentText(tadlObjectDocumentTextHTML($request, new TextObject([textPDFRow(10)])) === '', 'Image-only/empty PDF must not display a heading or wrapper.');
 
@@ -153,6 +198,13 @@ checkDocumentText($xpath->query('//h3')->length === 5 && $xpath->query('//h3')->
 checkDocumentText($xpath->query('//h3')->item(4)->textContent === 'PDF 5', 'Empty representation label must get a useful fallback.');
 $entries = tadlObjectDocumentText(new TextRequest([1], ['ca_object_representations:preferred_labels']), $object);
 checkDocumentText(array_filter(array_column($entries, 'label')) === [], 'Denied preferred-label bundle must not leak a label.');
+ca_object_representations::$records[11]['media_content'] = '';
+$partial = new TextObject([textPDFRow(10), textPDFRow(11)], [
+	'ca_objects.transcription' => textImport($import), 'ca_objects.pdf_text' => textImport($legacy, 'pdf_text')
+]);
+checkDocumentText(array_column(tadlObjectDocumentText($request, $partial), 'text') === ['Rank 2'], 'Any populated readable PDF extraction must suppress both metadata fallbacks, even when another PDF is blank.');
+checkDocumentText(!array_intersect(['ca_objects.transcription', 'ca_objects.pdf_text'], array_column($partial->reads, 0)), 'Partially populated PDF extraction must not fetch lower-priority metadata.');
+ca_object_representations::$records[11]['media_content'] = 'Rank 1 primary';
 
 // Render the actual object template and verify full-width placement after both columns.
 class TextView {
