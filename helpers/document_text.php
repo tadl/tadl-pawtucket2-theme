@@ -37,16 +37,16 @@ function tadlObjectDocumentText($request, $object) {
 	}
 	if (!$pdfs) { return []; }
 
-	if ($object->hasElement('pdf_text') && $object->isReadable($request, 'pdf_text')) {
+	if ($object->hasElement('transcription') && $object->isReadable($request, 'transcription')) {
 		// Structured values avoid element display templates, defaults and flattening
 		// across records/locales. Disable reference substitution before HTML escaping.
-		$values = $object->get('ca_objects.pdf_text', [
+		$values = $object->get('ca_objects.transcription', [
 			'returnWithStructure' => true, 'checkAccess' => $access, 'dontReturnDefault' => true,
 			'convertLineBreaks' => false, 'highlighting' => false, 'doRefSubstitution' => false
 		]);
 		$parts = [];
 		foreach ((array)($values[$object->getPrimaryKey()] ?? []) as $value) {
-			$text = tadlDocumentTextNormalize($value['pdf_text'] ?? '');
+			$text = tadlDocumentTextNormalize($value['transcription'] ?? '');
 			if ($text !== '') { $parts[] = $text; }
 		}
 		if ($parts) { return [['source' => 'imported', 'label' => '', 'text' => join("\n\n", $parts)]]; }

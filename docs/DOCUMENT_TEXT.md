@@ -8,7 +8,7 @@ breaks, wraps long words and can be selected/copied.
 
 ## Source selection
 
-1. Use populated `ca_objects.pdf_text`, the migrated Omeka PDF-text metadata
+1. Use populated `ca_objects.transcription`, the migrated Omeka/Scripto metadata
    element, when the visitor can read that bundle. Multiple values in the
    visitor's selected locale are separated by a blank line. Empty values and
    metadata-element defaults do not supply text.
@@ -21,7 +21,8 @@ breaks, wraps long words and can be selected/copied.
 The accessible-PDF requirement also applies to imported text. An object with
 only a public TIFF and a private paired PDF has no document-text section. The
 theme does not recover text from hidden representations, expose native editing
-transcription records, or use the separate `ca_objects.transcription` field.
+transcription records, or use the separate `ca_objects.pdf_text` field. The
+imported source was corrected to `transcription` on 2026-10-08.
 
 Both sources are displayed as escaped plain text, including literal angle
 brackets. Stored HTML is not executed or rendered as rich text. CRLF/CR endings
@@ -35,7 +36,13 @@ or text generation occurs during the request.
 nondeleted, readable under type/source/bundle permissions and allowed by native
 Pawtucket item ACLs. The representation `media` bundle must be readable; reading
 extracted text additionally requires `media_content`. Imported text separately
-requires the object's `pdf_text` bundle. An empty access mask fails closed.
+requires the object's `transcription` bundle. An empty access mask fails closed.
+
+The current native search-index configuration includes all object metadata via
+`_metadata`, including `transcription`, and attached representation
+`media_content`. Ordinary keyword search can therefore match both sources once
+they have been populated and indexed. The display section does not change the
+search index or trigger a rebuild.
 
 PDF text must already be present in `media_content`. CollectiveAccess's native
 PDF processing extracts selectable text using local PDF tools when media is
@@ -58,12 +65,16 @@ Run `php tests/document_text_test.php`, then the full standalone suite loop in
 `AGENTS.md`. Tests use synthetic records and do not need an application database.
 
 During development on 2026-10-08, a read-only check against the installed native
-Pawtucket models verified one newspaper PDF with existing extracted text and an
-empty migrated field. The candidate helper returned the complete 55,887-character
-text with an anonymous public access mask. Only source names, counts and lengths
-were reported; the candidate was evaluated through PHP stdin without installing
-files or changing catalogue records. The imported-field path remains covered by
-synthetic tests until the planned import supplies real values.
+Pawtucket models initially verified one newspaper PDF with existing extracted
+text and an empty `pdf_text` field. The candidate helper returned the complete
+55,887-character extraction with an anonymous public access mask. After correcting
+the migrated source to `transcription`, a fresh check confirmed that the element
+exists, selected its populated text and returned the same character count as the
+native field getter. Only source names, counts and lengths were reported; the
+candidate was evaluated through PHP stdin without installing files or changing
+catalogue records. Both extraction and transcription-field precedence are covered
+by synthetic tests and installed-model checks; this does not establish that the
+planned transcription import is complete.
 
 All twenty-five standalone suites and changed PHP lint passed. A synthetic
 browser preview with the actual object template and styles verified full-width

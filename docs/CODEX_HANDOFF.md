@@ -84,16 +84,18 @@ line numbers. Native application behavior can be inspected in the nearby
 
 Object details have a collapsed **Document text** section after both media and
 metadata columns. A readable attached PDF is required for either source:
-populated `ca_objects.pdf_text` takes precedence, otherwise accessible PDFs'
+populated `ca_objects.transcription` takes precedence, otherwise accessible PDFs'
 `ca_object_representations.media_content` supplies text. Private paired PDFs do
 not qualify a TIFF object. Empty/missing text produces no section. Native record
 access, deletion, type/source/bundle permissions and Pawtucket ACLs remain enforced;
 text/labels are escaped and line/page breaks retained. Multiple PDFs follow native
 rank/primary order with an ID tie break. Native `details` needs no new JavaScript,
-controller, extraction process or external service. See `docs/DOCUMENT_TEXT.md`.
-The candidate helper passed a read-only installed-model check for a newspaper PDF;
-the migrated text was empty, so imported precedence remains verified synthetically
-until the planned import. No theme deployment or catalogue mutation was performed.
+controller, extraction process or external service. The migrated Scripto source
+was corrected from `pdf_text` to `transcription` on 2026-10-08; the separate
+`ca_objects.pdf_text` field is not a display fallback. See `docs/DOCUMENT_TEXT.md`.
+The candidate helper passed read-only installed-model checks for both PDF extraction
+and the corrected transcription-field precedence, in addition to synthetic tests.
+No theme deployment or catalogue mutation was performed for the correction.
 
 ### Crawler hints and root robots policy
 

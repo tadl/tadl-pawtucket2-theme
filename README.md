@@ -45,7 +45,7 @@ model's access, ACL and bundle checks. This does not change catalogue primary li
 access flags or files; TIFF representations use their generated JPEG thumbnails.
 
 Object details offer a collapsed **Document text** section below the media and
-metadata when an accessible PDF has text. Populated `ca_objects.pdf_text` takes
+metadata when an accessible PDF has text. Populated `ca_objects.transcription` takes
 precedence over extracted `ca_object_representations.media_content`. Private
 paired PDFs do not qualify a TIFF object for this section; empty text produces
 no heading. See [Document text](docs/DOCUMENT_TEXT.md) for permissions, source
