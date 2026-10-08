@@ -176,8 +176,9 @@ See `docs/USER_FEATURES.md` for limitations and live verification boundaries.
 
 ### Collection finding aids
 
-Collection details now offer **Download Finding Aid** for the selected collection,
-with populated collection metadata, a unique accessible-object total and directly
+Collection details now offer **Download finding aid** for the selected collection.
+The link uses sentence case and the normal detail-link color, size and hover underline.
+The PDF includes populated collection metadata, a unique accessible-object total and directly
 linked object counts for each readable collection/descendant. Counts include
 objects without media, independent of the header preference, and preserve all
 record, bundle and Pawtucket ACL checks. As of 2026-10-08, individual object entries

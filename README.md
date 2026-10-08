@@ -41,7 +41,7 @@ Collection contents keep paging, sorting and Tiles/List controls on the collecti
 detail URL. By default, the list includes the selected collection and all readable
 descendants, with objects shown once even when attached to multiple subcollections.
 Collections with readable children offer **View collection hierarchy** below
-**Download Finding Aid**, restoring the collection browser and directly attached
+**Download finding aid**, restoring the collection browser and directly attached
 items; **View all collection items** returns to the flat list. Sorting, paging,
 display controls and the media preference preserve that choice. The catalogue
 hierarchy and finding aid remain unchanged.
@@ -75,7 +75,7 @@ and formatting tags are not displayed. See
 [Document text](docs/DOCUMENT_TEXT.md) for permissions, source selection and
 verification.
 
-Collection details offer **Download Finding Aid**, an initial collection PDF with
+Collection details offer **Download finding aid**, an initial collection PDF with
 metadata, a unique accessible-object total and counts for each collection or
 subcollection. The PDF lists the complete readable hierarchy, indented by level
 with naturally sorted siblings, including empty subcollections. Counts include

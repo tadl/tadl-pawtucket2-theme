@@ -1847,11 +1847,8 @@ a.readmore-js-toggle{
 .caAudioPlayer{
 	padding-top:26px;
 }
-.detail .exportCollection .fa, .detail .exportCollection .glyphicon, .detail .exportCollection a{
-	color: #757575 !important;
-	font-size: max(var(--tadl-text-min, 0px), 11px);
-    text-transform: uppercase;
-    text-decoration:none;
+.detail .exportCollection .fa, .detail .exportCollection .glyphicon{
+	color: #757575;
 }
 /* --------------------------------- */
 /* browse b */

@@ -1,6 +1,6 @@
 # Collection finding aids
 
-The initial **Download Finding Aid** action replaces the generic collection
+The initial **Download finding aid** action replaces the generic collection
 summary PDF link. It generates a letter-size PDF for the collection being viewed,
 including readable descendant collections and counts of their accessible cataloged
 objects. It does not redirect the export to the hierarchy's
