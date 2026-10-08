@@ -32,7 +32,13 @@
 						print "<li class='divider' role='menuitem'></li>\n";
 						print "<li class='dropdown-header' role='menuitem'>"._t("Download results as:")."</li>\n";
 						foreach($va_export_formats as $va_export_format){
-							print "<li class='".$va_export_format["code"]."' role='menuitem'>".caNavLink($this->request, $va_export_format["name"], "", "*", "*", "*", array("view" => "pdf", "download" => true, "export_format" => $va_export_format["code"], "key" => $vs_browse_key), array('rel' => 'nofollow'))."</li>";
+							$export_params = ["view" => "pdf", "download" => true, "export_format" => $va_export_format["code"], "key" => $vs_browse_key];
+							if ($this->request->getController() === 'CollectionContents') {
+								$export_params['collection_id'] = tadlBrowseResultCollectionID($this->request);
+								$export_params['collection_view'] = $this->request->getParameter('collection_view', pString) === 'hierarchy' ? 'hierarchy' : 'flat';
+								unset($export_params['key']);
+							}
+							print "<li class='".$va_export_format["code"]."' role='menuitem'>".caNavLink($this->request, $va_export_format["name"], "", "*", "*", "*", $export_params, array('rel' => 'nofollow'))."</li>";
 						}
 					}
 ?>

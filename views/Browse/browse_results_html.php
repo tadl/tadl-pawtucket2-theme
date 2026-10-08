@@ -63,7 +63,7 @@
 	$vs_table 			= $this->getVar('table');
 	$t_instance			= $this->getVar('t_instance');
 	
-	$vb_is_search		= ($this->request->getController() == 'Search');
+	$vb_is_search		= in_array($this->request->getController(), ['Search', 'CollectionContents'], true);
 	$vb_subject_browse = !$vb_is_search && ($this->getVar('browse_type') === 'subjects');
 
 	$va_options			= $this->getVar('options');
@@ -112,7 +112,7 @@
 		$vn_start = min(max(0, $vn_start), max(0, ((int)ceil($vn_result_size / $vn_tadl_page_size) - 1) * $vn_tadl_page_size));
 		$this->setVar('start', $vn_start);
 	}
-	tadlMediaResultContext($this, $qr_res, $vs_find_type, $this->request->getController() === 'Search' ? $this->getVar('browse_type') : null);
+	tadlMediaResultContext($this, $qr_res, $vs_find_type, $vb_is_search ? $this->getVar('browse_type') : null);
 	if ($this->request->getParameter('source', pString) === 'multisearch') {
 		tadlMediaResultContext($this, $qr_res, 'multisearch', $this->getVar('browse_type'));
 	}
@@ -237,7 +237,7 @@ if (!$vb_ajax) {	// !ajax
 
 # --- check if this result page has been cached
 # --- key is MD5 of browse key, sort, sort direction, view, page/start, items per page, row_id
-$vs_cache_key = md5('tadl_results_v9'.tadlBrowseResultCollectionID($this->request).$vs_browse_key.$vs_current_sort.$vs_sort_dir.$vs_current_view.$vn_start.$vn_hits_per_block.$vn_row_id.$vs_letter.$vs_media_preference.serialize($va_access_values).serialize($qr_res->getPrimaryKeyValues()).(int)caDisplayLightbox($this->request));
+$vs_cache_key = md5('tadl_results_v10'.tadlBrowseResultCollectionID($this->request).$this->request->getParameter('collection_view', pString).$vs_browse_key.$vs_current_sort.$vs_sort_dir.$vs_current_view.$vn_start.$vn_hits_per_block.$vn_row_id.$vs_letter.$vs_media_preference.serialize($va_access_values).serialize($qr_res->getPrimaryKeyValues()).(int)caDisplayLightbox($this->request));
 if(($o_config->get("cache_timeout") > 0) && ExternalCache::contains($vs_cache_key,'browse_results')){
 	print ExternalCache::fetch($vs_cache_key, 'browse_results');
 }else{

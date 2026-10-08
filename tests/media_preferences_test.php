@@ -373,6 +373,9 @@ foreach (['s', 'page', 'row_id', 'password', 'token'] as $field) {
 }
 testAssert(!isset($params['media']), 'Toggle return URL must not carry the preference.');
 testAssert(!str_contains($url, 'synthetic-secret') && !str_contains($url, 'synthetic-token'), 'Toggle URL leaked unrelated sensitive state.');
+$collectionRequest = new TestRequest(['collection_id' => 42, 'collection_view' => 'hierarchy', 'view' => 'list', 'sort' => 'Title', 's' => 24]);
+parse_str(parse_url(tadlMediaPreferenceUrl($collectionRequest), PHP_URL_QUERY), $collectionParams);
+testAssert($collectionParams['collection_view'] === 'hierarchy' && $collectionParams['collection_id'] === '42' && !isset($collectionParams['s']), 'Media preference toggle must retain collection mode while resetting paging.');
 $html = tadlRenderMediaPreferenceToggle(testMediaRequest('only'));
 $dom = new DOMDocument();
 $previous = libxml_use_internal_errors(true);

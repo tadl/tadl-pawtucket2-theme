@@ -9,7 +9,7 @@ still control downloads.
   collection finding aids and result/lightbox export links use `rel="nofollow"`.
   Native callbacks and existing `rel` tokens remain intact.
   Advanced Search and Browse navigation links also use `nofollow`.
-- Search, MultiSearch and Browse HTML pages use `noindex, follow`; links to public
+- Search, MultiSearch, Browse and CollectionContents HTML pages use `noindex, follow`; links to public
   records remain eligible for discovery if a crawler visits those pages.
   Account/lightbox pages use `noindex, nofollow`.
 - The theme's image, finding-aid, native representation and attribute/ZIP binary

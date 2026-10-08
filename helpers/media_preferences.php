@@ -48,7 +48,7 @@ function tadlMediaPreferenceUrl($request) {
 	$params = array_intersect_key($request->getParameters(array('PATH', 'GET')), array_flip(array(
 		'search', 'key', 'facets', 'facet', 'id', 'removeCriterion', 'removeID', 'clear',
 		'view', 'sort', 'direction', 'n', '_advanced', 'source', 'label',
-		'collection_id', 'object_id', 'entity_id', 'place_id', 'occurrence_id', 'set_id'
+		'collection_id', 'collection_view', 'object_id', 'entity_id', 'place_id', 'occurrence_id', 'set_id'
 	)));
 	$params = array_filter($params, function ($value) { return is_scalar($value); });
 	return caNavUrl($request, '*', '*', '*', $params, array('useQueryString' => true));

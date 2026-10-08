@@ -1260,6 +1260,10 @@ h6 {
     color: var(--tadl-primary-dark);
 }
 
+.tadl-collection-view-switch {
+    margin-bottom: 20px;
+}
+
 .tadl-collection-metadata {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

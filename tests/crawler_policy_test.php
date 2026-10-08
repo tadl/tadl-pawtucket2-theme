@@ -16,7 +16,7 @@ $request = new class {
 	public string $controller;
 	function getController() { return $this->controller; }
 };
-foreach (['Search', 'MultiSearch', 'Browse', 'search'] as $controller) {
+foreach (['Search', 'MultiSearch', 'Browse', 'CollectionContents', 'search'] as $controller) {
 	$request->controller = $controller;
 	crawlerCheck(tadlCrawlerPageDirectives($request) === 'noindex, follow', $controller.': results must not be indexed, but public record links remain discoverable.');
 }
@@ -75,6 +75,7 @@ $blocked = static function ($url) use ($patterns) {
 foreach (['', '/index.php'] as $prefix) {
 	foreach ([
 		'/Search', '/Search/objects/search/forest/view/images', '/Search/advanced', '/MultiSearch/Index?search=forest',
+		'/CollectionContents/Objects/collection_id/42',
 		'/Browse/people', '/Browse/places/facet/place_facet/id/42', '/Browse/objects/view/pdf/download/1',
 		'/ImageDownload/Download/object_id/42/representation_id/101/format/jpg',
 		'/CollectionFindingAid/Download/collection_id/42', '/FindingAid/Download/collection_id/42',

@@ -4,7 +4,7 @@ Standalone source repository for the `tadl` Pawtucket2 theme used for TADL local
 
 For Codex or a new workstation, start with [AGENTS.md](AGENTS.md) and the
 [current handoff](docs/CODEX_HANDOFF.md). The handoff explains the source map,
-recent changes, design decisions and all twenty-six standalone regression suites.
+recent changes, design decisions and all twenty-seven standalone regression suites.
 It uses relative paths and does not require an application database for those tests.
 
 Deployment is a separate, explicitly authorized step. A source commit/push does
@@ -38,7 +38,15 @@ fields remain fully visible. Native disclosures work without JavaScript, retain
 the complete formatted text and links, and preserve existing access checks.
 
 Collection contents keep paging, sorting and Tiles/List controls on the collection
-detail URL. The overview groups description/source and scope/content in the
+detail URL. By default, the list includes the selected collection and all readable
+descendants, with objects shown once even when attached to multiple subcollections.
+Collections with readable children offer **View collection hierarchy** below
+**Download Finding Aid**, restoring the collection browser and directly attached
+items; **View all collection items** returns to the flat list. Sorting, paging,
+display controls and the media preference preserve that choice. The catalogue
+hierarchy and finding aid remain unchanged.
+
+The overview groups description/source and scope/content in the
 center, with creators, dates, extent, language, subjects, rights and related
 records in the right column. Columns stack on phones and empty columns are
 omitted. A compact results toolbar uses the available page width.

@@ -48,10 +48,12 @@ function caGetAddToSetInfo($request) { return []; }
 function caDisplayLightbox($request) { return false; }
 function caBusyIndicatorIcon($request) { return '<span class="synthetic-spinner"></span>'; }
 function caNavUrl($request, $module, $controller, $action, $params = []) {
+	if ($controller === '*' && $request->getController() === 'CollectionContents') { return '/synthetic/CollectionContents/Objects?'.http_build_query($params); }
 	return '/synthetic/'.($controller === 'Detail' ? 'Detail/' : '').($action === '*' ? 'objects' : $action).'?'.http_build_query($params);
 }
-function caNavLink($request, $text, $class, $module, $controller, $action, $params = []) {
-	return '<a class="'.htmlspecialchars($class, ENT_QUOTES, 'UTF-8').'" href="'.htmlspecialchars(caNavUrl($request, $module, $controller, $action, $params), ENT_QUOTES, 'UTF-8').'">'.$text.'</a>';
+function caNavLink($request, $text, $class, $module, $controller, $action, $params = [], $attributes = []) {
+	$rel = isset($attributes['rel']) ? ' rel="'.htmlspecialchars($attributes['rel'], ENT_QUOTES, 'UTF-8').'"' : '';
+	return '<a class="'.htmlspecialchars($class, ENT_QUOTES, 'UTF-8').'" href="'.htmlspecialchars(caNavUrl($request, $module, $controller, $action, $params), ENT_QUOTES, 'UTF-8').'"'.$rel.'>'.$text.'</a>';
 }
 class Datamodel {
 	static function getInstance($table, $initialize = true) { return new ContextSubject($table); }
@@ -109,8 +111,9 @@ class ContextConfig {
 	function get($key) { return $key === 'cache_timeout' ? 0 : null; }
 }
 class ExternalCache {
+	static array $keys = [];
 	static function contains($key, $group) { return false; }
-	static function save($key, $html, $group, $timeout) {}
+	static function save($key, $html, $group, $timeout) { self::$keys[] = $key; }
 }
 class ContextView {
 	private array $values;
@@ -203,8 +206,9 @@ foreach ([0, 1, 8] as $filteredCount) {
 }
 $html = (new ContextView(new ContextRequest('Browse', true), [], 45))->render('Browse/browse_results_html.php');
 checkContext(!str_contains($html, 'tadl-related-results-summary'), 'Browse AJAX must not gain Search-only related summary.');
+foreach ([['Search', 'flat'], ['CollectionContents', 'flat'], ['CollectionContents', 'hierarchy']] as [$controller, $mode]) {
 foreach (['images' => 9, 'list' => 24] as $view => $pageSize) {
-	$html = (new ContextView(new ContextRequest('Search', true, 45, ['tadl_collection_controls' => 1, 'tadl_collection_id' => 42]), [], 90, ['view' => $view]))->render('Browse/browse_results_html.php');
+	$html = (new ContextView(new ContextRequest($controller, true, 45, ['tadl_collection_controls' => 1, 'tadl_collection_id' => 42, 'collection_view' => $mode]), [], 90, ['view' => $view]))->render('Browse/browse_results_html.php');
 	$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 	$xpath = new DOMXPath($document);
 	checkContext($xpath->query('//div[contains(@class,"tadl-collection-results-toolbar")]')->length === 1 && $xpath->query('//div[@aria-label="Result display options"]')->length === 1, 'Embedded collection needs exactly one Tiles/List toolbar.');
@@ -214,7 +218,7 @@ foreach (['images' => 9, 'list' => 24] as $view => $pageSize) {
 }
 // Both pagers and sort/view actions stay on the collection for later pages.
 foreach (['images' => 9, 'list' => 24] as $view => $pageSize) {
-    $request = new ContextRequest('Search', true, 45, ['tadl_collection_controls' => 1, 'tadl_collection_id' => 42]);
+    $request = new ContextRequest($controller, true, 45, ['tadl_collection_controls' => 1, 'tadl_collection_id' => 42, 'collection_view' => $mode]);
     $html = (new ContextView($request, [], 90, ['view' => $view, 'start' => $pageSize, 'sort' => 'Title', 'sort_direction' => 'desc']))->render('Browse/browse_results_html.php');
     $document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
     $xpath = new DOMXPath($document);
@@ -223,10 +227,30 @@ foreach (['images' => 9, 'list' => 24] as $view => $pageSize) {
     foreach ($xpath->query('//div[contains(@class,"tadl-collection-results-toolbar")]//a[@href!="#"]') as $anchor) {
         $url = $anchor->getAttribute('href');
         checkContext(str_starts_with($url, '/synthetic/Detail/collections/42?') && !str_contains($url, 'key=') && !str_contains($url, 'tadl_collection_'), 'Collection controls leaked Search state or lost collection route.');
+        checkContext(str_contains($url, 'collection_view=hierarchy') === ($mode === 'hierarchy'), 'Collection view, sorting and top pager must retain hierarchy mode.');
     }
     $pager = tadlBrowseResultPager($request, 45, $pageSize, $pageSize, 'synthetic-key', $view, 'Title', 'desc', false);
     checkContext(str_contains($pager, 'sort=Title') && str_contains($pager, 'direction=desc') && str_contains($pager, 's=0'), 'Bottom pager must retain sort/direction and allow Previous.');
+    checkContext(str_contains($pager, 'collection_view=hierarchy') === ($mode === 'hierarchy'), 'Bottom pager must retain hierarchy mode.');
 }
+}
+foreach (['flat', 'hierarchy'] as $mode) {
+	$request = new ContextRequest('CollectionContents', true, null, ['tadl_collection_controls' => 1, 'tadl_collection_id' => 42, 'collection_view' => $mode]);
+	$extra = ['export_formats' => [['code' => 'synthetic', 'name' => 'Synthetic PDF']]];
+	$html = (new ContextView($request, [], 45, $extra))->render('Browse/browse_results_html.php');
+	checkContext(!str_contains($html, 'Synthetic PDF'), 'Only media must not gain unfiltered native exports.');
+	$request->mediaMode = 'all';
+	$html = (new ContextView($request, [], 45, $extra))->render('Browse/browse_results_html.php');
+	$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+	$anchor = (new DOMXPath($document))->query('//a[starts-with(@href,"/synthetic/CollectionContents/Objects?")]')->item(0);
+	checkContext($anchor && str_contains($anchor->getAttribute('href'), 'collection_id=42') && str_contains($anchor->getAttribute('href'), 'collection_view='.$mode) && !str_contains($anchor->getAttribute('href'), 'key=') && $anchor->getAttribute('rel') === 'nofollow', 'Native export must regenerate the selected branch scope and discourage crawling.');
+}
+$keysBefore = count(ExternalCache::$keys);
+foreach (['flat', 'hierarchy'] as $mode) {
+	$request = new ContextRequest('CollectionContents', true, null, ['tadl_collection_controls' => 1, 'tadl_collection_id' => 42, 'collection_view' => $mode]);
+	(new ContextView($request, [], 45))->render('Browse/browse_results_html.php');
+}
+checkContext(count(ExternalCache::$keys) === $keysBefore + 2 && ExternalCache::$keys[$keysBefore] !== ExternalCache::$keys[$keysBefore + 1], 'Result cache must not cross flat/hierarchy modes even with identical object IDs.');
 $html = (new ContextView(new ContextRequest('Search', true), [], 45))->render('Browse/browse_results_html.php');
 checkContext(!str_contains($html, 'tadl-collection-results-toolbar'), 'Ordinary AJAX result blocks gained collection-only controls.');
 $html = (new ContextView(new ContextRequest('Search', false, null, ['tadl_collection_controls' => 1]), [], 45))->render('Browse/browse_results_html.php');

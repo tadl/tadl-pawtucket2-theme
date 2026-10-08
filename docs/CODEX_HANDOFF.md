@@ -62,7 +62,7 @@ before calling an issue deployed or still broken.
 | Enlarged viewer help | `views/Details/viewer_help_html.php` |
 | Detail metadata and long-field disclosures | `views/Details/detail_field_helpers.php`, shared detail templates and scoped theme CSS |
 | Document text | `helpers/document_text.php`, object detail view and scoped theme CSS; `docs/DOCUMENT_TEXT.md` |
-| Collection details | `views/Details/ca_collections_default_html.php` |
+| Collection details | `views/Details/ca_collections_default_html.php`, `controllers/CollectionContentsController.php`, `helpers/collection_contents.php` |
 | Authority details | `views/Details/authority_detail_helpers.php`, `authority_detail_html.php`, entity/place/occurrence detail templates |
 | Galleries | `views/Gallery/index_html.php`, `set_info_html.php`, `detail_html.php`, `set_item_rep_html.php`, `set_item_info_html.php` |
 | Styling | `assets/pawtucket/css/theme.css`, with the existing `main.css` foundation |
@@ -334,18 +334,44 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
   The contents toolbar
   aligns **Collection items**, the filtered count, **Options**, **Tiles/List** and
   pagination. Metadata and tools stack on narrower screens.
-- The collection loader requests `tadl_collection_controls=1` and its selected
-  `tadl_collection_id`. Sorting uses the shared Options partial. View, sort/order
+- Collection details default to a flat list of the selected collection's objects
+  plus every readable descendant's objects. Native search unions memberships, so
+  an object linked to several descendants appears once. A readable hierarchy
+  offers **View collection hierarchy** beneath the finding-aid link; explicit
+  `collection_view=hierarchy` restores the existing browser and directly attached
+  items. **View all collection items** returns to flat mode. Unknown/missing mode
+  defaults to flat; switching scope resets paging and retains sort/display state.
+  Leaf collections omit the switch. Catalogue hierarchy and finding aids are unchanged.
+- The loader uses `/CollectionContents/Objects/collection_id/<id>` with the chosen
+  `collection_view`. Its controller supplies `tadl_collection_controls=1` and the
+  selected `tadl_collection_id` to the native SearchController. Sorting uses the
+  shared Options partial. View, sort/order
   and both pagers link to `/Detail/collections/<id>` with ordinary result-state
   parameters, retaining the collection overview on every page. Reload, bookmarks
   and browser Back use those URLs. The loader validates view/sort/direction/offset
-  and rebuilds the object search from the loaded collection ID; incoming search/key
-  parameters cannot replace it. Other search/browse and authority AJAX routes stay
-  native. Result-block cache keys include collection context to avoid reusing a
-  pager from another route. Native access, ACL and media filtering remain in charge.
+  and rebuilds the object search from accessible collection IDs; incoming search/key,
+  refinement or advanced-search parameters cannot replace it. The helper walks
+  descendants by level with parameterized parent/access/deletion queries in batches
+  of 500 parents, then native model record/type/source, hierarchy/ca_objects bundle
+  and Pawtucket ACL checks. Inaccessible ancestors prune their branches. Traversal
+  has no fixed depth or related-item cap and guards cycles. Numeric OR terms stay
+  server-side; an empty scope searches the impossible object ID 0, never `*`.
+  Object search, access/ACL restrictions, sorting and exports remain native, with
+  theme media filtering before counts, paging and result contexts. Other search/
+  browse and authority AJAX routes stay native. Cache keys include collection and
+  mode; the preference toggle preserves mode. Deploy the controller, helper and
+  template together; no schema/index rebuild or additional dependency is required.
+- Collection result responses send `Cache-Control: private, no-store` and
+  `X-Robots-Tag: noindex, follow`. The replacement root robots policy also excludes
+  `/CollectionContents` (clean and index.php routes); installing that root file
+  remains a separate operator step, as documented in `docs/CRAWLER_POLICY.md`.
 - Rendered regressions cover later pages, both views, sort/order and invalid loader
   state. Desktop/tablet/phone synthetic browser previews check layout and dropdown
   interactions; production navigation remains a deployment-time check.
+  The 2026-10-08 flat/hierarchy change passed all 27 standalone suites and changed
+  PHP lint. Synthetic desktop/390px phone previews verified keyboard switching,
+  hierarchy paging, sorting, the reverse link and Tiles/List controls without
+  horizontal overflow. No production deployment was performed.
 - Multisearch has up to six previews per category, sensible text layouts for
   non-image records, counts and ordinary links to full results. It is not a carousel.
 - Shared Tiles results use a responsive grid with equal-height cards within each
@@ -653,7 +679,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The twenty-six committed tests are portable and use synthetic boundaries. They do not
+The twenty-seven committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -694,6 +720,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/media_preferences_test.php` | Eligibility SQL, lazy collection/authority descriptor fetching, related-object access/deletion/ACL/bundle checks, People/Organizations/Places/Events Tiles/List counts/paging/detail context, table cache isolation, route scope, invalid-media exhaustion, filtered result adapter and result rendering |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |
 | `tests/collection_detail_scripts_test.php` | Collection detail loader JavaScript, empty/populated field/relationship headings, long-field controls and narrative/facts column placement |
+| `tests/collection_contents_test.php` | Actual helper/controller, SQLite hierarchy queries, deep/wide branches, scope/access/deletion/ACL/bundle pruning, cycles, duplicate memberships, bounded queries and canonical native search delegation |
 | `tests/object_detail_media_test.php` | Media selection, viewer controls and callbacks |
 | `tests/object_detail_video_poster_test.php` | Covers, playback, player fallback and access |
 | `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |

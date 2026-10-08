@@ -27,10 +27,13 @@
  */
 
 	require_once(__DIR__.'/detail_field_helpers.php');
+	require_once(__DIR__.'/../../helpers/collection_contents.php');
 
 	$t_item = $this->getVar("item");
 	$va_access_values = (array)caGetUserAccessValues($this->request);
-	$va_related_object_ids = (array)$t_item->get('ca_objects.object_id', array('returnAsArray' => true, 'checkAccess' => $va_access_values));
+	$collection_mode = tadlCollectionContentsMode($this->request);
+	$va_related_object_ids = $collection_mode === 'hierarchy'
+		? (array)$t_item->get('ca_objects.object_id', array('returnAsArray' => true, 'checkAccess' => $va_access_values)) : [];
 	$vb_show_single_related_object = sizeof($va_related_object_ids) === 1;
 	if (tadlMediaPreference($this->request) === 'only') {
 		$vb_show_single_related_object = (sizeof($va_related_object_ids) === 1) && (bool)tadlMediaEligibleIDs('ca_objects', $va_related_object_ids, $va_access_values);
@@ -42,10 +45,9 @@
 
 	# --- get collections configuration
 	$o_collections_config = caGetCollectionsConfig();
-	$vb_show_hierarchy_viewer = true;
-	if($o_collections_config->get("do_not_display_collection_browser")){
-		$vb_show_hierarchy_viewer = false;
-	}
+	$collection_has_hierarchy = !$o_collections_config->get('do_not_display_collection_browser')
+		&& tadlCollectionHasHierarchy($this->request, $t_item);
+	$vb_show_hierarchy_viewer = $collection_has_hierarchy && $collection_mode === 'hierarchy';
 
 	$collection_view = $this->request->getParameter('view', pString, ['forcePurify' => true]);
 	if (!in_array($collection_view, ['images', 'list'], true)) { $collection_view = 'images'; }
@@ -55,9 +57,7 @@
 	$collection_direction = $this->request->getParameter('direction', pString);
 	if (!in_array($collection_direction, ['asc', 'desc'], true)) { $collection_direction = 'asc'; }
 	$collection_result_params = [
-		'search' => 'collection_id:'.(int)$t_item->get('collection_id'),
-		'tadl_collection_controls' => 1,
-		'tadl_collection_id' => (int)$t_item->get('collection_id'),
+		'collection_id' => (int)$t_item->get('collection_id'), 'collection_view' => $collection_mode,
 		'view' => $collection_view, 'sort' => $collection_sort, 'direction' => $collection_direction,
 		's' => max(0, (int)$this->request->getParameter('s', pInteger)),
 		'n' => $collection_view === 'list' ? 24 : 9
@@ -123,6 +123,15 @@
 						$finding_aid_url = caNavUrl($this->request, '', 'CollectionFindingAid', 'Download', ['collection_id' => (int)$t_item->get('collection_id')]);
 						print "<div class='exportCollection'><span class='glyphicon glyphicon-file' aria-hidden='true'></span> <a href=\"".htmlspecialchars($finding_aid_url, ENT_QUOTES, 'UTF-8')."\" rel=\"nofollow\">".htmlspecialchars(_t('Download Finding Aid'), ENT_QUOTES, 'UTF-8')."</a></div>";
 					}
+					if ($collection_has_hierarchy) {
+						$switch_params = $collection_result_params;
+						unset($switch_params['collection_id'], $switch_params['n']);
+						$switch_params['s'] = 0;
+						$switch_params['collection_view'] = $collection_mode === 'flat' ? 'hierarchy' : 'flat';
+						$switch_url = caNavUrl($this->request, '', 'Detail', 'collections/'.(int)$t_item->get('collection_id'), $switch_params);
+						$switch_label = $collection_mode === 'flat' ? _t('View collection hierarchy') : _t('View all collection items');
+						print '<div class="tadl-collection-view-switch"><a href="'.htmlspecialchars($switch_url, ENT_QUOTES, 'UTF-8').'">'.htmlspecialchars($switch_label, ENT_QUOTES, 'UTF-8').'</a></div>';
+					}
 ?>
 				</div>
 				<?php if ($collection_fields || $collection_facts): ?>
@@ -149,7 +158,7 @@
 				</div><!-- end col -->
 			</div><!-- end row -->
 
-<?php if (sizeof($va_related_object_ids) >= 2) { ?>
+<?php if ($collection_mode === 'flat' || sizeof($va_related_object_ids) >= 2) { ?>
 			<div class="row">
 				<div id="browseResultsContainer">
 					<?php print caBusyIndicatorIcon($this->request).' '.addslashes(_t('Loading...')); ?>
@@ -157,7 +166,7 @@
 			</div><!-- end row -->
 			<script type="text/javascript">
 				jQuery(document).ready(function() {
-					jQuery("#browseResultsContainer").load(<?php print json_encode(caNavUrl($this->request, '', 'Search', 'objects', $collection_result_params)); ?>, function() {
+					jQuery("#browseResultsContainer").load(<?php print json_encode(caNavUrl($this->request, '', 'CollectionContents', 'Objects', $collection_result_params)); ?>, function() {
 						jQuery('#browseResultsContainer').jscroll({
 							autoTrigger: true,
 							loadingHtml: <?php print json_encode(caBusyIndicatorIcon($this->request).' '._t('Loading...'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,

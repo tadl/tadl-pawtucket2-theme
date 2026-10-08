@@ -2,7 +2,7 @@
 /** Collection contents use ordinary detail URLs; other results retain native routes. */
 function tadlBrowseResultCollectionID($request) {
 	if (!method_exists($request, 'getParameter') || !method_exists($request, 'getController')
-		|| !$request->isAjax() || $request->getController() !== 'Search'
+		|| !$request->isAjax() || !in_array($request->getController(), ['Search', 'CollectionContents'], true)
 		|| $request->getParameter('tadl_collection_controls', pInteger) !== 1) { return 0; }
 	return max(0, (int)$request->getParameter('tadl_collection_id', pInteger));
 }
@@ -10,6 +10,7 @@ function tadlBrowseResultCollectionID($request) {
 function tadlBrowseResultLink($request, $label, $class, $params) {
 	if ($id = tadlBrowseResultCollectionID($request)) {
 		$params = array_intersect_key($params, array_flip(['view', 'sort', 'direction', 's']));
+		if ($request->getParameter('collection_view', pString) === 'hierarchy') { $params['collection_view'] = 'hierarchy'; }
 		return caNavLink($request, $label, $class, '', 'Detail', 'collections/'.$id, $params);
 	}
 	return caNavLink($request, $label, $class, '*', '*', '*', $params);

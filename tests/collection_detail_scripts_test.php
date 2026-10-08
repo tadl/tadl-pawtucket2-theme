@@ -11,9 +11,11 @@ set_error_handler(function ($severity, $message, $file, $line) {
 
 define('pString', 1);
 define('pInteger', 2);
+define('__CA_ACL_READONLY_ACCESS__', 1);
 $GLOBALS['detailScriptAssertions'] = 0;
 $GLOBALS['detailScriptMode'] = 'only';
 $GLOBALS['detailScriptShowHierarchy'] = true;
+$GLOBALS['detailScriptHasChildren'] = true;
 $GLOBALS['detailScriptIcon'] = "<span class='caIcon' data-state=\"loading\" data-note=\"collector's </script> <>& \\ \u{2028}\u{2029}\"></span>";
 $GLOBALS['detailScriptLoading'] = "Loading collector's \"quoted\" media \\ & < > \u{2028}\u{2029}";
 
@@ -23,6 +25,7 @@ function checkDetailScripts($condition, $message) {
 }
 function _t($text) { return $text === 'Loading...' ? $GLOBALS['detailScriptLoading'] : $text; }
 function caGetUserAccessValues($request) { return array(1); }
+function caACLIsEnabled($record, $options = []) { return false; }
 function tadlMediaPreference($request) { return $GLOBALS['detailScriptMode']; }
 function tadlMediaEligibleIDs($table, $ids, $access) { return $ids; }
 function caBusyIndicatorIcon($request) { return $GLOBALS['detailScriptIcon']; }
@@ -43,9 +46,9 @@ class DetailScriptConfig {
 }
 class DetailScriptItem {
 	private array $values;
-	public function __construct($objectCount, private array $templates = []) {
+	public function __construct($objectCount, private array $templates = [], private int $id = 42) {
 		$this->values = array(
-			'collection_id' => 42,
+			'collection_id' => $id, 'access' => 1, 'deleted' => 0,
 			'entity_id' => 42,
 			'place_id' => 42,
 			'occurrence_id' => 42,
@@ -53,6 +56,9 @@ class DetailScriptItem {
 			'ca_collections.hierarchy.collection_id' => array(42)
 		);
 	}
+	public function getPrimaryKey() { return $this->id; }
+	public function load($id) { $this->id = (int)$id; return true; }
+	public function isReadable($request, $bundle = null) { return true; }
 	// The legacy template passes this result to array_shift() by reference. Keep
 	// that unrelated PHP notice outside this emitted-JavaScript regression.
 	public function &get($name, $options = array()) { return $this->values[$name]; }
@@ -62,6 +68,19 @@ class DetailScriptItem {
 			if (str_contains($template, $code)) { return $value; }
 		}
 		return '';
+	}
+}
+class Datamodel {
+	static function getInstance($table, $initialize) { return new DetailScriptItem(0); }
+}
+class Db {
+	function query($sql, $params) {
+		checkDetailScripts(str_contains($sql, 'parent_id IN (?) AND access IN (?) AND deleted = 0') && $params === [[42], [1]], 'Hierarchy switch must inspect only accessible, undeleted direct children.');
+		return new class {
+			private bool $read = false;
+			function nextRow() { if ($this->read || !$GLOBALS['detailScriptHasChildren']) { return false; } $this->read = true; return true; }
+			function get($name) { return 43; }
+		};
 	}
 }
 class DetailScriptView {
@@ -106,7 +125,7 @@ foreach ([
     [['view' => 'unknown', 'sort' => 'unknown', 'direction' => 'unknown', 's' => -9], '/view/images/sort/Identifier/direction/asc/s/0/n/9']
 ] as [$params, $suffix]) {
     $html = (new DetailScriptView(2, [], $params))->render('ca_collections');
-    checkDetailScripts(str_contains(str_replace('\\/', '/', $html), 'collection_id%3A42/tadl_collection_controls/1/tadl_collection_id/42'.$suffix), 'Collection loader failed to validate/forward its own result state.');
+    checkDetailScripts(str_contains(str_replace('\\/', '/', $html), '/CollectionContents/Objects/collection_id/42/collection_view/flat'.$suffix), 'Collection loader failed to validate/forward its own result state.');
     checkDetailScripts(!str_contains($html, 'unrelated'), 'Caller search/key must not replace this collection.');
 }
 $html = (new DetailScriptView(2))->render('ca_collections');
@@ -121,7 +140,7 @@ $html = (new DetailScriptView(2, [
 	'ca_collections.rights.copyrightStatement' => 'Synthetic statement',
 	'relativeTo="ca_places"' => '<a href="/synthetic/place">Synthetic place</a>'
 ]))->render('ca_collections');
-checkDetailScripts(strpos($html, 'tadl-collection-metadata') < strpos($html, 'collectionHierarchy') && str_contains($html, 'tadl-collection-fields') && str_contains($html, 'tadl-collection-facts'), 'Populated metadata must sit beside the heading above contents.');
+checkDetailScripts(strpos($html, 'tadl-collection-metadata') < strpos($html, 'browseResultsContainer') && str_contains($html, 'tadl-collection-fields') && str_contains($html, 'tadl-collection-facts'), 'Populated metadata must sit beside the heading above contents.');
 $document = new DOMDocument();
 $document->loadHTML('<meta charset="UTF-8">'.$html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 $xpath = new DOMXPath($document);
@@ -133,28 +152,41 @@ foreach ([['ca_collections.description' => 'Synthetic description'], ['ca_collec
 	$html = (new DetailScriptView(0, $values))->render('ca_collections');
 	checkDetailScripts(substr_count($html, 'class="tadl-collection-fields"') + substr_count($html, 'class="tadl-collection-facts"') === 1, 'A single populated metadata column must not reserve an empty sibling.');
 }
+$html = (new DetailScriptView(0))->render('ca_collections');
+checkDetailScripts(strpos($html, 'Download Finding Aid') < strpos($html, 'View collection hierarchy') && str_contains($html, '/Detail/collections/42/collection_view/hierarchy/view/images/sort/Identifier/direction/asc/s/0'), 'Flat view needs an ordinary hierarchy link beneath the finding aid.');
+$html = (new DetailScriptView(2, [], ['collection_view' => 'hierarchy', 'view' => 'list', 'sort' => 'Title', 'direction' => 'desc', 's' => 24]))->render('ca_collections');
+checkDetailScripts(str_contains($html, 'View all collection items') && str_contains($html, '/Detail/collections/42/collection_view/flat/view/list/sort/Title/direction/desc/s/0'), 'Return link must retain view/sort but reset paging for the larger scope.');
+$GLOBALS['detailScriptHasChildren'] = false;
+$html = (new DetailScriptView(0))->render('ca_collections');
+checkDetailScripts(!str_contains($html, 'tadl-collection-view-switch') && !str_contains($html, 'collectionHierarchy'), 'Leaf collections must not offer an empty hierarchy.');
+$GLOBALS['detailScriptHasChildren'] = true;
 
 $cases = array();
 foreach (array(
-	array('name' => 'multiple objects and hierarchy', 'table' => 'ca_collections', 'objects' => 2, 'hierarchy' => true, 'mode' => 'only', 'objectSearch' => 'collection_id%3A42'),
-	array('name' => 'all items and hierarchy', 'table' => 'ca_collections', 'objects' => 2, 'hierarchy' => true, 'mode' => 'all', 'objectSearch' => 'collection_id%3A42'),
-	array('name' => 'single object without hierarchy', 'table' => 'ca_collections', 'objects' => 1, 'hierarchy' => false, 'mode' => 'only')
+	array('name' => 'multiple objects and hierarchy', 'table' => 'ca_collections', 'objects' => 2, 'hierarchy' => true, 'mode' => 'only', 'collectionView' => 'hierarchy'),
+	array('name' => 'all items and hierarchy', 'table' => 'ca_collections', 'objects' => 2, 'hierarchy' => true, 'mode' => 'all', 'collectionView' => 'hierarchy'),
+	array('name' => 'single object without hierarchy', 'table' => 'ca_collections', 'objects' => 1, 'hierarchy' => false, 'mode' => 'only', 'collectionView' => 'hierarchy'),
+	array('name' => 'flat root with only nested items', 'table' => 'ca_collections', 'objects' => 0, 'hierarchy' => false, 'mode' => 'only'),
+	array('name' => 'flat single item', 'table' => 'ca_collections', 'objects' => 1, 'hierarchy' => false, 'mode' => 'all'),
+	array('name' => 'invalid mode defaults to flat', 'table' => 'ca_collections', 'objects' => 0, 'hierarchy' => false, 'mode' => 'only', 'collectionView' => 'unknown')
 ) as $case) {
 	$GLOBALS['detailScriptMode'] = $case['mode'];
 	$GLOBALS['detailScriptShowHierarchy'] = $case['hierarchy'];
-	$html = (new DetailScriptView($case['objects']))->render($case['table']);
+	$html = (new DetailScriptView($case['objects'], [], ['collection_view' => $case['collectionView'] ?? 'flat']))->render($case['table']);
+	$contentsMode = ($case['collectionView'] ?? '') === 'hierarchy' ? 'hierarchy' : 'flat';
+	$hasGrid = $contentsMode === 'flat' || $case['objects'] >= 2;
 	checkDetailScripts(!preg_match('~navTop|navLeftRight|detailNavBg|\{\{\{(?:previousLink|nextLink)\}\}\}~', $html), $case['name'].': collection detail still reserves record-navigation columns.');
 	checkDetailScripts(str_contains($html, '<div class="row tadl-collection-detail">') && str_contains($html, "<div class='col-xs-12'>"), $case['name'].': collection content lost its full-width layout.');
 	preg_match_all('~<script\b[^>]*>(.*?)</script\s*>~is', $html, $scripts);
-	$expectedScriptCount = ($case['hierarchy'] ? 1 : 0) + ($case['objects'] >= 2 ? 1 : 0) + ($case['extraScripts'] ?? 0);
+	$expectedScriptCount = ($case['hierarchy'] ? 1 : 0) + ($hasGrid ? 1 : 0);
 	checkDetailScripts(count($scripts[1]) === $expectedScriptCount, $case['name'].': unexpected inline script count.');
 	checkDetailScripts((strpos($html, 'id="collectionHierarchy"') !== false) === $case['hierarchy'], $case['name'].': hierarchy rendering changed.');
-	checkDetailScripts((strpos($html, 'id="browseResultsContainer"') !== false) === ($case['objects'] >= 2), $case['name'].': object contents rendering changed.');
+	checkDetailScripts((strpos($html, 'id="browseResultsContainer"') !== false) === $hasGrid, $case['name'].': object contents rendering changed.');
 	$cases[] = array(
 		'name' => $case['name'],
 		'scripts' => $scripts[1],
 		'hierarchyUrl' => $case['hierarchy'] ? '/synthetic/Collections/collectionHierarchy/collection_id/42' : null,
-		'objectsUrl' => $case['objects'] >= 2 ? '/synthetic/Search/objects/search/'.$case['objectSearch'].'/tadl_collection_controls/1/tadl_collection_id/42/view/images/sort/Identifier/direction/asc/s/0/n/9' : null,
+		'objectsUrl' => $hasGrid ? '/synthetic/CollectionContents/Objects/collection_id/42/collection_view/'.$contentsMode.'/view/images/sort/Identifier/direction/asc/s/0/n/9' : null,
 		'loadingHtml' => $GLOBALS['detailScriptIcon'].' '.$GLOBALS['detailScriptLoading']
 	);
 }

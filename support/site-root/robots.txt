@@ -4,6 +4,8 @@ User-agent: *
 
 # Dynamic searches, facets, sorting and pagination (including result exports).
 Disallow: /Search
+Disallow: /CollectionContents
+Disallow: /index.php/CollectionContents
 Disallow: /MultiSearch
 Disallow: /Browse
 Disallow: /index.php/Search
