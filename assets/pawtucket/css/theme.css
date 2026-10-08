@@ -66,7 +66,6 @@ body.tadl-interior {
 }
 
 .tadl-interior .detail .unit,
-.tadl-interior .detail .unit .trimText,
 .tadl-interior .tadl-detail-metadata .unit {
     font-size: 18px;
     line-height: 1.6;
@@ -102,6 +101,46 @@ body.tadl-interior {
 .tadl-detail-metadata a:hover {
     color: #737373;
     text-decoration: underline;
+}
+
+.tadl-long-field {
+    overflow-wrap: anywhere;
+}
+
+.tadl-long-field-preview {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 6;
+    overflow: hidden;
+}
+
+.tadl-long-field-details > summary {
+    display: list-item;
+    list-style-position: inside;
+    width: fit-content;
+    min-height: 44px;
+    padding: 8px 0;
+    color: var(--tadl-primary-dark);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.tadl-long-field-details > summary:focus-visible {
+    outline: 2px solid var(--tadl-primary-dark);
+    outline-offset: 2px;
+}
+
+.tadl-long-field-details .tadl-read-less,
+.tadl-long-field-details[open] .tadl-read-more {
+    display: none;
+}
+
+.tadl-long-field:has(> .tadl-long-field-details[open]) > .tadl-long-field-preview {
+    display: none;
+}
+
+.tadl-long-field-details[open] .tadl-read-less {
+    display: inline;
 }
 
 a,

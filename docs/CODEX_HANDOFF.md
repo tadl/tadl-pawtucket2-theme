@@ -60,7 +60,7 @@ before calling an issue deployed or still broken.
 | Image downloads | `helpers/image_downloads.php`, `controllers/ImageDownloadController.php`, `views/Details/image_download_binary.php`, `views/mediaViewers/viewerWrapper.php`, `assets/pawtucket/js/image-downloads.js` |
 | Crawler policy | `helpers/crawler_policy.php`, shared header and download views; `support/site-root/robots.txt`, `docs/CRAWLER_POLICY.md` (root file installed separately) |
 | Enlarged viewer help | `views/Details/viewer_help_html.php` |
-| Object metadata | `views/Details/ca_objects_default_html.php`, `detail_field_helpers.php` |
+| Detail metadata and long-field disclosures | `views/Details/detail_field_helpers.php`, shared detail templates and scoped theme CSS |
 | Document text | `helpers/document_text.php`, object detail view and scoped theme CSS; `docs/DOCUMENT_TEXT.md` |
 | Collection details | `views/Details/ca_collections_default_html.php` |
 | Authority details | `views/Details/authority_detail_helpers.php`, `authority_detail_html.php`, entity/place/occurrence detail templates |
@@ -79,6 +79,32 @@ line numbers. Native application behavior can be inspected in the nearby
 `pawtucket2/app/` reference tree without editing it.
 
 ## Behavior and implementation contracts
+
+### Long detail fields
+
+`tadlDetailExpandableValue()` in `views/Details/detail_field_helpers.php` supplies
+a plain-text preview and native **Read more / Read less** disclosure for values
+over 600 visible Unicode characters. The preview ends at a word boundary within
+320 characters and is limited to six lines at the current viewport width. Short
+fields remain unchanged; empty fields still omit their heading. The complete
+native rich value and links remain inside the disclosure, with no additional
+catalogue queries or changes to access filtering.
+
+The shared `tadlDetailField()` and first-available-field renderer use this across
+collections, objects, people/organizations, places and events. Media captions
+also use it. Specialized subject-term lists and authority relationship groups
+retain their existing presentation; document text already has its own disclosure.
+Object descriptions now use the shared native control in place of the legacy
+readmore plugin. No new script or dependency is required.
+
+Scoped CSS keeps the preview above the control, removes it when expanded using
+`:has()`, switches the control text and supplies visible keyboard focus. Older
+browsers without `:has()` may retain the preview above expanded text; full text
+remains available. Native `details` hides collapsed links from keyboard navigation.
+Synthetic browser checks at 1440px and 390px verified six-line previews, full
+formatted content on expansion, independent field states, Enter/Space operation,
+focus retention, hidden-link tab order and no horizontal overflow. The change was
+source-only; production theme deployment remains an operator step.
 
 ### Object document text
 
@@ -618,7 +644,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The twenty-five committed tests are portable and use synthetic boundaries. They do not
+The twenty-six committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -664,6 +690,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |
 | `tests/result_context_heading_test.php` | Results context, headings, removable criteria, empty flat/deferred/media-filtered facets, hierarchy-response fallback and Subjects browse/refine rendering |
 | `tests/object_detail_metadata_test.php` | Empty/populated rich-text fields and fallback values; structured TGM pairing, safe links, escaping and permissions |
+| `tests/detail_read_more_test.php` | Shared long-field previews and native disclosures, complete rich values/links, short/empty fields, Unicode boundaries, safe preview/labels, permission-preserving reads and long/short media captions; actual collection integration is also covered by collection_detail_scripts_test.php |
 | `tests/document_text_test.php` | media_content/transcription/pdf_text precedence and permission fallbacks, empty/missing fields, private pairs, native record/bundle/Pawtucket ACL boundaries, safe text/labels, Unicode/line/page breaks, multiple-PDF ordering and actual full-width detail template placement |
 | `tests/image_download_test.php` | Toolbar/bundle/overlay menus, visible native PDF actions, viewer icon placement, outside-click/Escape/Tab handling, current image action relocation, gallery AJAX navigation and media callbacks, download policy/ACL/attachment checks, TIFF/JPEG/BMP/PDF bytes, BMP MIME aliases, conversion validation and failure handling |
 | `tests/crawler_policy_test.php` | Media link rel/callback preservation, public versus search/account metadata, actual binary HTTP headers/bytes, clean/index.php robots rules and public record/asset/media allowances |

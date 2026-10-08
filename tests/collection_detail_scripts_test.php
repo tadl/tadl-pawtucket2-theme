@@ -94,6 +94,11 @@ $html = (new DetailScriptView(0, ['ca_collections.description' => 'Synthetic des
 checkDetailScripts(str_contains($html, 'Download Finding Aid') && str_contains($html, '/synthetic/CollectionFindingAid/Download/collection_id/42'), 'Finding aid must download the selected collection.');
 checkDetailScripts(!str_contains($html, 'Download as PDF') && !str_contains($html, '_pdf_ca_collections_summary'), 'Collection still links to the generic summary export.');
 checkDetailScripts(str_contains($html, '<label>Description</label>Synthetic description') && str_contains($html, '<label>Dates</label>1930') && str_contains($html, '<label>Related places</label><a href="/synthetic/place">Synthetic place</a>'), 'Populated collection fields lost headings or native links.');
+$long_description = '<p>'.str_repeat('Synthetic collection description. ', 30).'</p>';
+$long_scope = '<p>'.str_repeat('Synthetic scope and content. ', 30).'</p>';
+$html = (new DetailScriptView(0, ['ca_collections.description_source' => '', 'ca_collections.description' => $long_description, 'ca_collections.collection_scope_content' => $long_scope, 'ca_collections.date.dates_value' => '1930']))->render('ca_collections');
+checkDetailScripts(substr_count($html, '<details class="tadl-long-field-details">') === 2, 'Long description and scope/content need independent native disclosures on the actual collection template.');
+checkDetailScripts(str_contains($html, '<div class="tadl-long-field-full">'.$long_description.'</div>') && str_contains($html, '<div class="tadl-long-field-full">'.$long_scope.'</div>') && str_contains($html, '<label>Dates</label>1930'), 'Collection disclosures must keep complete rich values and leave short fields unchanged.');
 
 // Reload/direct collection links forward only supported result state, never a supplied search/key.
 foreach ([

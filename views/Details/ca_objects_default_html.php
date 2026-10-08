@@ -98,7 +98,7 @@
 				print tadlDetailField($this->request, $t_object, 'Date', '^ca_objects.date.dates_value');
 				print tadlDetailField($this->request, $t_object, 'Creators', '<unit relativeTo="ca_entities" restrictToRelationshipTypes="creator" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l></unit>');
 				print tadlDetailField($this->request, $t_object, 'Publisher', '<unit relativeTo="ca_entities" restrictToRelationshipTypes="publisher" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l></unit>');
-				print tadlDetailField($this->request, $t_object, 'Description', '<span class="trimText">^ca_objects.description</span>');
+				print tadlDetailField($this->request, $t_object, 'Description', '^ca_objects.description');
 				print tadlObjectSubjects($this->request, $t_object);
 				print tadlDetailField($this->request, $t_object, 'Source of description', '^ca_objects.description_source');
 				print tadlDetailFirstAvailableField($this->request, $t_object, 'Languages', [
@@ -154,11 +154,3 @@
 </div><!-- end row -->
 
 <?php require __DIR__.'/image_actions_script.php'; ?>
-<script type='text/javascript'>
-	jQuery(document).ready(function() {
-		$('.trimText').readmore({
-		  speed: 75,
-		  maxHeight: 120
-		});
-	});
-</script>

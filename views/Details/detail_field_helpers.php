@@ -7,6 +7,24 @@ if (!function_exists('tadlDetailHasContent')) {
 	}
 }
 
+/** Keep the native rich value intact; a plain preview avoids partial HTML/links. */
+if (!function_exists('tadlDetailExpandableValue')) {
+	function tadlDetailExpandableValue($value, $label) {
+		$plain = preg_replace('~<(?:br\b[^>]*|/(?:p|div|li|h[1-6]|tr|dt|dd))>~i', ' ', (string)$value);
+		$plain = html_entity_decode(strip_tags($plain), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		$plain = trim(preg_replace('/[\s\p{Z}\x{200B}\x{FEFF}]+/u', ' ', $plain));
+		if (mb_strlen($plain) <= 600) { return $value; }
+
+		$preview = mb_substr($plain, 0, 320);
+		if (($space = mb_strrpos($preview, ' ')) !== false) { $preview = mb_substr($preview, 0, $space); }
+		$escape = static function ($text) { return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); };
+		return '<div class="tadl-long-field"><div class="tadl-long-field-preview">'.$escape($preview).'…</div>'
+			.'<details class="tadl-long-field-details"><summary><span class="tadl-read-more">'.$escape(_t('Read more')).'</span>'
+			.'<span class="tadl-read-less">'.$escape(_t('Read less')).'</span><span class="sr-only">: '.$escape($label).'</span></summary>'
+			.'<div class="tadl-long-field-full">'.$value.'</div></details></div>';
+	}
+}
+
 if (!function_exists('tadlDetailField')) {
 	function tadlDetailField($request, $item, $label, $template, $options = []) {
 		if (!$item || !trim((string)$template)) { return ''; }
@@ -18,6 +36,7 @@ if (!function_exists('tadlDetailField')) {
 
 		$value = trim((string)$item->getWithTemplate($template, $template_options));
 		if (!tadlDetailHasContent($value)) { return ''; }
+		$value = tadlDetailExpandableValue($value, $label);
 
 		return "<div class='unit'><label>".htmlspecialchars($label, ENT_QUOTES, 'UTF-8')."</label>{$value}</div>\n";
 	}
@@ -136,6 +155,6 @@ if (!function_exists('tadlObjectRepresentationCaptions')) {
 
 		if (!sizeof($captions)) { return ''; }
 
-		return "<div class='unit'><label>".htmlspecialchars($label, ENT_QUOTES, 'UTF-8')."</label>".join('<br/>', $captions)."</div>\n";
+		return "<div class='unit'><label>".htmlspecialchars($label, ENT_QUOTES, 'UTF-8')."</label>".tadlDetailExpandableValue(join('<br/>', $captions), $label)."</div>\n";
 	}
 }

@@ -4,7 +4,7 @@ Standalone source repository for the `tadl` Pawtucket2 theme used for TADL local
 
 For Codex or a new workstation, start with [AGENTS.md](AGENTS.md) and the
 [current handoff](docs/CODEX_HANDOFF.md). The handoff explains the source map,
-recent changes, design decisions and all twenty-five standalone regression suites.
+recent changes, design decisions and all twenty-six standalone regression suites.
 It uses relative paths and does not require an application database for those tests.
 
 Deployment is a separate, explicitly authorized step. A source commit/push does
@@ -30,6 +30,12 @@ refresh or manual version bump is needed. Unchanged files retain their URLs and
 remain cacheable. The shared header and standalone lightbox presentation use
 `helpers/asset_versions.php` around the native asset loader. This versions local
 theme CSS/JS only, preserving native load order and any configured `asset_suffix`.
+
+Long detail metadata fields show a short preview with **Read more / Read less**.
+This includes collection descriptions and scope/content, object descriptions,
+authority biographies and other shared text fields, plus media captions. Short
+fields remain fully visible. Native disclosures work without JavaScript, retain
+the complete formatted text and links, and preserve existing access checks.
 
 Collection contents keep paging, sorting and Tiles/List controls on the collection
 detail URL. A compact overview and results toolbar use the available page width.
