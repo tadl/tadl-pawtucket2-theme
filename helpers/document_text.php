@@ -14,6 +14,16 @@ function tadlDocumentTextNormalize($value) {
 	return preg_match('/[^\s\p{Z}\x{200B}\x{FEFF}]/u', $text) === 1 ? $text : '';
 }
 
+/** Imported Scripto/rich text becomes plain text without joining paragraphs. */
+function tadlDocumentTextFromMetadata($value) {
+	$text = preg_replace('~<(?:br\b[^>]*|/(?:li|tr|dt|dd)\s*)>~i', "\n", (string)$value);
+	$text = preg_replace('~</(?:p|div|h[1-6]|blockquote|section|article|pre|ul|ol)\s*>~i', "\n\n", $text);
+	$text = preg_replace('~</(?:td|th)\s*>~i', ' ', $text);
+	// Decode after stripping so encoded literal brackets remain text, never markup.
+	$text = tadlDocumentTextNormalize(html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+	return preg_replace(['/\h+\n/u', '/\n{3,}/'], ["\n", "\n\n"], $text);
+}
+
 /** PDF text precedes object metadata; hidden paired PDFs never qualify an object. */
 function tadlObjectDocumentText($request, $object) {
 	if (!$object || !method_exists($object, 'getRepresentations')) { return []; }
@@ -59,7 +69,7 @@ function tadlObjectDocumentText($request, $object) {
 		]);
 		$parts = [];
 		foreach ((array)($values[$object->getPrimaryKey()] ?? []) as $value) {
-			$text = tadlDocumentTextNormalize($value[$bundle] ?? '');
+			$text = tadlDocumentTextFromMetadata($value[$bundle] ?? '');
 			if ($text !== '') { $parts[] = $text; }
 		}
 		if ($parts) { return [['source' => 'imported', 'label' => '', 'text' => join("\n\n", $parts)]]; }

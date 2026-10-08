@@ -116,7 +116,11 @@ restricted source falls through to the next; all unavailable produces no section
 Private paired PDFs do not qualify a TIFF object. Native record
 access, deletion, type/source/bundle permissions and Pawtucket ACLs remain enforced;
 text/labels are escaped and line/page breaks retained. Multiple PDFs follow native
-rank/primary order with an ID tie break. Native `details` needs no new JavaScript,
+rank/primary order with an ID tie break. Imported `transcription`/`pdf_text` HTML
+is stripped for display, preserving paragraph/line/list/table-row breaks and
+decoding entities before output escaping. Markup-only metadata counts as empty.
+Extracted PDF text and representation labels retain literal brackets; stored
+catalogue values are unchanged. Native `details` needs no new JavaScript,
 controller, extraction process or external service. The migrated Scripto source
 is `transcription`; the separate `pdf_text` field is the final display fallback.
 See `docs/DOCUMENT_TEXT.md`. The candidate helper passed a read-only installed-model
@@ -696,7 +700,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/result_context_heading_test.php` | Results context, headings, removable criteria, empty flat/deferred/media-filtered facets, hierarchy-response fallback and Subjects browse/refine rendering |
 | `tests/object_detail_metadata_test.php` | Empty/populated rich-text fields and fallback values; structured TGM pairing, safe links, escaping and permissions |
 | `tests/detail_read_more_test.php` | Shared long-field previews and native disclosures, complete rich values/links, short/empty fields, Unicode boundaries, safe preview/labels, permission-preserving reads and long/short media captions; actual collection integration is also covered by collection_detail_scripts_test.php |
-| `tests/document_text_test.php` | media_content/transcription/pdf_text precedence and permission fallbacks, empty/missing fields, private pairs, native record/bundle/Pawtucket ACL boundaries, safe text/labels, Unicode/line/page breaks, multiple-PDF ordering and actual full-width detail template placement |
+| `tests/document_text_test.php` | media_content/transcription/pdf_text precedence and permission fallbacks, empty/missing fields and imported HTML, private pairs, native record/bundle/Pawtucket ACL boundaries, safe text/labels, Unicode/line/page breaks, multiple-PDF ordering and actual full-width detail template placement |
 | `tests/image_download_test.php` | Toolbar/bundle/overlay menus, visible native PDF actions, viewer icon placement, outside-click/Escape/Tab handling, current image action relocation, gallery AJAX navigation and media callbacks, download policy/ACL/attachment checks, TIFF/JPEG/BMP/PDF bytes, BMP MIME aliases, conversion validation and failure handling |
 | `tests/crawler_policy_test.php` | Media link rel/callback preservation, public versus search/account metadata, actual binary HTTP headers/bytes, clean/index.php robots rules and public record/asset/media allowances |
 | `tests/thumbnail_package_test.php` | Source allowlist/hashes, safe existing-output refusal, ZIP contents and independent exported PHP/Python tests; additionally requires Python 3.11+ |

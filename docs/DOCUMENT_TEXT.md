@@ -27,10 +27,16 @@ only a public TIFF and a private paired PDF has no document-text section. The
 theme does not recover text from hidden representations or expose native editing
 transcription records.
 
-All sources are displayed as escaped plain text, including literal angle
-brackets. Stored HTML is not executed or rendered as rich text. CRLF/CR endings
-become newlines and PDF form-feed page breaks become blank lines. No truncation
-or text generation occurs during the request.
+All sources are displayed as escaped plain text. Imported `transcription` and
+`pdf_text` values have HTML tags removed, with paragraph/block boundaries, line
+breaks, list items and table rows retained as text breaks. HTML entities are
+decoded after stripping tags; decoded literal brackets are still escaped on
+output. Empty HTML falls through to the next source or omits the section.
+Extracted PDF text is not stripped or entity-decoded, so literal angle brackets
+and other document text remain intact. CRLF/CR endings become newlines and PDF
+form-feed page breaks become blank lines. Stored HTML is never executed or
+rendered as rich text. No truncation, catalogue edits or text generation occurs
+during the request.
 
 ## Native permissions and extraction
 
@@ -63,8 +69,8 @@ and the planned import remain separate operational work.
   styles; the existing asset-content versions handle CSS changes.
 - `tests/document_text_test.php` tests all three sources and precedence, empty and
   missing fields, private pairs, access/deletion/ACL/bundle restrictions and
-  fallbacks, escaping, Unicode/line breaks, multiple PDFs and actual template
-  placement.
+  fallbacks, imported HTML/empty-markup cleanup, escaping, Unicode/line breaks,
+  multiple PDFs and actual template placement.
 
 Run `php tests/document_text_test.php`, then the full standalone suite loop in
 `AGENTS.md`. Tests use synthetic records and do not need an application database.

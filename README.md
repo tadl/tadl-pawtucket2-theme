@@ -57,7 +57,9 @@ Object details offer a collapsed **Document text** section below the media and
 metadata when an accessible PDF has text. Use populated
 `ca_object_representations.media_content` first, then `ca_objects.transcription`,
 then `ca_objects.pdf_text`. Private paired PDFs do not qualify a TIFF object for
-this section; all sources empty produces no heading. See
+this section; all sources empty produces no heading. Imported HTML is converted
+to readable plain text with paragraph/line breaks retained, so Scripto wrappers
+and formatting tags are not displayed. See
 [Document text](docs/DOCUMENT_TEXT.md) for permissions, source selection and
 verification.
 

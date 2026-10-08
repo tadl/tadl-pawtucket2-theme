@@ -90,10 +90,10 @@ checkDocumentText($entries[0]['text'] === "First page\nSecond line\n\nNext page 
 $call = $object->representationCalls[0];
 checkDocumentText($call === [[], null, ['simple' => true, 'checkAccess' => [1]]], 'PDF discovery must use native access filtering without derivatives or a relationship cap.');
 
-$import = "Imported transcription: café <script>synthetic()</script> & text\nLine two";
-$legacy = "Legacy PDF text: café <b>synthetic</b> & text\nLine two";
-$object->values['ca_objects.transcription'] = textImport($import);
-$object->values['ca_objects.pdf_text'] = textImport($legacy, 'pdf_text');
+$import = "Imported transcription: café & text\nLine two";
+$legacy = "Legacy PDF text: café synthetic & text\nLine two";
+$object->values['ca_objects.transcription'] = textImport('<div class="mw-parser-output"><p>Imported transcription: <em>café</em> &amp; text<br>Line two</p></div>');
+$object->values['ca_objects.pdf_text'] = textImport("Legacy PDF text: café <b>synthetic</b> &amp; text\nLine two", 'pdf_text');
 $object->reads = [];
 checkDocumentText(tadlObjectDocumentText($request, $object) === $entries, 'Extracted PDF text must win when all three sources are populated.');
 checkDocumentText(!array_intersect(['ca_objects.transcription', 'ca_objects.pdf_text'], array_column($object->reads, 0)), 'Populated extraction must not fetch lower-priority metadata.');
@@ -103,7 +103,8 @@ $object->reads = [];
 $html = tadlObjectDocumentTextHTML($request, $object);
 $xpath = new DOMXPath(textDocument($html));
 checkDocumentText($xpath->query('//details[@class="tadl-document-text" and not(@open)]/summary')->item(0)->textContent === 'Document text', 'Document text must start collapsed with a native keyboard-accessible summary.');
-checkDocumentText($xpath->query('//div[@class="tadl-document-text-content"]')->item(0)->textContent === $import, 'Imported text must retain Unicode and literal text after escaping.');
+checkDocumentText($xpath->query('//div[@class="tadl-document-text-content"]')->item(0)->textContent === $import, 'Imported HTML must become readable text with Unicode, entities and line breaks preserved.');
+checkDocumentText(!str_contains($html, 'mw-parser-output') && !str_contains($html, '&lt;div') && !str_contains($html, '<em>'), 'Imported HTML wrappers and formatting must not appear as markup or literal tags.');
 checkDocumentText(!str_contains($html, '<script>') && !str_contains($html, 'Legacy PDF text') && !str_contains($html, 'Unrelated synthetic text'), 'Transcription must precede pdf_text, omit other records and never execute HTML.');
 checkDocumentText(in_array('media_content', array_column(ca_object_representations::$loaded[10]->reads, 0), true), 'Extraction must be checked before falling back to transcription.');
 checkDocumentText(!in_array('ca_objects.pdf_text', array_column($object->reads, 0), true), 'Populated transcription must not fetch lower-priority pdf_text.');
@@ -111,6 +112,24 @@ $options = array_values(array_filter($object->reads, static fn($read) => $read[0
 foreach (['returnWithStructure' => true, 'checkAccess' => [1], 'dontReturnDefault' => true, 'convertLineBreaks' => false, 'highlighting' => false, 'doRefSubstitution' => false] as $key => $value) {
 	checkDocumentText(($options[$key] ?? null) === $value, 'Imported text must preserve native getter option: '.$key);
 }
+foreach ([
+	'<div><p>Dear Synthetic Reader:<br />First line<br/>Second line</p><p>Another paragraph.</p></div>' => "Dear Synthetic Reader:\nFirst line\nSecond line\n\nAnother paragraph.",
+	"<p>First</p>\n\n<div>Second</div>" => "First\n\nSecond",
+	'<ul><li>One</li><li>Two</li></ul>' => "One\nTwo",
+	'<table><tr><td>One</td><td>Two</td></tr><tr><td>Three</td><td>Four</td></tr></table>' => "One Two\nThree Four",
+	'<p>A &amp; B &lt; 3. <img src="invalid" onerror="synthetic()">Safe.</p>' => 'A & B < 3. Safe.',
+	'<p>&lt;img src=x onerror=synthetic()&gt;</p>' => '<img src=x onerror=synthetic()>',
+	"Plain café < 3 & 4 > 2\r\nSecond line\fNext page" => "Plain café < 3 & 4 > 2\nSecond line\n\nNext page",
+	'0' => '0'
+] as $stored => $expected) {
+	$imported = new TextObject([textPDFRow(10)], ['ca_objects.transcription' => textImport($stored)]);
+	$rendered = tadlObjectDocumentTextHTML($request, $imported);
+	$content = (new DOMXPath(textDocument($rendered)))->query('//div[@class="tadl-document-text-content"]')->item(0);
+	checkDocumentText($content && $content->textContent === $expected, 'Metadata HTML cleanup must preserve readable plain text and structural breaks.');
+	checkDocumentText($content->getElementsByTagName('*')->length === 0 && !str_contains($rendered, '<script>'), 'Cleaned metadata must remain escaped text, including decoded angle brackets.');
+}
+$object->values['ca_objects.transcription'] = textImport('<div><p>&nbsp; <br></p></div>');
+checkDocumentText(tadlObjectDocumentText($request, $object)[0]['text'] === $legacy, 'HTML-only transcription must fall through to populated legacy text.');
 $object->values['ca_objects.transcription'] = textImport(" \n\t\u{00a0}\u{200b}");
 checkDocumentText(tadlObjectDocumentText($request, $object)[0]['text'] === $legacy, 'Blank extraction and whitespace-only transcription must fall back to pdf_text.');
 $html = tadlObjectDocumentTextHTML($request, $object);
@@ -149,6 +168,9 @@ ca_object_representations::$records[10]['media_content'] = " \n\f\u{00a0}";
 $object->values['ca_objects.transcription'] = textImport("\u{200b}");
 $object->values['ca_objects.pdf_text'] = textImport(" \n\t\u{00a0}\u{FEFF}", 'pdf_text');
 checkDocumentText(tadlObjectDocumentTextHTML($request, $object) === '', 'All three whitespace-only sources must produce no section or heading.');
+$object->values['ca_objects.transcription'] = textImport('<div><p>&nbsp;</p></div>');
+$object->values['ca_objects.pdf_text'] = textImport('<p><br></p>', 'pdf_text');
+checkDocumentText(tadlObjectDocumentTextHTML($request, $object) === '', 'Empty imported HTML in both metadata fields must produce no section or heading.');
 unset($object->values['ca_objects.transcription']);
 unset($object->values['ca_objects.pdf_text']);
 checkDocumentText(tadlObjectDocumentTextHTML($request, $object) === '', 'Blank extraction with no metadata values must produce no section.');
