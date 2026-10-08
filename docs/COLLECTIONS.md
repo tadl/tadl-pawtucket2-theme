@@ -105,7 +105,10 @@ Relevant settings in `conf/collections.conf`:
 
 `helpers/collection_contents.php` traverses readable collection models in batches
 of 500 parents, guards cycles and builds numeric collection terms for native object
-search. Counting shares one fresh native object browse per hierarchy response,
+search. Retained nodes use independent, uncached model instances: native
+`Datamodel::getInstance(..., true)` returns the same mutable model, so loading a
+later child would overwrite earlier nodes' IDs, parents and access state. Counting
+shares one fresh native object browse per hierarchy response,
 applies media filtering before counting, and batches memberships by 500 collections.
 Objects are not individually loaded for browser rollups or searched separately
 for every title. Native object search still handles visibility and deduplication.
@@ -144,5 +147,7 @@ After an authorized deployment, check a flat collection, a deeply nested branch,
 an overlapping-membership example and an empty branch. In both media preferences,
 verify counts, access restrictions, paging, sorting, Tiles/List, Back and the two
 mode-switch links. Compare the finding aid using its distinct count semantics.
+Check a series with directly attached items and empty boxes/folders underneath it:
+only the series should count those items; empty descendants must stay at **(0)**.
 Check normal/hover link styling and narrow-screen layouts. Keep native collection
 HTML and whole-page caches disabled; source pushes alone do not deploy anything.

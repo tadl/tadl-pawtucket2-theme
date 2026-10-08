@@ -68,7 +68,13 @@ class HierarchyCollection extends HierarchyResult {
  function getPrimaryKey() { return $this->get('ca_collections.collection_id'); }
  function isReadable($request,$bundle=null) { return $GLOBALS['hierarchyRecords'][$this->getPrimaryKey()]['readable']??true; }
 }
-class Datamodel { static function getInstance($table,$initialize) { return new HierarchyCollection(); } }
+class Datamodel {
+ private static array $instances=[];
+ static function getInstance($table,$useCache=false) {
+  // Match native mutable instance caching rather than returning a fresh model unconditionally.
+  return $useCache ? (self::$instances[$table]??=new HierarchyCollection()) : new HierarchyCollection();
+ }
+}
 function caACLIsEnabled($record,$options) { return false; }
 class Db {
  function query($sql,$params) {
@@ -125,11 +131,14 @@ function caBusyIndicatorIcon($request) { return '<span>Loading</span>'; }
 function _t($text) { return $text; }
 class HierarchyView {
  public $request;
- function __construct(private $sort=null) { $this->request=new stdClass(); }
+ private HierarchyCollection $item;
+ function __construct(private $sort=null) {
+  $this->request=new stdClass();
+  $this->item=Datamodel::getInstance('ca_collections',true); $this->item->load(1);
+ }
  function getVar($field) {
-  $root=new HierarchyCollection(1);
   return match($field) {
-   'access_values'=>[1], 'collections_config'=>new HierarchyConfig($this->sort), 'item'=>$root,
+   'access_values'=>[1], 'collections_config'=>new HierarchyConfig($this->sort), 'item'=>$this->item,
    'collection_id'=>20, 'exclude_collection_type_ids','non_linkable_collection_type_ids'=>[],
    'collection_type_icons'=>['box'=>''], default=>null
   };
@@ -147,6 +156,23 @@ function hierarchyOrder($html,$labels) {
  }
 }
 require dirname(__DIR__).'/views/Collections/hierarchy_helpers.php';
+// Parent-only memberships must never leak into the last box loaded through the model cache.
+$GLOBALS['hierarchyRecords'] += [
+ 4000=>['name'=>'Synthetic letters series','children'=>[4020,4030]],
+ 4020=>['name'=>'Synthetic empty box 5','children'=>[4021]],
+ 4021=>['name'=>'Synthetic empty folder 5','children'=>[]],
+ 4030=>['name'=>'Synthetic empty box 6','children'=>[4031]],
+ 4031=>['name'=>'Synthetic empty folder 6','children'=>[]]
+];
+$GLOBALS['hierarchyObjects'][4000]=range(60001,60404);
+foreach (['all','only'] as $mode) {
+ $GLOBALS['hierarchyMode']=$mode;
+ $root=Datamodel::getInstance('ca_collections',true); $root->load(4000);
+ $counts=tadlCollectionContentsCounts(new stdClass(),$root);
+ hierarchyCheck($counts===[4000=>404,4020=>0,4030=>0,4021=>0,4031=>0], 'Parent-only objects leaked into an empty box: '.json_encode($counts));
+ hierarchyCheck($root->getPrimaryKey()===4000 && $root->get('parent_id')===null,'Counting children must not mutate the supplied native cached root');
+}
+$GLOBALS['hierarchyMode']='only';
 hierarchyCheck(tadlCollectionHierarchyIDs([], 'ca_collections.preferred_labels.name')===[], 'Empty sibling list changed');
 hierarchyCheck(tadlCollectionHierarchyIDs([24,22,21,23],'ca_collections.preferred_labels.name')===[21,22,23,24], 'Natural/case-insensitive ordering failed');
 hierarchyCheck(tadlCollectionHierarchyIDs([24,22,21,23],'ca_collections.rank')===[24,22,21,23], 'Explicit non-name sort was overridden');
@@ -156,7 +182,9 @@ $GLOBALS['hierarchyRecords'][214]=['name'=>'volume 2','children'=>[]];
 hierarchyCheck(tadlCollectionHierarchyIDs([214,212],'ca_collections.preferred_labels.name')===[214,212], 'Equal labels lost stable ordering');
 foreach([null,'ca_collections.preferred_labels.name'] as $sort) {
  $before=$GLOBALS['hierarchyBrowseCalls'];
- $html=(new HierarchyView($sort))->render('collection_hierarchy_html.php');
+ $view=new HierarchyView($sort);
+ $html=$view->render('collection_hierarchy_html.php');
+ hierarchyCheck($view->getVar('item')->getPrimaryKey()===1,'Rendering the browser must preserve the native cached page collection');
  hierarchyOrder($html,['alpha','Series 2','Series 10']);
  hierarchyCheck(!str_contains($html,'Private series') && !str_contains($html,'Empty series') && !str_contains($html,'Restricted series'), 'Root browser displayed filtered collections');
  hierarchyCheck(str_contains($html,'data-child-list-url="/Collections/childList/collection_id/20"') && str_contains($html,'href="/Detail/collections/20"'), 'AJAX route/direct-link fallback changed');
@@ -181,4 +209,13 @@ hierarchyCheck($GLOBALS['hierarchyBrowseCalls']===$before+1 && str_contains($htm
 $html=printLevel(new stdClass(),[20],new HierarchyConfig(),1,['exclude_collection_type_ids'=>[],'non_linkable_collection_type_ids'=>['box'],'collection_type_icons'=>['box'=>''],'collapse_levels'=>true]);
 hierarchyCheck(str_contains($html,"<span class='nonLinkedCollection'> Series 2 <span class=\"tadl-collection-record-count\">(7)</span></span>") && str_contains($html,'Drawer 1 <span class="tadl-collection-record-count">(4)</span></a>'),'Nonlinked and collapsible titles must retain their inline count suffix');
 hierarchyCheck(printLevel(new stdClass(),[45],new HierarchyConfig(),1,['exclude_collection_type_ids'=>[],'non_linkable_collection_type_ids'=>[],'collection_type_icons'=>['box'=>''],'collapse_levels'=>false])==='','Unavailable AJAX root must not display a title or descendant counts');
+foreach (['all','only'] as $mode) {
+ $GLOBALS['hierarchyMode']=$mode;
+ $before=$GLOBALS['hierarchyBrowseCalls'];
+ $html=printLevel(new stdClass(),[4000],new HierarchyConfig(),1,['exclude_collection_type_ids'=>[],'non_linkable_collection_type_ids'=>[],'collection_type_icons'=>['box'=>''],'collapse_levels'=>false]);
+ hierarchyCheck($GLOBALS['hierarchyBrowseCalls']===$before+1 && str_contains($html,'Synthetic letters series <span class="tadl-collection-record-count">(404)</span>'),'Parent-only totals must render correctly using one native search');
+ foreach (['Synthetic empty box 5','Synthetic empty box 6','Synthetic empty folder 5','Synthetic empty folder 6'] as $label) {
+  hierarchyCheck(str_contains($html,$label.' <span class="tadl-collection-record-count">(0)</span>'),'Empty descendants must render zero instead of their parent total');
+ }
+}
 echo 'Collection hierarchy passed: '.$assertions.' assertions (rendered siblings, recursive natural ordering, access/media filters and history links).'.PHP_EOL;

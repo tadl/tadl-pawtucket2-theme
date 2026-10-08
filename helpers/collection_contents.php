@@ -22,7 +22,8 @@ function tadlCollectionContentsChildren($request, array $parents, array $access)
 		$rows = $db->query('SELECT collection_id FROM ca_collections WHERE parent_id IN (?) AND access IN (?) AND deleted = 0', [$chunk, $access]);
 		if (!$rows) { throw new RuntimeException('Unable to load collection contents.'); }
 		while ($rows->nextRow()) {
-			$child = Datamodel::getInstance('ca_collections', true);
+			// Retained nodes need separate models: the native instance cache shares mutable loaded state.
+			$child = Datamodel::getInstance('ca_collections', false);
 			if ($child && $child->load((int)$rows->get('collection_id')) && tadlCollectionContentsReadable($request, $child, $access)) {
 				$children[(int)$child->getPrimaryKey()] = $child;
 			}

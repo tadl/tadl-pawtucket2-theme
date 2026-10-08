@@ -19,7 +19,7 @@ function printLevel($po_request, $va_collection_ids, $o_config, $vn_level, $va_o
 	if (!isset($va_options['collection_counts'])) {
 		$va_options['collection_counts'] = [];
 		foreach ($va_collection_ids as $id) {
-			$root = Datamodel::getInstance('ca_collections', true);
+			$root = Datamodel::getInstance('ca_collections', false);
 			if ($root && $root->load((int)$id)) {
 				$va_options['collection_counts'] += tadlCollectionContentsCounts($po_request, $root);
 			}

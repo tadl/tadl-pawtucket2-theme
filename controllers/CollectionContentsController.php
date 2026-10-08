@@ -12,7 +12,7 @@ class CollectionContentsController extends SearchController {
 		if ($this->request->config->get('pawtucket_requires_login') && !$this->request->isLoggedIn()) { return; }
 		$id = (int)$this->request->getParameter('collection_id', pInteger);
 		if ($id < 1) { $this->response->setHTTPResponseCode(400, 'Bad Request'); return; }
-		$collection = Datamodel::getInstance('ca_collections', true);
+		$collection = Datamodel::getInstance('ca_collections', false);
 		$access = array_map('intval', (array)caGetUserAccessValues($this->request));
 		if (!$access || !$collection || !$collection->load($id)
 			|| !tadlCollectionContentsReadable($this->request, $collection, $access)) {

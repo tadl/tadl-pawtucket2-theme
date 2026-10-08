@@ -376,6 +376,15 @@ below retain implementation details and historical verification evidence.
   lint and synthetic desktop/phone browser checks of both columns, long titles,
   selected-link styling and AJAX expansion. Native production integration remains
   a deployment check; this change has not been deployed.
+- Collection traversal retains independent model instances, including loader and
+  recursive-browser roots. Native `Datamodel::getInstance(..., true)` returns one
+  mutable cached instance, not a fresh initialized model. Reusing it for saved
+  graph nodes overwrote IDs, parent pointers and permission state, causing parent
+  objects to appear in the last empty box's count and corrupting flat traversal.
+  The collection scope and rendered hierarchy tests now model that native cache
+  behavior. A synthetic 404-item parent with empty boxes/folders reproduced the
+  incorrect child count before the fix; both media preferences now keep the
+  parent's 404 and the empty descendants' zeros, without mutating the page model.
 - The loader uses `/CollectionContents/Objects/collection_id/<id>` with the chosen
   `collection_view`. Its controller supplies `tadl_collection_controls=1` and the
   selected `tadl_collection_id` to the native SearchController. Sorting uses the

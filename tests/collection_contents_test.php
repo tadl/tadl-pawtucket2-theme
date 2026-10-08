@@ -46,9 +46,11 @@ class ContentsResponse {
 	function setHTTPResponseCode($code, $message) { $this->code = $code; }
 }
 class Datamodel {
-	static function getInstance($table, $initialize) {
-		contentsCheck($table === 'ca_collections' && $initialize === true, 'Traversal must load collection models, never object records.');
-		return new ContentsCollection();
+	private static array $instances = [];
+	static function getInstance($table, $useCache = false) {
+		contentsCheck($table === 'ca_collections', 'Traversal must load collection models, never object records.');
+		// Native Datamodel returns the same mutable model when use_cache is true.
+		return $useCache ? (self::$instances[$table] ??= new ContentsCollection()) : new ContentsCollection();
 	}
 }
 class ContentsCollection {
@@ -152,10 +154,18 @@ try {
 	contentsNode(15, 1, ['objects_readable' => 0]); contentsNode(16, 15);
 	contentsNode(17, 1, ['hierarchy_readable' => 0]); contentsNode(18, 17);
 	contentsNode(20); contentsNode(21, 20); contentsNode(22, 1, ['access' => 2]);
+	$cached = Datamodel::getInstance('ca_collections', true); $cached->load(2);
+	$cached_again = Datamodel::getInstance('ca_collections', true); $cached_again->load(3);
+	contentsCheck($cached === $cached_again && $cached->getPrimaryKey() === 3, 'Native cached models must share their loaded state in the test boundary.');
 	$request = new ContentsRequest(); $root = contentsRecord(1);
 	$ids = tadlCollectionContentsIDs($request, $root); sort($ids);
 	contentsCheck($ids === [1,2,3,4,5,6,7,16,17], 'Flat contents must include deep descendants and prune private/deleted/ACL/type/bundle-hidden branches.');
 	contentsCheck(count(Db::$queries) === 6, 'Traversal must batch siblings by hierarchy level rather than querying every object or collection.');
+	$nodes = tadlCollectionContentsCollections($request, $root);
+	contentsCheck(count(array_unique(array_map('spl_object_id', $nodes))) === count($nodes), 'Every retained collection must have independent loaded state.');
+	foreach ($nodes as $id => $node) {
+		contentsCheck($node->getPrimaryKey() === $id && $node->get('parent_id') === contentsRecord($id)->get('parent_id'), 'Traversal must retain each actual collection ID and parent.');
+	}
 	contentsCheck(tadlCollectionContentsIDs($request, $root, false) === [1], 'Hierarchy contents must stay directly attached to the selected collection.');
 	$ids = tadlCollectionContentsIDs($request, contentsRecord(2)); sort($ids);
 	contentsCheck($ids === [2,4,5,6,7], 'Selected subcollection must exclude its ancestors, siblings and unrelated roots.');
