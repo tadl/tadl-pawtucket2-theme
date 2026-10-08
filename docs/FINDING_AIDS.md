@@ -11,8 +11,11 @@ top-level collection.
 - Collection name and identifier, library identification and generation timestamp.
 - Description, dates, extent, scope/content, language and rights when populated
   and readable. Missing fields and punctuation-only dates have no heading.
-- Collection organization, with the number of readable objects directly linked
-  to each collection. Counts can overlap when an object belongs to multiple
+- Complete readable collection hierarchy, with each subcollection indented under
+  its parent and its name, readable identifier and directly linked object count.
+  Every descendant is listed, including empty subcollections. Siblings sort
+  naturally by name (for example, Drawer 2 before Drawer 10); each whole branch
+  stays together. Counts can overlap when an object belongs to multiple
   collections; the overall total counts each object only once by its internal ID.
 - Collection contents total, including objects in readable descendant collections.
   Objects with matching titles/identifiers remain distinct records in the count.
@@ -60,6 +63,12 @@ excluded. Unreadable collection branches are not traversed, and relationship and
 hierarchy bundle restrictions are honored. No private-record placeholders or
 counts are included.
 
+Hierarchy traversal visits every readable descendant without a paging or
+media-presence filter. Parent IDs and relative depths preserve the actual tree;
+sibling sorting cannot interleave distinct branches with identical names. Cycle
+protection lists each collection once. A selected subcollection is the root of
+its own finding aid, with all of its readable descendants.
+
 Object IDs are deduplicated before checking access, preserving all readable
 memberships for the collection counts. Related-item queries explicitly remove the native default cap
 (1000/4000 in reference APIs), so the export is not a first-page preview. Each
@@ -80,7 +89,8 @@ limit; infrastructure timeouts still apply.
 Run `php tests/finding_aid_test.php` for synthetic controller, access, hierarchy,
 duplicate-membership counts, collection fields, omission of individual object
 metadata/entries, escaping and renderer boundaries. It includes a 4,105-object
-collection to catch default-cap regressions, plus empty and single-item totals.
+collection to catch default-cap regressions, plus empty and single-item totals,
+nested/empty/200-sibling hierarchies and distinct branches with identical names.
 
 Optionally verify URL parsing through the actual Pawtucket dispatcher:
 
@@ -112,8 +122,9 @@ Dompdf checks. The count-only revision retains those access and rendering
 boundaries and uses a synthetic sample with overlapping collection memberships
 and child-only objects. All twenty-four standalone suites and changed PHP lint
 passed. Real Dompdf generation/native dispatcher checks passed; Poppler text and
-visual inspection confirmed a one-page sample with 56 unique items, overlapping
-55-item collection counts and no individual object entries.
+visual inspection confirmed the updated four-page sample with all 36 collection
+nodes through three descendant levels, long/non-ASCII names, 56 unique items,
+overlapping 55-item collection counts and no individual object entries.
 Production field applicability, data and performance
 remain deployment-time checks. Source commits do not deploy.
 

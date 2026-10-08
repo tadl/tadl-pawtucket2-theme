@@ -46,7 +46,9 @@ access flags or files; TIFF representations use their generated JPEG thumbnails.
 
 Collection details offer **Download Finding Aid**, an initial collection PDF with
 metadata, a unique accessible-object total and counts for each collection or
-subcollection. Counts include records without media; individual object entries
+subcollection. The PDF lists the complete readable hierarchy, indented by level
+with naturally sorted siblings, including empty subcollections. Counts include
+records without media; individual object entries
 are omitted. Field mappings and open archives-team decisions are documented in
 [Finding aids](docs/FINDING_AIDS.md).
 

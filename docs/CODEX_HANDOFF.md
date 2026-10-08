@@ -134,7 +134,12 @@ objects without media, independent of the header preference, and preserve all
 record, bundle and Pawtucket ACL checks. As of 2026-10-08, individual object entries
 are omitted; object metadata/storage locations are no longer fetched or configured.
 Shared objects count once in the overall total but in each directly linked
-collection's count. There is no native relationship cap or shared PDF cache.
+collection's count. The organization section lists every readable descendant,
+including empty subcollections, with names/identifiers indented by hierarchy level.
+Siblings sort naturally by name; each parent's complete branch stays together,
+including when two siblings have identical names. A selected subcollection starts
+at depth zero and includes its own descendants, not its parent or siblings.
+There is no native relationship cap or shared PDF cache.
 The PDF uses the existing Dompdf dependency with
 remote resources/PHP/JS disabled. See `docs/FINDING_AIDS.md` for field mappings,
 source boundaries, real-render verification and pending archives-team decisions.
@@ -630,7 +635,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/profile_save_test.php` | Own-email/staff-public login behavior, collisions, separate user staging, request-close persistence, validation/setter/model failures, native password delegation, POST/session/CSRF boundaries, public-use groups and direct/AJAX profile form error escaping |
 | `tests/user_features_test.php` | Anonymous/authenticated navigation and result actions, staff-only Providence shortcut in actual object detail HTML, valid object IDs/new-tab safety, native login POST/CSRF, registration policy, password-manager fields and cache separation |
 | `tests/home_faq_test.php` | Published/readable Site Pages, drafts, incomplete entries, locale, rank, escaped questions and purified answers; optional real HTMLPurifier |
-| `tests/finding_aid_test.php` | Selected collection export, descendants, access/ACL/bundle restrictions, complete unique counts over native caps, overlapping memberships, no individual object metadata/entries, collection field mappings, escaped PDF text and safe failure; optional real Dompdf |
+| `tests/finding_aid_test.php` | Selected collection export, full nested/empty/wide hierarchy, natural sibling order and duplicate-named branches, access/ACL/bundle restrictions, complete unique counts over native caps, overlapping memberships, no individual object metadata/entries, collection field mappings, escaped PDF text and safe failure; optional real Dompdf |
 | `tests/asset_versions_test.php` | Stable/changed CSS and JS URLs, preserved timestamps, native loader options, subdirectory/absolute theme URLs, escaping, inline-code preservation and path boundaries |
 | `tests/media_preferences_test.php` | Eligibility SQL, lazy collection/authority descriptor fetching, related-object access/deletion/ACL/bundle checks, People/Organizations/Places/Events Tiles/List counts/paging/detail context, table cache isolation, route scope, invalid-media exhaustion, filtered result adapter and result rendering |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |
