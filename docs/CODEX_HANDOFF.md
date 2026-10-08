@@ -342,6 +342,22 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
   items. **View all collection items** returns to flat mode. Unknown/missing mode
   defaults to flat; switching scope resets paging and retains sort/display state.
   Leaf collections omit the switch. Catalogue hierarchy and finding aids are unchanged.
+- Both hierarchy browser columns append **(42)** inside the collection title link
+  (or nonlinked title), without `records` or a forced line break. Counts include
+  unique visible objects in the selected branch and all readable descendants,
+  including levels deeper than `max_levels`; empty visible branches show **(0)**.
+  `tadlCollectionContentsCounts()` reuses the flat-list traversal/access policy,
+  executes one fresh native object browse per browser response, applies the theme
+  media filter, and fetches memberships in batches of 500 collections. It rolls
+  each object up its ancestor chain once, so overlapping memberships do not inflate
+  parent counts. No per-object model loads or per-title searches are needed.
+  Rendering also prunes titles outside that readable branch. Counts are request-local;
+  finding-aid counts remain independent of the media preference. Deploy the helper,
+  both hierarchy views and CSS together. No schema change is required.
+  The 2026-10-08 count change passed all 27 standalone suites, changed-file PHP
+  lint and synthetic desktop/phone browser checks of both columns, long titles,
+  selected-link styling and AJAX expansion. Native production integration remains
+  a deployment check; this change has not been deployed.
 - The loader uses `/CollectionContents/Objects/collection_id/<id>` with the chosen
   `collection_view`. Its controller supplies `tadl_collection_controls=1` and the
   selected `tadl_collection_id` to the native SearchController. Sorting uses the
@@ -706,7 +722,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 
 | Test | Coverage |
 | --- | --- |
-| `tests/collection_hierarchy_test.php` | Initial/recursive hierarchy rendering, natural name order, numeric labels, access/media-filtered siblings, stable ties and history/direct links |
+| `tests/collection_hierarchy_test.php` | Initial/recursive hierarchy rendering, natural name order, inline descendant counts in both columns, one search per response, numeric labels, access/media-filtered siblings, stable ties and history/direct links |
 | `tests/collection_thumbnail_test.php` | Actual SQL and Tiles/List rendering, bounded media rows, stable selection, access/deletion, native collection primary precedence and direct/descendant fallbacks |
 | `tests/object_thumbnail_test.php` | Primary preference, native access/ACL/deletion delegation, deterministic fallback, usable derivatives and actual object Tiles/List/multisearch rendering |
 | `tests/thumbnail_focus_test.php` | Native image-tag preservation, manual focal priority, invalid/stale cache rejection, responsive cover geometry and multiple faces |
@@ -720,7 +736,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/media_preferences_test.php` | Eligibility SQL, lazy collection/authority descriptor fetching, related-object access/deletion/ACL/bundle checks, People/Organizations/Places/Events Tiles/List counts/paging/detail context, table cache isolation, route scope, invalid-media exhaustion, filtered result adapter and result rendering |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |
 | `tests/collection_detail_scripts_test.php` | Collection detail loader JavaScript, empty/populated field/relationship headings, long-field controls and narrative/facts column placement |
-| `tests/collection_contents_test.php` | Actual helper/controller, SQLite hierarchy queries, deep/wide branches, scope/access/deletion/ACL/bundle pruning, cycles, duplicate memberships, bounded queries and canonical native search delegation |
+| `tests/collection_contents_test.php` | Actual helper/controller, SQLite hierarchy/membership queries, deep/wide branches, unique descendant rollup counts, media preference, scope/access/deletion/ACL/bundle pruning, cycles, duplicate memberships, bounded queries and canonical native search delegation |
 | `tests/object_detail_media_test.php` | Media selection, viewer controls and callbacks |
 | `tests/object_detail_video_poster_test.php` | Covers, playback, player fallback and access |
 | `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |

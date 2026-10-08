@@ -69,8 +69,9 @@ class Db {
 	static PDO $pdo;
 	static array $queries = [];
 	function query($sql, $params) {
-		contentsCheck($sql === 'SELECT collection_id FROM ca_collections WHERE parent_id IN (?) AND access IN (?) AND deleted = 0', 'Traversal query must stay scoped, access-filtered and undeleted.');
-		contentsCheck(count($params) === 2 && count($params[0]) > 0 && count($params[0]) <= 500 && $params[1], 'Traversal query must be bounded and fail closed.');
+		$membership = $sql === 'SELECT DISTINCT object_id, collection_id FROM ca_objects_x_collections WHERE collection_id IN (?)';
+		contentsCheck($membership || $sql === 'SELECT collection_id FROM ca_collections WHERE parent_id IN (?) AND access IN (?) AND deleted = 0', 'Traversal/membership query must stay scoped.');
+		contentsCheck(count($params) === ($membership ? 1 : 2) && count($params[0]) > 0 && count($params[0]) <= 500 && ($membership || $params[1]), 'Traversal/membership query must be bounded and fail closed.');
 		self::$queries[] = $params;
 		$index = 0;
 		$sql = preg_replace_callback('/\?/', static function () use ($params, &$index) {
@@ -84,6 +85,42 @@ class Db {
 			function get($key) { return $this->row[$key]; }
 		};
 	}
+}
+class ContentsObjectResult {
+	function __construct(public array $ids) {}
+	function getPrimaryKeyValues($limit) {
+		contentsCheck($limit === PHP_INT_MAX, 'Branch counts must read all native hits, without the related-item cap.');
+		return $this->ids;
+	}
+}
+class ContentsBrowse {
+	static int $calls = 0;
+	private array $scope = [];
+	private array $access = [];
+	function addCriteria($facet, $terms) {
+		contentsCheck($facet === '_search' && count($terms) === 1, 'Counts must use a single native object union.');
+		preg_match_all('/collection_id:(\d+)/', $terms[0], $matches);
+		$this->scope = array_map('intval', $matches[1]);
+	}
+	function execute($options) {
+		self::$calls++;
+		contentsCheck($options['request'] instanceof ContentsRequest && $options['noCache'] === true, 'Counts must honor the current request and not reuse stale visibility.');
+		$this->access = $options['checkAccess'];
+	}
+	function getResults() {
+		$query = Db::$pdo->prepare('SELECT DISTINCT o.object_id FROM objects o JOIN ca_objects_x_collections m ON m.object_id = o.object_id WHERE m.collection_id IN ('.join(',', array_fill(0, count($this->scope), '?')).') AND o.access IN ('.join(',', array_fill(0, count($this->access), '?')).') AND o.deleted = 0 AND o.readable = 1 ORDER BY o.object_id');
+		$query->execute(array_merge($this->scope, $this->access));
+		return new ContentsObjectResult($query->fetchAll(PDO::FETCH_COLUMN));
+	}
+}
+function caGetBrowseInstance($table) {
+	contentsCheck($table === 'ca_objects', 'Counts must delegate object visibility to native browse.');
+	return new ContentsBrowse();
+}
+function tadlFilterMediaResult($request, $result) {
+	if (($request->path['media'] ?? 'all') !== 'only') { return; }
+	$ids = Db::$pdo->query('SELECT object_id FROM objects WHERE media = 1')->fetchAll(PDO::FETCH_COLUMN);
+	$result->ids = array_values(array_intersect($result->ids, $ids));
 }
 // The parent boundary captures exactly what the actual controller delegates to native search.
 class SearchController {
@@ -150,6 +187,35 @@ try {
 	$query = Db::$pdo->prepare('SELECT DISTINCT o.object_id FROM objects o JOIN memberships m ON m.object_id = o.object_id WHERE m.collection_id IN ('.join(',', array_fill(0, count($scope), '?')).') AND o.access = 1 AND o.deleted = 0 ORDER BY o.object_id');
 	$query->execute($scope);
 	contentsCheck($query->fetchAll(PDO::FETCH_COLUMN) === [1,2], 'Scoped union must deduplicate memberships and exclude unavailable/unrelated objects.');
+	// Actual count rollups over SQLite relationships and synthetic native visibility.
+	Db::$pdo->exec('ALTER TABLE objects ADD COLUMN readable INTEGER DEFAULT 1');
+	Db::$pdo->exec('ALTER TABLE objects ADD COLUMN media INTEGER DEFAULT 1');
+	Db::$pdo->exec('ALTER TABLE memberships RENAME TO ca_objects_x_collections');
+	Db::$pdo->exec('CREATE INDEX membership_collection ON ca_objects_x_collections(collection_id)');
+	Db::$pdo->exec('INSERT INTO objects VALUES (6,1,0,1,1),(7,1,0,1,1),(8,1,0,0,1),(9,1,0,1,1)');
+	Db::$pdo->exec('INSERT INTO ca_objects_x_collections VALUES (6,3),(1,3),(6,15),(7,9),(8,2),(9,18),(1,2),(2,7)');
+	Db::$pdo->exec('UPDATE objects SET media = 0 WHERE object_id = 2');
+	$before = ContentsBrowse::$calls;
+	$counts = tadlCollectionContentsCounts(new ContentsRequest(), $root);
+	contentsCheck(ContentsBrowse::$calls === $before + 1, 'One branch traversal must share one native object search, not search separately for each title.');
+	contentsCheck($counts[1] === 3 && $counts[2] === 2 && $counts[3] === 2 && $counts[7] === 2 && $counts[15] === 0 && $counts[17] === 0, 'Counts must include deep descendants, deduplicate overlaps, exclude unavailable objects/ancestors and respect bundle pruning.');
+	contentsCheck(!isset($counts[8], $counts[9], $counts[10], $counts[12], $counts[14], $counts[18], $counts[21]), 'Unavailable and unrelated collections must never enter the count map.');
+	$counts = tadlCollectionContentsCounts(new ContentsRequest(['media' => 'only']), $root);
+	contentsCheck($counts[1] === 2 && $counts[2] === 1 && $counts[3] === 2 && $counts[7] === 1, 'Media filtering must precede rollup counts.');
+	$counts = tadlCollectionContentsCounts(new ContentsRequest(), contentsRecord(2));
+	contentsCheck($counts[2] === 2 && !isset($counts[1], $counts[3]), 'A selected branch must not include ancestor/sibling counts.');
+	$before = ContentsBrowse::$calls;
+	contentsCheck(tadlCollectionContentsCounts(new ContentsRequest(), contentsRecord(8)) === [] && ContentsBrowse::$calls === $before, 'Unavailable roots must not invoke an unrestricted object search.');
+	Db::$pdo->exec('INSERT INTO ca_objects_x_collections VALUES (1,100),(1,102),(2,101)');
+	$counts = tadlCollectionContentsCounts(new ContentsRequest(), contentsRecord(100));
+	contentsCheck($counts === [100=>2,101=>2,102=>2], 'Count rollup must terminate and deduplicate cyclic ancestors.');
+	// More than a page/native related-item cap, with a wide collection batch boundary.
+	$query = Db::$pdo->prepare('INSERT INTO objects VALUES (?,1,0,1,1)');
+	$link = Db::$pdo->prepare('INSERT INTO ca_objects_x_collections VALUES (?,?)');
+	for ($id = 1000; $id <= 1601; $id++) { $query->execute([$id]); $link->execute([$id, $id + 201]); }
+	Db::$queries = []; $before = ContentsBrowse::$calls;
+	$counts = tadlCollectionContentsCounts(new ContentsRequest(), contentsRecord(200));
+	contentsCheck($counts[200] === 602 && $counts[201] === 1 && $counts[802] === 1 && count(Db::$queries) === 8 && ContentsBrowse::$calls === $before + 1, 'Wide/deep branches must keep full unique counts with bounded hierarchy and membership queries.');
 	foreach (['flat', 'hierarchy', 'unknown'] as $mode) {
 		$request = new ContentsRequest(['collection_id' => 1, 'collection_view' => $mode, 'view' => 'list', 'sort' => 'Title', 'direction' => 'desc', 's' => 24,
 			'search' => '*', 'key' => 'unrelated', 'facets' => 'unrelated', 'facet' => '_search', 'id' => '*', '_advanced' => 1, 'n' => 99999]);

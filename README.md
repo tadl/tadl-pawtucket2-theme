@@ -46,6 +46,10 @@ items; **View all collection items** returns to the flat list. Sorting, paging,
 display controls and the media preference preserve that choice. The catalogue
 hierarchy and finding aid remain unchanged.
 
+In hierarchy mode, both browser columns show inline counts such as **Series (42)**.
+Each count includes unique visible objects throughout that branch, respects the
+media preference and access restrictions, and shows **(0)** for visible empty branches.
+
 The overview groups description/source and scope/content in the
 center, with creators, dates, extent, language, subjects, rights and related
 records in the right column. Columns stack on phones and empty columns are

@@ -2588,6 +2588,10 @@ a.browseRemoveFacet .glyphicon {
 .collectionsContainer small{
 	color:#757575;
 }
+.tadl-collection-record-count {
+	white-space:nowrap;
+	font-weight:normal;
+}
 .collectionsContainer p{
 	font-size:max(var(--tadl-text-min, 0px), 12px);
 }
