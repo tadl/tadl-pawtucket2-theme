@@ -38,7 +38,10 @@ fields remain fully visible. Native disclosures work without JavaScript, retain
 the complete formatted text and links, and preserve existing access checks.
 
 Collection contents keep paging, sorting and Tiles/List controls on the collection
-detail URL. A compact overview and results toolbar use the available page width.
+detail URL. The overview groups description/source and scope/content in the
+center, with creators, dates, extent, language, subjects, rights and related
+records in the right column. Columns stack on phones and empty columns are
+omitted. A compact results toolbar uses the available page width.
 Collection browse eligibility fetches media descriptors only until each collection
 qualifies; thumbnail queries select one primary image per card instead of rendering
 every attached object image. No additional service, database index or shared page

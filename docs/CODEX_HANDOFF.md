@@ -322,7 +322,12 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
   on phones. Both pagers use the same helper/page state and disappear for a
   single page; adding the top pager requires no additional catalogue query.
 - Collection details place their heading/finding-aid link beside populated metadata
-  in an adaptive overview; empty metadata columns are omitted. The contents toolbar
+  in an adaptive overview. `tadl-collection-fields` groups description, its source
+  and scope/content in the center; `tadl-collection-facts` groups creators, dates,
+  extent, language, vocabulary/subject terms, rights/copyright and relationships
+  in the right column. Empty columns are omitted, and columns stack on phones.
+  Existing access filtering, long-field disclosures and native links are retained.
+  The contents toolbar
   aligns **Collection items**, the filtered count, **Options**, **Tiles/List** and
   pagination. Metadata and tools stack on narrower screens.
 - The collection loader requests `tadl_collection_controls=1` and its selected
@@ -684,7 +689,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/asset_versions_test.php` | Stable/changed CSS and JS URLs, preserved timestamps, native loader options, subdirectory/absolute theme URLs, escaping, inline-code preservation and path boundaries |
 | `tests/media_preferences_test.php` | Eligibility SQL, lazy collection/authority descriptor fetching, related-object access/deletion/ACL/bundle checks, People/Organizations/Places/Events Tiles/List counts/paging/detail context, table cache isolation, route scope, invalid-media exhaustion, filtered result adapter and result rendering |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |
-| `tests/collection_detail_scripts_test.php` | Collection detail loader JavaScript and empty/populated field/relationship headings |
+| `tests/collection_detail_scripts_test.php` | Collection detail loader JavaScript, empty/populated field/relationship headings, long-field controls and narrative/facts column placement |
 | `tests/object_detail_media_test.php` | Media selection, viewer controls and callbacks |
 | `tests/object_detail_video_poster_test.php` | Covers, playback, player fallback and access |
 | `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |

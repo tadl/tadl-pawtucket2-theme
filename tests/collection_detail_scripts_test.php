@@ -111,8 +111,28 @@ foreach ([
 }
 $html = (new DetailScriptView(2))->render('ca_collections');
 checkDetailScripts(!str_contains($html, 'class="tadl-collection-metadata"'), 'Empty collection metadata must not reserve columns.');
-$html = (new DetailScriptView(2, ['ca_collections.extent_text' => 'Synthetic extent', 'relativeTo="ca_places"' => '<a href="/synthetic/place">Synthetic place</a>']))->render('ca_collections');
-checkDetailScripts(strpos($html, 'tadl-collection-metadata') < strpos($html, 'collectionHierarchy') && str_contains($html, 'tadl-collection-fields') && str_contains($html, 'tadl-collection-relationships'), 'Populated metadata must sit beside the heading above contents.');
+$html = (new DetailScriptView(2, [
+	'ca_collections.description_source' => 'Synthetic citation', 'ca_collections.description' => $long_description,
+	'ca_collections.collection_scope_content' => $long_scope,
+	'restrictToRelationshipTypes="creator"' => '<a href="/synthetic/creator">Synthetic creator</a>',
+	'ca_collections.date.dates_value' => '1930', 'ca_collections.extent_text' => 'Synthetic extent',
+	'ca_collections.language' => 'English', 'relativeTo="ca_list_items"' => 'Synthetic subject',
+	'ca_collections.lcsh_terms' => 'Synthetic heading', 'ca_collections.rights.rightsText' => 'Synthetic rights',
+	'ca_collections.rights.copyrightStatement' => 'Synthetic statement',
+	'relativeTo="ca_places"' => '<a href="/synthetic/place">Synthetic place</a>'
+]))->render('ca_collections');
+checkDetailScripts(strpos($html, 'tadl-collection-metadata') < strpos($html, 'collectionHierarchy') && str_contains($html, 'tadl-collection-fields') && str_contains($html, 'tadl-collection-facts'), 'Populated metadata must sit beside the heading above contents.');
+$document = new DOMDocument();
+$document->loadHTML('<meta charset="UTF-8">'.$html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+$xpath = new DOMXPath($document);
+$column_labels = static fn($class) => array_map(static fn($node) => $node->textContent, iterator_to_array($xpath->query('//div[@class="'.$class.'"]//div[@class="unit"]/label')));
+checkDetailScripts($column_labels('tadl-collection-fields') === ['Description', 'Source of description', 'Scope and content'], 'Center column must group the narrative fields together.');
+checkDetailScripts($column_labels('tadl-collection-facts') === ['Creators', 'Dates', 'Extent', 'Language', 'Vocabulary terms', 'Library of Congress subject headings', 'Rights', 'Copyright statement', 'Related places'], 'Right column must group collection facts and relationships without losing fields.');
+checkDetailScripts($xpath->query('//div[@class="tadl-collection-facts"]//a[@href="/synthetic/creator"]')->length === 1, 'Moving creators must preserve their native links.');
+foreach ([['ca_collections.description' => 'Synthetic description'], ['ca_collections.extent_text' => 'Synthetic extent']] as $values) {
+	$html = (new DetailScriptView(0, $values))->render('ca_collections');
+	checkDetailScripts(substr_count($html, 'class="tadl-collection-fields"') + substr_count($html, 'class="tadl-collection-facts"') === 1, 'A single populated metadata column must not reserve an empty sibling.');
+}
 
 $cases = array();
 foreach (array(
