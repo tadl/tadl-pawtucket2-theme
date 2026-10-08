@@ -7,6 +7,18 @@ For Codex or a new workstation, start with [AGENTS.md](AGENTS.md) and the
 recent changes, design decisions and all twenty-seven standalone regression suites.
 It uses relative paths and does not require an application database for those tests.
 
+Feature guides:
+
+| Guide | Covers |
+| --- | --- |
+| [Collections](docs/COLLECTIONS.md) | Flat and hierarchy views, navigation, inline counts, configuration and rollout checks |
+| [Finding aids](docs/FINDING_AIDS.md) | PDF contents, count semantics, field mappings and export permissions |
+| [Document text](docs/DOCUMENT_TEXT.md) | PDF extraction, imported transcription fallbacks and plain-text display |
+| [Accounts and FAQ](docs/USER_FEATURES.md) | Bookmarked login, staff tools, lightboxes and content editing |
+| [FAQ activation](docs/FAQ_SETUP.md) | Repeatable Providence template/editor setup and upgrade preservation |
+| [Thumbnail focus](docs/THUMBNAIL_FOCUS.md) | Manual focal points and durable local face-detection suggestions |
+| [Crawler policy](docs/CRAWLER_POLICY.md) | Download/search directives and separate root robots installation |
+
 Deployment is a separate, explicitly authorized step. A source commit/push does
 not authorize running the enclosing deployment helper or restarting production.
 
@@ -16,13 +28,21 @@ root `robots.txt` covers clean and `index.php` routes while keeping public recor
 and thumbnails crawlable. The root file requires a separate installation after
 theme deployment; see [Crawler policy](docs/CRAWLER_POLICY.md).
 
-Deploy flow after authorization:
+Rollout after authorization:
 
-1. make changes in this repo
-2. commit and push to GitHub
-3. rsync the theme to the Pawtucket2 server theme directory
-4. clear `app/tmp`
-5. restart Apache
+1. Verify, commit and push a coherent theme revision to the source remote.
+2. Review the target and its local configuration, then deploy the complete revision
+   through the established operator workflow. Preserve server-local overrides and
+   persistent thumbnail-focus data.
+3. Follow the target's PHP/runtime cache policy. Cache clearing and service restarts
+   are separate operational steps; this source repository does not authorize them.
+4. Run the feature's post-deployment checks. Root `robots.txt`, FAQ activation and
+   the thumbnail detector runtime have separate documented installation steps.
+
+Asset content versions handle browser CSS/JS caching; clearing `app/tmp` is not
+the browser cache-busting mechanism. If a rollout clears that directory, follow
+the legacy thumbnail-cache preservation/migration instructions in the
+[thumbnail guide](docs/THUMBNAIL_FOCUS.md) first.
 
 Theme CSS and JavaScript URLs include automatic content versions. After deploying
 changed files, visitors can use normal Reload to get the new assets; no hard
@@ -49,6 +69,9 @@ hierarchy and finding aid remain unchanged.
 In hierarchy mode, both browser columns show inline counts such as **Series (42)**.
 Each count includes unique visible objects throughout that branch, respects the
 media preference and access restrictions, and shows **(0)** for visible empty branches.
+The [collection guide](docs/COLLECTIONS.md) explains the two modes, URL state,
+count semantics and configuration. The **Download finding aid** link uses sentence
+case and normal detail-link styling, including an underline on hover.
 
 The overview groups description/source and scope/content in the
 center, with creators, dates, extent, language, subjects, rights and related

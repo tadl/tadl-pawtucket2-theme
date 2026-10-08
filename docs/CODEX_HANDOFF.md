@@ -5,10 +5,12 @@ Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
 
-The original handoff checkpoint was `e3ae5b4` on `main`, pushed to
-`git@github.com:tadl/tadl-pawtucket2-theme.git`. The worktree was clean before
-adding these documents. Documentation commits follow that checkpoint; use
-`git status` and `git log` for the current state.
+The current implementation checkpoint is `db90470` on `main`, pushed to
+`git@github.com:tadl/tadl-pawtucket2-theme.git`, checked on 2026-10-08. It includes
+flat collection contents, inline descendant counts in both hierarchy columns and
+normal finding-aid link styling. The worktree was clean before this documentation
+refresh. Documentation commits follow this checkpoint; use `git status` and
+`git log` for the current state. The original checkpoint was `e3ae5b4`.
 
 This is the theme for the public TADL Local History Collection at
 https://archives.tadl.org/. The user is now adding more object media in
@@ -24,6 +26,15 @@ workspace has reference checkouts of Pawtucket and Providence at local tag
 
 | Commit | Result |
 | --- | --- |
+| `db90470` | Sentence-case finding-aid link with normal detail-link styling and hover underline |
+| `0a9321d` | Inline unique descendant counts in both collection hierarchy columns |
+| `9181332` | Flat descendant contents by default, explicit hierarchy switch and collection detail URL state |
+| `f110dce` | Imported document-text HTML converted to escaped readable plain text |
+| `89ce186` | Collection narrative and facts grouped into adaptive metadata columns |
+| `4135465` | Native Read more / Read less disclosures for long detail metadata |
+| `1bbfabd`, `57c1e46`, `a154914` | Accessible PDF text with extraction/transcription/pdf_text precedence |
+| `9a021f8`, `69e5b45` | Complete finding-aid hierarchy with counts and no individual object inventory |
+| `5e96940` | Crawler directives and separately installed root robots policy |
 | `0ca1b0c` | Larger object-detail media layout on wide desktops |
 | `3434c70` | Representation titles hidden on object details |
 | `7c4cc78` | Collection on its own title line; arrow and object title below |
@@ -62,7 +73,7 @@ before calling an issue deployed or still broken.
 | Enlarged viewer help | `views/Details/viewer_help_html.php` |
 | Detail metadata and long-field disclosures | `views/Details/detail_field_helpers.php`, shared detail templates and scoped theme CSS |
 | Document text | `helpers/document_text.php`, object detail view and scoped theme CSS; `docs/DOCUMENT_TEXT.md` |
-| Collection details | `views/Details/ca_collections_default_html.php`, `controllers/CollectionContentsController.php`, `helpers/collection_contents.php` |
+| Collection details and browser | `views/Details/ca_collections_default_html.php`, `controllers/CollectionContentsController.php`, `helpers/collection_contents.php`, hierarchy views/helpers under `views/Collections/`; `docs/COLLECTIONS.md` |
 | Authority details | `views/Details/authority_detail_helpers.php`, `authority_detail_html.php`, entity/place/occurrence detail templates |
 | Galleries | `views/Gallery/index_html.php`, `set_info_html.php`, `detail_html.php`, `set_item_rep_html.php`, `set_item_info_html.php` |
 | Styling | `assets/pawtucket/css/theme.css`, with the existing `main.css` foundation |
@@ -281,6 +292,10 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
   context. Do not re-enable caches without addressing that limitation.
 
 ### Results and authority pages
+
+See [Collections](COLLECTIONS.md) for the current visitor behavior, flat versus
+hierarchy count semantics, configuration and post-deployment checks. The notes
+below retain implementation details and historical verification evidence.
 
 - Collection browse performance: `tadlMediaEligibleIDs()` first fetches only
   collection/representation ID pairs, then decodes one untested descriptor per
@@ -751,7 +766,13 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/subjects_test.php` | Subject relationship rendering, escaping, native browse links, bundle access and Pawtucket ACL filtering |
 | `tests/recent_writing_test.php` | Actual home fallback/View More filters; client refresh, URL/text safety, cold-cache retry and feed-error fallback |
 
-All eight original suites passed during handoff preparation, as did PHP lint.
+All 27 standalone suites passed for implementation checkpoint `db90470` on
+2026-10-08, along with changed PHP lint and `git diff --check`. Synthetic browser
+checks verified flat/hierarchy navigation, inline counts in both columns at
+desktop/phone widths, and the finding-aid link's normal and hover styles. These
+checks do not establish production deployment or performance.
+
+Historical verification: all eight original suites passed during handoff preparation, as did PHP lint.
 The nine suites passed after the image-download change on PHP 8.5.10 and Node
 24.19.0. Desktop/mobile synthetic browser preview verified enlarged controls,
 mouse/keyboard disclosure and wrapping. Production conversion remains unverified.

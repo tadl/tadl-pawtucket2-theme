@@ -6,6 +6,14 @@ including readable descendant collections and counts of their accessible catalog
 objects. It does not redirect the export to the hierarchy's
 top-level collection.
 
+The link uses sentence case and ordinary detail-link color/size, with an underline
+on hover. Its PDF attachment URL and `rel="nofollow"` behavior are unchanged.
+
+The collection page's flat/hierarchy switch does not change the PDF's scope.
+See [Collections](COLLECTIONS.md) for browser navigation and inline counts: browser
+counts include each entire readable branch and apply the media preference, while
+the PDF lists directly linked counts for each node and includes records without media.
+
 ## Initial document
 
 - Collection name and identifier, library identification and generation timestamp.
