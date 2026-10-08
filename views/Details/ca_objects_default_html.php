@@ -28,6 +28,7 @@
  
 	require_once(__DIR__.'/detail_field_helpers.php');
 	require_once(__DIR__.'/../../helpers/user_features.php');
+	require_once(__DIR__.'/../../helpers/document_text.php');
 
 	$t_object = 			$this->getVar("item");
 	$va_comments = 			$this->getVar("comments");
@@ -146,7 +147,9 @@
 					</div><!-- end row -->
 						
 			</div><!-- end col -->
-		</div><!-- end row --></div><!-- end container -->
+		</div><!-- end row -->
+		<?= tadlObjectDocumentTextHTML($this->request, $t_object); ?>
+		</div><!-- end container -->
 	</div><!-- end col -->
 </div><!-- end row -->
 

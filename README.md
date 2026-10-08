@@ -4,7 +4,7 @@ Standalone source repository for the `tadl` Pawtucket2 theme used for TADL local
 
 For Codex or a new workstation, start with [AGENTS.md](AGENTS.md) and the
 [current handoff](docs/CODEX_HANDOFF.md). The handoff explains the source map,
-recent changes, design decisions and all twenty-four standalone regression suites.
+recent changes, design decisions and all twenty-five standalone regression suites.
 It uses relative paths and does not require an application database for those tests.
 
 Deployment is a separate, explicitly authorized step. A source commit/push does
@@ -43,6 +43,13 @@ representation. When it is unavailable (for example, a paired JPEG made private)
 they fall back to an accessible image derivative using the native representation
 model's access, ACL and bundle checks. This does not change catalogue primary links,
 access flags or files; TIFF representations use their generated JPEG thumbnails.
+
+Object details offer a collapsed **Document text** section below the media and
+metadata when an accessible PDF has text. Populated `ca_objects.pdf_text` takes
+precedence over extracted `ca_object_representations.media_content`. Private
+paired PDFs do not qualify a TIFF object for this section; empty text produces
+no heading. See [Document text](docs/DOCUMENT_TEXT.md) for permissions, source
+selection and verification.
 
 Collection details offer **Download Finding Aid**, an initial collection PDF with
 metadata, a unique accessible-object total and counts for each collection or

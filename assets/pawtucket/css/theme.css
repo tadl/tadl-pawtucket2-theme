@@ -1150,6 +1150,56 @@ h6 {
     width: 100%;
 }
 
+.tadl-document-text {
+    margin-top: 32px;
+    border: 1px solid var(--tadl-border);
+    border-radius: var(--tadl-radius);
+}
+
+.tadl-document-text > summary {
+    display: list-item;
+    list-style-position: inside;
+    padding: 16px 20px;
+    color: var(--tadl-primary-dark);
+    font-size: 22px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.tadl-document-text > summary:focus-visible {
+    outline: 2px solid var(--tadl-primary-dark);
+    outline-offset: 2px;
+}
+
+.tadl-document-text[open] > summary {
+    border-bottom: 1px solid var(--tadl-border);
+}
+
+.tadl-document-text-body {
+    padding: 20px;
+}
+
+.tadl-document-text-source {
+    margin-bottom: 16px;
+    color: var(--tadl-muted);
+}
+
+.tadl-document-text-body h3 {
+    margin: 24px 0 12px;
+    font-size: 20px;
+}
+
+.tadl-document-text-content {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.6;
+}
+
+.tadl-document-text-content + h3 {
+    padding-top: 20px;
+    border-top: 1px solid var(--tadl-border);
+}
+
 .tadl-collection-detail > .col-xs-12 > .container {
     width: 100%;
 }

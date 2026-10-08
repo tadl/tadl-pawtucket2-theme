@@ -61,6 +61,7 @@ before calling an issue deployed or still broken.
 | Crawler policy | `helpers/crawler_policy.php`, shared header and download views; `support/site-root/robots.txt`, `docs/CRAWLER_POLICY.md` (root file installed separately) |
 | Enlarged viewer help | `views/Details/viewer_help_html.php` |
 | Object metadata | `views/Details/ca_objects_default_html.php`, `detail_field_helpers.php` |
+| Document text | `helpers/document_text.php`, object detail view and scoped theme CSS; `docs/DOCUMENT_TEXT.md` |
 | Collection details | `views/Details/ca_collections_default_html.php` |
 | Authority details | `views/Details/authority_detail_helpers.php`, `authority_detail_html.php`, entity/place/occurrence detail templates |
 | Galleries | `views/Gallery/index_html.php`, `set_info_html.php`, `detail_html.php`, `set_item_rep_html.php`, `set_item_info_html.php` |
@@ -78,6 +79,21 @@ line numbers. Native application behavior can be inspected in the nearby
 `pawtucket2/app/` reference tree without editing it.
 
 ## Behavior and implementation contracts
+
+### Object document text
+
+Object details have a collapsed **Document text** section after both media and
+metadata columns. A readable attached PDF is required for either source:
+populated `ca_objects.pdf_text` takes precedence, otherwise accessible PDFs'
+`ca_object_representations.media_content` supplies text. Private paired PDFs do
+not qualify a TIFF object. Empty/missing text produces no section. Native record
+access, deletion, type/source/bundle permissions and Pawtucket ACLs remain enforced;
+text/labels are escaped and line/page breaks retained. Multiple PDFs follow native
+rank/primary order with an ID tie break. Native `details` needs no new JavaScript,
+controller, extraction process or external service. See `docs/DOCUMENT_TEXT.md`.
+The candidate helper passed a read-only installed-model check for a newspaper PDF;
+the migrated text was empty, so imported precedence remains verified synthetically
+until the planned import. No theme deployment or catalogue mutation was performed.
 
 ### Crawler hints and root robots policy
 
@@ -599,7 +615,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The twenty-four committed tests are portable and use synthetic boundaries. They do not
+The twenty-five committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -645,6 +661,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |
 | `tests/result_context_heading_test.php` | Results context, headings, removable criteria, empty flat/deferred/media-filtered facets, hierarchy-response fallback and Subjects browse/refine rendering |
 | `tests/object_detail_metadata_test.php` | Empty/populated rich-text fields and fallback values; structured TGM pairing, safe links, escaping and permissions |
+| `tests/document_text_test.php` | PDF/imported text precedence, empty/missing fields, private pairs, native record/bundle/Pawtucket ACL boundaries, safe text/labels, Unicode/line/page breaks, multiple-PDF ordering and actual full-width detail template placement |
 | `tests/image_download_test.php` | Toolbar/bundle/overlay menus, visible native PDF actions, viewer icon placement, outside-click/Escape/Tab handling, current image action relocation, gallery AJAX navigation and media callbacks, download policy/ACL/attachment checks, TIFF/JPEG/BMP/PDF bytes, BMP MIME aliases, conversion validation and failure handling |
 | `tests/crawler_policy_test.php` | Media link rel/callback preservation, public versus search/account metadata, actual binary HTTP headers/bytes, clean/index.php robots rules and public record/asset/media allowances |
 | `tests/thumbnail_package_test.php` | Source allowlist/hashes, safe existing-output refusal, ZIP contents and independent exported PHP/Python tests; additionally requires Python 3.11+ |
