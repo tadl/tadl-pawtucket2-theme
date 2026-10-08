@@ -11,14 +11,10 @@ body { font-family: "DejaVu Sans", sans-serif; font-size: 9pt; line-height: 1.45
 .kicker { font-size: 10pt; text-transform: uppercase; letter-spacing: 1pt; margin: 0 0 5pt; }
 h1 { font-size: 21pt; line-height: 1.25; margin: 0 0 8pt; }
 h2 { font-size: 13pt; margin: 22pt 0 9pt; border-bottom: 1pt solid #bbb; padding-bottom: 5pt; }
-h3 { font-size: 10pt; margin: 12pt 0 3pt; }
 p { margin: 0 0 8pt; }
 .note { color: #555; font-size: 8pt; }
 .field { margin-bottom: 8pt; }
 .label { font-weight: bold; }
-.entry { padding-bottom: 10pt; border-bottom: 0.5pt solid #ddd; page-break-inside: avoid; word-wrap: break-word; }
-.entry h3 { page-break-after: avoid; }
-.entry .field { margin-bottom: 3pt; }
 .collection { margin-bottom: 6pt; }
 </style></head><body>
 <p class="brand">Traverse Area District Library | Local History Collection</p>
@@ -34,19 +30,10 @@ p { margin: 0 0 8pt; }
 <?php if (count($aid['collections']) > 1) { ?>
 <h2>Collection organization</h2>
 <?php foreach ($aid['collections'] as $node) { ?>
-<div class="collection"><?= $escape($node['path']); ?> <span class="note">(<?= (int)$node['count']; ?> directly linked items)</span></div>
+<div class="collection"><?= $escape($node['path']); ?> <span class="note">(<?= (int)$node['count']; ?> directly linked <?= $node['count'] === 1 ? 'item' : 'items'; ?>)</span></div>
 <?php } } ?>
-<h2>Object inventory</h2>
-<p><?= count($aid['objects']); ?> <?= count($aid['objects']) === 1 ? 'item' : 'items'; ?>. Includes records with and without media in this collection and its readable subcollections.</p>
-<?php if (count($aid['collections']) > 1) { ?><p class="note">Objects linked to multiple collections appear once in this inventory.</p><?php } ?>
-<?php if (!$aid['objects']) { ?><p>No accessible object records are currently linked to this collection.</p><?php } ?>
-<?php foreach ($aid['objects'] as $index => $object) { ?>
-<div class="entry">
-<h3><?= $index + 1; ?>. <?= $escape($object['title']); ?></h3>
-<?php foreach ($object['fields'] as $field) { ?>
-<div class="field"><span class="label"><?= $escape($field['label']); ?>:</span> <?= nl2br($escape($field['value'])); ?></div>
-<?php } ?>
-<?php if (count($aid['collections']) > 1) { ?><div class="field"><span class="label">Collection / series:</span> <?= $escape(implode('; ', $object['collections'])); ?></div><?php } ?>
-</div>
-<?php } ?>
+<h2>Collection contents</h2>
+<p><?= (int)$aid['object_count']; ?> <?= $aid['object_count'] === 1 ? 'item' : 'items'; ?>. Includes records with and without media in this collection and its readable subcollections.</p>
+<?php if (count($aid['collections']) > 1) { ?><p class="note">Objects linked to multiple collections count once in this total. Directly linked counts above can overlap.</p><?php } ?>
+<?php if (!$aid['object_count']) { ?><p>No accessible object records are currently linked to this collection.</p><?php } ?>
 </body></html>

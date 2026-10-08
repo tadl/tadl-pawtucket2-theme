@@ -2,8 +2,8 @@
 
 The initial **Download Finding Aid** action replaces the generic collection
 summary PDF link. It generates a letter-size PDF for the collection being viewed,
-including readable descendant collections and a complete inventory of their
-accessible cataloged objects. It does not redirect the export to the hierarchy's
+including readable descendant collections and counts of their accessible cataloged
+objects. It does not redirect the export to the hierarchy's
 top-level collection.
 
 ## Initial document
@@ -13,42 +13,28 @@ top-level collection.
   and readable. Missing fields and punctuation-only dates have no heading.
 - Collection organization, with the number of readable objects directly linked
   to each collection. Counts can overlap when an object belongs to multiple
-  collections; the inventory total counts each object only once.
-- Numbered object entries with title, identifier/accession number, legacy accession
-  number, dates, recorded storage location and collection/series memberships.
-- Natural identifier ordering, with unidentified records last; title and internal
-  object ID break ties. Distinct records with matching titles/identifiers stay distinct.
-- Page numbers and wrapping text. Inventory entries stay together when they fit
-  on a page; long entries can flow onto subsequent pages.
+  collections; the overall total counts each object only once by its internal ID.
+- Collection contents total, including objects in readable descendant collections.
+  Objects with matching titles/identifiers remain distinct records in the count.
+- Page numbers and wrapping text. Individual object titles, accession numbers,
+  dates, memberships and storage locations are omitted.
 
-This is an inventory of current catalog records, not a claim that every physical
-item has already been cataloged. The document intentionally includes records
+These are counts of current catalog records, not a claim that every physical
+item has already been cataloged. The document intentionally counts records
 without representations, regardless of the **Only items with media** preference.
 That preference controls display, not access permissions.
 
-## Field mappings and locations
+## Collection field mappings
 
-`conf/finding_aid.conf` defines collection metadata and inventory fields. Each
+`conf/finding_aid.conf` defines collection metadata fields. Each
 mapping has a label and a list of candidate native bundles; the first populated,
 readable bundle wins. Missing elements are skipped without probing nonexistent
 metadata. Mappings allow field paths within the subject table, not arbitrary
 display templates or PHP.
 
-Initial inventory mappings:
-
-| Label | Source |
-| --- | --- |
-| Identifier / accession number | `ca_objects.idno` |
-| Legacy accession number | `ca_objects.legacy_accession_number` |
-| Dates | `ca_objects.date.dates_value` |
-| Recorded storage location | Readable `home_location_id`, otherwise readable related `ca_storage_locations` records |
-
-Location labels include the storage record's identifier when readable. Geographic
-places are not treated as physical storage. Home/related locations are not claimed
-to be verified current locations, and movement histories are not exported. Locations
-require readable object location bundles and readable, public, nondeleted storage
-records, including their own label/identifier bundle permissions. Set
-`include_storage_locations = 0` to omit them.
+The 2026-10-08 change replaces the object inventory with counts. The former
+`inventory_fields` and `include_storage_locations` configuration entries are no
+longer used. Object metadata and storage records are not loaded for this summary.
 
 ## Implementation and access
 
@@ -63,22 +49,23 @@ URL is not the theme endpoint.
 - `controllers/CollectionFindingAidController.php`: GET-only download, selected collection
   validation, login requirements, configuration, generation and safe filename.
 - `helpers/finding_aid.php`: native model traversal, record/type/source/bundle/ACL
-  checks, accessible metadata, unique inventory and Dompdf rendering.
+  checks, accessible collection metadata, unique object counts and Dompdf rendering.
 - `views/Details/finding_aid_pdf_html.php`: escaped text and PDF styling.
 - `views/Details/finding_aid_binary.php`: PDF attachment with `private, no-store`
   and `nosniff` headers.
 - `views/Details/ca_collections_default_html.php`: selected collection's link.
 
-Private, deleted or unreadable collections, objects and storage records are
+Private, deleted or unreadable collections and objects are
 excluded. Unreadable collection branches are not traversed, and relationship and
-hierarchy bundle restrictions are honored. Counts reflect the same checks as
-inventory entries. No private-record placeholders or counts are included.
+hierarchy bundle restrictions are honored. No private-record placeholders or
+counts are included.
 
-Object IDs are deduplicated before loading metadata, preserving all readable
-memberships. Related-item queries explicitly remove the native default cap
+Object IDs are deduplicated before checking access, preserving all readable
+memberships for the collection counts. Related-item queries explicitly remove the native default cap
 (1000/4000 in reference APIs), so the export is not a first-page preview. Each
-object is loaded once for native access checks; repeated storage labels are cached
-only within the export. Very large collections may need a later background-export
+object is loaded once for native access checks; individual metadata and storage
+queries, object sorting and per-object PDF rendering are skipped.
+Very large collections may need a later background-export
 workflow; there is currently no silent truncation or shared PDF cache.
 
 The export uses Dompdf already supplied by Pawtucket, with remote resources,
@@ -91,8 +78,9 @@ limit; infrastructure timeouts still apply.
 ## Verification and deployment
 
 Run `php tests/finding_aid_test.php` for synthetic controller, access, hierarchy,
-duplicate-membership, field, location, escaping and renderer boundaries. It
-includes a 4,105-object inventory to catch default-cap regressions.
+duplicate-membership counts, collection fields, omission of individual object
+metadata/entries, escaping and renderer boundaries. It includes a 4,105-object
+collection to catch default-cap regressions, plus empty and single-item totals.
 
 Optionally verify URL parsing through the actual Pawtucket dispatcher:
 
@@ -119,23 +107,24 @@ private catalog exports or generated PDFs. Render sample pages with Poppler and
 inspect layout and extracted text. Standalone tests do not bootstrap the catalog
 or connect to its database.
 
-The initial implementation passed thirteen standalone suites, PHP lint, the
-native reference configuration parser and real Dompdf generation. A 55-entry
-synthetic PDF was rendered and visually inspected, including a long title,
-non-ASCII text and multipage inventory. Production field applicability, data and
-performance remain deployment-time checks. Source commits do not deploy.
+The initial inventory implementation passed synthetic/native-parser and real
+Dompdf checks. The count-only revision retains those access and rendering
+boundaries and uses a synthetic sample with overlapping collection memberships
+and child-only objects. All twenty-four standalone suites and changed PHP lint
+passed. Real Dompdf generation/native dispatcher checks passed; Poppler text and
+visual inspection confirmed a one-page sample with 56 unique items, overlapping
+55-item collection counts and no individual object entries.
+Production field applicability, data and performance
+remain deployment-time checks. Source commits do not deploy.
 
 ## Questions for the archives team
 
-- Confirm which field is the authoritative accession number and whether legacy
-  numbers should appear separately.
-- Confirm the public location convention: holding library, box/folder, home
-  storage, current movement-derived location, or an approved descriptive field.
-- Define collection organization and ordering: accession numbers, series,
+- Define collection organization and ordering: series,
   subseries, box/folder, dates or a manual archival arrangement.
 - Specify narrative sections such as administrative/biographical history,
   provenance, processing notes, access/use restrictions and preferred citation.
 - Decide whether the finding aid should describe only cataloged objects or also
-  uncataloged physical holdings, and whether a separate staff export is needed.
+  uncataloged physical holdings, and whether a separate detailed staff inventory
+  export is needed.
 - Supply an approved example and decide whether later HTML, CSV, EAD/XML or
   archival-standard output is wanted alongside PDF.

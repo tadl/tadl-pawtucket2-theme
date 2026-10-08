@@ -21,17 +21,12 @@ function caACLIsEnabled($record, $options) {
 }
 class AidConfig {
 	public array $values = [
-		'enabled' => 1, 'include_storage_locations' => 1,
+		'enabled' => 1,
 		'collection_fields' => [
 			'description' => ['label' => 'Description', 'bundles' => ['ca_collections.description']],
 			'dates' => ['label' => 'Dates', 'bundles' => ['ca_collections.date.dates_value']],
 			'extent' => ['label' => 'Extent', 'bundles' => ['ca_collections.extent_text', 'ca_collections.extent']],
 			'rights' => ['label' => 'Rights', 'bundles' => ['ca_collections.rights.rightsText']]
-		],
-		'inventory_fields' => [
-			'identifier' => ['label' => 'Identifier / accession number', 'bundles' => ['ca_objects.idno']],
-			'legacy_identifier' => ['label' => 'Legacy accession number', 'bundles' => ['ca_objects.legacy_accession_number']],
-			'dates' => ['label' => 'Dates', 'bundles' => ['ca_objects.date.dates_value']]
 		]
 	];
 	function get($key) { return $this->values[$key] ?? null; }
@@ -52,7 +47,7 @@ class AidRequest {
 class AidModel {
 	public array $row = [];
 	function __construct(public string $table) {}
-	function load($id) { $this->row = $GLOBALS['aidRows'][$this->table][$id] ?? []; return (bool)$this->row; }
+	function load($id) { $GLOBALS['aidLoads'][] = [$this->table, $id]; $this->row = $GLOBALS['aidRows'][$this->table][$id] ?? []; return (bool)$this->row; }
 	function tableName() { return $this->table; }
 	function getPrimaryKey() { return $this->row['id'] ?? null; }
 	function get($key) { return $this->row[$key] ?? null; }
@@ -61,6 +56,7 @@ class AidModel {
 	function isReadable($request, $bundle = null) { return ($this->row['readable'] ?? true) && !in_array($bundle, $this->row['denied'] ?? [], true); }
 	function checkACLAccessForUser($user) { aidCheck($user instanceof stdClass, 'Native ACL must receive current user.'); return $this->row['acl_level'] ?? 1; }
 	function getWithTemplate($template, $options) {
+		aidCheck($this->table === 'ca_collections', 'Count-only finding aids must not fetch object or storage metadata.');
 		aidCheck(($options['checkAccess'] ?? null) === [1] && ($options['makeLink'] ?? null) === false, 'Metadata must preserve access and plain text options.');
 		$GLOBALS['aidReads'][] = [$this->table, $this->getPrimaryKey(), $template];
 		return $this->row['values'][substr($template, 1)] ?? '';
@@ -70,11 +66,16 @@ class AidModel {
 		return $this->row['children'] ?? [];
 	}
 	function getRelatedItems($table, $options) {
-		aidCheck($options === ['idsOnly' => true, 'checkAccess' => [1], 'limit' => PHP_INT_MAX], 'Inventory must remove native relationship limits and preserve access.');
+		aidCheck($options === ['idsOnly' => true, 'checkAccess' => [1], 'limit' => PHP_INT_MAX], 'Counts must remove native relationship limits and preserve access.');
 		return $this->row['related'][$table] ?? [];
 	}
 }
-class Datamodel { static function getInstance($table, $unused) { return new AidModel($table); } }
+class Datamodel {
+	static function getInstance($table, $unused) {
+		aidCheck(in_array($table, ['ca_collections', 'ca_objects'], true), 'Count-only finding aids must not load storage records.');
+		return new AidModel($table);
+	}
+}
 class AidView {
 	public array $vars = [];
 	function setVar($key, $value) { $this->vars[$key] = $value; }
@@ -139,7 +140,7 @@ $GLOBALS['aidRows'] = [
 			'children' => [7, 8, 10, 11, 12], 'related' => ['ca_objects' => [101, 101, 102, 103, 104, 105, 106, 107, 108, 109]],
 			'values' => ['ca_collections.description' => '<p>A synthetic collection &amp; its history.</p>', 'ca_collections.date.dates_value' => '; ', 'ca_collections.extent' => 'Two boxes', 'ca_collections.rights.rightsText' => 'Synthetic rights statement']
 		]),
-		7 => aidRow(7, 'ca_collections', 'Series A', 'SYN.7', ['related' => ['ca_objects' => [101, 103]]]),
+		7 => aidRow(7, 'ca_collections', 'Series A', 'SYN.7', ['related' => ['ca_objects' => [101, 103, 111]]]),
 		8 => aidRow(8, 'ca_collections', 'Private branch', '', ['access' => 0, 'children' => [9]]),
 		9 => aidRow(9, 'ca_collections', 'Behind private branch', '', ['related' => ['ca_objects' => [110]]]),
 		10 => aidRow(10, 'ca_collections', 'Denied branch', '', ['acl' => true, 'acl_level' => 0]),
@@ -155,59 +156,64 @@ $GLOBALS['aidRows'] = [
 		106 => aidRow(106, 'ca_objects', 'Unreadable object', 'SECRET.6', ['readable' => false]),
 		107 => aidRow(107, 'ca_objects', 'ACL denied object', 'SECRET.7', ['acl' => true, 'acl_level' => 0]),
 		109 => aidRow(109, 'ca_objects', 'Hidden name', 'HIDDEN', ['denied' => ['preferred_labels', 'idno', 'legacy_accession_number', 'date', 'ca_storage_locations']]),
-		110 => aidRow(110, 'ca_objects', 'Hidden branch object', 'SECRET.10')
-	],
-	'ca_storage_locations' => [
-		50 => aidRow(50, 'ca_storage_locations', 'Box 1 / Folder 2', 'SYN.LOC.1'),
-		51 => aidRow(51, 'ca_storage_locations', 'Old box', 'SYN.LOC.2'),
-		52 => aidRow(52, 'ca_storage_locations', 'Private location', 'SECRET.LOC', ['access' => 0]),
-		53 => aidRow(53, 'ca_storage_locations', 'Deleted location', '', ['deleted' => 1]),
-		54 => aidRow(54, 'ca_storage_locations', 'Denied location', '', ['acl' => true, 'acl_level' => 0])
+		110 => aidRow(110, 'ca_objects', 'Hidden branch object', 'SECRET.10'),
+		111 => aidRow(111, 'ca_objects', 'Child-only object', 'SYN.11')
 	]
 ];
 $request = new AidRequest();
 $collection = new AidModel('ca_collections'); $collection->load(42);
+$GLOBALS['aidLoads'] = []; $GLOBALS['aidReads'] = [];
 $data = tadlFindingAidData($request, $collection, $GLOBALS['aidConfig']);
-aidCheck(count($data['objects']) === 4, 'Readable objects must be unique by ID, including those without media.');
+aidCheck($data['object_count'] === 5, 'Readable objects must be counted once by ID, including child-only records and those without media.');
+aidCheck(!array_key_exists('objects', $data), 'Finding-aid data must contain counts rather than an object inventory.');
 aidCheck(array_keys($data['collections']) === [42, 12, 7], 'Unreadable/deleted branches must not appear or be traversed.');
-aidCheck($data['collections'][42]['count'] === 4 && $data['collections'][7]['count'] === 2, 'Collection counts must count readable unique objects.');
-$objects = array_column($data['objects'], null, 'id');
-aidCheck(count($objects[101]['collections']) === 2, 'Shared object must retain both memberships in a single inventory entry.');
-aidCheck($objects[101]['fields']['location']['value'] === 'Box 1 / Folder 2 (SYN.LOC.1)', 'Readable home location must take precedence.');
-aidCheck(!str_contains($objects[102]['fields']['location']['value'], 'Private') && str_contains($objects[102]['fields']['location']['value'], 'Old box'), 'Related locations must be checked individually.');
-aidCheck(!isset($objects[103]['fields']['location']) && $objects[109]['title'] === 'Object' && !$objects[109]['fields'], 'Unreadable bundles must not leak metadata.');
+aidCheck($data['collections'][42]['count'] === 4 && $data['collections'][7]['count'] === 3 && $data['collections'][12]['count'] === 0, 'Collection counts must count directly linked readable unique objects.');
+$object_loads = array_column(array_filter($GLOBALS['aidLoads'], static fn($load) => $load[0] === 'ca_objects'), 1);
+aidCheck(count($object_loads) === count(array_unique($object_loads)), 'Shared objects must be loaded once for access checks.');
+aidCheck(array_unique(array_column($GLOBALS['aidReads'], 0)) === ['ca_collections'], 'Counts must not fetch per-object metadata.');
 aidCheck(!isset($data['fields']['dates']) && $data['fields']['extent']['value'] === 'Two boxes', 'Empty punctuation-only dates must disappear; extent must fall back.');
-aidCheck(array_search(102, array_column($data['objects'], 'id'), true) < array_search(101, array_column($data['objects'], 'id'), true), 'Identifiers must sort naturally.');
-aidCheck($data['objects'][count($data['objects']) - 1]['id'] === 109, 'Unidentified records must sort last.');
 aidCheck(tadlFindingAidText('<script>secret</script><p>Safe &amp; readable</p>') === 'Safe & readable', 'Text must remove scripts and decode entities.');
 aidCheck(tadlFindingAidValue($request, $collection, ['ca_objects.idno', 'ca_collections.missing', 'ca_collections.description<script>']) === '', 'Field mapping must reject wrong table/missing/unsafe fields.');
 $view = new AidView(); $view->setVar('finding_aid', $data); $html = $view->render('Details/finding_aid_pdf_html.php');
 aidCheck(!str_contains($html, 'SECRET') && !str_contains($html, 'Hidden name') && !str_contains($html, 'Private branch'), 'PDF contains unreadable information.');
-aidCheck(!str_contains($html, '>Dates:</span><br>') && str_contains($html, 'OLD.10') && str_contains($html, 'records with and without media'), 'PDF lost identifier/media scope or restored empty dates.');
-aidCheck(substr_count($html, 'Český časopis, 1930') === 1, 'Inventory must not repeat an object linked to multiple collections.');
+aidCheck(!str_contains($html, '>Dates:</span><br>') && str_contains($html, 'SYN.42') && str_contains($html, 'records with and without media'), 'PDF lost collection identifier/media scope or restored empty dates.');
+aidCheck(str_contains($html, '<h2>Collection contents</h2>') && str_contains($html, '<p>5 items.') && str_contains($html, '4 directly linked items') && str_contains($html, '3 directly linked items'), 'PDF must show unique total and directly linked collection counts.');
+aidCheck(str_contains($html, 'Directly linked counts above can overlap.'), 'PDF must distinguish the unique total from overlapping collection counts.');
+foreach (['Object inventory', 'class="entry"', 'Český časopis, 1930', 'Object without media', 'Child-only object', 'SYN.10', 'OLD.10', 'Recorded storage location'] as $entry) {
+	aidCheck(!str_contains($html, $entry), 'PDF must not contain individual object entries: '.$entry);
+}
 $unsafe = $data; $unsafe['title'] = '<img src="file:///private/example" onerror="bad"> & title';
 $unsafe['fields']['unsafe'] = ['label' => '<script>bad</script>', 'value' => '<img src="https://example.com">'];
 $view->setVar('finding_aid', $unsafe); $unsafe_html = $view->render('Details/finding_aid_pdf_html.php');
 aidCheck(!str_contains($unsafe_html, '<img') && !str_contains($unsafe_html, '<script>'), 'PDF must escape all catalog fields.');
-$empty = $data; $empty['objects'] = []; $empty['collections'] = [42 => $data['collections'][42]]; $empty['fields'] = [];
+$empty = $data; $empty['object_count'] = 0; $empty['collections'] = [42 => ['path' => $data['collections'][42]['path'], 'count' => 0]]; $empty['fields'] = [];
 $view->setVar('finding_aid', $empty); $empty_html = $view->render('Details/finding_aid_pdf_html.php');
-aidCheck(str_contains($empty_html, 'No accessible object records') && !str_contains($empty_html, 'About this collection') && !str_contains($empty_html, 'Collection organization'), 'Empty inventory must have a useful state without empty headings.');
+aidCheck(str_contains($empty_html, '<p>0 items.') && str_contains($empty_html, 'No accessible object records') && !str_contains($empty_html, 'About this collection') && !str_contains($empty_html, 'Collection organization'), 'Empty contents must have a useful state without empty headings.');
+$single = clone $collection; $single->row['children'] = []; $single->row['related']['ca_objects'] = [102];
+$view->setVar('finding_aid', tadlFindingAidData($request, $single, $GLOBALS['aidConfig']));
+aidCheck(str_contains($view->render('Details/finding_aid_pdf_html.php'), '<p>1 item.'), 'Single-object total must use singular wording.');
+$series = new AidModel('ca_collections'); $series->load(7);
+$series_data = tadlFindingAidData($request, $series, $GLOBALS['aidConfig']);
+aidCheck($series_data['object_count'] === 3 && array_keys($series_data['collections']) === [7], 'Selected subcollection must not export its parent or siblings.');
 foreach (['access' => 0, 'deleted' => 1, 'readable' => false, 'acl_level' => 0] as $key => $value) {
 	$changed = clone $collection; $changed->row[$key] = $value; if ($key === 'acl_level') { $changed->row['acl'] = true; }
 	aidCheck(tadlFindingAidData($request, $changed, $GLOBALS['aidConfig']) === null, 'Unreadable root collection must be rejected.');
 }
 $denied = clone $collection; $denied->row['denied'] = ['ca_objects', 'hierarchy'];
-aidCheck(!tadlFindingAidData($request, $denied, $GLOBALS['aidConfig'])['objects'], 'Denied relationship/hierarchy bundles must be honored.');
-$config = clone $GLOBALS['aidConfig']; $config->values['include_storage_locations'] = 0;
-foreach (tadlFindingAidData($request, $collection, $config)['objects'] as $object) { aidCheck(!isset($object['fields']['location']), 'Locations must be configurable.'); }
+aidCheck(tadlFindingAidData($request, $denied, $GLOBALS['aidConfig'])['object_count'] === 0, 'Denied relationship/hierarchy bundles must be honored.');
+$denied->row['denied'] = ['ca_objects'];
+$denied_data = tadlFindingAidData($request, $denied, $GLOBALS['aidConfig']);
+aidCheck($denied_data['object_count'] === 3 && $denied_data['collections'][42]['count'] === 0, 'Unreadable root relationships must not prevent readable descendant counts or disclose root objects.');
 // A new export reflects updates immediately; no shared or on-disk export cache.
-$GLOBALS['aidRows']['ca_objects'][101]['values']['ca_objects.preferred_labels.name'] = 'Updated catalog title';
-aidCheck(str_contains(json_encode(tadlFindingAidData($request, $collection, $config)), 'Updated catalog title'), 'Export must reflect current data.');
-$GLOBALS['aidRows']['ca_objects'][101]['values']['ca_objects.preferred_labels.name'] = 'Český časopis, 1930';
+$GLOBALS['aidRows']['ca_objects'][101]['access'] = 0;
+$updated = tadlFindingAidData($request, $collection, $GLOBALS['aidConfig']);
+aidCheck($updated['object_count'] === 4 && $updated['collections'][42]['count'] === 3 && $updated['collections'][7]['count'] === 2, 'Counts must reflect current record access on each export.');
+$GLOBALS['aidRows']['ca_objects'][101]['access'] = 1;
 // More than both known native default relationship caps (1000 / 4000).
 $large = clone $collection; $large->row['children'] = []; $large->row['related']['ca_objects'] = range(1000, 5104);
 foreach ($large->row['related']['ca_objects'] as $id) { $GLOBALS['aidRows']['ca_objects'][$id] = aidRow($id, 'ca_objects', 'Synthetic inventory entry '.$id, 'SYN.'.$id); }
-aidCheck(count(tadlFindingAidData($request, $large, $config)['objects']) === 4105, 'Large inventory was silently capped.');
+$large_data = tadlFindingAidData($request, $large, $GLOBALS['aidConfig']);
+aidCheck($large_data['object_count'] === 4105 && $large_data['collections'][42]['count'] === 4105, 'Large collection counts were silently capped.');
 foreach ($large->row['related']['ca_objects'] as $id) { unset($GLOBALS['aidRows']['ca_objects'][$id]); }
 foreach ([
 	[new AidRequest([], 'POST'), 405], [new AidRequest([]), 400], [new AidRequest(['collection_id' => -1]), 400],
@@ -234,8 +240,9 @@ if (!$autoload) {
 }
 if ($output = getenv('TADL_TEST_FINDING_AID_PDF')) {
 	aidCheck((bool)$autoload, 'Real PDF sample requires Composer autoload.');
-	// Build the sample through the actual exporter so counts, memberships and
-	// natural sorting match the production document rather than patched data.
+	// Build the sample through the actual exporter so shared/unique counts match
+	// the production document rather than patched data. Long object titles must
+	// not make the count-only PDF grow into an inventory.
 	$GLOBALS['aidRows']['ca_collections'][42]['related']['ca_objects'] = array_values(array_diff($GLOBALS['aidRows']['ca_collections'][42]['related']['ca_objects'], [109]));
 	$GLOBALS['aidRows']['ca_objects'][102]['values']['ca_objects.idno'] = 'SYN.002';
 	foreach ([101, 103] as $id) { $GLOBALS['aidRows']['ca_objects'][$id]['values']['ca_objects.idno'] = 'SYN.010'; }
@@ -250,7 +257,7 @@ if ($output = getenv('TADL_TEST_FINDING_AID_PDF')) {
 	}
 	$sample_root = new AidModel('ca_collections'); $sample_root->load(42);
 	$sample = tadlFindingAidData($request, $sample_root, $GLOBALS['aidConfig']);
-	aidCheck(count($sample['objects']) === 55 && $sample['collections'][42]['count'] === 55, 'Sample counts must reflect its actual inventory.');
+	aidCheck($sample['object_count'] === 56 && $sample['collections'][42]['count'] === 55 && $sample['collections'][7]['count'] === 55, 'Sample counts must reflect shared and child-only records.');
 	$view->setVar('finding_aid', $sample);
 	file_put_contents($output, tadlFindingAidPDF($view->render('Details/finding_aid_pdf_html.php')));
 }

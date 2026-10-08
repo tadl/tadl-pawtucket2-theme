@@ -44,41 +44,7 @@ function tadlFindingAidFields($request, $record, $fields) {
 	return $result;
 }
 
-/** Cache repeated storage labels only within this export and its access context. */
-function tadlFindingAidLocations($request, $object, &$cache) {
-	if (!$object->isReadable($request, 'ca_storage_locations')) { return ''; }
-	$ids = [];
-	if ($object->hasField('home_location_id') && $object->isReadable($request, 'home_location_id')) {
-		$home = (int)$object->get('home_location_id');
-		if ($home > 0) { $ids[$home] = $home; }
-	}
-	$related = (array)$object->getRelatedItems('ca_storage_locations', [
-		'idsOnly' => true, 'checkAccess' => caGetUserAccessValues($request), 'limit' => PHP_INT_MAX
-	]);
-	// Prefer the home location when readable; unrelated historical locations do
-	// not override it. If it is unavailable, show the accessible recorded relations.
-	$groups = $ids ? [$ids, $related] : [$related];
-	foreach ($groups as $group) {
-		$labels = [];
-		foreach (array_unique(array_map('intval', $group)) as $id) {
-			if ($id < 1) { continue; }
-			if (!array_key_exists($id, $cache)) {
-				$location = Datamodel::getInstance('ca_storage_locations', true);
-				$cache[$id] = '';
-				if ($location && $location->load($id) && tadlFindingAidReadable($request, $location)) {
-					$name = tadlFindingAidValue($request, $location, ['ca_storage_locations.preferred_labels.name']);
-					$identifier = tadlFindingAidValue($request, $location, ['ca_storage_locations.idno']);
-					if ($name !== '') { $cache[$id] = $name.($identifier !== '' ? ' ('.$identifier.')' : ''); }
-				}
-			}
-			if ($cache[$id] !== '') { $labels[$id] = $cache[$id]; }
-		}
-		if ($labels) { natcasesort($labels); return implode('; ', $labels); }
-	}
-	return '';
-}
-
-/** Selected collection and readable descendants; unique objects, never a media/page filter. */
+/** Selected collection and readable descendants; unique object counts, never a media/page filter. */
 function tadlFindingAidData($request, $collection, $config) {
 	if (!tadlFindingAidReadable($request, $collection)) { return null; }
 	$root_id = (int)$collection->getPrimaryKey();
@@ -86,7 +52,7 @@ function tadlFindingAidData($request, $collection, $config) {
 	$data = [
 		'title' => $title, 'identifier' => tadlFindingAidValue($request, $collection, ['ca_collections.idno']),
 		'fields' => tadlFindingAidFields($request, $collection, $config->getAssoc('collection_fields')),
-		'collections' => [], 'objects' => [], 'generated' => gmdate('Y-m-d H:i').' UTC'
+		'collections' => [], 'object_count' => 0, 'generated' => gmdate('Y-m-d H:i').' UTC'
 	];
 	$pending = [[$root_id, [$title]]]; $visited = []; $memberships = [];
 	while ($pending) {
@@ -99,12 +65,12 @@ function tadlFindingAidData($request, $collection, $config) {
 		$data['collections'][$id] = ['path' => implode(' > ', $path), 'count' => 0];
 		if ($node->isReadable($request, 'ca_objects')) {
 			// Native related-item APIs have a default cap. Explicitly remove it:
-			// an inventory must include every linked record, not just the first page.
+			// counts must include every linked record, not just the first page.
 			foreach ((array)$node->getRelatedItems('ca_objects', [
 				'idsOnly' => true, 'checkAccess' => caGetUserAccessValues($request), 'limit' => PHP_INT_MAX
 			]) as $object_id) {
 				$object_id = (int)$object_id;
-				if ($object_id > 0) { $memberships[$object_id][$id] = $data['collections'][$id]['path']; }
+				if ($object_id > 0) { $memberships[$object_id][$id] = true; }
 			}
 		}
 		if ($node->isReadable($request, 'hierarchy')) {
@@ -113,27 +79,12 @@ function tadlFindingAidData($request, $collection, $config) {
 			}
 		}
 	}
-	$location_cache = [];
-	foreach ($memberships as $id => $paths) {
+	foreach ($memberships as $id => $collection_ids) {
 		$object = Datamodel::getInstance('ca_objects', true);
 		if (!$object || !$object->load($id) || !tadlFindingAidReadable($request, $object)) { continue; }
-		$fields = tadlFindingAidFields($request, $object, $config->getAssoc('inventory_fields'));
-		$location = $config->get('include_storage_locations') ? tadlFindingAidLocations($request, $object, $location_cache) : '';
-		if ($location !== '') { $fields['location'] = ['label' => _t('Recorded storage location'), 'value' => $location]; }
-		natcasesort($paths);
-		$data['objects'][] = [
-			'id' => $id, 'title' => tadlFindingAidValue($request, $object, ['ca_objects.preferred_labels.name']) ?: _t('Object'),
-			'fields' => $fields, 'collections' => array_values($paths)
-		];
-		foreach (array_keys($paths) as $collection_id) { $data['collections'][$collection_id]['count']++; }
+		$data['object_count']++;
+		foreach (array_keys($collection_ids) as $collection_id) { $data['collections'][$collection_id]['count']++; }
 	}
-	usort($data['objects'], static function ($a, $b) {
-		$a_identifier = $a['fields']['identifier']['value'] ?? '';
-		$b_identifier = $b['fields']['identifier']['value'] ?? '';
-		return ($a_identifier === '') <=> ($b_identifier === '')
-			?: strnatcasecmp($a_identifier, $b_identifier)
-			?: strnatcasecmp($a['title'], $b['title']) ?: ($a['id'] <=> $b['id']);
-	});
 	uasort($data['collections'], static function ($a, $b) { return strnatcasecmp($a['path'], $b['path']); });
 	return $data;
 }

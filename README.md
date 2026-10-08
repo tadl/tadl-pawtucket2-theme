@@ -45,8 +45,9 @@ model's access, ACL and bundle checks. This does not change catalogue primary li
 access flags or files; TIFF representations use their generated JPEG thumbnails.
 
 Collection details offer **Download Finding Aid**, an initial collection PDF with
-metadata and a complete accessible-object inventory, including records without
-media. Field mappings and open archives-team decisions are documented in
+metadata, a unique accessible-object total and counts for each collection or
+subcollection. Counts include records without media; individual object entries
+are omitted. Field mappings and open archives-team decisions are documented in
 [Finding aids](docs/FINDING_AIDS.md).
 
 Result thumbnails keep the filled cover layout and respect Providence's **Set

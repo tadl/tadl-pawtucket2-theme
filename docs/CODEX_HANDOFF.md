@@ -1,6 +1,6 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-07. This document carries the recent coding context to another
+Updated: 2026-10-08. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
@@ -128,12 +128,14 @@ See `docs/USER_FEATURES.md` for limitations and live verification boundaries.
 ### Collection finding aids
 
 Collection details now offer **Download Finding Aid** for the selected collection,
-with populated collection metadata and unique accessible objects from it and its
-readable descendants. Inventory includes objects without media, independent of
-the header preference, and preserves all record, bundle and Pawtucket ACL checks.
-There is no native relationship cap or shared PDF cache. Recorded home/related
-storage locations are shown only when readable; they are not asserted to be
-current physical locations. The PDF uses the existing Dompdf dependency with
+with populated collection metadata, a unique accessible-object total and directly
+linked object counts for each readable collection/descendant. Counts include
+objects without media, independent of the header preference, and preserve all
+record, bundle and Pawtucket ACL checks. As of 2026-10-08, individual object entries
+are omitted; object metadata/storage locations are no longer fetched or configured.
+Shared objects count once in the overall total but in each directly linked
+collection's count. There is no native relationship cap or shared PDF cache.
+The PDF uses the existing Dompdf dependency with
 remote resources/PHP/JS disabled. See `docs/FINDING_AIDS.md` for field mappings,
 source boundaries, real-render verification and pending archives-team decisions.
 The theme endpoint is `/CollectionFindingAid/Download/collection_id/<id>`;
@@ -592,7 +594,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The twenty-three committed tests are portable and use synthetic boundaries. They do not
+The twenty-four committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -628,7 +630,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/profile_save_test.php` | Own-email/staff-public login behavior, collisions, separate user staging, request-close persistence, validation/setter/model failures, native password delegation, POST/session/CSRF boundaries, public-use groups and direct/AJAX profile form error escaping |
 | `tests/user_features_test.php` | Anonymous/authenticated navigation and result actions, staff-only Providence shortcut in actual object detail HTML, valid object IDs/new-tab safety, native login POST/CSRF, registration policy, password-manager fields and cache separation |
 | `tests/home_faq_test.php` | Published/readable Site Pages, drafts, incomplete entries, locale, rank, escaped questions and purified answers; optional real HTMLPurifier |
-| `tests/finding_aid_test.php` | Selected collection export, descendants, access/ACL/bundle restrictions, complete unique inventories over native caps, field mappings, locations, escaped PDF text and safe failure; optional real Dompdf |
+| `tests/finding_aid_test.php` | Selected collection export, descendants, access/ACL/bundle restrictions, complete unique counts over native caps, overlapping memberships, no individual object metadata/entries, collection field mappings, escaped PDF text and safe failure; optional real Dompdf |
 | `tests/asset_versions_test.php` | Stable/changed CSS and JS URLs, preserved timestamps, native loader options, subdirectory/absolute theme URLs, escaping, inline-code preservation and path boundaries |
 | `tests/media_preferences_test.php` | Eligibility SQL, lazy collection/authority descriptor fetching, related-object access/deletion/ACL/bundle checks, People/Organizations/Places/Events Tiles/List counts/paging/detail context, table cache isolation, route scope, invalid-media exhaustion, filtered result adapter and result rendering |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |
