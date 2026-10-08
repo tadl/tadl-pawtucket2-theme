@@ -5,12 +5,10 @@ Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
 
-The current implementation checkpoint is `db90470` on `main`, pushed to
-`git@github.com:tadl/tadl-pawtucket2-theme.git`, checked on 2026-10-08. It includes
-flat collection contents, inline descendant counts in both hierarchy columns and
-normal finding-aid link styling. The worktree was clean before this documentation
-refresh. Documentation commits follow this checkpoint; use `git status` and
-`git log` for the current state. The original checkpoint was `e3ae5b4`.
+The review fixes below follow checkpoint `51b11d8` on `main` at
+`git@github.com:tadl/tadl-pawtucket2-theme.git`, checked on 2026-10-08. That checkpoint
+fixed collection counts corrupted by shared model instances. Use `git status`
+and `git log` for the current revision. The original checkpoint was `e3ae5b4`.
 
 This is the theme for the public TADL Local History Collection at
 https://archives.tadl.org/. The user is now adding more object media in
@@ -54,6 +52,40 @@ These are source changes. No deployment was performed by Codex for the latest
 implementation. The user deploys independently; confirm live state separately
 before calling an issue deployed or still broken.
 
+### 2026-10-08 theme review fixes
+
+- Retained PDF and focal-point models are independent instances, with regressions
+  for multiple PDFs, a blank/denied last PDF and A → B → A focal-point lookups.
+- `helpers/record_access.php` applies batched public/deleted, native type/source,
+  bundle and Pawtucket ACL checks to eligibility, thumbnails and finding-aid
+  object counts. Unreadable ancestors prune descendant media candidates.
+  Finding aids no longer load every object model to count it.
+- Collection thumbnail fallback includes public secondary images when a private
+  primary remains linked. Candidate queries return scalar IDs and read one
+  untested media descriptor per unresolved card; primary preference, direct versus
+  descendant priority and deterministic order remain intact.
+- All six advanced forms normalize visible control IDs and associated widget
+  scripts while preserving native names and values. Labels target unique controls.
+- Mobile branding uses separate flex items for the toggle/logo and permits the
+  tagline to wrap. Bootstrap events synchronize `aria-expanded`. The native AJAX
+  viewer/lightbox panel adds modal semantics, background isolation, keyboard focus
+  trapping and opener restoration without replacing native callbacks or Escape.
+- Image exports use private, source-versioned conversion caching, locking,
+  expiry and finite execution limits. Source authorization is repeated before
+  every cache hit. See [Image downloads](IMAGE_DOWNLOADS.md) for configuration,
+  filesystem requirements and the external-tool timeout boundary.
+- Theme search/browse views no longer save or fetch rendered result HTML from
+  ExternalCache. A zero lifetime can mean persistent storage in native cache
+  backends; config values alone did not disable these writes.
+- Collection introductory text replaces the placeholder. Gallery metadata uses
+  shared detail units, empty-field suppression, long-field disclosures and
+  sentence-case actions.
+
+Verification uses 29 portable PHP suites, including Node.js panel lifecycle
+regressions, and a synthetic browser preview with native jQuery/Bootstrap/panel
+assets at 390, 768, 1024 and 1280 pixels. This does not establish production
+deployment, live catalog permissions or full-page performance.
+
 ## Source map
 
 | Area | Main entrypoints |
@@ -68,7 +100,8 @@ before calling an issue deployed or still broken.
 | Home-page FAQ | `templates/faq_entry.tmpl`, `conf/templates.conf`, `helpers/home_faq.php`, `views/Front/faq_html.php`; `support/activate-faq.php`, `helpers/faq_setup.php`, `docs/FAQ_SETUP.md`; Providence Site Pages content |
 | Home-page writing | `views/Front/front_page_html.php`, `assets/pawtucket/js/recent-writing.js`; companion TADLFeeds `/local_history_posts.json` |
 | Object media | `helpers/object_detail_media.php`, `views/bundles/representation_viewer_html.php` |
-| Image downloads | `helpers/image_downloads.php`, `controllers/ImageDownloadController.php`, `views/Details/image_download_binary.php`, `views/mediaViewers/viewerWrapper.php`, `assets/pawtucket/js/image-downloads.js` |
+| Image downloads | `helpers/image_downloads.php`, `helpers/image_download_cache.php`, `controllers/ImageDownloadController.php`, `views/Details/image_download_binary.php`, `views/mediaViewers/viewerWrapper.php`, `assets/pawtucket/js/image-downloads.js`; `docs/IMAGE_DOWNLOADS.md` |
+| Bulk record visibility | `helpers/record_access.php`; native restriction/ACL adapters shared by eligibility, thumbnails and finding-aid counts |
 | Crawler policy | `helpers/crawler_policy.php`, shared header and download views; `support/site-root/robots.txt`, `docs/CRAWLER_POLICY.md` (root file installed separately) |
 | Enlarged viewer help | `views/Details/viewer_help_html.php` |
 | Detail metadata and long-field disclosures | `views/Details/detail_field_helpers.php`, shared detail templates and scoped theme CSS |
@@ -288,8 +321,10 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
 - Native facet counts include all records, so media-only pages omit those counts.
   Downloads use native unfiltered results and are available in All items mode.
 - `conf/collections.conf` keeps `cache_timeout = 0`; whole-page content caching
-  is disabled in `conf/app.conf`. Native cache keys omit this setting/access
-  context. Do not re-enable caches without addressing that limitation.
+  is disabled in `conf/app.conf`. Theme Tiles/List and result-block HTML cache
+  calls are removed entirely because native zero-lifetime cache semantics are
+  backend-dependent. Native result-ID caching remains untouched. Do not add shared
+  HTML caches without fully including the visitor's permissions and preferences.
 
 ### Results and authority pages
 
@@ -304,11 +339,12 @@ below retain implementation details and historical verification evidence.
   fail eligibility. Preserve filtering before counts, paging and result contexts.
   No persistent eligibility cache or new database index was introduced.
 - `tadlGetCollectionImages()` uses native directly attached collection primary
-  media first, then primary object images directly in that collection, then
-  descendant images only for unresolved cards. Its SQL selects one relation ID
-  per collection before retrieving the media blob, with stable hierarchy/name/
-  rank/relation order. Object/relationship selectors remain enforced for direct
-  object images; access/deletion checks and focal-point rendering remain intact.
+  media first, then usable object images directly in that collection, then
+  descendant images only for unresolved cards. Public secondary images can replace
+  unavailable primaries. Scalar candidate IDs pass bulk native permission checks
+  before retrieving media blobs, with stable hierarchy/name/primary/rank/relation
+  order. Object/relationship selectors remain enforced for direct object images;
+  access/deletion checks and focal-point rendering remain intact.
   Tiles, List and multisearch previews use this helper. The Collections index
   retains its existing descendant selection through the same bounded SQL.
   The direct-object fallback previously rendered all linked images and repeatedly
@@ -431,7 +467,7 @@ below retain implementation details and historical verification evidence.
   actions. Sorting, Start Over and eligible downloads remain available. This is
   consistent with result tiles/list rows, which omit individual Lightbox buttons
   for everyone. Signed-in users can add objects from object details and use
-  **My lightboxes**. Result-card and result-block cache versions bypass old buttons.
+  **My lightboxes**. Result-card and result-block HTML is rendered per request.
 - Object browse, regular search and advanced search offer **Date**, using the
   same `ca_objects.date.dates_value` field displayed on object details and native
   date-range sorting. Date defaults to ascending; the normal descending control
@@ -450,7 +486,8 @@ below retain implementation details and historical verification evidence.
   uses native `getRepresentations()` with the current request's access mask,
   preserving ACL and bundle checks. It chooses a usable image derivative with
   primary/rank/representation-ID precedence, skipping icons and queued media.
-  The normal primary path needs no additional model lookup. Neither catalogue
+  Unrestricted primary tags avoid loaded-object and media lookup queries;
+  restricted representation contexts use the permission-filtered inventory. Neither catalogue
   links nor access values are changed. This handles a private primary JPEG whose
   public paired TIFF still has generated JPEG thumbnails.
   Read-only native validation on 2026-10-07 selected the public TIFF derivative
@@ -563,6 +600,10 @@ below retain implementation details and historical verification evidence.
   converted JPEG dimensions are validated; a failed conversion returns 503,
   never another format disguised with a `.jpg` suffix. Production requires PHP
   fileinfo and a native image processor capable of reading originals/writing JPEG.
+  Authorized JPG/PDF conversions are reused from a private, versioned cache;
+  every request rechecks source permissions, including Pawtucket-only ACLs. The
+  cache expires unused exports after seven days and serializes identical conversions.
+  See `docs/IMAGE_DOWNLOADS.md` for execution limits and operational requirements.
 - The object title puts its collection on the first line and the arrow/object
   label below. Representation filenames/titles are hidden; intentional media
   captions remain a separate field.
@@ -722,14 +763,14 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The twenty-seven committed tests are portable and use synthetic boundaries. They do not
+The twenty-nine committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
 Requirements: PHP 8+ CLI with DOM, PDO SQLite, JSON and fileinfo; `proc_open` enabled;
 Node.js and Python 3.11+ available on PATH. The package suite uses Python to export
-and verify a standalone source snapshot. The theme header additionally needs mbstring, though
-these standalone suites do not. The original handoff checks passed on PHP 8.5.7 and
+and verify a standalone source snapshot. Shared text-field tests and the theme
+header also need mbstring. The original handoff checks passed on PHP 8.5.7 and
 Node 24.13.0. Those are observed workstation versions, not a required production
 upgrade.
 
@@ -776,8 +817,18 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/thumbnail_package_test.php` | Source allowlist/hashes, safe existing-output refusal, ZIP contents and independent exported PHP/Python tests; additionally requires Python 3.11+ |
 | `tests/subjects_test.php` | Subject relationship rendering, escaping, native browse links, bundle access and Pawtucket ACL filtering |
 | `tests/recent_writing_test.php` | Actual home fallback/View More filters; client refresh, URL/text safety, cold-cache retry and feed-error fallback |
+| `tests/record_access_test.php` | Real batched SQLite permission SQL, native type/source restrictions and per-type levels, public/deleted access, media bundles, Pawtucket-only ACLs, private ancestor pruning and restricted primary fallback |
+| `tests/ui_consistency_test.php` | All six actual advanced forms, unique IDs and labels, preserved widget references/native submitted names, gallery metadata and Node.js `user_features_js_test.js` panel lifecycle/focus/ARIA regressions |
 
-All 27 standalone suites passed for implementation checkpoint `db90470` on
+The review fixes passed all 29 portable PHP suites, syntax checks for 237 PHP
+files and the four theme JavaScript files, and `git diff --check`. Synthetic
+browser checks verified header geometry at phone/tablet/desktop widths, unique
+advanced-search label targets, dropdown expanded state, viewer Tab/Shift+Tab,
+Escape and restored opener focus. The installed ImageMagick/bundled Dompdf
+download check also passed with synthetic images; no production changes
+are made by these checks.
+
+Historical checkpoint: all 27 standalone suites passed for `db90470` on
 2026-10-08, along with changed PHP lint and `git diff --check`. Synthetic browser
 checks verified flat/hierarchy navigation, inline counts in both columns at
 desktop/phone widths, and the finding-aid link's normal and hover styles. These

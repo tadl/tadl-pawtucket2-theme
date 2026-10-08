@@ -21,6 +21,15 @@ adds the object, rather than a particular representation. Native authentication,
 CSRF, set ownership and sharing checks remain in charge. No credentials or users
 were created by this source change.
 
+The shared AJAX panel retains the native viewer/lightbox lifecycle and Escape
+handler, adds dialog semantics, keeps Tab/Shift+Tab focus inside the panel and
+restores focus to its opener on close. Background content is inert and hidden
+from assistive technology while it is open; previous attributes are restored.
+Asynchronous content focuses the close control without stealing focus during
+later slide changes. Bootstrap dropdown and mobile-collapse events update
+`aria-expanded`. The mobile toggle is a separate flex item beside the logo,
+with the tagline allowed to wrap at narrow widths.
+
 The native login form retains password reset and now supports password managers.
 Profile forms support contact details and password changes. Email delivery,
 password reset and the corrected profile-save endpoint need live checks after

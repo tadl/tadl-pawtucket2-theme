@@ -89,7 +89,7 @@ function tadlAuthorityRelatedGroups($request, $item, $table) {
 		}
 		if ($related_table === 'ca_collections' && tadlMediaPreference($request) === 'only') {
 			$ids = array_column($rows, $definition['key']);
-			$eligible = array_fill_keys(tadlMediaEligibleIDs($related_table, $ids, $access), true);
+			$eligible = array_fill_keys(tadlMediaEligibleIDs($related_table, $ids, $access, $request), true);
 			$rows = array_filter($rows, function ($row) use ($definition, $eligible) { return isset($eligible[(int)($row[$definition['key']] ?? 0)]); });
 		}
 		$links = [];

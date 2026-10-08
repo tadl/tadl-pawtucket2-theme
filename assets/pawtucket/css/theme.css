@@ -3881,10 +3881,17 @@ div.tadl-image-viewer-controls .close {
         margin-bottom: 0;
         background: rgba(255, 255, 255, 0.95);
         border: 0;
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
+        position: static;
+        flex: 0 0 auto;
+        margin-right: 0;
+    }
+
+    .tadl-branding {
+        gap: 16px;
+    }
+
+    .tadl-logo-link {
+        min-width: 0;
     }
 
     .navbar-toggle .icon-bar {
@@ -3898,6 +3905,8 @@ div.tadl-image-viewer-controls .close {
     .tadl-tagline {
         font-size: max(var(--tadl-text-min, 0px), 15px);
         letter-spacing: 0.1em;
+        white-space: normal;
+        text-align: center;
     }
 
     .tadl-brandband-inner {

@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__.'/record_access.php');
 /** Public finding aids never bypass native record, type, source or bundle access. */
 function tadlFindingAidReadable($request, $record) {
 	$access = array_map('intval', (array)caGetUserAccessValues($request));
@@ -59,7 +60,7 @@ function tadlFindingAidData($request, $collection, $config) {
 		[$id, $parent_id, $depth] = array_pop($pending);
 		if (isset($visited[$id])) { continue; }
 		$visited[$id] = true;
-		$node = $id === $root_id ? $collection : Datamodel::getInstance('ca_collections', true);
+		$node = $id === $root_id ? $collection : Datamodel::getInstance('ca_collections', false);
 		if (!$node || ($id !== $root_id && !$node->load($id)) || !tadlFindingAidReadable($request, $node)) { continue; }
 		$data['collections'][$id] = [
 			'title' => $id === $root_id ? $title : (tadlFindingAidValue($request, $node, ['ca_collections.preferred_labels.name']) ?: _t('Collection')),
@@ -83,9 +84,9 @@ function tadlFindingAidData($request, $collection, $config) {
 			}
 		}
 	}
-	foreach ($memberships as $id => $collection_ids) {
-		$object = Datamodel::getInstance('ca_objects', true);
-		if (!$object || !$object->load($id) || !tadlFindingAidReadable($request, $object)) { continue; }
+	// Count IDs in permission-filtered batches; no object media or metadata is needed.
+	foreach (tadlReadableIDs($request, 'ca_objects', array_keys($memberships), (array)caGetUserAccessValues($request)) as $id) {
+		$collection_ids = $memberships[$id];
 		$data['object_count']++;
 		foreach (array_keys($collection_ids) as $collection_id) { $data['collections'][$collection_id]['count']++; }
 	}

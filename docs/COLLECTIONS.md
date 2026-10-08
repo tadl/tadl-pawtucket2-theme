@@ -113,6 +113,16 @@ applies media filtering before counting, and batches memberships by 500 collecti
 Objects are not individually loaded for browser rollups or searched separately
 for every title. Native object search still handles visibility and deduplication.
 
+Collection browse eligibility and thumbnails use `helpers/record_access.php` to
+check native type/source/bundle permissions and Pawtucket-only ACLs in bulk,
+including unreadable intermediate collections. Thumbnail selection prefers
+direct collection media, then direct-object images, then readable descendants.
+Within an object, a public secondary image can replace an unavailable primary.
+Queries fetch scalar candidate IDs first and read media descriptors only until
+each card has a usable image. Search/browse Tiles and List HTML is rendered fresh;
+the theme does not save or reuse shared result HTML even when a native cache
+backend treats a zero lifetime as persistent.
+
 The main integration points are the collection detail view,
 `controllers/CollectionContentsController.php`, `helpers/collection_contents.php`,
 the hierarchy views/helpers under `views/Collections/`, shared result helpers under

@@ -24,9 +24,10 @@ require dirname(__DIR__).'/helpers/thumbnail_focus.php';
 class Datamodel {
 	static public array $records = [];
 	static public int $loads = 0;
-	static function getInstanceByTableName($table, $new) {
-		checkFocus($table === 'ca_object_representations' && $new, 'Wrong native model');
-		return new FocusRepresentation();
+	static function getInstanceByTableName($table, $useCache) {
+		checkFocus($table === 'ca_object_representations', 'Wrong native model');
+		static $cached;
+		return $useCache ? ($cached ??= new FocusRepresentation()) : new FocusRepresentation();
 	}
 }
 class FocusRepresentation {
@@ -78,6 +79,9 @@ checkFocus(str_contains($out, 'data-tadl-focus=') && str_contains($out, 'object-
 checkFocus(str_contains($out, '<a href="/Detail/objects/7">') && str_contains($out, 'loading="lazy"') && str_contains($out, 'Synthetic &amp; portrait'), 'Native link/alt/lazy attributes changed');
 tadlFocusThumbnail($html);
 checkFocus(Datamodel::$loads === 1, 'Same representation loaded more than once in a render');
+Datamodel::$records[43] = ['info' => $info + ['_CENTER' => ['x' => 0.8, 'y' => 0.6]], 'url' => ['medium' => str_replace('_42_', '_43_', $url)]];
+checkFocus(str_contains(tadlFocusThumbnail(str_replace('_42_', '_43_', $html)), 'object-position:80% 60%'), 'Second focal record must retain its own center');
+checkFocus(str_contains(tadlFocusThumbnail($html), 'object-position:40% 20%'), 'A -> B -> A must not overwrite the first cached focal record');
 $stale = str_replace('123_', '999_', $html);
 checkFocus(tadlFocusThumbnail($stale) === $stale, 'Metadata attached to a stale/different derivative');
 foreach (['<div class="placeholder">Image</div>', '<img src="https://example.org/unrelated.jpg">', '', null] as $html) {

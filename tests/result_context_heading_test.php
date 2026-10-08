@@ -250,7 +250,7 @@ foreach (['flat', 'hierarchy'] as $mode) {
 	$request = new ContextRequest('CollectionContents', true, null, ['tadl_collection_controls' => 1, 'tadl_collection_id' => 42, 'collection_view' => $mode]);
 	(new ContextView($request, [], 45))->render('Browse/browse_results_html.php');
 }
-checkContext(count(ExternalCache::$keys) === $keysBefore + 2 && ExternalCache::$keys[$keysBefore] !== ExternalCache::$keys[$keysBefore + 1], 'Result cache must not cross flat/hierarchy modes even with identical object IDs.');
+checkContext(count(ExternalCache::$keys) === $keysBefore, 'Rendered result HTML must not be saved or read across permissions or collection modes.');
 $html = (new ContextView(new ContextRequest('Search', true), [], 45))->render('Browse/browse_results_html.php');
 checkContext(!str_contains($html, 'tadl-collection-results-toolbar'), 'Ordinary AJAX result blocks gained collection-only controls.');
 $html = (new ContextView(new ContextRequest('Search', false, null, ['tadl_collection_controls' => 1]), [], 45))->render('Browse/browse_results_html.php');

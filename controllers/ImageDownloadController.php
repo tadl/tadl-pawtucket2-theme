@@ -3,6 +3,7 @@ require_once(__CA_LIB_DIR__.'/pawtucket/BasePawtucketController.php');
 require_once(__CA_LIB_DIR__.'/Media.php');
 require_once(__CA_LIB_DIR__.'/Logging/Downloadlog.php');
 require_once(__DIR__.'/../helpers/image_downloads.php');
+require_once(__DIR__.'/../helpers/image_download_cache.php');
 
 class ImageDownloadController extends BasePawtucketController {
 	public function Download() {
@@ -21,9 +22,26 @@ class ImageDownloadController extends BasePawtucketController {
 		if (!$object || !$object->load($objectID) || !($source = tadlImageDownloadSource($this->request, $object, $representationID))) {
 			$this->response->setHTTPResponseCode(404, 'Not Found'); return;
 		}
-		set_time_limit(0);
-		try { $download = tadlPrepareImageDownload($source, $format); }
+		set_time_limit(120);
+		// Native ImageMagick subprocesses inherit this wall-time resource limit.
+		$previousLimit = getenv('MAGICK_TIME_LIMIT');
+		putenv('MAGICK_TIME_LIMIT='.(($previousLimit !== false && (int)$previousLimit > 0) ? min(120, (int)$previousLimit) : 120));
+		$imagickLimit = null;
+		try {
+			if (class_exists('Imagick', false) && defined('Imagick::RESOURCETYPE_TIME')) {
+				$imagickLimit = Imagick::getResourceLimit(Imagick::RESOURCETYPE_TIME);
+				Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, $imagickLimit > 0 ? min(120, $imagickLimit) : 120);
+			}
+			$download = $this->request->config->get('tadl_cache_image_downloads')
+				? tadlCachedImageDownload($source, $format, $this->request->config->get('tadl_image_download_cache_directory'))
+				: tadlPrepareImageDownload($source, $format);
+			if ($download && !$download['temporary'] && $download['path'] !== $source['path']) { tadlPruneImageDownloads(dirname($download['path'])); }
+		}
 		catch (Throwable $error) { $download = null; }
+		finally {
+			putenv($previousLimit === false ? 'MAGICK_TIME_LIMIT' : 'MAGICK_TIME_LIMIT='.$previousLimit);
+			if ($imagickLimit !== null) { Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, $imagickLimit); }
+		}
 		if (!$download) {
 			$this->response->setHTTPResponseCode(503, 'Service Unavailable');
 			$this->response->addContent(_t('This image could not be downloaded in the requested format. Please try again later.'));

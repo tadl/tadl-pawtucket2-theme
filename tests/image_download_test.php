@@ -7,6 +7,7 @@ set_error_handler(function ($severity, $message, $file, $line) {
 	if ($severity === E_DEPRECATED && getenv('TADL_TEST_COMPOSER_AUTOLOAD') && str_contains($file, '/vendor/')) { return true; }
 	throw new ErrorException($message, 0, $severity, $file, $line);
 });
+define('__CA_ACL_READONLY_ACCESS__', 1);
 define('pInteger', 1);
 define('pString', 2);
 $directory = sys_get_temp_dir().'/tadl-download-test-'.bin2hex(random_bytes(8));
@@ -48,13 +49,17 @@ function caDetailLink($request, $content, $class, $table, $id) {
 	checkDownload($table === 'ca_objects', 'Gallery image linked to the wrong record table.');
 	return '<a href="/Detail/objects?object_id='.(int)$id.'">'.$content.'</a>';
 }
-class DownloadConfig { function get($key) { return $GLOBALS['requiresLogin'] ?? false; } }
+class DownloadConfig {
+	function __construct(public array $values = []) {}
+	function get($key) { return $this->values[$key] ?? ($key === 'pawtucket_requires_login' && ($GLOBALS['requiresLogin'] ?? false)); }
+}
 class DownloadRequest {
 	public bool $allowed = true;
 	public array $versions = ['original'];
 	public DownloadConfig $config;
+	public object $user;
 	public string $controller = 'Detail';
-	function __construct(public array $params = [], public string $method = 'GET', public bool $loggedIn = false) { $this->config = new DownloadConfig(); }
+	function __construct(public array $params = [], public string $method = 'GET', public bool $loggedIn = false) { $this->config = new DownloadConfig(); $this->user = new stdClass(); }
 	function getParameter($key, $type) { return $this->params[$key] ?? null; }
 	function parameterExists($key) { return array_key_exists($key, $this->params) ? true : null; }
 	function getRequestMethod() { return $this->method; }
@@ -75,7 +80,8 @@ class DownloadModel {
 	function getPrimaryKey() { return $this->id; }
 	function get($key) { return $this->values[$key] ?? null; }
 	function load($id) { return $this->loadable && $this->id === $id; }
-	function isReadable($request) { return $this->readable; }
+	function isReadable($request, $bundle = null) { return $this->readable && !in_array($bundle, $this->values['denied'] ?? [], true); }
+	function checkACLAccessForUser($user) { return $this->values['acl_level'] ?? 1; }
 	function getRepresentations($versions, $sizes, $options) {
 		checkDownload($options === ['simple' => true, 'checkAccess' => [1]], 'Native representation filtering changed.');
 		return $this->rows;
@@ -232,7 +238,7 @@ if (!$autoload) {
 $controller = runDownload($request); $download = $controller->view->getVar('image_download');
 checkDownload($controller->rendered && $download['path'] === $rep->path && $download['mime'] === 'image/tiff' && !Media::$calls, 'TIFF must stream the original unchanged.');
 foreach (['jpg', 'pdf'] as $requestedFormat) {
-foreach (['method', 'format', 'objectID', 'repID', 'load', 'objectAccess', 'objectACL', 'objectDeleted', 'repACL', 'repDeleted', 'unattached', 'bundle', 'policy', 'version', 'missing', 'queued', 'icon', 'nonimage', 'login'] as $case) {
+foreach (['method', 'format', 'objectID', 'repID', 'load', 'objectAccess', 'objectACL', 'objectDeleted', 'repACL', 'objectFrontACL', 'repFrontACL', 'objectBundle', 'repBundle', 'repDeleted', 'unattached', 'bundle', 'policy', 'version', 'missing', 'queued', 'icon', 'nonimage', 'login'] as $case) {
 	[$object, $rep, $request] = resetDownload();
 	$request->params['format'] = $requestedFormat;
 	switch ($case) {
@@ -244,6 +250,10 @@ foreach (['method', 'format', 'objectID', 'repID', 'load', 'objectAccess', 'obje
 		case 'objectAccess': $object->values['access'] = 0; break;
 		case 'objectACL': $object->readable = false; break;
 		case 'objectDeleted': $object->values['deleted'] = 1; break;
+		case 'objectFrontACL': $object->values += ['acl' => true, 'acl_level' => 0]; break;
+		case 'repFrontACL': $rep->values += ['acl' => true, 'acl_level' => 0]; break;
+		case 'objectBundle': $object->values['denied'] = ['ca_object_representations']; break;
+		case 'repBundle': $rep->values['denied'] = ['media']; break;
 		case 'repACL': $rep->readable = false; break;
 		case 'repDeleted': $rep->values['deleted'] = 1; break;
 		case 'unattached': unset($object->rows[101]); break;
@@ -547,4 +557,59 @@ fwrite($pipes[0], json_encode(['actions' => $scriptMatch[1], 'menus' => $menusSc
 $output = stream_get_contents($pipes[1]); fclose($pipes[1]);
 $errors = stream_get_contents($pipes[2]); fclose($pipes[2]);
 checkDownload(proc_close($process) === 0, 'Image action or gallery callback regression failed: '.$errors.$output);
+$cacheDirectory = sys_get_temp_dir().'/tadl-image-cache-test-'.bin2hex(random_bytes(8));
+register_shutdown_function(static function () use ($cacheDirectory) {
+ if (is_dir($cacheDirectory.'/public')) { rmdir($cacheDirectory.'/public'); }
+ foreach (glob($cacheDirectory.'/*') ?: [] as $file) { unlink($file); }
+ if (is_file($cacheDirectory.'/.pruned')) { unlink($cacheDirectory.'/.pruned'); }
+ if (is_dir($cacheDirectory)) { rmdir($cacheDirectory); }
+});
+[$object, $rep, $request] = resetDownload('bmp');
+$source = tadlImageDownloadSource($request, $object, 101);
+$source['info'] += ['WIDTH'=>13,'HEIGHT'=>7];
+$first = tadlCachedImageDownload($source, 'jpg', $cacheDirectory);
+checkDownload($first && !$first['temporary'] && (fileperms($first['path']) & 0077) === 0, 'Cached export must be reusable and private.');
+Media::$calls = [];
+$second = tadlCachedImageDownload($source, 'jpg', $cacheDirectory);
+checkDownload($second['path'] === $first['path'] && Media::$calls === [], 'A repeated JPG request must reuse the converted pixels.');
+$pdf = tadlCachedImageDownload($source, 'pdf', $cacheDirectory);
+Media::$calls = []; DownloadPDFRenderer::$calls = [];
+$secondPDF = tadlCachedImageDownload($source, 'pdf', $cacheDirectory);
+checkDownload($pdf && $secondPDF['path'] === $pdf['path'] && Media::$calls === [] && DownloadPDFRenderer::$calls === [], 'Repeated PDF requests must reuse the rendered document.');
+$source['checksum'] = 'synthetic-replaced-media';
+checkDownload(tadlCachedImageDownload($source, 'jpg', $cacheDirectory)['path'] !== $first['path'], 'Replacing native media must invalidate the export cache.');
+file_put_contents($first['path'], 'Synthetic damaged cache');
+$source['checksum'] = null;
+$rebuilt = tadlCachedImageDownload($source, 'jpg', $cacheDirectory);
+checkDownload($rebuilt && getimagesize($rebuilt['path'])[2] === IMAGETYPE_JPEG, 'Corrupt cache bytes must be rebuilt, never downloaded.');
+// Controller cache hits still reauthorize the object, attachment, media bundle and original download.
+$request->config = new DownloadConfig(['tadl_cache_image_downloads'=>true, 'tadl_image_download_cache_directory'=>$cacheDirectory]);
+Media::$calls = []; DownloadPDFRenderer::$calls = [];
+$controller = runDownload($request);
+checkDownload($controller->rendered && $controller->view->getVar('image_download')['path'] === $first['path'] && Media::$calls === [], 'The controller must use an authorized existing cache entry without conversion.');
+$object->values['acl'] = true; $object->values['acl_level'] = 0;
+$controller = runDownload($request);
+checkDownload($controller->response->status === 404 && !$controller->rendered && Media::$calls === [], 'Revoking front-only object ACLs must deny even a cached export.');
+$object->values['acl_level'] = 1; $rep->values['denied'] = ['media'];
+checkDownload(runDownload($request)->response->status === 404, 'A media bundle denial must prevent serving cached pixels.');
+$rep->values['denied'] = []; $request->versions = [];
+checkDownload(runDownload($request)->response->status === 404, 'Original-download permission must be rechecked on every cache hit.');
+$request->versions = ['original'];
+$lock = fopen(substr($first['path'], 0, -4).'.lock', 'c'); flock($lock, LOCK_EX);
+$started = microtime(true); Media::$calls = [];
+checkDownload(tadlCachedImageDownload($source, 'jpg', $cacheDirectory) === null && microtime(true)-$started < 4 && Media::$calls === [], 'A competing conversion must stop waiting within three seconds without duplicate work.');
+flock($lock, LOCK_UN); fclose($lock);
+$linkDirectory = $cacheDirectory.'-link'; symlink($cacheDirectory, $linkDirectory);
+checkDownload(tadlCachedImageDownload($source, 'jpg', $linkDirectory) === null, 'A symlinked cache directory must be refused.'); unlink($linkDirectory);
+// Cache selection follows authorization, even for a ready-to-serve export.
+$object->values['acl_level'] = 0;
+Media::$calls = []; $request->config = new DownloadConfig();
+checkDownload(tadlImageDownloadSource($request, $object, 101) === null, 'A cached file must not make a denied source readable.');
+$object->values['acl_level'] = 1;
+touch($first['path'], time()-700000); clearstatcache(true, $first['path']);
+touch($cacheDirectory.'/.pruned', time()-3601); clearstatcache(true, $cacheDirectory.'/.pruned');
+tadlPruneImageDownloads($cacheDirectory);
+checkDownload(!is_file($first['path']) && is_file($pdf['path']), 'Expiry must remove only unused cached exports.');
+mkdir($cacheDirectory.'/public', 0755); chmod($cacheDirectory.'/public', 0755);
+checkDownload(tadlCachedImageDownload($source, 'jpg', $cacheDirectory.'/public') === null, 'Publicly accessible/shared filesystem permissions must be rejected.');
 echo json_encode(['status' => 'passed', 'assertions' => $assertions, 'boundaries' => 'actual helper/controller/action script/gallery media partial; synthetic access/ACL/media/DOM APIs; Node.js gallery callbacks; real image bytes; '.($autoload ? 'real bundled Dompdf' : 'synthetic PDF renderer')], JSON_PRETTY_PRINT).PHP_EOL;

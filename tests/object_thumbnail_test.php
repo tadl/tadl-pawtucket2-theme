@@ -5,6 +5,18 @@ set_error_handler(function ($severity, $message, $file, $line) {
 	if (!(error_reporting() & $severity)) { return false; }
 	throw new ErrorException($message, 0, $severity, $file, $line);
 });
+define('__CA_BUNDLE_ACCESS_READONLY__', 1);
+function caGetBundleAccessLevel($table, $bundle) { return 1; }
+function caACLIsEnabled($model, $options) { return false; }
+function caGetTypeRestrictionsForUser($table) { return null; }
+function caGetSourceRestrictionsForUser($table) { return null; }
+function caSourceAccessControlIsEnabled($model) { return false; }
+class ThumbnailPermissionConfig { function get($key) { return false; } }
+class Datamodel {
+	static function getInstanceByTableName($table, $cached) { return new self(); }
+	function getAppConfig() { return new ThumbnailPermissionConfig(); }
+}
+$GLOBALS['g_request'] = new stdClass();
 $assertions = 0;
 function checkObjectThumbnail($condition, $message) {
 	global $assertions; $assertions++;

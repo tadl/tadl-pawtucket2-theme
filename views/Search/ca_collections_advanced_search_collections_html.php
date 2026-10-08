@@ -12,10 +12,10 @@
 			</div>
 			<div class="row">
 <?php
-				tadlAdvancedField(_t('Keyword'), _t('Search across all indexed collection fields.'), '_fulltext', '{{{_fulltext%width=220px&height=1&label=Keyword}}}', 'col-sm-12');
-				tadlAdvancedField(_t('Collection title'), _t('Search collection names.'), 'ca_collections_preferred_labels_name', '{{{ca_collections.preferred_labels.name%width=220px&label=Collection_title}}}');
-				tadlAdvancedField(_t('Identifier'), _t('Search collection identifiers.'), 'ca_collections_idno', '{{{ca_collections.idno%width=220px&label=Identifier}}}');
-				tadlAdvancedField(_t('Date or date range'), _t('Search collection dates.'), 'ca_collections_date_dates_value', '{{{ca_collections.date.dates_value%width=220px&height=40px&useDatePicker=0&label=Date}}}');
+				tadlAdvancedField($this, _t('Keyword'), _t('Search across all indexed collection fields.'), '_fulltext', '{{{_fulltext%width=220px&height=1&label=Keyword}}}', 'col-sm-12');
+				tadlAdvancedField($this, _t('Collection title'), _t('Search collection names.'), 'ca_collections_preferred_labels_name', '{{{ca_collections.preferred_labels.name%width=220px&label=Collection_title}}}');
+				tadlAdvancedField($this, _t('Identifier'), _t('Search collection identifiers.'), 'ca_collections_idno', '{{{ca_collections.idno%width=220px&label=Identifier}}}');
+				tadlAdvancedField($this, _t('Date or date range'), _t('Search collection dates.'), 'ca_collections_date_dates_value', '{{{ca_collections.date.dates_value%width=220px&height=40px&useDatePicker=0&label=Date}}}');
 ?>
 			</div>
 		</section>
@@ -27,14 +27,14 @@
 			</div>
 			<div class="row">
 <?php
-				tadlAdvancedField(_t('Creators'), _t('Search creators related to collections.'), 'ca_entities_preferred_labels_displayname_creator', '{{{ca_entities.preferred_labels.displayname%restrictToRelationshipTypes=creator&width=220px&label=Creators}}}');
-				tadlAdvancedField(_t('Source of description'), _t('Search description source notes.'), 'ca_collections_description_source', '{{{ca_collections.description_source%width=220px&label=Source_of_description}}}');
-				tadlAdvancedField(_t('Extent'), _t('Search extent statements.'), 'ca_collections_extent_text', '{{{ca_collections.extent_text%width=220px&label=Extent}}}');
-				tadlAdvancedField(_t('Scope and content'), _t('Search scope and content notes.'), 'ca_collections_collection_scope_content', '{{{ca_collections.collection_scope_content%width=220px&height=80px&label=Scope_and_content}}}', 'col-sm-12');
-				tadlAdvancedField(_t('Vocabulary terms'), _t('Search related vocabulary terms.'), 'ca_list_items_preferred_labels_name_singular', '{{{ca_list_items.preferred_labels.name_singular%width=220px&label=Vocabulary_terms}}}');
-				tadlAdvancedField(_t('LOC heading'), _t('Search Library of Congress subject headings.'), 'ca_collections_lcsh_terms', '{{{ca_collections.lcsh_terms%width=220px&label=LOC_heading}}}');
-				tadlAdvancedField(_t('Rights'), _t('Search rights statements.'), 'ca_collections_rights_rightsText', '{{{ca_collections.rights.rightsText%width=220px&label=Rights}}}');
-				tadlAdvancedField(_t('Copyright statement'), _t('Search copyright statements.'), 'ca_collections_rights_copyrightStatement', '{{{ca_collections.rights.copyrightStatement%width=220px&label=Copyright_statement}}}');
+				tadlAdvancedField($this, _t('Creators'), _t('Search creators related to collections.'), 'ca_entities_preferred_labels_displayname_creator', '{{{ca_entities.preferred_labels.displayname%restrictToRelationshipTypes=creator&width=220px&label=Creators}}}');
+				tadlAdvancedField($this, _t('Source of description'), _t('Search description source notes.'), 'ca_collections_description_source', '{{{ca_collections.description_source%width=220px&label=Source_of_description}}}');
+				tadlAdvancedField($this, _t('Extent'), _t('Search extent statements.'), 'ca_collections_extent_text', '{{{ca_collections.extent_text%width=220px&label=Extent}}}');
+				tadlAdvancedField($this, _t('Scope and content'), _t('Search scope and content notes.'), 'ca_collections_collection_scope_content', '{{{ca_collections.collection_scope_content%width=220px&height=80px&label=Scope_and_content}}}', 'col-sm-12');
+				tadlAdvancedField($this, _t('Vocabulary terms'), _t('Search related vocabulary terms.'), 'ca_list_items_preferred_labels_name_singular', '{{{ca_list_items.preferred_labels.name_singular%width=220px&label=Vocabulary_terms}}}');
+				tadlAdvancedField($this, _t('LOC heading'), _t('Search Library of Congress subject headings.'), 'ca_collections_lcsh_terms', '{{{ca_collections.lcsh_terms%width=220px&label=LOC_heading}}}');
+				tadlAdvancedField($this, _t('Rights'), _t('Search rights statements.'), 'ca_collections_rights_rightsText', '{{{ca_collections.rights.rightsText%width=220px&label=Rights}}}');
+				tadlAdvancedField($this, _t('Copyright statement'), _t('Search copyright statements.'), 'ca_collections_rights_copyrightStatement', '{{{ca_collections.rights.copyrightStatement%width=220px&label=Copyright_statement}}}');
 ?>
 			</div>
 		</section>

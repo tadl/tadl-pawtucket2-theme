@@ -64,9 +64,10 @@ class ca_object_representations extends TextRecord {
 	}
 }
 class Datamodel {
-	static function getInstance($table, $new) {
-		checkDocumentText($table === 'ca_object_representations' && $new === true, 'PDF text must load its native representation model.');
-		return new ca_object_representations();
+	static function getInstance($table, $useCache) {
+		checkDocumentText($table === 'ca_object_representations', 'PDF text must load its native representation model.');
+		static $cached;
+		return $useCache ? ($cached ??= new ca_object_representations()) : new ca_object_representations();
 	}
 }
 function textPDFRow($id, $rank = 0, $primary = false, $label = '') {
@@ -218,6 +219,8 @@ checkDocumentText(array_column($entries, 'text') === ['Rank 1 primary', 'Rank 1 
 $xpath = new DOMXPath(textDocument(tadlObjectDocumentTextHTML($request, $object)));
 checkDocumentText($xpath->query('//h3')->length === 5 && $xpath->query('//h3')->item(0)->textContent === 'Synthetic <b>PDF</b>' && $xpath->query('//h3//b')->length === 0, 'Multiple-PDF headings must safely identify each text source.');
 checkDocumentText($xpath->query('//h3')->item(4)->textContent === 'PDF 5', 'Empty representation label must get a useful fallback.');
+ca_object_representations::$records[14]['ca_object_representations.preferred_labels.name'] = 'Native PDF label';
+checkDocumentText(tadlObjectDocumentText($request, $object)[4]['label'] === 'Native PDF label', 'Native simple representation rows omit labels; read the permitted label from the retained model.');
 $entries = tadlObjectDocumentText(new TextRequest([1], ['ca_object_representations:preferred_labels']), $object);
 checkDocumentText(array_filter(array_column($entries, 'label')) === [], 'Denied preferred-label bundle must not leak a label.');
 ca_object_representations::$records[11]['media_content'] = '';
@@ -226,6 +229,9 @@ $partial = new TextObject([textPDFRow(10), textPDFRow(11)], [
 ]);
 checkDocumentText(array_column(tadlObjectDocumentText($request, $partial), 'text') === ['Rank 2'], 'Any populated readable PDF extraction must suppress both metadata fallbacks, even when another PDF is blank.');
 checkDocumentText(!array_intersect(['ca_objects.transcription', 'ca_objects.pdf_text'], array_column($partial->reads, 0)), 'Partially populated PDF extraction must not fetch lower-priority metadata.');
+ca_object_representations::$records[11]['unreadable'] = true;
+checkDocumentText(array_column(tadlObjectDocumentText($request, $partial), 'text') === ['Rank 2'], 'A denied final PDF must not overwrite a previously retained readable representation.');
+ca_object_representations::$records[11]['unreadable'] = false;
 ca_object_representations::$records[11]['media_content'] = 'Rank 1 primary';
 
 // Render the actual object template and verify full-width placement after both columns.

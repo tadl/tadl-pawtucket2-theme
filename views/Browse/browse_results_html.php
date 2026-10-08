@@ -235,16 +235,8 @@ if (!$vb_ajax) {	// !ajax
 <?php
 } // !ajax
 
-# --- check if this result page has been cached
-# --- key is MD5 of browse key, sort, sort direction, view, page/start, items per page, row_id
-$vs_cache_key = md5('tadl_results_v10'.tadlBrowseResultCollectionID($this->request).$this->request->getParameter('collection_view', pString).$vs_browse_key.$vs_current_sort.$vs_sort_dir.$vs_current_view.$vn_start.$vn_hits_per_block.$vn_row_id.$vs_letter.$vs_media_preference.serialize($va_access_values).serialize($qr_res->getPrimaryKeyValues()).(int)caDisplayLightbox($this->request));
-if(($o_config->get("cache_timeout") > 0) && ExternalCache::contains($vs_cache_key,'browse_results')){
-	print ExternalCache::fetch($vs_cache_key, 'browse_results');
-}else{
-	$vs_result_page = $this->render("Browse/browse_results_{$vs_current_view}_html.php");
-	ExternalCache::save($vs_cache_key, $vs_result_page, 'browse_results', $o_config->get("cache_timeout"));
-	print $vs_result_page;
-}		
+// Render current permissions and preference on every request; never persist private HTML.
+print $this->render('Browse/browse_results_'.$vs_current_view.'_html.php');
 
 if (!$vb_ajax) {	// !ajax
 ?>

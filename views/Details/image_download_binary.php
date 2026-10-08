@@ -7,7 +7,7 @@ header('Content-Disposition: attachment; filename="'.$this->getVar('image_downlo
 header('Cache-Control: private, no-store');
 header('X-Content-Type-Options: nosniff');
 header('X-Robots-Tag: noindex, nofollow');
-set_time_limit(0);
+set_time_limit(120);
 fpassthru($stream);
 fclose($stream);
 exit();

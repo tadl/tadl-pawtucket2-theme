@@ -12,11 +12,11 @@
 			</div>
 			<div class="row">
 <?php
-				tadlAdvancedField(_t('Keyword'), _t('Search across all indexed place fields.'), '_fulltext', '{{{_fulltext%width=220px&height=1&label=Keyword}}}', 'col-sm-12');
-				tadlAdvancedField(_t('Place name'), _t('Search preferred place names.'), 'ca_places_preferred_labels_name', '{{{ca_places.preferred_labels.name%width=220px&label=Place_name}}}');
-				tadlAdvancedField(_t('Alternate names'), _t('Search alternate place names.'), 'ca_places_nonpreferred_labels_name', '{{{ca_places.nonpreferred_labels.name%width=220px&label=Alternate_names}}}');
-				tadlAdvancedField(_t('Identifier'), _t('Search place identifiers.'), 'ca_places_idno', '{{{ca_places.idno%width=220px&label=Identifier}}}');
-				tadlAdvancedField(_t('Description'), _t('Search place descriptions.'), 'ca_places_description', '{{{ca_places.description%width=220px&height=80px&label=Description}}}', 'col-sm-12');
+				tadlAdvancedField($this, _t('Keyword'), _t('Search across all indexed place fields.'), '_fulltext', '{{{_fulltext%width=220px&height=1&label=Keyword}}}', 'col-sm-12');
+				tadlAdvancedField($this, _t('Place name'), _t('Search preferred place names.'), 'ca_places_preferred_labels_name', '{{{ca_places.preferred_labels.name%width=220px&label=Place_name}}}');
+				tadlAdvancedField($this, _t('Alternate names'), _t('Search alternate place names.'), 'ca_places_nonpreferred_labels_name', '{{{ca_places.nonpreferred_labels.name%width=220px&label=Alternate_names}}}');
+				tadlAdvancedField($this, _t('Identifier'), _t('Search place identifiers.'), 'ca_places_idno', '{{{ca_places.idno%width=220px&label=Identifier}}}');
+				tadlAdvancedField($this, _t('Description'), _t('Search place descriptions.'), 'ca_places_description', '{{{ca_places.description%width=220px&height=80px&label=Description}}}', 'col-sm-12');
 ?>
 			</div>
 		</section>
@@ -28,10 +28,10 @@
 			</div>
 			<div class="row">
 <?php
-				tadlAdvancedField(_t('Collections'), _t('Search related collections.'), 'ca_collections_preferred_labels_name', '{{{ca_collections.preferred_labels.name%width=220px&label=Collections}}}');
-				tadlAdvancedField(_t('People / organizations'), _t('Search related people and organizations.'), 'ca_entities_preferred_labels_displayname', '{{{ca_entities.preferred_labels.displayname%width=220px&label=People_organizations}}}');
-				tadlAdvancedField(_t('Events'), _t('Search related events.'), 'ca_occurrences_preferred_labels_name', '{{{ca_occurrences.preferred_labels.name%width=220px&label=Events}}}');
-				tadlAdvancedField(_t('Objects'), _t('Search related object titles.'), 'ca_objects_preferred_labels_name', '{{{ca_objects.preferred_labels.name%width=220px&label=Objects}}}');
+				tadlAdvancedField($this, _t('Collections'), _t('Search related collections.'), 'ca_collections_preferred_labels_name', '{{{ca_collections.preferred_labels.name%width=220px&label=Collections}}}');
+				tadlAdvancedField($this, _t('People / organizations'), _t('Search related people and organizations.'), 'ca_entities_preferred_labels_displayname', '{{{ca_entities.preferred_labels.displayname%width=220px&label=People_organizations}}}');
+				tadlAdvancedField($this, _t('Events'), _t('Search related events.'), 'ca_occurrences_preferred_labels_name', '{{{ca_occurrences.preferred_labels.name%width=220px&label=Events}}}');
+				tadlAdvancedField($this, _t('Objects'), _t('Search related object titles.'), 'ca_objects_preferred_labels_name', '{{{ca_objects.preferred_labels.name%width=220px&label=Objects}}}');
 ?>
 			</div>
 		</section>

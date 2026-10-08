@@ -4,7 +4,9 @@ require_once(__DIR__.'/crawler_policy.php');
 function tadlImageDownloadSource($request, $object, $representationID) {
 	if ($request->config->get('pawtucket_requires_login') && !$request->isLoggedIn()) { return null; }
 	if (!$object || $object->tableName() !== 'ca_objects' || !$object->getPrimaryKey()
-		|| $object->get('deleted') || !$object->isReadable($request)) { return null; }
+		|| $object->get('deleted') || !$object->isReadable($request, 'ca_object_representations')
+		|| (caACLIsEnabled($object, ['forPawtucket' => true])
+			&& $object->checkACLAccessForUser($request->user) < __CA_ACL_READONLY_ACCESS__)) { return null; }
 	$access = caGetUserAccessValues($request);
 	if (!caACLIsEnabled($object, ['forPawtucket' => true]) && $access
 		&& !in_array($object->get('access'), $access)) { return null; }
@@ -13,7 +15,9 @@ function tadlImageDownloadSource($request, $object, $representationID) {
 	if (!$row || !preg_match('!^image/!i', (string)($row['mimetype'] ?? ''))) { return null; }
 	$representation = Datamodel::getInstance('ca_object_representations', true);
 	if (!$representation || !$representation->load($representationID) || $representation->get('deleted')
-		|| !$representation->isReadable($request)
+		|| !$representation->isReadable($request, 'media')
+		|| (caACLIsEnabled($representation, ['forPawtucket' => true])
+			&& $representation->checkACLAccessForUser($request->user) < __CA_ACL_READONLY_ACCESS__)
 		|| !caObjectsDisplayDownloadLink($request, $object->getPrimaryKey(), $representation)) { return null; }
 	$mime = $representation->getMediaInfo('media', 'INPUT', 'MIMETYPE') ?: $row['mimetype'];
 	// Full-resolution exports require permission to download the original version.
@@ -23,7 +27,8 @@ function tadlImageDownloadSource($request, $object, $representationID) {
 	if (!is_array($info) || !empty($info['QUEUED']) || !empty($info['USE_ICON'])
 		|| !preg_match('!^image/!i', (string)($info['MIMETYPE'] ?? ''))
 		|| !is_string($path) || !is_file($path) || !is_readable($path)) { return null; }
-	return ['representation' => $representation, 'path' => $path, 'mime' => strtolower($info['MIMETYPE'])];
+	return ['representation' => $representation, 'path' => $path, 'mime' => strtolower($info['MIMETYPE']),
+		'info' => $info, 'checksum' => $representation->getMediaInfo('media', 'INPUT', 'MD5')];
 }
 
 function tadlImageDownloadLinks($request, $object, $representationID, $inViewer = false) {

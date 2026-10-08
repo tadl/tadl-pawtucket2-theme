@@ -7,6 +7,7 @@ set_error_handler(function ($severity, $message, $file, $line) {
 	throw new ErrorException($message, 0, $severity, $file, $line);
 });
 define('pInteger', 1);
+define('__CA_BUNDLE_ACCESS_READONLY__', 1);
 define('__CA_ACL_READONLY_ACCESS__', 1);
 $assertions = 0;
 function aidCheck($condition, $message) {
@@ -14,10 +15,13 @@ function aidCheck($condition, $message) {
 	if (!$condition) { throw new RuntimeException($message); }
 }
 function _t($text) { return $text; }
+function caSourceAccessControlIsEnabled($model) { return false; }
+function caGetTypeRestrictionsForUser($table) { return null; }
+function caGetSourceRestrictionsForUser($table) { return null; }
 function caGetUserAccessValues($request) { return $request->access; }
 function caACLIsEnabled($record, $options) {
 	aidCheck($options === ['forPawtucket' => true], 'ACL must use Pawtucket context.');
-	return $record->row['acl'] ?? false;
+	return is_object($record) && $record->table === 'ca_objects' ? true : ($record->row['acl'] ?? false);
 }
 class AidConfig {
 	public array $values = [
@@ -40,6 +44,7 @@ class AidRequest {
 	function __construct(public array $params = ['collection_id' => 42], public string $method = 'GET', public bool $loggedIn = false) {
 		$this->config = new AidConfig(); $this->user = new stdClass();
 	}
+	function getUserID() { return 7; }
 	function getRequestMethod() { return $this->method; }
 	function getParameter($key, $type) { aidCheck($type === pInteger, 'Collection ID must use native integer parsing.'); return $this->params[$key] ?? null; }
 	function isLoggedIn() { return $this->loggedIn; }
@@ -49,6 +54,9 @@ class AidModel {
 	function __construct(public string $table) {}
 	function load($id) { $GLOBALS['aidLoads'][] = [$this->table, $id]; $this->row = $GLOBALS['aidRows'][$this->table][$id] ?? []; return (bool)$this->row; }
 	function tableName() { return $this->table; }
+	function getAppConfig() { return new AidConfig(); }
+	function getDb() { return new AidDb(); }
+	function tableNum() { return 57; }
 	function getPrimaryKey() { return $this->row['id'] ?? null; }
 	function get($key) { return $this->row[$key] ?? null; }
 	function hasField($key) { return in_array($key, ['idno', 'home_location_id'], true); }
@@ -70,7 +78,31 @@ class AidModel {
 		return $this->row['related'][$table] ?? [];
 	}
 }
+class AidDb {
+ function query($sql, $params) {
+  aidCheck(count($params[0]) <= 500, 'Finding aid visibility queries must be bounded.');
+  $GLOBALS['aidBatches'][] = $params[0];
+  return new AidRows(array_values(array_filter($params[0], static function ($id) use ($params) {
+   $row = $GLOBALS['aidRows']['ca_objects'][$id] ?? [];
+   return $row && !$row['deleted'] && in_array($row['access'], $params[1], true) && ($row['readable'] ?? true);
+  })));
+ }
+}
+class AidRows {
+ private int $position = -1;
+ function __construct(private array $ids) {}
+ function nextRow() { return ++$this->position < count($this->ids); }
+ function get($field) { return $this->ids[$this->position]; }
+}
+function caGetBrowseInstance($table) { return new AidBrowse(); }
+class AidBrowse {
+ function filterHitsByACL($ids, $table, $user) {
+  return array_values(array_filter($ids, static fn($id) => !($GLOBALS['aidRows']['ca_objects'][$id]['acl'] ?? false) || ($GLOBALS['aidRows']['ca_objects'][$id]['acl_level'] ?? 1) >= 1));
+ }
+}
 class Datamodel {
+ static function getInstanceByTableName($table, $cached) { return new AidModel($table); }
+
 	static function getInstance($table, $unused) {
 		aidCheck(in_array($table, ['ca_collections', 'ca_objects'], true), 'Count-only finding aids must not load storage records.');
 		return new AidModel($table);
@@ -174,7 +206,7 @@ aidCheck($data['collections'][42]['count'] === 4 && $data['collections'][7]['cou
 aidCheck(array_column($data['collections'], 'depth') === [0, 1, 1, 2, 3, 2], 'Hierarchy depth must preserve each generation, including empty subcollections.');
 aidCheck($data['collections'][15]['parent_id'] === 13 && $data['collections'][15]['identifier'] === 'SYN.F1', 'Nested collection parent and readable identifier must be retained.');
 $object_loads = array_column(array_filter($GLOBALS['aidLoads'], static fn($load) => $load[0] === 'ca_objects'), 1);
-aidCheck(count($object_loads) === count(array_unique($object_loads)), 'Shared objects must be loaded once for access checks.');
+aidCheck($object_loads === [] && count($GLOBALS['aidBatches']) === 1, 'Count-only exports must check object visibility in batches without loading object models.');
 aidCheck(array_unique(array_column($GLOBALS['aidReads'], 0)) === ['ca_collections'], 'Counts must not fetch per-object metadata.');
 aidCheck(!isset($data['fields']['dates']) && $data['fields']['extent']['value'] === 'Two boxes', 'Empty punctuation-only dates must disappear; extent must fall back.');
 aidCheck(tadlFindingAidText('<script>secret</script><p>Safe &amp; readable</p>') === 'Safe & readable', 'Text must remove scripts and decode entities.');

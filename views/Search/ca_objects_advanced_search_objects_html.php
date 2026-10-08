@@ -26,9 +26,9 @@
 			</div>
 			<div class="row">
 <?php
-				tadlAdvancedField(_t('Keyword'), _t('Search across all indexed fields.'), '_fulltext', '{{{_fulltext%width=200px&height=1&label=Keyword}}}', 'col-sm-12');
-				tadlAdvancedField(_t('Title'), _t('Limit your search to object titles.'), 'ca_objects_preferred_labels_name', '{{{ca_objects.preferred_labels.name%width=220px&label=Title}}}');
-				tadlAdvancedField(_t('Identifier'), _t('Search object identifiers and accession numbers.'), 'ca_objects_idno', '{{{ca_objects.idno%width=210px&label=Identifier}}}');
+				tadlAdvancedField($this, _t('Keyword'), _t('Search across all indexed fields.'), '_fulltext', '{{{_fulltext%width=200px&height=1&label=Keyword}}}', 'col-sm-12');
+				tadlAdvancedField($this, _t('Title'), _t('Limit your search to object titles.'), 'ca_objects_preferred_labels_name', '{{{ca_objects.preferred_labels.name%width=220px&label=Title}}}');
+				tadlAdvancedField($this, _t('Identifier'), _t('Search object identifiers and accession numbers.'), 'ca_objects_idno', '{{{ca_objects.idno%width=210px&label=Identifier}}}');
 ?>
 				<div class="advancedSearchField col-sm-6">
 					<label for="ca_objects_type_id" class="formLabel" data-toggle="popover" data-trigger="hover focus" data-container="body" data-placement="top" data-content="<?php _p('Limit results to a specific object type.'); ?>"><?php _p('Type'); ?></label>
@@ -45,7 +45,7 @@
 					<input name="ca_objects_type_id_label" value="<?php _p('Type'); ?>" type="hidden"/>
 				</div>
 <?php
-				tadlAdvancedField(_t('Date or date range'), _t('Search records for a particular date or date range, such as 1910 or 1910-1920.'), 'ca_objects_date_dates_value', '{{{ca_objects.date.dates_value%width=200px&height=40px&useDatePicker=0&label=Date}}}');
+				tadlAdvancedField($this, _t('Date or date range'), _t('Search records for a particular date or date range, such as 1910 or 1910-1920.'), 'ca_objects_date_dates_value', '{{{ca_objects.date.dates_value%width=200px&height=40px&useDatePicker=0&label=Date}}}');
 ?>
 			</div>
 		</section>
@@ -57,16 +57,16 @@
 			</div>
 			<div class="row tadl-advanced-balanced-row">
 <?php
-				tadlAdvancedField(_t('Collection'), _t('Search records within a particular collection.'), 'ca_collections_preferred_labels', '{{{ca_collections.preferred_labels%restrictToTypes=collection&width=200px&height=40px&label=Collection}}}');
-				tadlAdvancedField(_t('People / organizations'), _t('Search related people and organizations.'), 'ca_entities_preferred_labels_displayname', '{{{ca_entities.preferred_labels.displayname%width=220px&label=People_organizations}}}');
-				tadlAdvancedField(_t('Creators'), _t('Search people or organizations related as creators.'), 'ca_entities_preferred_labels_displayname_creator', '{{{ca_entities.preferred_labels.displayname%restrictToRelationshipTypes=creator&width=220px&label=Creators}}}');
-				tadlAdvancedField(_t('Publisher'), _t('Search people or organizations related as publishers.'), 'ca_entities_preferred_labels_displayname_publisher', '{{{ca_entities.preferred_labels.displayname%restrictToRelationshipTypes=publisher&width=220px&label=Publisher}}}');
+				tadlAdvancedField($this, _t('Collection'), _t('Search records within a particular collection.'), 'ca_collections_preferred_labels', '{{{ca_collections.preferred_labels%restrictToTypes=collection&width=200px&height=40px&label=Collection}}}');
+				tadlAdvancedField($this, _t('People / organizations'), _t('Search related people and organizations.'), 'ca_entities_preferred_labels_displayname', '{{{ca_entities.preferred_labels.displayname%width=220px&label=People_organizations}}}');
+				tadlAdvancedField($this, _t('Creators'), _t('Search people or organizations related as creators.'), 'ca_entities_preferred_labels_displayname_creator', '{{{ca_entities.preferred_labels.displayname%restrictToRelationshipTypes=creator&width=220px&label=Creators}}}');
+				tadlAdvancedField($this, _t('Publisher'), _t('Search people or organizations related as publishers.'), 'ca_entities_preferred_labels_displayname_publisher', '{{{ca_entities.preferred_labels.displayname%restrictToRelationshipTypes=publisher&width=220px&label=Publisher}}}');
 ?>
 			</div>
 			<div class="row">
 <?php
-				tadlAdvancedField(_t('Description'), _t('Search public descriptive notes.'), 'ca_objects_description', '{{{ca_objects.description%width=220px&height=80px&label=Description}}}', 'col-sm-12');
-				tadlAdvancedField(_t('Source of description'), _t('Search notes about where the description came from.'), 'ca_objects_description_source', '{{{ca_objects.description_source%width=220px&label=Source_of_description}}}', 'col-sm-12');
+				tadlAdvancedField($this, _t('Description'), _t('Search public descriptive notes.'), 'ca_objects_description', '{{{ca_objects.description%width=220px&height=80px&label=Description}}}', 'col-sm-12');
+				tadlAdvancedField($this, _t('Source of description'), _t('Search notes about where the description came from.'), 'ca_objects_description_source', '{{{ca_objects.description_source%width=220px&label=Source_of_description}}}', 'col-sm-12');
 ?>
 			</div>
 		</section>
@@ -78,14 +78,14 @@
 			</div>
 			<div class="row">
 <?php
-				tadlAdvancedField(_t('Subjects'), _t('Search the subject vocabulary terms attached to objects.'), 'term', '{{{term%width=220px&label=Subjects}}}');
-				tadlAdvancedField(_t('Materials and techniques'), _t('Search materials and technique notes.'), 'ca_objects_materials_techniques', '{{{ca_objects.materials_techniques%width=220px&label=Materials_and_techniques}}}');
-				tadlAdvancedField(_t('Inscriptions / marks'), _t('Search inscriptions, markings, and annotations.'), 'ca_objects_inscriptions_marks', '{{{ca_objects.inscriptions_marks%width=220px&label=Inscriptions_marks}}}');
-				tadlAdvancedField(_t('Library of Congress subject headings'), _t('Search the separate Library of Congress subject-heading field.'), 'ca_objects_lcsh_terms', '{{{ca_objects.lcsh_terms%width=220px&label=LOC_subject_headings}}}');
-				tadlAdvancedField(_t('Rights'), _t('Search rights statements.'), 'ca_objects_rights_rightsText', '{{{ca_objects.rights.rightsText%width=220px&label=Rights}}}');
-				tadlAdvancedField(_t('Copyright statement'), _t('Search copyright statements.'), 'ca_objects_rights_copyrightStatement', '{{{ca_objects.rights.copyrightStatement%width=220px&label=Copyright_statement}}}');
-				tadlAdvancedField(_t('Website name'), _t('Search external link labels.'), 'ca_objects_external_link_url_source', '{{{ca_objects.external_link.url_source%width=220px&label=Website_name}}}');
-				tadlAdvancedField(_t('URL'), _t('Search external URLs.'), 'ca_objects_external_link_url_entry', '{{{ca_objects.external_link.url_entry%width=220px&label=URL}}}');
+				tadlAdvancedField($this, _t('Subjects'), _t('Search the subject vocabulary terms attached to objects.'), 'term', '{{{term%width=220px&label=Subjects}}}');
+				tadlAdvancedField($this, _t('Materials and techniques'), _t('Search materials and technique notes.'), 'ca_objects_materials_techniques', '{{{ca_objects.materials_techniques%width=220px&label=Materials_and_techniques}}}');
+				tadlAdvancedField($this, _t('Inscriptions / marks'), _t('Search inscriptions, markings, and annotations.'), 'ca_objects_inscriptions_marks', '{{{ca_objects.inscriptions_marks%width=220px&label=Inscriptions_marks}}}');
+				tadlAdvancedField($this, _t('Library of Congress subject headings'), _t('Search the separate Library of Congress subject-heading field.'), 'ca_objects_lcsh_terms', '{{{ca_objects.lcsh_terms%width=220px&label=LOC_subject_headings}}}');
+				tadlAdvancedField($this, _t('Rights'), _t('Search rights statements.'), 'ca_objects_rights_rightsText', '{{{ca_objects.rights.rightsText%width=220px&label=Rights}}}');
+				tadlAdvancedField($this, _t('Copyright statement'), _t('Search copyright statements.'), 'ca_objects_rights_copyrightStatement', '{{{ca_objects.rights.copyrightStatement%width=220px&label=Copyright_statement}}}');
+				tadlAdvancedField($this, _t('Website name'), _t('Search external link labels.'), 'ca_objects_external_link_url_source', '{{{ca_objects.external_link.url_source%width=220px&label=Website_name}}}');
+				tadlAdvancedField($this, _t('URL'), _t('Search external URLs.'), 'ca_objects_external_link_url_entry', '{{{ca_objects.external_link.url_entry%width=220px&label=URL}}}');
 ?>
 			</div>
 		</section>

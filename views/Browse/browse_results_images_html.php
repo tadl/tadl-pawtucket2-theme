@@ -92,7 +92,7 @@
 					$va_ids[] = $qr_res->get("{$vs_table}.{$vs_pk}") ?: $qr_res->get($vs_pk);
 					$vn_c++;
 				}
-				$va_image_options = array('version' => 'small', 'relationshipTypes' => caGetOption('selectMediaUsingRelationshipTypes', $va_options, null), 'objectTypes' => caGetOption('selectMediaUsingTypes', $va_options, null), 'checkAccess' => $va_access_values);
+				$va_image_options = array('request' => $this->request, 'version' => 'small', 'relationshipTypes' => caGetOption('selectMediaUsingRelationshipTypes', $va_options, null), 'objectTypes' => caGetOption('selectMediaUsingTypes', $va_options, null), 'checkAccess' => $va_access_values);
 				if ($vs_table === 'ca_collections') {
 					require_once(__DIR__.'/collection_thumbnail_helpers.php');
 					$va_images = tadlGetCollectionImages($va_ids, $va_image_options);
@@ -118,12 +118,7 @@
 					$vb_row_id_loaded = true;
 				}
 				
-				# --- check if this result has been cached
-				# --- key is MD5 of table, id, list, refine(vb_refine)
-				$vs_cache_key = md5('tadl_images_v5'.$vs_table.$vn_id."images".$vb_refine.(int)caDisplayLightbox($this->request));
-				if(($o_config->get("cache_timeout") > 0) && ExternalCache::contains($vs_cache_key,'browse_result')){
-					print ExternalCache::fetch($vs_cache_key, 'browse_result');
-				}else{			
+
 					$vs_idno_detail_link 	= caDetailLink($this->request, $qr_res->get("{$vs_table}.idno"), '', $vs_table, $vn_id);
 					$vs_label_detail_link 	= caDetailLink($this->request, $qr_res->get("{$vs_table}.preferred_labels"), '', $vs_table, $vn_id);
 					$vs_thumbnail = "";
@@ -131,7 +126,7 @@
 					$vs_typecode = "";
 					if ($vs_table == 'ca_objects') {
 						$vs_thumbnail = tadlObjectThumbnail($vn_id, 'medium', $va_access_values,
-							$qr_res->get('ca_object_representations.media.medium', array("checkAccess" => $va_access_values)));
+							$qr_res->get('ca_object_representations.media.medium', array("checkAccess" => $va_access_values)), $this->request);
 						if(!$vs_thumbnail){
 							$t_list_item->load($qr_res->get("type_id"));
 							$vs_typecode = $t_list_item->get("idno");
@@ -167,9 +162,8 @@
 				</div><!-- bResultItemExpandedInfo -->
 			</div><!-- end bResultItem -->
 		</div><!-- end col -->";
-					ExternalCache::save($vs_cache_key, $vs_result_output, 'browse_result', $o_config->get("cache_timeout"));
 					print $vs_result_output;
-				}				
+
 				$vn_c++;
 				$vn_results_output++;
 			}

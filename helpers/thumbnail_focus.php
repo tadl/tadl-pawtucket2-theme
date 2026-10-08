@@ -85,7 +85,7 @@ function tadlFocusThumbnail($html) {
 		if (!is_string($path) || !preg_match('~_ca_object_representations_media_(\d+)_([a-z0-9]+)\.[a-z0-9]+$~i', $path, $parts)) { return $match[0]; }
 		$id = (int)$parts[1]; $version = $parts[2];
 		if (!array_key_exists($id, $representations)) {
-			$rep = Datamodel::getInstanceByTableName('ca_object_representations', true);
+			$rep = Datamodel::getInstanceByTableName('ca_object_representations', false);
 			$representations[$id] = $rep && $rep->load($id) && !$rep->get('deleted') ? $rep : null;
 		}
 		$rep = $representations[$id];

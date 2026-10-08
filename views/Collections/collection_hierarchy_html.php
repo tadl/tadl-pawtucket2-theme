@@ -18,7 +18,7 @@
 	$va_collection_counts = $va_collection_children ? tadlCollectionContentsCounts($this->request, $t_item) : [];
 	$va_collection_children = array_values(array_intersect($va_collection_children, array_keys($va_collection_counts)));
 	if ($vb_only_media) {
-		$va_collection_children = tadlMediaEligibleIDs('ca_collections', $va_collection_children, $va_access_values);
+		$va_collection_children = tadlMediaEligibleIDs('ca_collections', $va_collection_children, $va_access_values, $this->request);
 	}
 	$va_collection_children = tadlCollectionHierarchyIDs($va_collection_children, $vs_child_collection_sort);
 	if($va_collection_children){
@@ -29,7 +29,7 @@
 				$va_grand_child_ids = (array)$qr_collection_children->get("ca_collections.children.collection_id", array('returnAsArray' => true, 'checkAccess' => $va_access_values, 'sort' => $vs_child_collection_sort));
 				$va_grand_child_ids = array_values(array_intersect($va_grand_child_ids, array_keys($va_collection_counts)));
 				if ($vb_only_media) {
-					$va_grand_child_ids = tadlMediaEligibleIDs('ca_collections', $va_grand_child_ids, $va_access_values);
+					$va_grand_child_ids = tadlMediaEligibleIDs('ca_collections', $va_grand_child_ids, $va_access_values, $this->request);
 				}
 				$va_grandchildren_by_collection[(int)$qr_collection_children->get("ca_collections.collection_id")] = $va_grand_child_ids;
 				if($va_grand_child_ids){

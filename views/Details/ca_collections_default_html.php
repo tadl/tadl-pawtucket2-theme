@@ -36,7 +36,7 @@
 		? (array)$t_item->get('ca_objects.object_id', array('returnAsArray' => true, 'checkAccess' => $va_access_values)) : [];
 	$vb_show_single_related_object = sizeof($va_related_object_ids) === 1;
 	if (tadlMediaPreference($this->request) === 'only') {
-		$vb_show_single_related_object = (sizeof($va_related_object_ids) === 1) && (bool)tadlMediaEligibleIDs('ca_objects', $va_related_object_ids, $va_access_values);
+		$vb_show_single_related_object = (sizeof($va_related_object_ids) === 1) && (bool)tadlMediaEligibleIDs('ca_objects', $va_related_object_ids, $va_access_values, $this->request);
 	}
 	$va_comments = $this->getVar("comments");
 	$vn_comments_enabled = 	$this->getVar("commentsEnabled");

@@ -212,7 +212,10 @@ regenerates media or restarts services.
 ## Verification
 
 `tests/thumbnail_focus_test.php` checks native tag preservation, saved-point
-priority, stale/corrupt caches and responsive cover geometry. The companion
+priority, stale/corrupt caches, responsive cover geometry and A → B → A lookups
+with the native shared-model cache behavior;
+the focal helper uses an independent loaded record so another image cannot
+overwrite a previously retained focal point. The companion
 `tests/thumbnail_detector_test.php` exercises the actual CLI and SQL against
 synthetic catalogues, multi-page global scans, bounded
 runs, shared/nonprimary media, private/deleted record exclusion, atomic cache

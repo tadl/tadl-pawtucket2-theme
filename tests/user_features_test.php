@@ -66,7 +66,11 @@ class FeatureResult {
 	function getMediaTag($field, $version, $options) { return '<img src="/synthetic.jpg" alt="">'; }
 	function getWithTemplate($template) { return ''; }
 }
-class ca_list_items {}
+function caGetPlaceholder($type, $key) { return ''; }
+class ca_list_items {
+	function load($id) { return false; }
+	function get($field) { return ''; }
+}
 class FeatureDetailObject {
 	function __construct(private int $id = 42) {}
 	function getPrimaryKey() { return $this->id; }
@@ -144,7 +148,7 @@ foreach (['images', 'list'] as $viewName) {
 		}
 		$keys[] = end(ExternalCache::$keys);
 	}
-	checkUserFeature($keys[0] !== $keys[1], $viewName.': native session separation must remain in result caches.');
+	checkUserFeature(!$keys[0] && !$keys[1], $viewName.': result HTML must not be persisted across users.');
 }
 foreach ([false, true] as $ajax) {
 	$request = new FeatureRequest(false, $ajax);

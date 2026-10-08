@@ -39,7 +39,8 @@ function tadlObjectDocumentText($request, $object) {
 		if (strtolower((string)($row['mimetype'] ?? '')) !== 'application/pdf') { continue; }
 		$id = (int)($row['representation_id'] ?? 0);
 		if ($id <= 0 || isset($pdfs[$id])) { continue; }
-		$representation = Datamodel::getInstance('ca_object_representations', true);
+		// Each retained PDF needs its own loaded state; the native cache shares one model.
+		$representation = Datamodel::getInstance('ca_object_representations', false);
 		if (!$representation || !$representation->load($id)
 			|| !tadlDocumentTextReadable($request, $representation, $access, 'media')
 			|| strtolower((string)$representation->get('mimetype')) !== 'application/pdf') { continue; }
@@ -54,7 +55,7 @@ function tadlObjectDocumentText($request, $object) {
 		$text = tadlDocumentTextNormalize($representation->get('media_content'));
 		if ($text === '') { continue; }
 		$label = $representation->isReadable($request, 'preferred_labels')
-			? tadlDocumentTextNormalize($pdf['label']) : '';
+			? tadlDocumentTextNormalize($pdf['label'] ?: $representation->get('ca_object_representations.preferred_labels.name')) : '';
 		$entries[] = ['source' => 'pdf', 'label' => $label, 'text' => $text];
 	}
 	if ($entries) { return $entries; }

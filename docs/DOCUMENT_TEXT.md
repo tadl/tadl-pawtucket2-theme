@@ -48,6 +48,12 @@ extracted text additionally requires `media_content`. Each metadata fallback
 requires its object's `transcription` or `pdf_text` bundle respectively. Restricted
 sources are not fetched. An empty access mask fails closed.
 
+Retained PDF records use independent model instances. Native
+`Datamodel::getInstance(..., true)` shares mutable loaded state and must not be
+used for an array of PDFs: a blank or denied last PDF would otherwise replace
+the earlier records. Native simple representation rows omit labels, so permitted
+labels are read from each retained record when necessary.
+
 The current native search-index configuration includes all object metadata via
 `_metadata`, including `transcription` and `pdf_text`, and attached representation
 `media_content`. Ordinary keyword search can therefore match all sources once

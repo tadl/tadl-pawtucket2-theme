@@ -79,9 +79,11 @@ its own finding aid, with all of its readable descendants.
 
 Object IDs are deduplicated before checking access, preserving all readable
 memberships for the collection counts. Related-item queries explicitly remove the native default cap
-(1000/4000 in reference APIs), so the export is not a first-page preview. Each
-object is loaded once for native access checks; individual metadata and storage
-queries, object sorting and per-object PDF rendering are skipped.
+(1000/4000 in reference APIs), so the export is not a first-page preview. Object
+visibility is checked in batches of 500 scalar IDs through the native
+type/source restriction and Pawtucket ACL APIs. No object model is loaded for
+counting; individual metadata and storage queries, object sorting and per-object
+PDF rendering are skipped. Retained collection nodes use independent model instances.
 Very large collections may need a later background-export
 workflow; there is currently no silent truncation or shared PDF cache.
 

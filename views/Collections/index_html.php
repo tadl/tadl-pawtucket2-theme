@@ -31,7 +31,7 @@
 	}
 
 	$va_collection_images = tadlGetDescendantCollectionImages($va_collection_ids, [
-		'version' => 'small',
+		'request' => $this->request, 'version' => 'small',
 		'checkAccess' => $va_access_values
 	]);
 ?>

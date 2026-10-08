@@ -4,7 +4,7 @@ Standalone source repository for the `tadl` Pawtucket2 theme used for TADL local
 
 For Codex or a new workstation, start with [AGENTS.md](AGENTS.md) and the
 [current handoff](docs/CODEX_HANDOFF.md). The handoff explains the source map,
-recent changes, design decisions and all twenty-seven standalone regression suites.
+recent changes, design decisions and all twenty-nine standalone regression suites.
 It uses relative paths and does not require an application database for those tests.
 
 Feature guides:
@@ -14,6 +14,7 @@ Feature guides:
 | [Collections](docs/COLLECTIONS.md) | Flat and hierarchy views, navigation, inline counts, configuration and rollout checks |
 | [Finding aids](docs/FINDING_AIDS.md) | PDF contents, count semantics, field mappings and export permissions |
 | [Document text](docs/DOCUMENT_TEXT.md) | PDF extraction, imported transcription fallbacks and plain-text display |
+| [Image downloads](docs/IMAGE_DOWNLOADS.md) | Full-resolution exports, private conversion cache, permissions and limits |
 | [Accounts and FAQ](docs/USER_FEATURES.md) | Bookmarked login, staff tools, lightboxes and content editing |
 | [FAQ activation](docs/FAQ_SETUP.md) | Repeatable Providence template/editor setup and upgrade preservation |
 | [Thumbnail focus](docs/THUMBNAIL_FOCUS.md) | Manual focal points and durable local face-detection suggestions |
@@ -78,15 +79,23 @@ center, with creators, dates, extent, language, subjects, rights and related
 records in the right column. Columns stack on phones and empty columns are
 omitted. A compact results toolbar uses the available page width.
 Collection browse eligibility fetches media descriptors only until each collection
-qualifies; thumbnail queries select one primary image per card instead of rendering
-every attached object image. No additional service, database index or shared page
-cache is required.
+qualifies; thumbnail queries read one usable image per card instead of rendering
+every attached object image. A public secondary image can supply the thumbnail
+when the object's primary is private. Candidate IDs pass batched native
+type/source/bundle and Pawtucket ACL checks before media descriptors are read;
+unreadable ancestors prune collection branches. No additional service or database
+index is required. Search/browse result HTML is rendered per request and never
+stored in a shared cache.
 
 Object result tiles, list rows and multisearch previews prefer the primary
 representation. When it is unavailable (for example, a paired JPEG made private),
 they fall back to an accessible image derivative using the native representation
 model's access, ACL and bundle checks. This does not change catalogue primary links,
 access flags or files; TIFF representations use their generated JPEG thumbnails.
+The enlarged viewer keeps keyboard focus inside the dialog and returns it to its
+opener on close. Mobile navigation avoids logo overlap and updates its expanded
+state for assistive technology. Advanced-search labels target unique native
+controls; submitted field names and widget initialization remain intact.
 
 Object details offer a collapsed **Document text** section below the media and
 metadata when an accessible PDF has text. Use populated

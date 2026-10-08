@@ -35,7 +35,7 @@
 			if ($vs_image_url = $va_object_media[$va_item['id']]['urls']['medium'] ?? '') {
 				$vs_primary_tag = '<img src="'.htmlspecialchars($vs_image_url, ENT_QUOTES, 'UTF-8').'" alt="" loading="lazy">';
 			}
-			$va_item['image'] = tadlFocusThumbnail(tadlObjectThumbnail($va_item['id'], 'medium', $va_access_values, $vs_primary_tag));
+			$va_item['image'] = tadlFocusThumbnail(tadlObjectThumbnail($va_item['id'], 'medium', $va_access_values, $vs_primary_tag, $this->request));
 		}
 		unset($va_item);
 	} elseif ($vs_table === 'ca_collections') {
@@ -43,7 +43,7 @@
 		$va_options = caGetOption('options', $va_block_info, array());
 		require_once(__DIR__.'/../Browse/collection_thumbnail_helpers.php');
 		$va_images = tadlGetCollectionImages($va_collection_ids, array(
-			'version' => 'small',
+			'request' => $this->request, 'version' => 'small',
 			'relationshipTypes' => caGetOption('selectMediaUsingRelationshipTypes', $va_options, null),
 			'objectTypes' => caGetOption('selectMediaUsingTypes', $va_options, null),
 			'checkAccess' => $va_access_values

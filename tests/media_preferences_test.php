@@ -23,11 +23,15 @@ function _t($text, ...$values) {
     foreach ($values as $i => $value) { $text = str_replace('%'.($i + 1), (string)$value, $text); }
     return $text;
 }
+function caSourceAccessControlIsEnabled($model) { return false; }
+function caGetTypeRestrictionsForUser($table) { return null; }
+function caGetSourceRestrictionsForUser($table) { return null; }
 function caGetOption($name, $options, $default = null, $types = null) { return $options[$name] ?? $default; }
 function caGetUserAccessValues($request) { return $request->access ?? [1]; }
 function caGetBundleAccessLevel($table, $bundle) { return $GLOBALS['mediaBundleAccess'][$table.':'.$bundle] ?? 1; }
 function caACLIsEnabled($table, $options = []) {
     testAssert(($options['forPawtucket'] ?? false) === true, 'Related media ACL checks must use Pawtucket configuration.');
+    $table = is_object($table) ? $table->tableName() : $table;
     return $GLOBALS['mediaACL'][$table] ?? false;
 }
 function caGetBrowseInstance($table) { return new TestMediaBrowse($table); }
@@ -181,6 +185,7 @@ class Db {
 }
 class TestModel {
     function __construct(private string $table) {}
+    function getAppConfig() { return new TestConfig([]); }
     function getDb() { return new Db(); }
     function tableName() { return $this->table; }
     // Synthetic table numbers only identify models within this test adapter.
@@ -227,7 +232,7 @@ Db::$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 Db::$pdo->exec('CREATE TABLE ca_objects (object_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_object_representations (representation_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER, media BLOB, mimetype TEXT, original_filename TEXT, md5 TEXT)');
 Db::$pdo->exec('CREATE TABLE ca_objects_x_object_representations (relation_id INTEGER PRIMARY KEY, object_id INTEGER, representation_id INTEGER, is_primary INTEGER)');
-Db::$pdo->exec('CREATE TABLE ca_collections (collection_id INTEGER PRIMARY KEY, hier_collection_id INTEGER, hier_left INTEGER, hier_right INTEGER, access INTEGER, deleted INTEGER)');
+Db::$pdo->exec('CREATE TABLE ca_collections (parent_id INTEGER DEFAULT 0, collection_id INTEGER PRIMARY KEY, hier_collection_id INTEGER, hier_left INTEGER, hier_right INTEGER, access INTEGER, deleted INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_objects_x_collections (relation_id INTEGER PRIMARY KEY, object_id INTEGER, collection_id INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_collections_x_object_representations (relation_id INTEGER PRIMARY KEY, collection_id INTEGER, representation_id INTEGER, is_primary INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_entities (entity_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER)');
@@ -257,7 +262,11 @@ function testRepresentation($id, $access = 1, $deleted = 0, $kind = 'file') {
     testInsert('ca_object_representations', ['representation_id' => $id, 'access' => $access, 'deleted' => $deleted, 'media' => caSerializeForDatabase($media, true), 'mimetype' => $media['INPUT']['MIMETYPE'] ?? '', 'original_filename' => $kind === 'file' ? 'synthetic.jpg' : '', 'md5' => $media['INPUT']['MD5'] ?? '']);
 }
 function testRelation($object, $representation, $primary = 1) { testInsert('ca_objects_x_object_representations', ['object_id' => $object, 'representation_id' => $representation, 'is_primary' => $primary]); }
-function testCollection($id, $hierarchy, $left, $right, $access = 1, $deleted = 0) { testInsert('ca_collections', ['collection_id' => $id, 'hier_collection_id' => $hierarchy, 'hier_left' => $left, 'hier_right' => $right, 'access' => $access, 'deleted' => $deleted]); }
+function testCollection($id, $hierarchy, $left, $right, $access = 1, $deleted = 0) {
+    testInsert('ca_collections', ['collection_id' => $id, 'hier_collection_id' => $hierarchy, 'hier_left' => $left, 'hier_right' => $right, 'access' => $access, 'deleted' => $deleted]);
+    Db::$pdo->exec('UPDATE ca_collections SET parent_id = COALESCE((SELECT p.collection_id FROM ca_collections p WHERE p.hier_collection_id = ca_collections.hier_collection_id AND p.hier_left < ca_collections.hier_left AND p.hier_right > ca_collections.hier_right ORDER BY p.hier_left DESC LIMIT 1),0)');
+}
+
 function testCollectionObject($collection, $object) { testInsert('ca_objects_x_collections', ['collection_id' => $collection, 'object_id' => $object]); }
 function testPerson($id, $access = 1, $deleted = 0) { testInsert('ca_entities', ['entity_id' => $id, 'access' => $access, 'deleted' => $deleted]); }
 function testPersonObject($person, $object) { testInsert('ca_objects_x_entities', ['entity_id' => $person, 'object_id' => $object]); }
@@ -389,6 +398,7 @@ testAssert($xpath->query('//button[@aria-pressed="true"]')->item(0)->textContent
 testAssert($xpath->query('//input[@name="csrfToken" and @value="synthetic-csrf-token"]')->length === 1, 'Toggle must include the native CSRF token.');
 testAssert($xpath->query('//input[@name="media"]')->length === 0, 'Toggle leaked preference into query-style input.');
 
+$GLOBALS['g_request'] = testMediaRequest('only');
 $objectIDs = tadlMediaEligibleIDs('ca_objects', range(1, 13), [1]);
 testAssert($objectIDs === $GLOBALS['expected_object_ids'], 'Object eligibility mismatch: '.json_encode($objectIDs));
 $collectionCandidates = [100,101,102,103,104,105,106,107,108,109,200,201,202,203,204,205,300,301,400,401];
@@ -527,7 +537,7 @@ foreach (range(30000, 30600) as $id) { testPerson($id); testPersonObject($id, $i
 $largePeopleExpected = range(30000, 30600, 2);
 $queryCount = count(Db::$queries); $beforeMediaRows = Db::$mediaRows;
 testAssert(tadlAuthorityMediaEligibleIDs($peopleRequest, 'ca_entities', range(30000, 30600)) === $largePeopleExpected, 'Chunked people eligibility dropped results.');
-testAssert(count(Db::$queries) - $queryCount === 3 && Db::$mediaRows - $beforeMediaRows === 1, 'People eligibility must batch relationships and decode shared media once, rather than query per person.');
+testAssert(count(Db::$queries) - $queryCount === 7 && Db::$mediaRows - $beforeMediaRows === 1, 'People eligibility must batch relationships and decode shared media once, rather than query per person.');
 foreach (['ca_places' => 'place_id', 'ca_occurrences' => 'occurrence_id'] as $table => $primaryKey) {
     foreach (range(30000, 30600) as $id) {
         testInsert($table, [$primaryKey => $id, 'access' => 1, 'deleted' => 0]);
@@ -543,7 +553,7 @@ $aclPlacesRequest->userID = 12;
 $beforeACLCalls = count($GLOBALS['mediaACLCalls']);
 $queryCount = count(Db::$queries); $beforeMediaRows = Db::$mediaRows;
 testAssert(tadlAuthorityMediaEligibleIDs($aclPlacesRequest, 'ca_places', range(30000, 30600)) === $largeAuthorityExpected['ca_places'], 'Chunked Places eligibility with ACLs lost IDs or changed SQL tables.');
-testAssert(count($GLOBALS['mediaACLCalls']) - $beforeACLCalls === 4 && count(Db::$queries) - $queryCount === 3 && Db::$mediaRows - $beforeMediaRows === 1, 'Places must batch ACL checks and reuse shared media across chunks.');
+testAssert(count($GLOBALS['mediaACLCalls']) - $beforeACLCalls === 4 && count(Db::$queries) - $queryCount === 7 && Db::$mediaRows - $beforeMediaRows === 1, 'Places must batch ACL checks and reuse shared media across chunks.');
 $GLOBALS['mediaACL'] = [];
 foreach ($authorityBrowses as $route => [$table, $primaryKey, $singular, $plural]) {
     foreach (['images' => 9, 'list' => 24] as $displayView => $pageSize) {
@@ -588,7 +598,7 @@ testAssert(tadlMediaEligibleIDs('ca_collections', [500], [1]) === [500], 'Uninit
 foreach (range(1000,1600) as $id) { testObject($id); testRelation($id, 1); }
 $queryCount = count(Db::$queries);
 testAssert(tadlMediaEligibleIDs('ca_objects', range(1000,1600), [1]) === range(1000,1600), 'Chunked candidate batch dropped results.');
-testAssert(count(Db::$queries) - $queryCount === 2, '601 candidates should execute two bounded batches.');
+testAssert(count(Db::$queries) - $queryCount === 7, '601 candidates should use bounded relationship/permission batches and one shared descriptor.');
 
 // A large collection needs one playable descriptor, not every attached media blob.
 testCollection(7000, 7000, 1, 2);
