@@ -4,7 +4,7 @@ Standalone source repository for the `tadl` Pawtucket2 theme used for TADL local
 
 For Codex or a new workstation, start with [AGENTS.md](AGENTS.md) and the
 [current handoff](docs/CODEX_HANDOFF.md). The handoff explains the source map,
-recent changes, design decisions and all twenty-nine standalone regression suites.
+recent changes, design decisions and all thirty standalone regression suites.
 It uses relative paths and does not require an application database for those tests.
 
 Feature guides:
@@ -22,6 +22,11 @@ Feature guides:
 
 Deployment is a separate, explicitly authorized step. A source commit/push does
 not authorize running the enclosing deployment helper or restarting production.
+The versioned `support/deploy-theme.sh user@host` contains the deployment steps;
+the enclosing helper delegates to it with the operator's local target. Routine
+deployment copies the theme, validates Apache configuration and reloads Apache.
+It leaves application caches, sessions and `app/tmp` intact, regardless of whether
+the application uses Redis or file caching. See [Deployment](docs/DEPLOYMENT.md).
 
 Download links discourage crawler following, binary downloads send `noindex`
 response headers, and search/browse pages stay out of search indexes. A replacement
@@ -41,9 +46,10 @@ Rollout after authorization:
    the thumbnail detector runtime have separate documented installation steps.
 
 Asset content versions handle browser CSS/JS caching; clearing `app/tmp` is not
-the browser cache-busting mechanism. If a rollout clears that directory, follow
-the legacy thumbnail-cache preservation/migration instructions in the
-[thumbnail guide](docs/THUMBNAIL_FOCUS.md) first.
+the browser cache-busting mechanism. Exceptional cache maintenance is separate
+from theme deployment. Before an explicitly authorized temporary-directory purge,
+follow the legacy thumbnail-cache preservation/migration instructions in the
+[thumbnail guide](docs/THUMBNAIL_FOCUS.md).
 
 Theme CSS and JavaScript URLs include automatic content versions. After deploying
 changed files, visitors can use normal Reload to get the new assets; no hard

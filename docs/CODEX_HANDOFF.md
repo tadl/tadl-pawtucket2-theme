@@ -52,6 +52,18 @@ These are source changes. No deployment was performed by Codex for the latest
 implementation. The user deploys independently; confirm live state separately
 before calling an issue deployed or still broken.
 
+### 2026-10-09 deployment cache policy
+
+`support/deploy-theme.sh` now holds the tracked deployment implementation; the
+enclosing workstation `deploy` helper delegates with its local target. Routine
+deploys preserve Redis/file application caches, sessions and temporary files.
+The previous recursive `app/tmp` deletion did not clear Redis and is removed.
+CSS/JS content versions and native configuration mtime checks handle ordinary
+theme updates. The existing Apache reload is retained, with a configuration test
+first. Transfer, configuration-test and reload failures stop completion.
+See [Deployment](DEPLOYMENT.md) for the operator workflow and maintenance scope.
+No deployment or production cache purge was performed for this source change.
+
 ### 2026-10-09 About page copy
 
 `views/About/Index.php` contains the supplied replacement About text, with one
@@ -793,12 +805,12 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The twenty-nine committed tests are portable and use synthetic boundaries. They do not
+The thirty committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
 Requirements: PHP 8+ CLI with DOM, PDO SQLite, JSON and fileinfo; `proc_open` enabled;
-Node.js and Python 3.11+ available on PATH. The package suite uses Python to export
+Node.js, Bash and Python 3.11+ available on PATH. The package suite uses Python to export
 and verify a standalone source snapshot. Shared text-field tests and the theme
 header also need mbstring. The original handoff checks passed on PHP 8.5.7 and
 Node 24.13.0. Those are observed workstation versions, not a required production
@@ -831,6 +843,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/home_faq_test.php` | Published/readable Site Pages, drafts, incomplete entries, locale, rank, escaped questions and purified answers; optional real HTMLPurifier |
 | `tests/finding_aid_test.php` | Selected collection export, full nested/empty/wide hierarchy, natural sibling order and duplicate-named branches, access/ACL/bundle restrictions, complete unique counts over native caps, overlapping memberships, no individual object metadata/entries, collection field mappings, escaped PDF text and safe failure; optional real Dompdf |
 | `tests/asset_versions_test.php` | Stable/changed CSS and JS URLs, preserved timestamps, native loader options, subdirectory/absolute theme URLs, escaping, inline-code preservation and path boundaries |
+| `tests/theme_deploy_test.php` | Actual deployment shell with synthetic SSH/rsync boundaries, source paths with spaces, cache preservation and transfer/configuration/reload failure handling |
 | `tests/media_preferences_test.php` | Eligibility SQL, lazy collection/authority descriptor fetching, related-object access/deletion/ACL/bundle checks, People/Organizations/Places/Events Tiles/List counts/paging/detail context, table cache isolation, route scope, invalid-media exhaustion, filtered result adapter and result rendering |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |
 | `tests/collection_detail_scripts_test.php` | Collection detail loader JavaScript, empty/populated field/relationship headings, long-field controls and narrative/facts column placement |

@@ -40,7 +40,7 @@ also applies when the theme is cloned without the surrounding workspace.
 ## Checks
 
 From this repository, with PHP 8+ CLI (DOM, PDO SQLite, JSON, mbstring, fileinfo and `proc_open`)
-and Node.js plus Python 3.11+ available (Python is used by the package export checks):
+and Bash, Node.js plus Python 3.11+ available (Python is used by the package export checks):
 
 ```sh
 (
