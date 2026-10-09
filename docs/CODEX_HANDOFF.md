@@ -52,6 +52,15 @@ These are source changes. No deployment was performed by Codex for the latest
 implementation. The user deploys independently; confirm live state separately
 before calling an issue deployed or still broken.
 
+### 2026-10-09 About page copy
+
+`views/About/Index.php` contains the supplied replacement About text, with one
+page-level heading, five section headings and the original paragraph breaks.
+The FAQ placeholder links to `Front/Index#tadl-faq-heading` through the native
+URL helper, preserving application subdirectory/clean-URL configuration. The
+materials selection policy link uses the supplied TADL URL. The obsolete About
+copy is replaced; the Site Pages template in `templates/about.tmpl` is separate.
+
 ### 2026-10-09 FAQ answer presentation
 
 FAQ answer links are underlined in their resting state, use the theme's dark
@@ -114,6 +123,7 @@ deployment, live catalog permissions or full-page performance.
 | Search previews | `conf/search.conf`, `views/Search/multisearch_results_html.php`, `tadl_search_results_subview_html.php` |
 | Accounts/lightboxes | `helpers/user_features.php`, `controllers/AccountProfileController.php`, `assets/pawtucket/js/user-features.js`, shared header, native LoginReg/Lightbox views, object detail and browse result views; `docs/USER_FEATURES.md` |
 | Home-page FAQ | `templates/faq_entry.tmpl`, `conf/templates.conf`, `helpers/home_faq.php`, `views/Front/faq_html.php`; `support/activate-faq.php`, `helpers/faq_setup.php`, `docs/FAQ_SETUP.md`; Providence Site Pages content |
+| About page | `views/About/Index.php`; theme-owned copy with a link to the home-page FAQ section |
 | Home-page writing | `views/Front/front_page_html.php`, `assets/pawtucket/js/recent-writing.js`; companion TADLFeeds `/local_history_posts.json` |
 | Object media | `helpers/object_detail_media.php`, `views/bundles/representation_viewer_html.php` |
 | Image downloads | `helpers/image_downloads.php`, `helpers/image_download_cache.php`, `controllers/ImageDownloadController.php`, `views/Details/image_download_binary.php`, `views/mediaViewers/viewerWrapper.php`, `assets/pawtucket/js/image-downloads.js`; `docs/IMAGE_DOWNLOADS.md` |
