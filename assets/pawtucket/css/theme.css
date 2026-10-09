@@ -3404,7 +3404,7 @@ div.tadl-image-viewer-controls .close {
     gap: 32px;
 }
 
-.tadl-faq-category h3 {
+.tadl-faq-category > h3 {
     margin: 20px 0;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--tadl-border, #ccc);
@@ -3452,8 +3452,89 @@ div.tadl-image-viewer-controls .close {
 
 .tadl-faq-answer {
     padding: 16px 20px;
-    line-height: 1.6;
+    color: var(--tadl-ink);
+    font-size: max(var(--tadl-text-min, 0px), 17px);
+    line-height: 1.7;
     overflow-wrap: anywhere;
+}
+
+.tadl-faq-answer a[href] {
+    color: var(--tadl-primary-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 0.16em;
+}
+
+.tadl-faq-answer a[href]:hover,
+.tadl-faq-answer a[href]:focus-visible {
+    color: var(--tadl-primary);
+    text-decoration-thickness: 2px;
+}
+
+.tadl-faq-answer a[href]:focus-visible {
+    outline: 2px solid var(--tadl-primary-dark);
+    outline-offset: 3px;
+}
+
+.tadl-faq-answer :is(strong, b) {
+    font-family: inherit;
+    font-weight: 700;
+}
+
+.tadl-faq-answer :is(em, i) {
+    font-style: italic;
+}
+
+.tadl-faq-answer :is(h1, h2, h3, h4, h5, h6) {
+    margin: 1.25em 0 0.5em;
+    padding: 0;
+    border: 0;
+    color: var(--tadl-ink);
+    font-size: 1.125em;
+    font-weight: 700;
+    line-height: 1.4;
+    text-transform: none;
+}
+
+.tadl-faq-answer :is(p, ul, ol, dl, blockquote) {
+    margin: 0 0 1em;
+}
+
+.tadl-faq-answer :is(ul, ol) {
+    padding-inline-start: 1.5em;
+}
+
+.tadl-faq-answer li + li {
+    margin-top: 0.4em;
+}
+
+.tadl-faq-answer li > :is(ul, ol) {
+    margin: 0.5em 0 0;
+}
+
+.tadl-faq-answer dt {
+    font-weight: 700;
+}
+
+.tadl-faq-answer dd {
+    margin: 0 0 0.75em;
+}
+
+.tadl-faq-answer blockquote {
+    padding: 0.75em 1em;
+    border-left: 3px solid var(--tadl-primary);
+    background: #eef4f8;
+    font-size: inherit;
+}
+
+.tadl-faq-answer > :first-child {
+    margin-top: 0;
+}
+
+.tadl-faq-answer > :last-child,
+.tadl-faq-answer blockquote > :last-child {
+    margin-bottom: 0;
 }
 
 @media (max-width: 767px) {

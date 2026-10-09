@@ -29,16 +29,33 @@ class FAQPages {
 }
 class Datamodel { static function getInstance($table, $initialize) { return $table === 'ca_site_templates' ? new FAQTemplates() : new FAQPages(); } }
 class ca_locales { static function getDefaultCataloguingLocaleID() { return 1; } }
-class FAQPurifier {
-	function purify($html) { return preg_replace('~<script\b[^>]*>.*?</script>~is', '', $html); }
-}
 if ($autoload = getenv('TADL_TEST_COMPOSER_AUTOLOAD')) { require $autoload; }
-function caGetHTMLPurifier() {
-	if (class_exists('HTMLPurifier')) {
-		$config = HTMLPurifier_Config::createDefault(); $config->set('Cache.DefinitionImpl', null);
-		return new HTMLPurifier($config);
+if (!class_exists('HTMLPurifier_Config')) {
+	class HTMLPurifier_Config {
+		private array $settings = ['HTML.ForbiddenAttributes' => []];
+		static function createDefault() { return new self(); }
+		static function inherit($config) { return clone $config; }
+		function get($key) { return $this->settings[$key] ?? null; }
+		function set($key, $value) { $this->settings[$key] = $value; }
 	}
-	return new FAQPurifier();
+}
+class FAQPurifier {
+	function __construct(public HTMLPurifier_Config $config) {}
+	function purify($html, $config) {
+		checkFAQ($config->get('HTML.ForbiddenAttributes') === ['title' => true, 'style' => true], 'FAQ must extend native forbidden attributes with inline styles.');
+		checkFAQ($config->get('URI.DisableExternalResources') === true, 'FAQ must preserve native URI restrictions.');
+		$html = preg_replace('~<script\b[^>]*>.*?</script>~is', '', $html);
+		return preg_replace('~\s+(?:style|title)="[^"]*"~i', '', $html);
+	}
+}
+function caGetHTMLPurifier() {
+	$config = HTMLPurifier_Config::createDefault();
+	$config->set('Cache.DefinitionImpl', null);
+	$config->set('URI.DisableExternalResources', true);
+	$config->set('HTML.ForbiddenAttributes', ['title' => true]);
+	$purifier = class_exists('HTMLPurifier') ? new HTMLPurifier($config) : new FAQPurifier($config);
+	$GLOBALS['lastFAQPurifier'] = $purifier;
+	return $purifier;
 }
 require dirname(__DIR__).'/helpers/home_faq.php';
 class FAQView {
@@ -75,6 +92,18 @@ $g_ui_locale_id = 2;
 $groups = tadlHomeFAQGroups($view->request);
 checkFAQ(count($groups['Accessing']) === 2, 'FAQ locale filtering must use the active UI locale.');
 $g_ui_locale_id = null;
+$styledAnswer = '<h3 style="color:#222">Synthetic heading</h3><p style="font-family:Arial;font-size:12px"><span style="color:#222;background-color:white">Café &amp; text with <a href="https://example.org/guide?a=1&amp;b=2" style="color:#222;text-decoration:none" title="Hidden native attribute"><span style="color:#222;font-family:Arial">a nested link</span></a>, <strong>bold</strong> and <em>italic</em>.</span></p><ul><li>First item</li><li>Second item</li></ul><blockquote><p>A quotation.</p></blockquote><p>Literal &lt;example&gt; and <a href="mailto:alice@example.com">email</a>.</p>';
+$GLOBALS['faqPages'] = [new FAQPage(11, array_replace($base, ['content' => ['faq_question' => 'Styled answer?', 'faq_answer' => $styledAnswer]]))];
+$html = $view->render();
+$document = new DOMDocument(); $document->loadHTML('<meta charset="UTF-8">'.$html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+$xpath = new DOMXPath($document);
+checkFAQ($xpath->query('//*[@style or @title]')->length === 0, 'FAQ rendering must strip inline styles and preserve native forbidden attributes.');
+checkFAQ($xpath->query('//a[@href="https://example.org/guide?a=1&b=2"]/span')->length === 1, 'Nested link text and query parameters must survive style removal.');
+checkFAQ($xpath->query('//a[@href="mailto:alice@example.com"]')->length === 1, 'Email links must remain usable.');
+checkFAQ($xpath->query('//strong|//em|//ul/li|//blockquote|//div[@class="tadl-faq-answer"]/h3')->length === 6, 'Semantic emphasis, lists, quotations and answer headings must remain.');
+checkFAQ(str_contains($document->textContent, 'Café & text') && str_contains($document->textContent, 'Literal <example>'), 'Unicode and escaped literal markup must remain text.');
+checkFAQ($GLOBALS['faqPages'][0]->values['content']['faq_answer'] === $styledAnswer, 'Rendering must not modify stored answers.');
+checkFAQ($GLOBALS['lastFAQPurifier']->config->get('HTML.ForbiddenAttributes') === ['title' => true], 'FAQ-specific restrictions must not mutate native purifier configuration.');
 if (class_exists('HTMLPurifier')) {
 	$GLOBALS['faqPages'] = [new FAQPage(11, array_replace($base, ['content' => ['faq_question' => 'Unsafe links?', 'faq_answer' => '<p onclick="bad()">Answer <a href="javascript:bad()">unsafe link</a><iframe src="https://example.org/"></iframe></p>']]))];
 	$html = $view->render();

@@ -148,6 +148,14 @@ All entries must pass the native page/content permission checks. Questions and
 category names are escaped as text; answers pass through the native HTML purifier.
 Edits appear on the next home-page request; there is no additional FAQ cache.
 
+FAQ answers use the site's font and readable paragraph/list spacing. Links have
+a persistent underline and dark blue text, with a stronger underline on hover
+and a visible keyboard focus outline. Rendering removes inline `style` attributes
+through the native HTML purifier, so pasted colors, fonts and backgrounds cannot
+hide links or change the site's typography. Semantic bold, italic, headings,
+lists and quotations remain. Existing saved answers do not need to be edited;
+their stored content is unchanged, and native sanitization settings still apply.
+
 ### One-time activation after theme deployment
 
 Use the focused, repeatable setup in [FAQ activation](FAQ_SETUP.md). It defaults
@@ -190,7 +198,8 @@ No theme deployment is needed for routine question/answer edits after activation
 Run all standalone tests per `AGENTS.md`. `tests/user_features_test.php` renders
 actual login/result views with synthetic native session/URL/CSRF boundaries.
 `tests/home_faq_test.php` renders the actual FAQ loader/view with synthetic ORM
-records, including drafts, restrictions, locale, ordering and escaping. To also
+records, including drafts, restrictions, locale, ordering, escaping, inline-style
+removal and preservation of semantic formatting/native purifier settings. To also
 exercise a real installed HTMLPurifier without bootstrapping the database:
 
 ```sh

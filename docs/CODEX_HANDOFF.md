@@ -1,6 +1,6 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-08. This document carries the recent coding context to another
+Updated: 2026-10-09. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
@@ -51,6 +51,22 @@ workspace has reference checkouts of Pawtucket and Providence at local tag
 These are source changes. No deployment was performed by Codex for the latest
 implementation. The user deploys independently; confirm live state separately
 before calling an issue deployed or still broken.
+
+### 2026-10-09 FAQ answer presentation
+
+FAQ answer links are underlined in their resting state, use the theme's dark
+blue, and retain hover and keyboard-focus cues. A FAQ-only purifier configuration
+inherits native sanitization settings and strips inline `style` attributes without
+changing stored content; semantic bold and italic formatting remain intact.
+Paragraphs, lists, headings and quotations have consistent spacing. Category heading rules
+target direct children so headings within answers do not look like categories.
+No content edits, query changes or additional JavaScript are required. See
+[Accounts and FAQ](USER_FEATURES.md) for the presentation contract.
+
+Verification includes the portable FAQ suite and the installed HTMLPurifier,
+plus browser previews of the supplied answer markup and synthetic rich text at
+390 and 1280 pixels. Links within spans inherit the link color, semantic emphasis
+survives, disclosures remain keyboard operable, and link focus is visible.
 
 ### 2026-10-08 theme review fixes
 
