@@ -716,10 +716,9 @@ link, flatten the value arrays, patch core, or repair catalog data as a side eff
 
 ## Home-page local-history writing
 
-**Start with the Right Path** retains its heading and archive introduction but
-has no resource tiles. Its introduction spans the panel's full content width;
-the previous 980px header limit and tile spacing were removed. The quick links
-above it, recent writing below it and research-request section remain.
+**Start with the Right Path** is removed entirely as of 2026-10-09, including its
+heading, introduction and panel wrappers. Recent writing now follows the intro
+and quick links directly. The FAQ and research-request sections remain.
 
 **Recent Local History Writing** progressively replaces its two fallback cards
 with the latest two entries from

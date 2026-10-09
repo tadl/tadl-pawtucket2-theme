@@ -52,17 +52,6 @@
 				</a>
 				</div>
 			</div>
-			<section class="tadl-resource-section">
-				<div class="tadl-panel tadl-resource-panel">
-					<div class="tadl-resource-header">
-						<div>
-							<h2 class="tadl-section-title">Start with the Right Path</h2>
-							<p class="tadl-section-lead">The Local History Collection is a closed archive with digital collections, reference support, genealogy resources, and research guides for northern Michigan history.</p>
-						</div>
-					</div>
-				</div>
-			</section>
-
 			<section class="tadl-home-section tadl-blog-section">
 				<div class="tadl-section-header">
 					<div>
