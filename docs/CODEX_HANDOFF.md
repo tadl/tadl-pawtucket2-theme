@@ -60,6 +60,11 @@ The FAQ placeholder links to `Front/Index#tadl-faq-heading` through the native
 URL helper, preserving application subdirectory/clean-URL configuration. The
 materials selection policy link uses the supplied TADL URL. The obsolete About
 copy is replaced; the Site Pages template in `templates/about.tmpl` is separate.
+The `tadl-about-content` wrapper shares FAQ link rules: dark blue, regular weight,
+always underlined, with the same hover underline and visible keyboard focus.
+The rules apply only to content, preserving navigation and other page controls.
+Bold markup within links also inherits regular weight; ordinary bold answer text
+remains bold.
 
 ### 2026-10-09 FAQ answer presentation
 

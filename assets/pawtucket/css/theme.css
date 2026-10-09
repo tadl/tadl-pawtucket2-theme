@@ -3458,28 +3458,39 @@ div.tadl-image-viewer-controls .close {
     overflow-wrap: anywhere;
 }
 
-.tadl-faq-answer a[href] {
+.tadl-faq-answer a[href],
+.tadl-about-content a[href] {
     color: var(--tadl-primary-dark);
-    font-weight: 600;
+    font-weight: 400;
     text-decoration: underline;
     text-decoration-thickness: 1.5px;
     text-underline-offset: 0.16em;
 }
 
 .tadl-faq-answer a[href]:hover,
-.tadl-faq-answer a[href]:focus-visible {
+.tadl-faq-answer a[href]:focus-visible,
+.tadl-about-content a[href]:hover,
+.tadl-about-content a[href]:focus-visible {
     color: var(--tadl-primary);
     text-decoration-thickness: 2px;
 }
 
-.tadl-faq-answer a[href]:focus-visible {
+.tadl-faq-answer a[href]:focus-visible,
+.tadl-about-content a[href]:focus-visible {
     outline: 2px solid var(--tadl-primary-dark);
     outline-offset: 3px;
 }
 
-.tadl-faq-answer :is(strong, b) {
+.tadl-faq-answer :is(strong, b),
+.tadl-about-content :is(strong, b) {
     font-family: inherit;
     font-weight: 700;
+}
+
+/* Link emphasis comes from color and underline, even inside editor bold markup. */
+.tadl-faq-answer a[href] :is(strong, b),
+.tadl-about-content a[href] :is(strong, b) {
+    font-weight: inherit;
 }
 
 .tadl-faq-answer :is(em, i) {

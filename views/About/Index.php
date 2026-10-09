@@ -3,14 +3,14 @@
 ?>
 
 <div class="row">
-	<div class="col-sm-12">
+	<div class="col-sm-12 tadl-about-content">
 		<h1>About the Local History Collection</h1>
 
 		<h2>Preserving Our Past, Connecting Our Community</h2>
 		<p>The Traverse Area District Library (TADL) Local History Collection (LHC) is dedicated to preserving and sharing the history of Grand Traverse County and the surrounding region. Our collections document the people, places, organizations, and events that have shaped our region through archival materials, including but not limited to photographs, documents, newspapers, maps, oral histories, and born-digital objects. These materials are held in the public trust, and we are committed to expanding opportunities for everyone to explore, learn from, and use them.</p>
 
 		<h2>Frequently Asked Questions: Use of the Collection, Citations, Additional Resources, and More</h2>
-		<p>Interested in using the collections beyond viewing the online catalog? Visit our <strong><a href="<?= htmlspecialchars(caNavUrl($this->request, '', 'Front', 'Index').'#tadl-faq-heading', ENT_QUOTES, 'UTF-8'); ?>">Frequently Asked Questions</a></strong> page for information about accessing archival materials, additional research resources available through TADL, and answers to common questions about using our collections.</p>
+		<p>Interested in using the collections beyond viewing the online catalog? Visit our <a href="<?= htmlspecialchars(caNavUrl($this->request, '', 'Front', 'Index').'#tadl-faq-heading', ENT_QUOTES, 'UTF-8'); ?>">Frequently Asked Questions</a> page for information about accessing archival materials, additional research resources available through TADL, and answers to common questions about using our collections.</p>
 
 		<h2>Acknowledging Our Region's History</h2>
 		<p>The history of the Grand Traverse region extends far beyond the period documented by much of our collection. We recognize the Anishinaabek, including the Odawa and Ojibwe peoples, whose ancestral homelands include this region and whose communities, cultures, and traditions remain an important part of its history and present. While our archival holdings include some materials relating to Indigenous history, they do not comprehensively document the experiences and perspectives of the region's Indigenous peoples. We recognize that these histories are best understood through many sources, including the knowledge, records, and perspectives of Indigenous communities themselves.</p>

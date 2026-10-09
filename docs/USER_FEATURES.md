@@ -149,8 +149,8 @@ category names are escaped as text; answers pass through the native HTML purifie
 Edits appear on the next home-page request; there is no additional FAQ cache.
 
 FAQ answers use the site's font and readable paragraph/list spacing. Links have
-a persistent underline and dark blue text, with a stronger underline on hover
-and a visible keyboard focus outline. Rendering removes inline `style` attributes
+a persistent underline and regular-weight dark blue text, with a stronger
+underline on hover and a visible keyboard focus outline. Rendering removes inline `style` attributes
 through the native HTML purifier, so pasted colors, fonts and backgrounds cannot
 hide links or change the site's typography. Semantic bold, italic, headings,
 lists and quotations remain. Existing saved answers do not need to be edited;
