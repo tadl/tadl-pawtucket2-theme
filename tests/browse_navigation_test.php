@@ -69,10 +69,11 @@ foreach ($expected as $type => [$sort, $field]) {
 		}
 	}
 	browseCheck(array_key_first($info['sortBy']) === $sort && $info['sortBy'][$sort] === $field && $info['sortDirection'][$sort] === 'asc', $type.': default must be the intended ascending logical field.');
-	$GLOBALS['browseTypes'][$type] = $info;
 	if ($type === 'families') {
-		browseCheck(str_contains($section[1], 'restrictToTypes = [fam]') && str_contains($section[1], 'defaultView = list'), 'Families must target the catalogue family type and default to List.');
+		browseCheck(str_contains($section[1], 'restrictToTypes = [fam]') && str_contains($section[1], 'defaultView = images'), 'Families must target the catalogue family type and default to Tiles.');
+		$info['defaultView'] = 'images'; $info['views'] = ['images' => [], 'list' => []];
 	}
+	$GLOBALS['browseTypes'][$type] = $info;
 }
 require dirname(__DIR__).'/views/Details/detail_field_helpers.php';
 
@@ -83,6 +84,7 @@ browseCheck($links->length === count($expected), 'Menu must retain every browse 
 foreach (array_keys($expected) as $index => $type) {
 	$sort = $expected[$type][0];
 	$params = $type === 'subjects' ? ['clear' => 1] : ['sort' => $sort, 'direction' => 'asc'];
+	if ($type === 'families') { $params['view'] = 'images'; }
 	$url = '/synthetic/Browse/'.$type.'?'.http_build_query($params);
 	browseCheck($links->item($index)->getAttribute('href') === $url && $links->item($index)->getAttribute('rel') === 'nofollow', $type.': menu must start with its configured default and retain crawler policy.');
 	$GLOBALS['menuTypes'] = [$type => $GLOBALS['browseTypes'][$type]];
@@ -109,6 +111,7 @@ if ($parser = getenv('TADL_TEST_CONFIGURATION')) {
 	$class->getProperty('ops_config_settings')->setValue($config, ['scalars' => [], 'lists' => [], 'assoc' => []]);
 	browseCheck($config->loadFile(dirname(__DIR__).'/conf/browse.conf'), 'Native parser rejected browse.conf.');
 	$types = $config->getAssoc('browseTypes');
+	browseCheck($types['families']['defaultView'] === 'images' && array_key_first($types['families']['views']) === 'images', 'Native family configuration must default to Tiles.');
 	foreach ($expected as $type => [$sort, $field]) {
 		browseCheck($types[$type]['sortBy'] === $GLOBALS['browseTypes'][$type]['sortBy'] && $types[$type]['sortDirection'] === $GLOBALS['browseTypes'][$type]['sortDirection'], $type.': native parser differs from the portable sort-map checks.');
 	}

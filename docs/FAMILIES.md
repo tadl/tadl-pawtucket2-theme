@@ -1,7 +1,8 @@
 # Families
 
 **Browse > Families** uses the catalogue's `fam` entity type and native subtypes.
-It defaults to Identifier ascending and List, with Name and Tiles available.
+It defaults to Identifier ascending and Tiles, with Name and List available.
+Menu and detail Browse families links request Tiles even after a saved List view.
 Family details identify the record as **Family** and link to **Browse families**.
 Unknown entity types omit a Browse destination rather than linking to the invalid
 `Browse/Index` action.

@@ -39,7 +39,7 @@ function caACLIsEnabled($subject, $options = []) {
 function caGetBrowseInstance($table) { return new AuthorityBrowse($table); }
 function caGetInfoForBrowseType($type) {
 	$sort = in_array($type, ['people', 'organizations', 'families'], true) ? 'Identifier' : 'Name';
-	return ['sortBy' => [$sort => 'synthetic_sort_field'], 'sortDirection' => [$sort => 'asc']];
+	return ['sortBy' => [$sort => 'synthetic_sort_field'], 'sortDirection' => [$sort => 'asc'], 'defaultView' => 'images', 'views' => ['images' => [], 'list' => []]];
 }
 function tadlMediaPreference($request) { return $request->mode; }
 function tadlMediaEligibleIDs($table, $ids, $access) {
@@ -189,7 +189,7 @@ foreach ([
 
 $familyHtml = (new AuthorityView(new AuthorityRequest(), new AuthorityItem('ca_entities', 30, 'Family')))->render();
 $familyXPath = authorityDocument($familyHtml);
-checkAuthority($familyXPath->query('//nav/a[@href="/synthetic/Browse/families?sort=Identifier&direction=asc"]')->length === 1, 'Family details must link to the valid Families browse.');
+checkAuthority($familyXPath->query('//nav/a[@href="/synthetic/Browse/families?sort=Identifier&direction=asc&view=images"]')->length === 1, 'Family details must link to the valid Families browse in Tiles view.');
 checkAuthority(str_contains($familyHtml, '/synthetic/FamilyContents/Objects?entity_id=42&amp;view=images') && str_contains($familyHtml, 'directly related people and organizations'), 'Family detail items must use the current family scope endpoint and explain the expanded scope.');
 $unknownHtml = (new AuthorityView(new AuthorityRequest(), new AuthorityItem('ca_entities', 32, 'Synthetic other entity')))->render();
 checkAuthority(!str_contains($unknownHtml, 'Browse the archive') && !str_contains($unknownHtml, '/Browse/Index'), 'Unknown entity types must not offer an invalid browse fallback.');

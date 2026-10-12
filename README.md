@@ -177,7 +177,7 @@ in Only items with media mode, each record needs at least one accessible related
 object with usable digital media. All items mode includes records without media.
 Families qualify through objects linked directly to the family or to directly
 related people and organizations. Family details show that combined object list,
-deduplicated through native search. Family browsing defaults to List and includes
+deduplicated through native search. Family browsing defaults to Tiles and includes
 empty families in All items mode. Unknown entity types omit an invalid Browse
 destination rather than linking to `Browse/Index`.
 Filtering precedes counts, paging and detail navigation, preserves native sort

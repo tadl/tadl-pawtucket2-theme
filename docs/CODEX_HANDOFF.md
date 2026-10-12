@@ -200,8 +200,10 @@ production record changes were performed for this source change.
 ### Families and related-member objects
 
 `conf/browse.conf` exposes **Families**, restricted to the configured `fam`
-entity type (including native subtypes), with Identifier ascending and List as
-the default. Family details use **Browse families** and **About this family**.
+entity type (including native subtypes), with Identifier ascending and Tiles as
+the default. Menu and detail Browse families links explicitly request that view
+so saved List choices do not override entry defaults. Family details use
+**Browse families** and **About this family**.
 Unknown entity types keep their own labels and native Prev/Next, without the
 old invalid `Browse/Index` fallback. Entity relationship headings include families.
 
