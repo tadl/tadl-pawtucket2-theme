@@ -16,7 +16,7 @@ function tadlMediaAuthorityBrowseTable($request) {
 	if ($request->getController() !== 'Browse') { return null; }
 	$browseType = $request->getParameter('browseType', pString) ?: $request->getAction();
 	return [
-		'people' => 'ca_entities', 'organizations' => 'ca_entities',
+		'people' => 'ca_entities', 'organizations' => 'ca_entities', 'families' => 'ca_entities',
 		'places' => 'ca_places', 'occurrences' => 'ca_occurrences'
 	][$browseType] ?? null;
 }

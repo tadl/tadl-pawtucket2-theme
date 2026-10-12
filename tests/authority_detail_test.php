@@ -38,7 +38,7 @@ function caACLIsEnabled($subject, $options = []) {
 }
 function caGetBrowseInstance($table) { return new AuthorityBrowse($table); }
 function caGetInfoForBrowseType($type) {
-	$sort = in_array($type, ['people', 'organizations'], true) ? 'Identifier' : 'Name';
+	$sort = in_array($type, ['people', 'organizations', 'families'], true) ? 'Identifier' : 'Name';
 	return ['sortBy' => [$sort => 'synthetic_sort_field'], 'sortDirection' => [$sort => 'asc']];
 }
 function tadlMediaPreference($request) { return $request->mode; }
@@ -94,7 +94,9 @@ class AuthorityItem {
 		12 => ['idno' => 'synthetic_photographer', 'parent_id' => 11],
 		20 => ['idno' => 'org', 'parent_id' => 1],
 		21 => ['idno' => 'synthetic_studio', 'parent_id' => 20],
-		30 => ['idno' => 'synthetic_other', 'parent_id' => 1],
+		30 => ['idno' => 'fam', 'parent_id' => 1],
+		31 => ['idno' => 'synthetic_family_subtype', 'parent_id' => 30],
+		32 => ['idno' => 'synthetic_other', 'parent_id' => 1],
 		40 => ['idno' => 'synthetic_cycle_a', 'parent_id' => 41],
 		41 => ['idno' => 'synthetic_cycle_b', 'parent_id' => 40]
 	];
@@ -174,14 +176,24 @@ foreach ([
 	[12, 'Synthetic photographer', 'Person', 'people'],
 	[20, 'Organization', 'Organization', 'organizations'],
 	[21, 'Synthetic studio', 'Organization', 'organizations'],
-	[30, 'Synthetic family', 'Synthetic family', 'Index'],
-	[99, 'Synthetic missing type', 'Synthetic missing type', 'Index'],
-	[40, 'Synthetic cyclic type', 'Synthetic cyclic type', 'Index'],
-	[0, '', 'Person or organization', 'Index']
+	[30, 'Synthetic family', 'Family', 'families'],
+	[31, 'Synthetic family subtype', 'Family', 'families'],
+	[32, 'Synthetic other entity', 'Synthetic other entity', null],
+	[99, 'Synthetic missing type', 'Synthetic missing type', null],
+	[40, 'Synthetic cyclic type', 'Synthetic cyclic type', null],
+	[0, '', 'Entity', null]
 ] as [$typeID, $typeName, $kind, $browse]) {
 	$info = tadlAuthorityEntityKind(new AuthorityItem('ca_entities', $typeID, $typeName));
 	checkAuthority($info['kind'] === $kind && $info['browse'] === $browse, 'Entity classification failed for type '.$typeID.'.');
 }
+
+$familyHtml = (new AuthorityView(new AuthorityRequest(), new AuthorityItem('ca_entities', 30, 'Family')))->render();
+$familyXPath = authorityDocument($familyHtml);
+checkAuthority($familyXPath->query('//nav/a[@href="/synthetic/Browse/families?sort=Identifier&direction=asc"]')->length === 1, 'Family details must link to the valid Families browse.');
+checkAuthority(str_contains($familyHtml, '/synthetic/FamilyContents/Objects?entity_id=42&amp;view=images') && str_contains($familyHtml, 'directly related people and organizations'), 'Family detail items must use the current family scope endpoint and explain the expanded scope.');
+$unknownHtml = (new AuthorityView(new AuthorityRequest(), new AuthorityItem('ca_entities', 32, 'Synthetic other entity')))->render();
+checkAuthority(!str_contains($unknownHtml, 'Browse the archive') && !str_contains($unknownHtml, '/Browse/Index'), 'Unknown entity types must not offer an invalid browse fallback.');
+$GLOBALS['authorityMediaCalls'] = [];
 
 $item = new AuthorityItem();
 $item->relationships = [

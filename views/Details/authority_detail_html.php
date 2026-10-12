@@ -26,6 +26,7 @@ $error_html = '<p class="tadl-authority-error">'.tadlAuthorityEscape(_t('Related
 				<h2 id="tadl-authority-items-title"><?= tadlAuthorityEscape(_t('Related items')); ?></h2>
 				<a class="tadl-authority-all-items" href="<?= tadlAuthorityEscape($authority['items_url']); ?>"><?= tadlAuthorityEscape(_t('View all related items')); ?></a>
 			</div>
+			<?php if ($authority['items_note'] ?? ''): ?><p><?= tadlAuthorityEscape($authority['items_note']); ?></p><?php endif; ?>
 			<div id="browseResultsContainer" class="row" aria-busy="true" aria-live="polite"><?= $loading_html; ?></div>
 			<noscript><p><?= tadlAuthorityEscape(_t('Open “View all related items” to explore this record’s items.')); ?></p></noscript>
 		</section>

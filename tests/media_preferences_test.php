@@ -26,6 +26,10 @@ function _t($text, ...$values) {
 function caSourceAccessControlIsEnabled($model) { return false; }
 function caGetTypeRestrictionsForUser($table) { return null; }
 function caGetSourceRestrictionsForUser($table) { return null; }
+function caMakeTypeIDList($table, $types, $options = []) {
+    testAssert($table === 'ca_entities', 'Family scope must resolve native entity types.');
+    return $types === ['fam'] ? [30, 31] : [10, 11, 20, 21];
+}
 function caGetOption($name, $options, $default = null, $types = null) { return $options[$name] ?? $default; }
 function caGetUserAccessValues($request) { return $request->access ?? [1]; }
 function caGetBundleAccessLevel($table, $bundle) { return $GLOBALS['mediaBundleAccess'][$table.':'.$bundle] ?? 1; }
@@ -235,7 +239,8 @@ Db::$pdo->exec('CREATE TABLE ca_objects_x_object_representations (relation_id IN
 Db::$pdo->exec('CREATE TABLE ca_collections (parent_id INTEGER DEFAULT 0, collection_id INTEGER PRIMARY KEY, hier_collection_id INTEGER, hier_left INTEGER, hier_right INTEGER, access INTEGER, deleted INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_objects_x_collections (relation_id INTEGER PRIMARY KEY, object_id INTEGER, collection_id INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_collections_x_object_representations (relation_id INTEGER PRIMARY KEY, collection_id INTEGER, representation_id INTEGER, is_primary INTEGER)');
-Db::$pdo->exec('CREATE TABLE ca_entities (entity_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER)');
+Db::$pdo->exec('CREATE TABLE ca_entities (entity_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER, type_id INTEGER DEFAULT 10)');
+Db::$pdo->exec('CREATE TABLE ca_entities_x_entities (entity_left_id INTEGER, entity_right_id INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_objects_x_entities (relation_id INTEGER PRIMARY KEY, object_id INTEGER, entity_id INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_entities_x_object_representations (relation_id INTEGER PRIMARY KEY, entity_id INTEGER, representation_id INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_places (place_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER)');
@@ -533,6 +538,41 @@ foreach ($authorityBrowses as $route => [$table, $primaryKey, $singular, $plural
     tadlFilterMediaResult($request, $emptyResult);
     testAssert($emptyResult->numHits() === 0, $route.': all-excluded result did not become empty.');
 }
+// Families include directly attached objects and one hop of readable individuals/organizations.
+foreach (range(90001,90008) as $id) { testInsert('ca_entities', ['entity_id'=>$id,'type_id'=>30,'access'=>$id===90007?0:1,'deleted'=>0]); }
+foreach ([91001=>[11,1,0,1],91002=>[20,1,0,8],91003=>[10,0,0,1],91004=>[10,1,1,1],91005=>[10,1,0,12],91006=>[10,1,0,1]] as $id=>[$type,$access,$deleted,$object]) {
+    testInsert('ca_entities', ['entity_id'=>$id,'type_id'=>$type,'access'=>$access,'deleted'=>$deleted]);
+    testPersonObject($id,$object);
+}
+testPersonObject(90001,1);
+foreach ([[90002,91001],[91001,90002],[91002,90003],[90004,91003],[90004,91004],[90005,90002],[90006,91005],[90007,91001],[90008,91006]] as [$left,$right]) {
+    testInsert('ca_entities_x_entities', ['entity_left_id'=>$left,'entity_right_id'=>$right]);
+}
+$familyCandidates = range(90001,90008);
+$familyRequest = testMediaRequest('only', [], 'Browse', 'families');
+testAssert(tadlFamilyMediaEligibleIDs($familyRequest,$familyCandidates) === [90001,90002,90003,90008], 'Families must qualify through direct/member media while excluding private/deleted/non-media members and other-family traversal.');
+$GLOBALS['mediaACL']['ca_entities'] = true;
+$GLOBALS['mediaACLBlocked'][52]['ca_entities'] = [91006];
+$aclFamilyRequest = testMediaRequest('only', [], 'Browse', 'families'); $aclFamilyRequest->userID = 52;
+testAssert(tadlFamilyMediaEligibleIDs($aclFamilyRequest,$familyCandidates) === [90001,90002,90003], 'Family eligibility must exclude ACL-hidden member media.');
+$GLOBALS['mediaACL'] = ['ca_objects'=>true]; $GLOBALS['mediaACLBlocked'][53]['ca_objects'] = [1];
+$aclFamilyRequest->userID = 53;
+testAssert(tadlFamilyMediaEligibleIDs($aclFamilyRequest,$familyCandidates) === [90003], 'Family eligibility must retain object ACL checks across member scopes.');
+$GLOBALS['mediaACL'] = []; $GLOBALS['mediaBundleAccess'] = ['ca_entities:ca_entities'=>0];
+testAssert(tadlFamilyMediaEligibleIDs($familyRequest,$familyCandidates) === [90001], 'Denied member relationships must retain only directly attached family media.');
+$GLOBALS['mediaBundleAccess'] = [];
+$familyResult = new SearchResult('ca_entities',array_reverse($familyCandidates));
+tadlFilterMediaResult($familyRequest,$familyResult);
+testAssert($familyResult->getPrimaryKeyValues() === [90008,90003,90002,90001], 'Family media filtering must preserve the requested native identifier order.');
+$ajaxFamilyResult = new SearchResult('ca_entities',$familyCandidates);
+tadlFilterMediaResult(testMediaRequest('only',['browseType'=>'families'],'Browse','getFacetHierarchyLevel'),$ajaxFamilyResult);
+testAssert($ajaxFamilyResult->getPrimaryKeyValues() === [90001,90002,90003,90008], 'Family AJAX browsing must use the same expanded media scope.');
+$allFamilyResult = new SearchResult('ca_entities',$familyCandidates);
+tadlFilterMediaResult(testMediaRequest('all',[],'Browse','families'),$allFamilyResult);
+testAssert($allFamilyResult->getPrimaryKeyValues() === $familyCandidates, 'All items must retain families without digital media.');
+tadlMediaResultContext(new TestView($familyRequest,['start'=>0]),$familyResult,'browse');
+testAssert(ResultContext::$saved['ca_entities:browse:']['ids'] === [90008,90003,90002,90001], 'Family Prev/Next context must contain exactly the eligible families in browse order.');
+
 // Same numeric IDs can have different eligibility in each authority table.
 foreach (['ca_entities' => ['entity_id', 1], 'ca_places' => ['place_id', 12], 'ca_occurrences' => ['occurrence_id', 2]] as $table => [$primaryKey, $objectID]) {
     testInsert($table, [$primaryKey => 80000, 'access' => 1, 'deleted' => 0]);

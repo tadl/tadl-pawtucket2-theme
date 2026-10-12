@@ -53,6 +53,7 @@ $expected = [
 	'collections' => ['Name', 'ca_collection_labels.name'],
 	'people' => ['Identifier', 'ca_entities.idno'],
 	'organizations' => ['Identifier', 'ca_entities.idno'],
+	'families' => ['Identifier', 'ca_entities.idno'],
 	'occurrences' => ['Name', 'ca_occurrence_labels.name'],
 	'places' => ['Name', 'ca_place_labels.name']
 ];
@@ -69,6 +70,9 @@ foreach ($expected as $type => [$sort, $field]) {
 	}
 	browseCheck(array_key_first($info['sortBy']) === $sort && $info['sortBy'][$sort] === $field && $info['sortDirection'][$sort] === 'asc', $type.': default must be the intended ascending logical field.');
 	$GLOBALS['browseTypes'][$type] = $info;
+	if ($type === 'families') {
+		browseCheck(str_contains($section[1], 'restrictToTypes = [fam]') && str_contains($section[1], 'defaultView = list'), 'Families must target the catalogue family type and default to List.');
+	}
 }
 require dirname(__DIR__).'/views/Details/detail_field_helpers.php';
 

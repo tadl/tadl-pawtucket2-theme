@@ -1,5 +1,6 @@
 <?php
 require_once(__DIR__.'/detail_field_helpers.php');
+require_once(__DIR__.'/../../helpers/family_contents.php');
 
 function tadlAuthorityText($value) {
 	return trim(html_entity_decode(strip_tags((string)$value), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
@@ -31,17 +32,11 @@ function tadlAuthorityOccupations($request, $item) {
 
 /** Recognize configured entity subtypes without calling an unknown type a person. */
 function tadlAuthorityEntityKind($item) {
-	$type_id = (int)$item->get('type_id');
-	$types = $item->getTypeList();
-	$visited = [];
-	while ($type_id && isset($types[$type_id]) && !isset($visited[$type_id])) {
-		$visited[$type_id] = true;
-		$code = $types[$type_id]['idno'] ?? '';
-		if ($code === 'ind') { return ['kind' => _t('Person'), 'about' => _t('About this person'), 'browse' => 'people', 'browse_label' => _t('Browse people')]; }
-		if ($code === 'org') { return ['kind' => _t('Organization'), 'about' => _t('About this organization'), 'browse' => 'organizations', 'browse_label' => _t('Browse organizations')]; }
-		$type_id = (int)($types[$type_id]['parent_id'] ?? 0);
-	}
-	return ['kind' => tadlAuthorityText($item->getTypeName()) ?: _t('Person or organization'), 'about' => _t('About this record'), 'browse' => 'Index', 'browse_label' => _t('Browse the archive')];
+	$code = tadlEntityBaseType($item);
+	if ($code === 'ind') { return ['kind' => _t('Person'), 'about' => _t('About this person'), 'browse' => 'people', 'browse_label' => _t('Browse people')]; }
+	if ($code === 'org') { return ['kind' => _t('Organization'), 'about' => _t('About this organization'), 'browse' => 'organizations', 'browse_label' => _t('Browse organizations')]; }
+	if ($code === 'fam') { return ['kind' => _t('Family'), 'about' => _t('About this family'), 'browse' => 'families', 'browse_label' => _t('Browse families')]; }
+	return ['kind' => tadlAuthorityText($item->getTypeName()) ?: _t('Entity'), 'about' => _t('About this record'), 'browse' => null, 'browse_label' => ''];
 }
 
 function tadlAuthorityDetailInfo($request, $item, $table) {
@@ -60,6 +55,10 @@ function tadlAuthorityDetailInfo($request, $item, $table) {
 		'search' => $info['key'].':'.(int)$item->get($info['key']),
 		'view' => 'images', 's' => 0, '_advanced' => 0, 'clear' => 1
 	]);
+	if ($table === 'ca_entities' && $info['browse'] === 'families') {
+		$info['items_url'] = caNavUrl($request, '', 'FamilyContents', 'Objects', ['entity_id' => (int)$item->get('entity_id'), 'view' => 'images']);
+		$info['items_note'] = _t('Includes items linked to this family and its directly related people and organizations.');
+	}
 	return $info;
 }
 
@@ -69,7 +68,7 @@ function tadlAuthorityRelatedGroups($request, $item, $table) {
 	$access = (array)caGetUserAccessValues($request);
 	$definitions = [
 		'ca_collections' => ['key' => 'collection_id', 'heading' => _t('Related collections'), 'more' => _t('Show %1 more collections')],
-		'ca_entities' => ['key' => 'entity_id', 'heading' => _t('Related people and organizations'), 'more' => _t('Show %1 more people and organizations')],
+		'ca_entities' => ['key' => 'entity_id', 'heading' => _t('Related people, organizations and families'), 'more' => _t('Show %1 more people, organizations and families')],
 		'ca_places' => ['key' => 'place_id', 'heading' => _t('Related places'), 'more' => _t('Show %1 more places')],
 		'ca_occurrences' => ['key' => 'occurrence_id', 'heading' => _t('Related events'), 'more' => _t('Show %1 more events')]
 	];

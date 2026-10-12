@@ -4,7 +4,7 @@ Standalone source repository for the `tadl` Pawtucket2 theme used for TADL local
 
 For Codex or a new workstation, start with [AGENTS.md](AGENTS.md) and the
 [current handoff](docs/CODEX_HANDOFF.md). The handoff explains the source map,
-recent changes, design decisions and all thirty-one standalone regression suites.
+recent changes, design decisions and all thirty-two standalone regression suites.
 It uses relative paths and does not require an application database for those tests.
 
 Feature guides:
@@ -12,6 +12,7 @@ Feature guides:
 | Guide | Covers |
 | --- | --- |
 | [Collections](docs/COLLECTIONS.md) | Flat and hierarchy views, navigation, inline counts, configuration and rollout checks |
+| [Families](docs/FAMILIES.md) | Family browsing, directly related member items and access/media filtering |
 | [Finding aids](docs/FINDING_AIDS.md) | PDF contents, count semantics, field mappings and export permissions |
 | [Document text](docs/DOCUMENT_TEXT.md) | PDF extraction, imported transcription fallbacks and plain-text display |
 | [Image downloads](docs/IMAGE_DOWNLOADS.md) | Full-resolution exports, private conversion cache, permissions and limits |
@@ -171,9 +172,14 @@ video, audio, PDFs, and supported embedded media qualify. Private, deleted, and
 metadata-only representations do not.
 
 This controls display, not authorization. Direct detail URLs remain accessible.
-**Browse > People, Organizations, Places and Events** also follows the preference:
+**Browse > People, Organizations, Families, Places and Events** also follows the preference:
 in Only items with media mode, each record needs at least one accessible related
 object with usable digital media. All items mode includes records without media.
+Families qualify through objects linked directly to the family or to directly
+related people and organizations. Family details show that combined object list,
+deduplicated through native search. Family browsing defaults to List and includes
+empty families in All items mode. Unknown entity types omit an invalid Browse
+destination rather than linking to `Browse/Index`.
 Filtering precedes counts, paging and detail navigation, preserves native sort
 order, and uses batched relationship
 queries with shared media decoding. Media attached directly to an authority
@@ -187,7 +193,7 @@ Whole-page content caching is also disabled in `app.conf` because rendered pages
 include the visitor's selected preference.
 
 Browse defaults to ascending names for Places, Events and Collections, and
-ascending identifiers for People, Organizations and Objects. Entity identifier
+ascending identifiers for People, Organizations, Families and Objects. Entity identifier
 order follows the catalogue's naming convention; the People **Name** option also
 supports surname/forename ordering. Menu and detail-page Browse links request
 these defaults explicitly, including for sessions with an older saved sort.

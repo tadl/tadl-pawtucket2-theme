@@ -1,5 +1,6 @@
 <?php
 require_once(__DIR__.'/record_access.php');
+require_once(__DIR__.'/family_contents.php');
 
 /**
  * Return eligible public records in their existing result order. A representation
@@ -222,6 +223,19 @@ function tadlAuthorityMediaEligibleIDs($request, $table, array $candidateIDs) {
 	return array_values(array_filter($ids, static function ($id) use ($cache, $key) { return $cache[$key][$id]; }));
 }
 
+/** A family qualifies through its own objects or a directly related member. */
+function tadlFamilyMediaEligibleIDs($request, array $candidateIDs) {
+	$scopes = tadlFamilyEntityScopes($request, $candidateIDs);
+	if (!$scopes) { return []; }
+	$entities = array_values(array_unique(array_merge(...array_values($scopes))));
+	$eligible = array_fill_keys(tadlAuthorityMediaEligibleIDs($request, 'ca_entities', $entities), true);
+	$families = [];
+	foreach ($scopes as $id => $scope) {
+		foreach ($scope as $entity) { if (isset($eligible[$entity])) { $families[$id] = true; break; } }
+	}
+	return array_values(array_filter($candidateIDs, static fn($id) => isset($families[$id])));
+}
+
 /**
  * Mutate the original result so callers retaining it also receive filtered IDs.
  * Native browse caches remain untouched; this runs before theme pagination.
@@ -232,7 +246,9 @@ function tadlFilterMediaResult($request, $result) {
 	}
 	$table = $result->tableName();
 	if ($table === tadlMediaAuthorityBrowseTable($request)) {
-		$ids = tadlAuthorityMediaEligibleIDs($request, $table, $result->getPrimaryKeyValues());
+		$type = $request->getParameter('browseType', pString) ?: $request->getAction();
+		$ids = $type === 'families' ? tadlFamilyMediaEligibleIDs($request, $result->getPrimaryKeyValues())
+			: tadlAuthorityMediaEligibleIDs($request, $table, $result->getPrimaryKeyValues());
 	} elseif (in_array($table, ['ca_objects', 'ca_collections'], true)) {
 		$ids = tadlMediaEligibleIDs($table, $result->getPrimaryKeyValues(), (array)caGetUserAccessValues($request), $request);
 	} else {

@@ -151,6 +151,7 @@ deployment, live catalog permissions or full-page performance.
 | Document text | `helpers/document_text.php`, object detail view and scoped theme CSS; `docs/DOCUMENT_TEXT.md` |
 | Collection details and browser | `views/Details/ca_collections_default_html.php`, `controllers/CollectionContentsController.php`, `helpers/collection_contents.php`, hierarchy views/helpers under `views/Collections/`; `docs/COLLECTIONS.md` |
 | Authority details | `views/Details/authority_detail_helpers.php`, `authority_detail_html.php`, entity/place/occurrence detail templates |
+| Family objects | `helpers/family_contents.php`, `controllers/FamilyContentsController.php`, authority detail links and shared result helpers; `docs/FAMILIES.md` |
 | Galleries | `views/Gallery/index_html.php`, `set_info_html.php`, `detail_html.php`, `set_item_rep_html.php`, `set_item_info_html.php` |
 | Styling | `assets/pawtucket/css/theme.css`, with the existing `main.css` foundation |
 | Thumbnail focus | `helpers/thumbnail_focus.php`, `assets/pawtucket/js/thumbnail-focus.js`, shared result/collection views; `support/detect-thumbnail-faces.php`, `support/thumbnail-faces/`; `docs/THUMBNAIL_FOCUS.md` |
@@ -171,7 +172,7 @@ line numbers. Native application behavior can be inspected in the nearby
 
 The first `sortBy` entry in `conf/browse.conf` defines a fresh native browse's
 default. Places and Events now use ascending **Name**, People and Organizations
-use ascending **Identifier**, and Collections/Objects retain Name/Identifier
+use ascending **Identifier**, as do Families; Collections/Objects retain Name/Identifier
 respectively. Subjects retains object Title ordering after choosing a term.
 Entity identifier sorting relies on the catalogue's identifier convention;
 People also retains the native surname/forename **Name** option. Its surname
@@ -195,6 +196,38 @@ Verification: portable navigation/menu/default-map checks plus the actual native
 configuration parser; media eligibility/context, authority, document-text,
 account and results suites cover the integration boundaries. No deployment or
 production record changes were performed for this source change.
+
+### Families and related-member objects
+
+`conf/browse.conf` exposes **Families**, restricted to the configured `fam`
+entity type (including native subtypes), with Identifier ascending and List as
+the default. Family details use **Browse families** and **About this family**.
+Unknown entity types keep their own labels and native Prev/Next, without the
+old invalid `Browse/Index` fallback. Entity relationship headings include families.
+
+`tadlFamilyEntityScopes()` batches roots and both directions of
+`ca_entities_x_entities`, including family objects and objects attached to directly
+related `ind`/`org` entities and their subtypes. There is no recursive traversal
+through other families or members' relationships. Access/deletion, native
+type/source restrictions and levels, relationship bundles, and Pawtucket ACLs
+apply before constructing numeric native search terms.
+
+`FamilyContents/Objects/entity_id/ID` recalculates the scope on each GET and
+delegates object sorting/access/deduplication/exports to the native SearchController.
+Empty or denied scopes use an explicit zero-hit query. Paging, sort/view and
+export links retain the family ID; result headings name the family. The endpoint
+sends private/no-store and noindex headers. The separately installed root robots
+policy includes it.
+
+In Only items with media mode, families qualify through the same scope and the
+existing permission-aware object/representation media checks. Filtering precedes
+counts, pagination and Prev/Next storage. All items includes empty families.
+Family details explain the combined scope. No stored relationships, access flags
+or primary media are changed. See [Families](FAMILIES.md) for verification.
+Verification passed 31 application suites (the independently edited deploy script
+was excluded), native browse configuration parsing, a native Lucene syntax check
+of the family OR query, changed PHP lint and diff whitespace. Full application
+search execution and production rollout remain separate from these synthetic checks.
 
 ### Long detail fields
 
@@ -382,9 +415,9 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
   A collection qualifies through accessible object media in itself or any
   descendant. Images, video, audio, PDFs and supported embedded media qualify;
   private, deleted or metadata-only representations do not.
-- **Browse > People, Organizations, Places and Events** follows the same
+- **Browse > People, Organizations, Families, Places and Events** follows the same
   preference through related objects. `tadlMediaAuthorityBrowseTable()` maps
-  `people`/`organizations` to `ca_entities`, `places` to `ca_places`, and the
+  `people`/`organizations`/`families` to `ca_entities`, `places` to `ca_places`, and the
   configured Events route `occurrences` to `ca_occurrences`, including AJAX.
   `tadlAuthorityMediaEligibleIDs()` qualifies only records with a nondeleted related
   object and representation in the visitor's access mask, readable media bundles,
@@ -397,6 +430,8 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
   Tiles/List counts and pagination use filtered IDs, as does the authority detail
   Previous/Next result context. Native facet counts are suppressed on these browses
   in media-only mode. All items mode remains unfiltered.
+  Families additionally use the permitted directly related people/organization
+  scope described above; other authority browse eligibility remains direct.
 - Preserve native record access and ACL filtering. This preference is not
   authorization, and direct object/collection detail URLs remain accessible.
   Authority Search and MultiSearch routes retain native behavior; this
@@ -857,7 +892,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The thirty-one committed tests are portable and use synthetic boundaries. They do not
+The thirty-two committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -898,6 +933,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/theme_deploy_test.php` | Actual deployment shell with synthetic SSH/rsync boundaries, source paths with spaces, cache preservation and transfer/configuration/reload failure handling |
 | `tests/media_preferences_test.php` | Eligibility SQL, lazy collection/authority descriptor fetching, related-object access/deletion/ACL/bundle checks, People/Organizations/Places/Events Tiles/List counts/paging/detail context, table cache isolation, route scope, invalid-media exhaustion, filtered result adapter and result rendering |
 | `tests/browse_navigation_test.php` | Configured logical browse defaults, actual single/multiple-target menu and detail Browse links, native Prev/Next preservation, Subjects entry reset, configurable directions and optional native configuration parsing |
+| `tests/family_contents_test.php` | Actual SQLite family/member scopes, bidirectional/subtype/deduplicated relationships, one-hop limits, root/member access/type/source/bundle/ACL checks, batched wide families, endpoint validation/current scope and native search delegation |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |
 | `tests/collection_detail_scripts_test.php` | Collection detail loader JavaScript, empty/populated field/relationship headings, long-field controls and narrative/facts column placement |
 | `tests/collection_contents_test.php` | Actual helper/controller, SQLite hierarchy/membership queries, deep/wide branches, unique descendant rollup counts, media preference, scope/access/deletion/ACL/bundle pruning, cycles, duplicate memberships, bounded queries and canonical native search delegation |

@@ -8,6 +8,11 @@ function tadlBrowseResultCollectionID($request) {
 }
 
 function tadlBrowseResultLink($request, $label, $class, $params) {
+	if ($request->getController() === 'FamilyContents') {
+		$params = array_intersect_key($params, array_flip(['view', 'sort', 'direction', 's']));
+		$params['entity_id'] = (int)$request->getParameter('entity_id', pInteger);
+		return caNavLink($request, $label, $class, '', 'FamilyContents', 'Objects', $params);
+	}
 	if ($id = tadlBrowseResultCollectionID($request)) {
 		$params = array_intersect_key($params, array_flip(['view', 'sort', 'direction', 's']));
 		if ($request->getParameter('collection_view', pString) === 'hierarchy') { $params['collection_view'] = 'hierarchy'; }

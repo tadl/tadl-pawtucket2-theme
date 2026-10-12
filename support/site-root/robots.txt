@@ -6,6 +6,8 @@ User-agent: *
 Disallow: /Search
 Disallow: /CollectionContents
 Disallow: /index.php/CollectionContents
+Disallow: /FamilyContents
+Disallow: /index.php/FamilyContents
 Disallow: /MultiSearch
 Disallow: /Browse
 Disallow: /index.php/Search

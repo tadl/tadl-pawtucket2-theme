@@ -44,7 +44,11 @@ function tadlResultAuthorityLabel($request, array $reference) {
 /** Keep criterion IDs/navigation intact while removing technical queries and unsafe labels. */
 function tadlResultDisplayCriteria($request, array $criteria, array $facetDefinitions) {
 	foreach ($criteria as &$criterion) {
-		if ($reference = tadlResultAuthorityReference($criterion, $facetDefinitions)) {
+		$reference = tadlResultAuthorityReference($criterion, $facetDefinitions);
+		if ($request->getController() === 'FamilyContents' && ($criterion['facet_name'] ?? '') === '_search') {
+			$reference = ['table' => 'ca_entities', 'id' => (int)$request->getParameter('entity_id', pInteger)];
+		}
+		if ($reference) {
 			$label = tadlResultAuthorityLabel($request, $reference);
 			$criterion['value'] = $label ?? _t('Unavailable item');
 			$criterion['tadl_authority'] = $label !== null ? array_merge($reference, ['label' => $label]) : null;

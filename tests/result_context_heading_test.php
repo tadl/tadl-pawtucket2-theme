@@ -21,7 +21,7 @@ $GLOBALS['contextRecords'] = [
 		49 => ['label' => 'Synthetic <script>alert("x")</script> & "Harbor"'],
 		50 => ['label' => 'Synthetic ACL-visible place', 'acl' => true, 'access' => 0],
 	],
-	'ca_entities' => [42 => ['label' => 'Synthetic Person'], 43 => ['label' => 'Synthetic Studio']],
+	'ca_entities' => [42 => ['label' => 'Synthetic Person'], 43 => ['label' => 'Synthetic Studio'], 44 => ['label' => 'Synthetic Family']],
 	'ca_occurrences' => [42 => ['label' => 'Synthetic Exhibition']],
 	'ca_collections' => [42 => ['label' => 'Synthetic Collection']]
 ];
@@ -48,6 +48,7 @@ function caGetAddToSetInfo($request) { return []; }
 function caDisplayLightbox($request) { return false; }
 function caBusyIndicatorIcon($request) { return '<span class="synthetic-spinner"></span>'; }
 function caNavUrl($request, $module, $controller, $action, $params = []) {
+	if ($controller === 'FamilyContents') { return '/synthetic/FamilyContents/'.$action.'?'.http_build_query($params); }
 	if ($controller === '*' && $request->getController() === 'CollectionContents') { return '/synthetic/CollectionContents/Objects?'.http_build_query($params); }
 	return '/synthetic/'.($controller === 'Detail' ? 'Detail/' : '').($action === '*' ? 'objects' : $action).'?'.http_build_query($params);
 }
@@ -174,6 +175,11 @@ foreach (['place_id:42 OR place_id:43', 'place_id:42 AND harbor', 'place_id:*', 
 	$html = (new ContextView(new ContextRequest('Search'), [contextCriterion('_search', $query, 'Synthetic search')]))->render('Browse/browse_results_html.php');
 	checkContext(contextHeading($html) === '45 objects', 'Malformed/compound query must not become a title: '.$query);
 }
+$familyRequest = new ContextRequest('FamilyContents', false, null, ['entity_id' => 44]);
+$familyHtml = (new ContextView($familyRequest, [contextCriterion('_search', 'entity_id:44 OR entity_id:42 OR entity_id:43', 'Raw family query')], 45, ['facets' => ['place_facet' => ['label' => 'Places']]]))->render('Browse/browse_results_html.php');
+checkContext(contextHeading($familyHtml) === 'Items related to Synthetic Family' && !str_contains($familyHtml, 'Raw family query'), 'Combined family searches must retain a human-readable family heading.');
+checkContext(str_contains($familyHtml, '/FamilyContents/Objects?') && str_contains($familyHtml, 'entity_id=44'), 'Family pager and sort/view links must retain their family scope.');
+checkContext(!str_contains($familyHtml, 'id=\'bRefineButton\'') && !str_contains($familyHtml, 'id="bRefine"'), 'Fixed family results must not expose refinements that would discard or be ignored by their scope.');
 foreach ([43, 44, 45, 46, 47, 48, 999] as $id) {
 	$readsBefore = count($GLOBALS['contextLabelReads']);
 	foreach (['place_facet', '_search'] as $facet) {

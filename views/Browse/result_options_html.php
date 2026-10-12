@@ -38,6 +38,10 @@
 								$export_params['collection_view'] = $this->request->getParameter('collection_view', pString) === 'hierarchy' ? 'hierarchy' : 'flat';
 								unset($export_params['key']);
 							}
+							if ($this->request->getController() === 'FamilyContents') {
+								$export_params['entity_id'] = (int)$this->request->getParameter('entity_id', pInteger);
+								unset($export_params['key']);
+							}
 							print "<li class='".$va_export_format["code"]."' role='menuitem'>".caNavLink($this->request, $va_export_format["name"], "", "*", "*", "*", $export_params, array('rel' => 'nofollow'))."</li>";
 						}
 					}
