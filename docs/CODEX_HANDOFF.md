@@ -234,12 +234,21 @@ search execution and production rollout remain separate from these synthetic che
 ### Long detail fields
 
 `tadlDetailExpandableValue()` in `views/Details/detail_field_helpers.php` supplies
-a plain-text preview and native **Read more / Read less** disclosure for values
-over 600 visible Unicode characters. The preview ends at a word boundary within
-320 characters and is limited to six lines at the current viewport width. Short
-fields remain unchanged; empty fields still omit their heading. The complete
-native rich value and links remain inside the disclosure, with no additional
-catalogue queries or changes to access filtering.
+a preview and native **Read more / Read less** disclosure for values over 600
+visible Unicode characters. Plain text uses a word-boundary excerpt of up to
+320 characters and a six-line clamp. Rich text uses balanced DOM excerpts through
+`detail_preview_helpers.php`, preserving visible links, emphasis and paragraph/list
+formatting. Link labels remain complete even when they cross the prose boundary.
+Previews omit later DOM nodes instead of clipping hidden focusable links; cloned
+IDs and active widgets/scripts are omitted. The full native value stays unchanged
+inside the disclosure, with no additional queries or changed access filtering.
+
+Repeated linked native `<unit>` fields use entry previews: five complete
+line-separated associations or list items, including their roles. A few long
+entries stay fully visible. This applies to object/collection creators, publishers,
+related records, place vocabulary terms, external links and gallery metadata.
+Narrative fields and media captions retain prose excerpt behavior even when they
+contain links or line breaks. Short/empty fields retain their existing behavior.
 
 The shared `tadlDetailField()` and first-available-field renderer use this across
 collections, objects, people/organizations, places and events. Media captions
@@ -252,10 +261,11 @@ Scoped CSS keeps the preview above the control, removes it when expanded using
 `:has()`, switches the control text and supplies visible keyboard focus. Older
 browsers without `:has()` may retain the preview above expanded text; full text
 remains available. Native `details` hides collapsed links from keyboard navigation.
-Synthetic browser checks at 1440px and 390px verified six-line previews, full
-formatted content on expansion, independent field states, Enter/Space operation,
-focus retention, hidden-link tab order and no horizontal overflow. The change was
-source-only; production theme deployment remains an operator step.
+The association-preview repair was verified with synthetic metadata at 1280px
+and 390px: five visible working record links, complete roles, prose emphasis,
+native Enter/Space expansion, focus retention, omitted-link tab order and no
+horizontal overflow. The shared unit/gallery regressions retain native access
+options and complete full values. Production deployment remains an operator step.
 
 ### Object document text
 

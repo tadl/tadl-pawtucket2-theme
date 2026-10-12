@@ -114,6 +114,13 @@ body.tadl-interior {
     overflow: hidden;
 }
 
+/* Rich excerpts contain only their visible nodes; never clip focusable links. */
+.tadl-long-field-preview--rich {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+}
+
 .tadl-long-field-details > summary {
     display: list-item;
     list-style-position: inside;

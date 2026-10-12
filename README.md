@@ -64,6 +64,10 @@ This includes collection descriptions and scope/content, object descriptions,
 authority biographies and other shared text fields, plus media captions. Short
 fields remain fully visible. Native disclosures work without JavaScript, retain
 the complete formatted text and links, and preserve existing access checks.
+Collapsed rich-text excerpts preserve links and emphasis. Long linked metadata
+lists show five complete entries with their relationship roles and line breaks;
+the remaining entries are available under Read more. Rich excerpts contain only
+visible nodes, so CSS never clips a link that can still receive keyboard focus.
 
 Collection contents keep paging, sorting and Tiles/List controls on the collection
 detail URL. By default, the list includes the selected collection and all readable

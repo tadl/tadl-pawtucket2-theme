@@ -1,5 +1,6 @@
 <?php
 require_once(dirname(__DIR__, 2).'/helpers/browse_navigation.php');
+require_once(__DIR__.'/detail_preview_helpers.php');
 
 /** Reuse native result-context links, with an optional browse destination. */
 function tadlDetailNavigation($view, $browseAction = null, $browseLabel = '', $browseController = 'Browse') {
@@ -23,9 +24,9 @@ if (!function_exists('tadlDetailHasContent')) {
 	}
 }
 
-/** Keep the native rich value intact; a plain preview avoids partial HTML/links. */
+/** Keep full native values intact and preserve links/formatting in rich previews. */
 if (!function_exists('tadlDetailExpandableValue')) {
-	function tadlDetailExpandableValue($value, $label) {
+	function tadlDetailExpandableValue($value, $label, $entries = false) {
 		$plain = preg_replace('~<(?:br\b[^>]*|/(?:p|div|li|h[1-6]|tr|dt|dd))>~i', ' ', (string)$value);
 		$plain = html_entity_decode(strip_tags($plain), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 		$plain = trim(preg_replace('/[\s\p{Z}\x{200B}\x{FEFF}]+/u', ' ', $plain));
@@ -34,7 +35,12 @@ if (!function_exists('tadlDetailExpandableValue')) {
 		$preview = mb_substr($plain, 0, 320);
 		if (($space = mb_strrpos($preview, ' ')) !== false) { $preview = mb_substr($preview, 0, $space); }
 		$escape = static function ($text) { return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); };
-		return '<div class="tadl-long-field"><div class="tadl-long-field-preview">'.$escape($preview).'…</div>'
+		$previewHTML = $escape($preview).'…'; $previewClass = 'tadl-long-field-preview';
+		if (preg_match('/<[a-z][^>]*>/i', (string)$value) && ($rich = tadlDetailRichPreview($value, $entries))) {
+			if ($rich['complete']) { return $value; }
+			$previewHTML = $rich['html']; $previewClass .= ' tadl-long-field-preview--rich';
+		}
+		return '<div class="tadl-long-field"><div class="'.$previewClass.'">'.$previewHTML.'</div>'
 			.'<details class="tadl-long-field-details"><summary><span class="tadl-read-more">'.$escape(_t('Read more')).'</span>'
 			.'<span class="tadl-read-less">'.$escape(_t('Read less')).'</span><span class="sr-only">: '.$escape($label).'</span></summary>'
 			.'<div class="tadl-long-field-full">'.$value.'</div></details></div>';
@@ -52,7 +58,9 @@ if (!function_exists('tadlDetailField')) {
 
 		$value = trim((string)$item->getWithTemplate($template, $template_options));
 		if (!tadlDetailHasContent($value)) { return ''; }
-		$value = tadlDetailExpandableValue($value, $label);
+		// Repeated linked native units are entries, rather than paragraphs to cut mid-role.
+		$entries = preg_match('/<unit\b/i', $template) && preg_match('/<(?:l|a)\b/i', $template);
+		$value = tadlDetailExpandableValue($value, $label, $entries);
 
 		return "<div class='unit'><label>".htmlspecialchars($label, ENT_QUOTES, 'UTF-8')."</label>{$value}</div>\n";
 	}
