@@ -4037,6 +4037,28 @@ div.tadl-image-viewer-controls .close {
         float: none;
     }
 
+    /* Keep the phone account-menu presentation throughout collapsed navigation. */
+    .tadl-main-nav .tadl-account-menu.open > .dropdown-menu {
+        width: auto;
+        margin-top: 0;
+        background-color: transparent;
+        border: 0;
+        box-shadow: none;
+    }
+
+    .tadl-main-nav .tadl-account-menu.open > .dropdown-menu > li > a {
+        padding: 5px 15px 5px 25px;
+        line-height: 20px;
+        color: #777777;
+    }
+
+    .tadl-main-nav .tadl-account-menu.open > .dropdown-menu > li > a:hover,
+    .tadl-main-nav .tadl-account-menu.open > .dropdown-menu > li > a:focus {
+        color: #333333;
+        background-color: transparent;
+        background-image: none;
+    }
+
     .tadl-main-nav .tadl-menu-items > li > a {
         padding: 12px 0;
         font-size: max(var(--tadl-text-min, 0px), 16px);

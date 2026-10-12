@@ -32,6 +32,8 @@ with the tagline allowed to wrap at narrow widths.
 Navigation collapses at 1024px and below, with search and the media preference
 inside the menu. The menu grows to fit its links and expanded submenus without
 an internal scrollbar; longer menus use the normal page scroll.
+My account retains its borderless, indented phone submenu styling through 1024px,
+including the same link spacing and hover/focus colors.
 
 The native login form retains password reset and now supports password managers.
 Profile forms support contact details and password changes. Email delivery,

@@ -313,6 +313,8 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
   must not use Bootstrap's `hidden-xs`, which forces it visible above 767px.
   Expanded navigation has no fixed maximum height or internal scrollbar, and
   top-level links and open dropdowns flow vertically throughout that breakpoint.
+  My account uses the same borderless, transparent, indented submenu styling
+  throughout collapsed navigation, including the 768–1024px tablet range.
   Native Bootstrap collapse animations and accessible expanded state remain intact.
   Browser checks covered 390, 767, 768, 900, 1024, 1025 and 1280px, including
   account/Browse expansion and keyboard opening/closing. This is source-only.
