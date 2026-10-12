@@ -29,6 +29,9 @@ Asynchronous content focuses the close control without stealing focus during
 later slide changes. Bootstrap dropdown and mobile-collapse events update
 `aria-expanded`. The mobile toggle is a separate flex item beside the logo,
 with the tagline allowed to wrap at narrow widths.
+Navigation collapses at 1024px and below, with search and the media preference
+inside the menu. The menu grows to fit its links and expanded submenus without
+an internal scrollbar; longer menus use the normal page scroll.
 
 The native login form retains password reset and now supports password managers.
 Profile forms support contact details and password changes. Email delivery,

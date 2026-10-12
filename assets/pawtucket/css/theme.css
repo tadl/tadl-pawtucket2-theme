@@ -3960,11 +3960,16 @@ div.tadl-image-viewer-controls .close {
         display: none !important;
         justify-content: flex-start;
         padding-bottom: 10px;
+        max-height: none;
     }
 
     .tadl-main-nav .navbar-collapse.in,
     .tadl-main-nav .navbar-collapse.collapsing {
         display: block !important;
+    }
+
+    .tadl-main-nav .navbar-collapse.in {
+        overflow: visible;
     }
 
     .navbar-toggle {
@@ -4023,7 +4028,16 @@ div.tadl-image-viewer-controls .close {
         float: none !important;
     }
 
-    .tadl-menu-items > li > a {
+    .tadl-menu-items > li {
+        float: none;
+    }
+
+    .tadl-menu-items .open > .dropdown-menu {
+        position: static;
+        float: none;
+    }
+
+    .tadl-main-nav .tadl-menu-items > li > a {
         padding: 12px 0;
         font-size: max(var(--tadl-text-min, 0px), 16px);
     }

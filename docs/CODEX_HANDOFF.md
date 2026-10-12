@@ -308,6 +308,14 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
 
 ### Typography
 
+- Navigation collapses through **1024px**. At those widths the search form and
+  media preference appear only inside the open menu; the desktop search wrapper
+  must not use Bootstrap's `hidden-xs`, which forces it visible above 767px.
+  Expanded navigation has no fixed maximum height or internal scrollbar, and
+  top-level links and open dropdowns flow vertically throughout that breakpoint.
+  Native Bootstrap collapse animations and accessible expanded state remain intact.
+  Browser checks covered 390, 767, 768, 900, 1024, 1025 and 1280px, including
+  account/Browse expansion and keyboard opening/closing. This is source-only.
 - The shared `.tadl-main-nav` has its own 18px text size/floor, including
   dropdown choices. Homepage and interior navigation therefore match in normal,
   hover, focus and open states at desktop/mobile widths. Do not let the menu

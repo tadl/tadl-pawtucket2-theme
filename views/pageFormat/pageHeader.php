@@ -277,7 +277,7 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
 					<span class="tadl-tagline">Local History Collection</span>
 				</a>
 			</div>
-			<div class="tadl-header-search hidden-xs">
+			<div class="tadl-header-search">
 				<form class="tadl-search-form" role="search" action="<?= caNavUrl($this->request, '', 'MultiSearch', 'Index'); ?>" aria-label="<?= _t("Search"); ?>">
 					<label class="sr-only" for="headerSearchInputDesktop"><?= _t("Search text"); ?></label>
 					<input type="text" class="form-control" id="headerSearchInputDesktop" placeholder="Search local history..." name="search" autocomplete="off" />
