@@ -323,6 +323,8 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
   hover, focus and open states at desktop/mobile widths. Do not let the menu
   inherit Front's smaller body size or scope its dropdown sizing only to
   `.tadl-interior`; landing-page content retains its separate established scale.
+- Media-preference buttons have their own **18px minimum**, matching the
+  collapsed-menu controls when displayed in the desktop header, including Front.
 - Interior pages have an **18px minimum** for readable text, including object
   descriptions/metadata, result titles/captions, galleries, navigation, forms,
   download menus and footer text. Larger headings retain their existing sizes.

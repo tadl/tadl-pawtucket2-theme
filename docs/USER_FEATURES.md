@@ -34,6 +34,8 @@ inside the menu. The menu grows to fit its links and expanded submenus without
 an internal scrollbar; longer menus use the normal page scroll.
 My account retains its borderless, indented phone submenu styling through 1024px,
 including the same link spacing and hover/focus colors.
+The All items / Only items with media buttons use an 18px minimum in both the
+desktop header and collapsed menu, including on the homepage.
 
 The native login form retains password reset and now supports password managers.
 Profile forms support contact details and password changes. Email delivery,
