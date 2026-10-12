@@ -679,6 +679,15 @@ testAssert(in_array(1101, $windowIDs, true), 'Detail context window does not inc
 testAssert(ResultContext::$saved['ca_objects:browse:']['count'] === 2400, 'Bounded context replaced full result count with window length.');
 testAssert(ResultContext::$saved['ca_objects:browse:']['media'] === null, 'Saved result context retained a URL preference.');
 testAssert($windowResult->currentIndex() === -1, 'Saving detail context did not reset the result cursor.');
+// Logical name/identifier order can differ completely from database ID order.
+foreach (['people' => 'ca_entities', 'organizations' => 'ca_entities', 'places' => 'ca_places', 'occurrences' => 'ca_occurrences'] as $route => $table) {
+    $orderedIDs = [13, 8, 2, 11];
+    $orderedResult = new SearchResult($table, $orderedIDs);
+    $orderedView = new TestView(testMediaRequest('all', [], 'Browse', $route), ['start' => 0]);
+    tadlFilterMediaResult($orderedView->request, $orderedResult);
+    tadlMediaResultContext($orderedView, $orderedResult, 'browse');
+    testAssert(ResultContext::$saved[$table.':browse:']['ids'] === $orderedIDs, $route.': Prev/Next context must preserve logical browse order rather than sort database IDs.');
+}
 $latePageView = new TestView(testMediaRequest('all', ['page' => 123, 'view' => 'tiles'], 'Collections', 'Index'), ['collection_results' => new SearchResult('ca_collections', range(2000,3999)), 'collections_config' => $collectionConfig, 'section_name' => 'Example collections']);
 $html = $latePageView->render(TEST_THEME.'/views/Collections/index_html.php');
 testAssert(strpos($html, '/Detail/collections/3098') !== false, 'Late collection index rendered the wrong page.');

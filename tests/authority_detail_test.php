@@ -37,6 +37,10 @@ function caACLIsEnabled($subject, $options = []) {
 	return in_array(is_string($subject) ? $subject : $subject->tableName(), $GLOBALS['authorityPawAclTables'], true);
 }
 function caGetBrowseInstance($table) { return new AuthorityBrowse($table); }
+function caGetInfoForBrowseType($type) {
+	$sort = in_array($type, ['people', 'organizations'], true) ? 'Identifier' : 'Name';
+	return ['sortBy' => [$sort => 'synthetic_sort_field'], 'sortDirection' => [$sort => 'asc']];
+}
 function tadlMediaPreference($request) { return $request->mode; }
 function tadlMediaEligibleIDs($table, $ids, $access) {
 	checkAuthority($table === 'ca_collections', 'Authority groups should apply media eligibility only to collections.');
@@ -150,7 +154,8 @@ foreach (['ca_entities' => ['people', 'Browse people'], 'ca_places' => ['places'
 	$xpath = authorityDocument($html);
 	$links = $xpath->query('//header[contains(@class,"tadl-record-header")]/nav[@class="tadl-record-nav"]/a');
 	checkAuthority(array_map(static fn($node) => $node->textContent, iterator_to_array($links)) === ['Prev', 'Next', $label], 'Authority header must contain native Prev/Next and the correct Browse action, without Back.');
-	checkAuthority(!str_contains($html, '/synthetic/back') && $links->item(2)->getAttribute('href') === '/synthetic/Browse/'.$browse, 'Authority navigation must omit Back and retain its browse route.');
+	$sort = $browse === 'people' ? 'Identifier' : 'Name';
+	checkAuthority(!str_contains($html, '/synthetic/back') && $links->item(2)->getAttribute('href') === '/synthetic/Browse/'.$browse.'?sort='.$sort.'&direction=asc', 'Authority navigation must omit Back and start its browse in logical order.');
 }
 $directVisit = tadlDetailNavigation(new AuthorityView(new AuthorityRequest(), new AuthorityItem()), 'people', 'Browse people');
 checkAuthority(authorityDocument($directVisit)->query('//nav/a')->length === 1, 'A direct visit must retain Browse without inventing previous/next targets.');

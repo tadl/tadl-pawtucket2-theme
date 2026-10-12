@@ -136,7 +136,7 @@ deployment, live catalog permissions or full-page performance.
 | Preference endpoint/persistence | `controllers/MediaPreferenceController.php`, `helpers/media_preferences.php` |
 | Eligibility and result adapters | `helpers/media_filter_helpers.php` |
 | Collections | `conf/collections.conf`, `conf/browse.conf`, `views/Collections/`, `views/Browse/collection_thumbnail_helpers.php` |
-| Browse/results/pagers | `views/Browse/browse_results_html.php`, `tadl_result_helpers.php`, `tadl_result_context_helpers.php`, image/list/refine subviews |
+| Browse/results/pagers | `conf/browse.conf`, `helpers/browse_navigation.php`, `views/pageFormat/browseMenu.php`, `views/Browse/browse_results_html.php`, `tadl_result_helpers.php`, `tadl_result_context_helpers.php`, image/list/refine subviews |
 | Search previews | `conf/search.conf`, `views/Search/multisearch_results_html.php`, `tadl_search_results_subview_html.php` |
 | Accounts/lightboxes | `helpers/user_features.php`, `controllers/AccountProfileController.php`, `assets/pawtucket/js/user-features.js`, shared header, native LoginReg/Lightbox views, object detail and browse result views; `docs/USER_FEATURES.md` |
 | Home-page FAQ | `templates/faq_entry.tmpl`, `conf/templates.conf`, `helpers/home_faq.php`, `views/Front/faq_html.php`; `support/activate-faq.php`, `helpers/faq_setup.php`, `docs/FAQ_SETUP.md`; Providence Site Pages content |
@@ -166,6 +166,32 @@ line numbers. Native application behavior can be inspected in the nearby
 `pawtucket2/app/` reference tree without editing it.
 
 ## Behavior and implementation contracts
+
+### Browse ordering and detail navigation
+
+The first `sortBy` entry in `conf/browse.conf` defines a fresh native browse's
+default. Places and Events now use ascending **Name**, People and Organizations
+use ascending **Identifier**, and Collections/Objects retain Name/Identifier
+respectively. Subjects retains object Title ordering after choosing a term.
+Entity identifier sorting relies on the catalogue's identifier convention;
+People also retains the native surname/forename **Name** option. Its surname
+letter bar appears only when that Name sort is selected, as required by the
+native controller.
+
+`helpers/browse_navigation.php` reads each configured default for list-menu and
+detail-page Browse entry links. Explicit sort/direction parameters supersede a
+legacy saved Relevance sort on entry. Subject entry links still clear the prior
+term, and the dedicated Collections index retains its own configuration.
+Existing Options choices and paging URLs are preserved. Native sorting happens
+before media filtering/pagination; result-context storage preserves that order,
+so detail **Prev / Next** follows it. Search and MultiSearch relevance defaults
+remain unchanged. An already-open detail context keeps its existing order until
+the visitor enters a browse again.
+
+Verification: portable navigation/menu/default-map checks plus the actual native
+configuration parser; media eligibility/context, authority, document-text,
+account and results suites cover the integration boundaries. No deployment or
+production record changes were performed for this source change.
 
 ### Long detail fields
 
@@ -826,7 +852,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The thirty committed tests are portable and use synthetic boundaries. They do not
+The thirty-one committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -866,6 +892,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/asset_versions_test.php` | Stable/changed CSS and JS URLs, preserved timestamps, native loader options, subdirectory/absolute theme URLs, escaping, inline-code preservation and path boundaries |
 | `tests/theme_deploy_test.php` | Actual deployment shell with synthetic SSH/rsync boundaries, source paths with spaces, cache preservation and transfer/configuration/reload failure handling |
 | `tests/media_preferences_test.php` | Eligibility SQL, lazy collection/authority descriptor fetching, related-object access/deletion/ACL/bundle checks, People/Organizations/Places/Events Tiles/List counts/paging/detail context, table cache isolation, route scope, invalid-media exhaustion, filtered result adapter and result rendering |
+| `tests/browse_navigation_test.php` | Configured logical browse defaults, actual single/multiple-target menu and detail Browse links, native Prev/Next preservation, Subjects entry reset, configurable directions and optional native configuration parsing |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |
 | `tests/collection_detail_scripts_test.php` | Collection detail loader JavaScript, empty/populated field/relationship headings, long-field controls and narrative/facts column placement |
 | `tests/collection_contents_test.php` | Actual helper/controller, SQLite hierarchy/membership queries, deep/wide branches, unique descendant rollup counts, media preference, scope/access/deletion/ACL/bundle pruning, cycles, duplicate memberships, bounded queries and canonical native search delegation |
@@ -925,6 +952,14 @@ rg --files -g '*.php' -0 | xargs -0 -n 1 php -l
 The JavaScript suites accept `TADL_TEST_NODE` if Node is not named `node` on PATH.
 Test-specific helper/bundle overrides are for targeted checks; normal runs use
 the files in this checkout.
+
+Optionally verify browse configuration syntax with an installed native parser,
+without bootstrapping the application or connecting to a database:
+
+```sh
+TADL_TEST_CONFIGURATION=/path/to/pawtucket/app/lib/Configuration.php \
+  php tests/browse_navigation_test.php
+```
 
 The image-download suite uses a synthetic native `Media` boundary by default.
 With ImageMagick already installed, optionally exercise actual TIFF/PNG-to-JPEG

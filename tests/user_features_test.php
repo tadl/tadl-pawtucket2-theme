@@ -26,6 +26,7 @@ define('__CA_BUNDLE_ACCESS_READONLY__', 1);
 function caGetBundleAccessLevel($table, $bundle) { return 0; }
 function caObjectRepresentationThumbnails($request, $representationID, $object, $options) { return []; }
 function caGetIconsConfig() { return new FeatureConfig(); }
+function caGetInfoForBrowseType($type) { return ['sortBy' => ['Identifier' => 'ca_objects.idno']]; }
 function caDetailLink($request, $label, $class, $table, $id) { return '<a href="/Detail/objects/'.(int)$id.'">'.$label.'</a>'; }
 class FeatureConfig {
 	function __construct(public array $values = []) {}

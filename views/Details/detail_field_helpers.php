@@ -1,10 +1,13 @@
 <?php
+require_once(dirname(__DIR__, 2).'/helpers/browse_navigation.php');
+
 /** Reuse native result-context links; direct visits still have a browse destination. */
 function tadlDetailNavigation($view, $browseAction, $browseLabel, $browseController = 'Browse') {
 	$escape = static fn($text) => htmlspecialchars((string)$text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+	$browseParams = $browseController === 'Browse' ? tadlBrowseEntryParameters($browseAction) : [];
 	return '<nav class="tadl-record-nav" aria-label="'.$escape(_t('Record navigation')).'">'
 		.(string)$view->getVar('previousLink').(string)$view->getVar('nextLink')
-		.caNavLink($view->request, $escape($browseLabel), '', '', $browseController, $browseAction)
+		.caNavLink($view->request, $escape($browseLabel), '', '', $browseController, $browseAction, $browseParams)
 		.'</nav>';
 }
 

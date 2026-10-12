@@ -4,7 +4,7 @@ Standalone source repository for the `tadl` Pawtucket2 theme used for TADL local
 
 For Codex or a new workstation, start with [AGENTS.md](AGENTS.md) and the
 [current handoff](docs/CODEX_HANDOFF.md). The handoff explains the source map,
-recent changes, design decisions and all thirty standalone regression suites.
+recent changes, design decisions and all thirty-one standalone regression suites.
 It uses relative paths and does not require an application database for those tests.
 
 Feature guides:
@@ -185,6 +185,14 @@ Keep `collections.conf`'s `cache_timeout = 0`: native collection-child HTML cach
 keys do not include this preference or the current access mask.
 Whole-page content caching is also disabled in `app.conf` because rendered pages
 include the visitor's selected preference.
+
+Browse defaults to ascending names for Places, Events and Collections, and
+ascending identifiers for People, Organizations and Objects. Entity identifier
+order follows the catalogue's naming convention; the People **Name** option also
+supports surname/forename ordering. Menu and detail-page Browse links request
+these defaults explicitly, including for sessions with an older saved sort.
+Options can still change the sort; paging and detail **Prev / Next** preserve the
+displayed result order. Keyword searches retain their relevance defaults.
 
 Run the standalone synthetic regression checks with PHP/PDO SQLite, Node.js and
 Python 3.11+:

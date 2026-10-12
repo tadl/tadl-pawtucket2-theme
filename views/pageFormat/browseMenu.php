@@ -25,7 +25,8 @@
  *
  * ----------------------------------------------------------------------
  */
- 
+	require_once(dirname(__DIR__, 2).'/helpers/browse_navigation.php');
+
 	$va_browse_types = caGetBrowseTypes(array('forMenuBar' => true));
 	$o_config = caGetBrowseConfig();
 	
@@ -40,8 +41,7 @@
 <?php
 						foreach($va_browse_types as $vs_browse_name => $va_browse_type){
 							if(!$va_browse_type["dontShowInBrowseMenu"]){
-								$va_browse_params = ($vs_browse_name === 'collections') ? array('sort' => 'Name', 'direction' => 'asc') : array();
-								if ($vs_browse_name === 'subjects') { $va_browse_params = ['clear' => 1]; }
+								$va_browse_params = tadlBrowseEntryParameters($vs_browse_name, $va_browse_type);
 								print "<li>".caNavLink($this->request, caUcFirstUTF8Safe($va_browse_type['displayName']), '', '', 'Browse', $vs_browse_name, $va_browse_params, ['rel' => 'nofollow'])."</li>";
 							}
 						}
@@ -51,7 +51,7 @@
 <?php				
 				}else{
 ?>
-					<li <?php print ($this->request->getController() == "Browse") ? 'class="active"' : ''; ?>><?php print caNavLink($this->request, ($o_config->get("browse_menu_button_text") ? $o_config->get("browse_menu_button_text") : _t("Browse")), "", "", "Browse", key($va_browse_types), null, ['rel' => 'nofollow']); ?></li>
+					<li <?php print ($this->request->getController() == "Browse") ? 'class="active"' : ''; ?>><?php print caNavLink($this->request, ($o_config->get("browse_menu_button_text") ? $o_config->get("browse_menu_button_text") : _t("Browse")), "", "", "Browse", key($va_browse_types), tadlBrowseEntryParameters(key($va_browse_types), current($va_browse_types)), ['rel' => 'nofollow']); ?></li>
 <?php
 				}
 				break;
