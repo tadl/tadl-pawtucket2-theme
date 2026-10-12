@@ -21,7 +21,7 @@ also applies when the theme is cloned without the surrounding workspace.
 
 ## Contracts to preserve
 
-- The media preference defaults to **Only items with media**, persists in a
+- The media preference defaults to **All items**, persists in a
   cookie and stays out of ordinary URLs. It controls display, not authorization.
 - Keep native record access, representation access, bundle permissions and ACLs.
   Filter eligible results before theme counts, paging and result-context storage.

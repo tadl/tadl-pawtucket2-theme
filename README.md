@@ -155,7 +155,9 @@ one-time registration. See [Accounts and FAQ setup](docs/USER_FEATURES.md) and
 [Repeatable FAQ activation](docs/FAQ_SETUP.md).
 
 The header's **Only items with media | All items** control is a site-wide browser
-preference, defaulting to **Only items with media**. The toggle posts to the theme's
+preference, defaulting to **All items** when no valid preference is saved. Existing
+cookie/session choices, including **Only items with media**, remain selected.
+The toggle posts to the theme's
 `MediaPreference/Set` controller and redirects back to the current search or page
 without adding preference parameters to URLs. It works without JavaScript. A
 host-only, HttpOnly, SameSite=Lax cookie remembers the choice for one year; its

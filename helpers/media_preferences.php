@@ -8,7 +8,7 @@ function tadlMediaPreference($request) {
 		Session::setVar('tadlMediaPreference', $mode);
 		return $mode;
 	}
-	return Session::getVar('tadlMediaPreference') === 'all' ? 'all' : 'only';
+	return Session::getVar('tadlMediaPreference') === 'only' ? 'only' : 'all';
 }
 
 /** Match the supported authority browse routes, including their AJAX requests. */

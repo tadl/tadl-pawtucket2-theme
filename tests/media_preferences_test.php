@@ -346,7 +346,20 @@ require_once TEST_THEME.'/views/pageFormat/media_preference_toggle.php';
 
 Session::$values = [];
 $request = new TestRequest();
-testAssert(tadlMediaPreference($request) === 'only', 'New visitor must default to Only items with media.');
+testAssert(tadlMediaPreference($request) === 'all', 'New visitor must default to All items.');
+testAssert(tadlMediaPreference(new TestRequest([], 'Collections', 'index')) === 'all', 'Default must apply to collection navigation.');
+testAssert(tadlMediaPreference(testMediaRequest('invalid')) === 'all', 'Invalid cookie without a saved choice must use All items.');
+testAssert(tadlMediaPreference(testMediaRequest(['only'])) === 'all', 'Array cookie without a saved choice must use All items.');
+foreach (['invalid', ['only']] as $invalidSession) {
+    Session::$values = ['tadlMediaPreference' => $invalidSession];
+    testAssert(tadlMediaPreference(new TestRequest()) === 'all', 'Invalid session preference must use All items.');
+}
+Session::$values = [];
+$defaultToggle = new DOMDocument();
+$defaultToggle->loadHTML(tadlRenderMediaPreferenceToggle(new TestRequest()), LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+$defaultXPath = new DOMXPath($defaultToggle);
+testAssert($defaultXPath->query('//button[@aria-pressed="true"]')->length === 1
+    && $defaultXPath->query('//button[@aria-pressed="true"]')->item(0)->getAttribute('value') === 'all', 'New visitor toggle must select All items uniquely.');
 testAssert(tadlMediaPreference(testMediaRequest('only')) === 'only', 'Cookie Only mode not selected.');
 testAssert(tadlMediaPreference(new TestRequest()) === 'only', 'Site-wide session does not persist Only mode.');
 testAssert(tadlMediaPreference(new TestRequest([], 'Collections', 'index')) === 'only', 'Preference lost on collection navigation.');

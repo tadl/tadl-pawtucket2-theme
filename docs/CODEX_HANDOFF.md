@@ -1,6 +1,6 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-09. This document carries the recent coding context to another
+Updated: 2026-10-12. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
@@ -329,8 +329,9 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
 
 ### Media preference
 
-- **Only items with media** is the default; **All items** is a browser preference.
-  It currently lives beneath the header search box.
+- **All items** is the default when neither the cookie nor session has a valid
+  saved preference. Existing **Only items with media** selections remain intact.
+  The browser preference currently lives beneath the header search box.
 - `tadlMediaPreference` is a host-only, HttpOnly, SameSite=Lax cookie lasting
   one year, scoped to the application path and Secure on HTTPS. Session state
   is a fallback. Ordinary links do not append `media=only` or `media=all`.
