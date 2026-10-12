@@ -2126,15 +2126,39 @@ div.tadl-image-viewer-controls .close {
     min-width: 0;
 }
 
-.tadl-authority-nav {
+.tadl-record-header {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px 24px;
+}
+
+.tadl-record-heading {
+    flex: 1 1 240px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.tadl-record-heading > :first-child {
+    margin-top: 0;
+}
+
+.tadl-collection-record-header {
     margin-bottom: 24px;
 }
 
-.tadl-authority-nav a {
+.tadl-record-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-left: auto;
+    max-width: 100%;
+}
+
+.tadl-record-nav a {
     display: inline-flex;
     align-items: center;
     gap: 7px;
@@ -2149,14 +2173,14 @@ div.tadl-image-viewer-controls .close {
     text-decoration: none;
 }
 
-.tadl-authority-nav a:hover,
-.tadl-authority-nav a:focus {
+.tadl-record-nav a:hover,
+.tadl-record-nav a:focus {
     border-color: var(--tadl-primary);
     background: #eef4f8;
     color: var(--tadl-primary-dark);
 }
 
-.tadl-authority-nav .small {
+.tadl-record-nav .small {
     font-size: inherit;
 }
 

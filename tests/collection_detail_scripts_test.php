@@ -31,6 +31,9 @@ function tadlMediaEligibleIDs($table, $ids, $access) { return $ids; }
 function caBusyIndicatorIcon($request) { return $GLOBALS['detailScriptIcon']; }
 function caGetBrowseConfig() { return new DetailScriptConfig(); }
 function caGetCollectionsConfig() { return new DetailScriptConfig(); }
+function caNavLink($request, $label, $class, $module, $controller, $action) {
+	return '<a href="'.htmlspecialchars(caNavUrl($request, $module, $controller, $action), ENT_QUOTES).'">'.$label.'</a>';
+}
 function caNavUrl($request, $module, $controller, $action, $params = array(), $options = array()) {
 	$url = '/synthetic/'.$controller.'/'.$action;
 	foreach ($params as $name => $value) { $url .= '/'.$name.'/'.(($options['dontURLEncodeParameters'] ?? false) ? $value : rawurlencode((string)$value)); }
@@ -88,7 +91,10 @@ class DetailScriptView {
 	private array $values;
 	public function __construct($objectCount, array $templates = [], array $params = []) {
 		$this->request = new DetailScriptRequest($params);
-		$this->values = array('item' => new DetailScriptItem($objectCount, $templates), 'comments' => array(), 'pdfEnabled' => true);
+		$this->values = array('item' => new DetailScriptItem($objectCount, $templates), 'comments' => array(), 'pdfEnabled' => true,
+			'previousLink' => '<a href="/synthetic/Detail/collections/41">Prev</a>',
+			'nextLink' => '<a href="/synthetic/Detail/collections/43">Next</a>',
+			'resultsLink' => '<a href="/synthetic/results">Back</a>');
 	}
 	public function getVar($name) { return $this->values[$name] ?? null; }
 	public function render($table) {
@@ -176,6 +182,10 @@ foreach (array(
 	$contentsMode = ($case['collectionView'] ?? '') === 'hierarchy' ? 'hierarchy' : 'flat';
 	$hasGrid = $contentsMode === 'flat' || $case['objects'] >= 2;
 	checkDetailScripts(!preg_match('~navTop|navLeftRight|detailNavBg|\{\{\{(?:previousLink|nextLink)\}\}\}~', $html), $case['name'].': collection detail still reserves record-navigation columns.');
+	$navigationDom = new DOMDocument(); $navigationDom->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+	$navigationXPath = new DOMXPath($navigationDom);
+	checkDetailScripts($navigationXPath->query('//header[contains(@class,"tadl-record-header")]/nav[@class="tadl-record-nav"]/a')->length === 3
+		&& !str_contains($html, '/synthetic/results'), $case['name'].': collection heading must have Prev, Next and Browse, without Back.');
 	checkDetailScripts(str_contains($html, '<div class="row tadl-collection-detail">') && str_contains($html, "<div class='col-xs-12'>"), $case['name'].': collection content lost its full-width layout.');
 	preg_match_all('~<script\b[^>]*>(.*?)</script\s*>~is', $html, $scripts);
 	$expectedScriptCount = ($case['hierarchy'] ? 1 : 0) + ($hasGrid ? 1 : 0);

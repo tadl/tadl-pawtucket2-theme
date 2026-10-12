@@ -32,6 +32,10 @@ dates, extent, language, subjects, rights and related records. Empty metadata
 columns and fields are omitted; long text uses **Read more / Read less**. Columns
 stack on phones. **Download finding aid** uses sentence case, ordinary detail-link
 styling and a hover underline; the file icon and `rel="nofollow"` remain.
+The title header has a right-aligned **Prev / Next / Browse collections** toolbar.
+Prev/Next use the visitor's native result context; absent neighbors are omitted.
+There is no Back button or reserved side column. Controls wrap below the title
+when space is limited, and browser Back remains available.
 
 ## Navigation and URL state
 

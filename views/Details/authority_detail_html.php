@@ -7,11 +7,8 @@ $empty_html = '<p class="tadl-authority-empty">'.tadlAuthorityEscape(tadlMediaPr
 $error_html = '<p class="tadl-authority-error">'.tadlAuthorityEscape(_t('Related items could not be loaded. Use “View all related items” to open the results page.')).'</p>';
 ?>
 <article class="tadl-authority-detail">
-	<nav class="tadl-authority-nav" aria-label="<?= tadlAuthorityEscape(_t('Record navigation')); ?>">
-		{{{resultsLink}}}{{{previousLink}}}{{{nextLink}}}
-		<?= caNavLink($this->request, tadlAuthorityEscape($authority['browse_label']), '', '', 'Browse', $authority['browse']); ?>
-	</nav>
-	<header class="tadl-authority-header">
+	<header class="tadl-authority-header tadl-record-header">
+		<div class="tadl-record-heading">
 		<div class="tadl-authority-kind"><?= tadlAuthorityEscape($authority['kind']); ?></div>
 		<h1><?= tadlAuthorityEscape($authority['name']); ?></h1>
 		<?php if ($authority['identifier'] || ($authority['type'] && strcasecmp($authority['type'], $authority['kind']) !== 0)): ?>
@@ -20,6 +17,8 @@ $error_html = '<p class="tadl-authority-error">'.tadlAuthorityEscape(_t('Related
 			<?php if ($authority['identifier']): ?><span><?= tadlAuthorityEscape(_t('Identifier')); ?>: <?= tadlAuthorityEscape($authority['identifier']); ?></span><?php endif; ?>
 		</div>
 		<?php endif; ?>
+		</div>
+		<?= tadlDetailNavigation($this, $authority['browse'], $authority['browse_label']); ?>
 	</header>
 	<div class="tadl-authority-layout<?= $has_sidebar ? '' : ' tadl-authority-layout--items-only'; ?>">
 		<section class="tadl-authority-items" aria-labelledby="tadl-authority-items-title">

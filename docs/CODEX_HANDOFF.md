@@ -433,7 +433,8 @@ below retain implementation details and historical verification evidence.
   Tiles/List controls, with a flexible introduction column and stacked controls
   on phones. Both pagers use the same helper/page state and disappear for a
   single page; adding the top pager requires no additional catalogue query.
-- Collection details place their heading/finding-aid link beside populated metadata
+- Collection details place the title and compact record navigation in a shared
+  header, with the finding-aid link beside populated metadata
   in an adaptive overview. `tadl-collection-fields` groups description, its source
   and scope/content in the center; `tadl-collection-facts` groups creators, dates,
   extent, language, vocabulary/subject terms, rights/copyright and relationships
@@ -514,9 +515,16 @@ below retain implementation details and historical verification evidence.
   into gaps. Each AJAX/infinite-scroll page owns its grid; controls and pagination
   remain outside it. Desktop/tablet/phone columns remain three/two/one, with two
   columns in the narrower authority layout at 992–1199px.
-- Collection details omit the rectangular Back/Previous/Next blocks on desktop
-  and phones, and the main column uses the full available width. Collection
-  hierarchy links, result pagination and browser Back remain available.
+- Object, collection, person, organization, place and event Detail pages use
+  `tadlDetailNavigation()` beside their headings: native context **Prev / Next**
+  links plus the corresponding Browse action, with no Back button. The toolbar
+  aligns right and wraps beneath the heading when space is limited; it reserves
+  no outer navigation columns. Direct visits with no neighbors retain Browse.
+  Object media keeps its existing width; collection results stay full-width.
+- Place hierarchy uses a linked native hierarchy unit with an explicit ` > `
+  separator and encoded labels. Native access filtering remains in charge.
+  The previous scalar-tag delimiter rendered concatenated names and a trailing
+  separator; a read-only installed-model check confirmed the corrected output.
 - Result headings identify search/browse context and authority names. Active
   criteria are removable with visible controls and accessible labels.
 - The shared search/browse **Options** menu omits Lightbox bulk-add and selection

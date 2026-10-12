@@ -32,7 +32,7 @@ $authority_table = 'ca_places';
 $authority = tadlAuthorityDetailInfo($this->request, $t_item, $authority_table);
 $authority_fields = '';
 $authority_fields .= tadlDetailField($this->request, $t_item, 'Alternate names', '<unit relativeTo="ca_places.nonpreferred_labels" delimiter="<br/>">^ca_places.nonpreferred_labels.name<ifdef code="ca_places.nonpreferred_labels.type_id"> (^ca_places.nonpreferred_labels.type_id)</ifdef></unit>');
-$authority_fields .= tadlDetailField($this->request, $t_item, 'Place hierarchy', '^ca_places.hierarchy.preferred_labels.name%delimiter= &gt; ');
+$authority_fields .= tadlDetailField($this->request, $t_item, 'Place hierarchy', '<unit relativeTo="ca_places.hierarchy" delimiter=" &gt; "><l>^ca_places.preferred_labels.name%htmlEncode=1</l></unit>');
 $authority_fields .= tadlDetailField($this->request, $t_item, 'Description', '^ca_places.description');
 $authority_fields .= tadlDetailField($this->request, $t_item, 'Source', '^ca_places.source_id');
 $authority_fields .= tadlDetailField($this->request, $t_item, 'Coordinates', '^ca_places.georeference');

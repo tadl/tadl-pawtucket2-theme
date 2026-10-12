@@ -140,6 +140,29 @@ class AuthorityView {
 }
 require dirname(__DIR__).'/views/Details/authority_detail_helpers.php';
 
+foreach (['ca_entities' => ['people', 'Browse people'], 'ca_places' => ['places', 'Browse places'], 'ca_occurrences' => ['occurrences', 'Browse events']] as $table => [$browse, $label]) {
+	$item = new AuthorityItem($table);
+	$html = (new AuthorityView(new AuthorityRequest(), $item, [
+		'previousLink' => '<a href="/synthetic/previous">Prev</a>',
+		'nextLink' => '<a href="/synthetic/next">Next</a>',
+		'resultsLink' => '<a href="/synthetic/back">Back</a>'
+	]))->render();
+	$xpath = authorityDocument($html);
+	$links = $xpath->query('//header[contains(@class,"tadl-record-header")]/nav[@class="tadl-record-nav"]/a');
+	checkAuthority(array_map(static fn($node) => $node->textContent, iterator_to_array($links)) === ['Prev', 'Next', $label], 'Authority header must contain native Prev/Next and the correct Browse action, without Back.');
+	checkAuthority(!str_contains($html, '/synthetic/back') && $links->item(2)->getAttribute('href') === '/synthetic/Browse/'.$browse, 'Authority navigation must omit Back and retain its browse route.');
+}
+$directVisit = tadlDetailNavigation(new AuthorityView(new AuthorityRequest(), new AuthorityItem()), 'people', 'Browse people');
+checkAuthority(authorityDocument($directVisit)->query('//nav/a')->length === 1, 'A direct visit must retain Browse without inventing previous/next targets.');
+$place = new AuthorityItem('ca_places');
+$hierarchyTemplate = '<unit relativeTo="ca_places.hierarchy" delimiter=" &gt; "><l>^ca_places.preferred_labels.name%htmlEncode=1</l></unit>';
+$place->fields[$hierarchyTemplate] = '<a href="/synthetic/Detail/places/19">Synthetic region</a> &gt; <a href="/synthetic/Detail/places/42">Synthetic place</a>';
+$placeHtml = (new AuthorityView(new AuthorityRequest(), $place))->render();
+$placeXPath = authorityDocument($placeHtml);
+checkAuthority(in_array($hierarchyTemplate, $place->templateReads, true) && $placeXPath->query('//div[label="Place hierarchy"]/a')->length === 2, 'Place hierarchy must use the native linked hierarchy unit and preserve both links.');
+checkAuthority($placeXPath->query('//div[label="Place hierarchy"]')->item(0)->textContent === 'Place hierarchySynthetic region > Synthetic place', 'Place hierarchy must retain a separator between names without a trailing separator.');
+$GLOBALS['authorityMediaCalls'] = [];
+
 foreach ([
 	[10, 'Individual', 'Person', 'people'],
 	[11, 'Synthetic artist', 'Person', 'people'],

@@ -1,4 +1,13 @@
 <?php
+/** Reuse native result-context links; direct visits still have a browse destination. */
+function tadlDetailNavigation($view, $browseAction, $browseLabel, $browseController = 'Browse') {
+	$escape = static fn($text) => htmlspecialchars((string)$text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+	return '<nav class="tadl-record-nav" aria-label="'.$escape(_t('Record navigation')).'">'
+		.(string)$view->getVar('previousLink').(string)$view->getVar('nextLink')
+		.caNavLink($view->request, $escape($browseLabel), '', '', $browseController, $browseAction)
+		.'</nav>';
+}
+
 /** Empty rich-text markup and encoded whitespace do not make a display field. */
 if (!function_exists('tadlDetailHasContent')) {
 	function tadlDetailHasContent($value) {

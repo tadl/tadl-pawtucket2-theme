@@ -20,6 +20,9 @@ function caACLIsEnabled($record, $options = []) {
 }
 function caGetBundleAccessLevel($table, $bundle) { return 0; } // Unrelated detail fields are unavailable.
 function caDisplayLightbox($request) { return false; }
+function caNavLink($request, $label, $class, $module, $controller, $action) {
+	return '<a href="'.htmlspecialchars('/synthetic/'.$controller.'/'.$action, ENT_QUOTES).'">'.$label.'</a>';
+}
 function caObjectRepresentationThumbnails($request, $representationID, $object, $options) { return []; }
 class TextRequest {
 	public object $user;
@@ -237,11 +240,19 @@ ca_object_representations::$records[11]['media_content'] = 'Rank 1 primary';
 // Render the actual object template and verify full-width placement after both columns.
 class TextView {
 	function __construct(public TextRequest $request, public TextObject $object) {}
-	function getVar($name) { return $name === 'item' ? $this->object : null; }
+	function getVar($name) { return match ($name) {
+		'item' => $this->object,
+		'previousLink' => '<a href="/synthetic/Detail/objects/41">Prev</a>',
+		'nextLink' => '<a href="/synthetic/Detail/objects/43">Next</a>',
+		'resultsLink' => '<a href="/synthetic/results">Back</a>',
+		default => null
+	}; }
 	function render() { ob_start(); include dirname(__DIR__).'/views/Details/ca_objects_default_html.php'; return ob_get_clean(); }
 }
 $html = (new TextView($request, $object))->render();
 $xpath = new DOMXPath(textDocument($html));
+checkDocumentText($xpath->query('//header[@class="tadl-record-header"]/nav[@class="tadl-record-nav"]/a')->length === 3
+	&& $xpath->query('//nav/a[@href="/synthetic/Browse/objects"]')->length === 1 && !str_contains($html, '/synthetic/results'), 'Object title must contain native Prev/Next and Browse objects, without Back.');
 $section = $xpath->query('//details[@class="tadl-document-text"]')->item(0);
 checkDocumentText($section && str_contains($section->parentNode->getAttribute('class'), 'tadl-object-content'), 'Document text must span the container outside the two-column grid.');
 checkDocumentText($xpath->query('preceding-sibling::div[contains(@class,"row")]/div[contains(concat(" ",normalize-space(@class)," ")," tadl-object-media ")]', $section)->length === 1

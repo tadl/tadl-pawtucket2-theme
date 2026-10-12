@@ -113,10 +113,15 @@
 <div class="row tadl-collection-detail">
 	<div class='col-xs-12'>
 		<div class="container">
-			<div class="tadl-collection-overview">
-				<div class="tadl-collection-heading">
+			<header class="tadl-record-header tadl-collection-record-header">
+				<div class="tadl-collection-heading tadl-record-heading">
 					<H1>{{{^ca_collections.preferred_labels.name}}}</H1>
 					<H2>{{{^ca_collections.type_id}}}{{{<ifdef code="ca_collections.idno">, ^ca_collections.idno</ifdef>}}}</H2>
+				</div>
+				<?= tadlDetailNavigation($this, 'index', _t('Browse collections'), 'Collections'); ?>
+			</header>
+			<div class="tadl-collection-overview">
+				<div class="tadl-collection-heading">
 					{{{<ifdef code="ca_collections.parent_id"><div class="unit">Part of: <unit relativeTo="ca_collections.hierarchy" delimiter=" &gt; "><l>^ca_collections.preferred_labels.name</l></unit></div></ifdef>}}}
 <?php
 					if ($vn_pdf_enabled) {
