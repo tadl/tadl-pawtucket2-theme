@@ -1,13 +1,17 @@
 <?php
 require_once(dirname(__DIR__, 2).'/helpers/browse_navigation.php');
 
-/** Reuse native result-context links; direct visits still have a browse destination. */
-function tadlDetailNavigation($view, $browseAction, $browseLabel, $browseController = 'Browse') {
+/** Reuse native result-context links, with an optional browse destination. */
+function tadlDetailNavigation($view, $browseAction = null, $browseLabel = '', $browseController = 'Browse') {
 	$escape = static fn($text) => htmlspecialchars((string)$text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-	$browseParams = $browseController === 'Browse' ? tadlBrowseEntryParameters($browseAction) : [];
+	$links = (string)$view->getVar('previousLink').(string)$view->getVar('nextLink');
+	if ($browseAction !== null) {
+		$browseParams = $browseController === 'Browse' ? tadlBrowseEntryParameters($browseAction) : [];
+		$links .= caNavLink($view->request, $escape($browseLabel), '', '', $browseController, $browseAction, $browseParams);
+	}
+	if ($links === '') { return ''; }
 	return '<nav class="tadl-record-nav" aria-label="'.$escape(_t('Record navigation')).'">'
-		.(string)$view->getVar('previousLink').(string)$view->getVar('nextLink')
-		.caNavLink($view->request, $escape($browseLabel), '', '', $browseController, $browseAction, $browseParams)
+		.$links
 		.'</nav>';
 }
 

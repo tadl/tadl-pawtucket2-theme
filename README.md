@@ -193,6 +193,8 @@ supports surname/forename ordering. Menu and detail-page Browse links request
 these defaults explicitly, including for sessions with an older saved sort.
 Options can still change the sort; paging and detail **Prev / Next** preserve the
 displayed result order. Keyword searches retain their relevance defaults.
+Object details show only **Prev / Next**, without a Browse objects button; direct
+visits without result context omit the empty navigation toolbar.
 
 Run the standalone synthetic regression checks with PHP/PDO SQLite, Node.js and
 Python 3.11+:

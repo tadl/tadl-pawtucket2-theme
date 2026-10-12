@@ -89,6 +89,10 @@ foreach (array_keys($expected) as $index => $type) {
 $nav = tadlDetailNavigation($view, 'index', 'Browse collections', 'Collections');
 browseCheck(str_contains($nav, 'href="/synthetic/Collections/index"') && !str_contains($nav, '?sort='), 'Dedicated collection index keeps its own native configuration.');
 browseCheck(str_contains($nav, '/synthetic/previous') && str_contains($nav, '/synthetic/next'), 'Default entry sorting must not replace native Prev/Next links.');
+$objectNav = tadlDetailNavigation($view);
+browseCheck(str_contains($objectNav, '/synthetic/previous') && str_contains($objectNav, '/synthetic/next') && browseLinks($objectNav)->length === 0, 'Object navigation must retain Prev/Next without a Browse destination.');
+$directObjectView = new class extends BrowseNavigationView { function getVar($name) { return null; } };
+browseCheck(tadlDetailNavigation($directObjectView) === '', 'Objects without result context must omit the empty navigation wrapper.');
 browseCheck(tadlBrowseEntryParameters('unknown') === [], 'An unconfigured destination must retain its ordinary native link.');
 browseCheck(tadlBrowseEntryParameters('places', ['sortBy' => ['Custom' => 'synthetic_field'], 'sortDirection' => ['Custom' => 'DESC']]) === ['sort' => 'Custom', 'direction' => 'desc'], 'Entry links must follow site configuration instead of hardcoded names.');
 browseCheck(tadlBrowseEntryParameters('places', ['sortBy' => ['Custom' => 'synthetic_field'], 'sortDirection' => ['Custom' => 'invalid']])['direction'] === 'asc', 'Invalid directions fall back to native ascending order.');

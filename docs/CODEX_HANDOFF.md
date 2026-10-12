@@ -187,6 +187,9 @@ before media filtering/pagination; result-context storage preserves that order,
 so detail **Prev / Next** follows it. Search and MultiSearch relevance defaults
 remain unchanged. An already-open detail context keeps its existing order until
 the visitor enters a browse again.
+Object details intentionally omit **Browse objects**, showing only native
+**Prev / Next** when available. Direct object visits without result context omit
+the empty toolbar. Other detail types retain their Browse destination.
 
 Verification: portable navigation/menu/default-map checks plus the actual native
 configuration parser; media eligibility/context, authority, document-text,
@@ -543,9 +546,11 @@ below retain implementation details and historical verification evidence.
   columns in the narrower authority layout at 992–1199px.
 - Object, collection, person, organization, place and event Detail pages use
   `tadlDetailNavigation()` beside their headings: native context **Prev / Next**
-  links plus the corresponding Browse action, with no Back button. The toolbar
-  aligns right and wraps beneath the heading when space is limited; it reserves
-  no outer navigation columns. Direct visits with no neighbors retain Browse.
+  links plus the corresponding Browse action, with no Back button. Object details
+  are the exception: only Prev/Next, with no toolbar when both are unavailable.
+  The toolbar aligns right and wraps beneath the heading when space is limited;
+  it reserves no outer navigation columns. Other detail types retain Browse on
+  direct visits with no neighbors.
   Object media keeps its existing width; collection results stay full-width.
 - Place hierarchy uses a linked native hierarchy unit with an explicit ` > `
   separator and encoded labels. Native access filtering remains in charge.
