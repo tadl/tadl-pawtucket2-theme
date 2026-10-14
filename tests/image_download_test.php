@@ -16,6 +16,7 @@ mkdir($directory.'/lib/Logging', 0700, true);
 foreach (['pawtucket/BasePawtucketController.php', 'Media.php', 'Logging/Downloadlog.php'] as $file) {
 	file_put_contents($directory.'/lib/'.$file, '<?php');
 }
+ini_set('error_log', $directory.'/diagnostics.log');
 define('__CA_LIB_DIR__', $directory.'/lib');
 $fixtures = [
 	'png' => 'iVBORw0KGgoAAAANSUhEUgAAAA0AAAAHEAIAAAAMgowOAAAAR0lEQVQoz2NUUcnImDGDgUqA0eVo9Z8FCtQyjkVxgchk9naqua6NbbHyen2quU5hgTA1XXfc/ZTXPjuqGff8+d27R49SyzgAxTUT4P6pWkYAAAAASUVORK5CYII=',
@@ -612,4 +613,7 @@ tadlPruneImageDownloads($cacheDirectory);
 checkDownload(!is_file($first['path']) && is_file($pdf['path']), 'Expiry must remove only unused cached exports.');
 mkdir($cacheDirectory.'/public', 0755); chmod($cacheDirectory.'/public', 0755);
 checkDownload(tadlCachedImageDownload($source, 'jpg', $cacheDirectory.'/public') === null, 'Publicly accessible/shared filesystem permissions must be rejected.');
+$diagnostics = file_get_contents($directory.'/diagnostics.log');
+checkDownload(str_contains($diagnostics, '"event":"tadl_export_failed"') && str_contains($diagnostics, '"operation":"image"') && str_contains($diagnostics, '"representation_id":'), 'Actual failed image requests must record safe operator diagnostics.');
+checkDownload(!str_contains($diagnostics, 'Synthetic renderer failure') && !str_contains($diagnostics, $directory), 'Diagnostics must not log exception messages or full source paths.');
 echo json_encode(['status' => 'passed', 'assertions' => $assertions, 'boundaries' => 'actual helper/controller/action script/gallery media partial; synthetic access/ACL/media/DOM APIs; Node.js gallery callbacks; real image bytes; '.($autoload ? 'real bundled Dompdf' : 'synthetic PDF renderer')], JSON_PRETTY_PRINT).PHP_EOL;

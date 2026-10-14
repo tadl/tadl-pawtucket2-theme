@@ -4,6 +4,7 @@ require_once(__CA_LIB_DIR__.'/Media.php');
 require_once(__CA_LIB_DIR__.'/Logging/Downloadlog.php');
 require_once(__DIR__.'/../helpers/image_downloads.php');
 require_once(__DIR__.'/../helpers/image_download_cache.php');
+require_once(__DIR__.'/../helpers/export_diagnostics.php');
 
 class ImageDownloadController extends BasePawtucketController {
 	public function Download() {
@@ -27,6 +28,7 @@ class ImageDownloadController extends BasePawtucketController {
 		$previousLimit = getenv('MAGICK_TIME_LIMIT');
 		putenv('MAGICK_TIME_LIMIT='.(($previousLimit !== false && (int)$previousLimit > 0) ? min(120, (int)$previousLimit) : 120));
 		$imagickLimit = null;
+		$failure = null;
 		try {
 			if (class_exists('Imagick', false) && defined('Imagick::RESOURCETYPE_TIME')) {
 				$imagickLimit = Imagick::getResourceLimit(Imagick::RESOURCETYPE_TIME);
@@ -37,12 +39,13 @@ class ImageDownloadController extends BasePawtucketController {
 				: tadlPrepareImageDownload($source, $format);
 			if ($download && !$download['temporary'] && $download['path'] !== $source['path']) { tadlPruneImageDownloads(dirname($download['path'])); }
 		}
-		catch (Throwable $error) { $download = null; }
+		catch (Throwable $error) { $download = null; $failure = $error; }
 		finally {
 			putenv($previousLimit === false ? 'MAGICK_TIME_LIMIT' : 'MAGICK_TIME_LIMIT='.$previousLimit);
 			if ($imagickLimit !== null) { Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, $imagickLimit); }
 		}
 		if (!$download) {
+			tadlLogExportFailure('image', ['object_id' => $objectID, 'representation_id' => $representationID, 'format' => $format], $failure);
 			$this->response->setHTTPResponseCode(503, 'Service Unavailable');
 			$this->response->addContent(_t('This image could not be downloaded in the requested format. Please try again later.'));
 			return;

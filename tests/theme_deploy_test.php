@@ -58,22 +58,14 @@ function runDeploy(array $arguments, array $failures = []) {
 }
 try {
 	[$status, $output, $calls] = runDeploy(['root@catalog.example.org']);
-	deployCheck($status === 0 && str_contains($output, 'Deployment complete (application caches preserved)'), 'Successful transfer and reload must report completion.');
-	deployCheck(array_column($calls, 0) === ['rsync', 'ssh', 'apache2ctl', 'systemctl'], 'Deployment must copy, validate and reload only, with no cache operation.');
+	deployCheck($status === 0 && str_contains($output, 'Deployment complete (application caches preserved; no service reload)'), 'Successful transfer must report completion without a reload.');
+	deployCheck(array_column($calls, 0) === ['rsync'], 'Deployment must only copy; no SSH, cache operation or service reload.');
 	$transfer = $calls[0][1];
 	deployCheck(array_slice($transfer, -2) === [$checkout.'/', 'root@catalog.example.org:/var/www/pawtucket2/themes/tadl/'], 'Resolve source from the script location, preserving spaces and trailing-slash semantics.');
 	deployCheck(array_slice($transfer, 0, -2) === ['--archive', '--verbose', '--itemize-changes', '--exclude=.git/', '--exclude=.gitignore', '--exclude=README.md', '--exclude=.DS_Store'], 'Preserve transfer exclusions without introducing deletion.');
-	deployCheck($calls[1][1] === ['root@catalog.example.org', 'apache2ctl configtest && systemctl reload apache2'], 'Validate Apache before retaining the existing reload.');
-	deployCheck($calls[2][1] === ['configtest'] && $calls[3][1] === ['reload', 'apache2'], 'Use the expected configuration check and service reload.');
-	foreach ([
-		'TRANSFER' => [23, ['rsync']],
-		'CONFIG' => [1, ['rsync', 'ssh', 'apache2ctl']],
-		'RELOAD' => [4, ['rsync', 'ssh', 'apache2ctl', 'systemctl']],
-	] as $phase => [$failure, $expectedCalls]) {
-		[$status, $output, $calls] = runDeploy(['root@catalog.example.org'], ['TADL_DEPLOY_TEST_'.$phase.'_EXIT' => (string)$failure]);
-		deployCheck($status === $failure && !str_contains($output, 'Deployment complete'), 'A failed '.$phase.' step must preserve its exit status and omit completion.');
-		deployCheck(array_column($calls, 0) === $expectedCalls, 'A failed '.$phase.' step must stop later operations.');
-	}
+	[$status, $output, $calls] = runDeploy(['root@catalog.example.org'], ['TADL_DEPLOY_TEST_TRANSFER_EXIT' => '23']);
+	deployCheck($status === 23 && !str_contains($output, 'Deployment complete'), 'A failed transfer must preserve its exit status and omit completion.');
+	deployCheck(array_column($calls, 0) === ['rsync'], 'A failed transfer must not run any later operation.');
 	foreach ([[], ['-oProxyCommand=unsafe'], ['root@catalog.example.org;unsafe'], ['root@catalog.example.org', 'unexpected']] as $invalid) {
 		[$status, $output, $calls] = runDeploy($invalid);
 		deployCheck($status !== 0 && !$calls && str_contains($output, 'Usage:'), 'Missing, unsafe and extra arguments must not start deployment.');

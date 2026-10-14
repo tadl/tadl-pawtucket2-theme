@@ -37,7 +37,4 @@ rsync \
 
 # Theme assets carry content versions; configuration validates its file mtimes.
 # Preserve application caches, sessions and temporary files during routine deploys.
-printf 'Validating Apache configuration and reloading Apache on %s\n' "${remote_host}"
-ssh "${remote_host}" 'apache2ctl configtest && systemctl reload apache2'
-
-printf '%s\n' 'Deployment complete (application caches preserved)'
+printf '%s\n' 'Deployment complete (application caches preserved; no service reload)'

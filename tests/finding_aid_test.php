@@ -130,11 +130,12 @@ class BasePawtucketController {
 }
 $directory = sys_get_temp_dir().'/tadl-aid-test-'.bin2hex(random_bytes(8));
 mkdir($directory.'/pawtucket', 0700, true);
+ini_set('error_log', $directory.'/diagnostics.log');
 file_put_contents($directory.'/pawtucket/BasePawtucketController.php', '<?php');
 define('__CA_LIB_DIR__', $directory);
 register_shutdown_function(function () use ($directory) {
 	if (isset($GLOBALS['aidRoutingCleanup'])) { ($GLOBALS['aidRoutingCleanup'])(); }
-	foreach (['/pawtucket/BasePawtucketController.php', '/pdf_stub.php'] as $file) { if (is_file($directory.$file)) { unlink($directory.$file); } }
+	foreach (['/pawtucket/BasePawtucketController.php', '/pdf_stub.php', '/diagnostics.log'] as $file) { if (is_file($directory.$file)) { unlink($directory.$file); } }
 	rmdir($directory.'/pawtucket'); rmdir($directory);
 });
 if ($autoload = getenv('TADL_TEST_COMPOSER_AUTOLOAD')) {
@@ -335,5 +336,10 @@ if ($output = getenv('TADL_TEST_FINDING_AID_PDF')) {
 	aidCheck(count($sample['collections']) === 36 && $sample['collections'][60030]['depth'] === 3, 'PDF sample must include every nested subcollection.');
 	$view->setVar('finding_aid', $sample);
 	file_put_contents($output, tadlFindingAidPDF($view->render('Details/finding_aid_pdf_html.php')));
+}
+if (!$autoload) {
+	$diagnostics = file_get_contents($directory.'/diagnostics.log');
+	aidCheck(str_contains($diagnostics, '"operation":"finding_aid"') && str_contains($diagnostics, '"collection_id":42'), 'Actual failed finding-aid requests must record safe operator diagnostics.');
+	aidCheck(!str_contains($diagnostics, 'Synthetic renderer failure') && !str_contains($diagnostics, $directory), 'Finding-aid diagnostics must not log exception messages or full paths.');
 }
 echo "Finding aid passed: {$GLOBALS['assertions']} assertions (".($autoload ? 'real Dompdf' : 'synthetic renderer').").\n";

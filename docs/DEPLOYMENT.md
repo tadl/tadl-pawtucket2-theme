@@ -2,8 +2,9 @@
 
 Routine theme deployment does not clear application caches. CSS/JavaScript URLs
 include content hashes, native configuration caching checks file modification
-times, and the existing Apache reload refreshes PHP workers. A cache purge is not
-required for normal theme changes and would discard useful cached data and sessions.
+times, and PHP OPcache must have timestamp validation enabled so changed PHP files
+are picked up automatically. Routine deploys neither reload Apache nor clear caches.
+A cache purge would discard useful cached data and sessions.
 
 After the operator authorizes deployment, run the enclosing `deploy` helper, or
 from a standalone theme checkout:
@@ -14,17 +15,24 @@ bash support/deploy-theme.sh root@catalog.example.org
 
 Replace the synthetic SSH target with the operator's host. The script uses the
 existing `/var/www/pawtucket2/themes/tadl` layout and requires permission to write
-there, validate Apache configuration and reload Apache. Its source directory comes
+there. Its source directory comes
 from the script's location, so it works independently of the caller's working
 directory. The enclosing workstation helper supplies its local SSH target and
 delegates to this tracked implementation.
 
 The script retains the existing rsync exclusions and does not use `--delete`.
 Inspect server-local overrides before deployment: matching theme files are still
-overwritten. A failed transfer prevents the reload; a failed Apache configuration
-test prevents the reload; any failed step exits unsuccessfully. A failure after
-rsync means files have been copied and needs operator attention, not an assumed
-rollback. The completion message is printed only after the reload succeeds.
+overwritten. A failed transfer exits unsuccessfully without reporting completion.
+A partially failed rsync can leave some files copied and needs operator attention,
+not an assumed rollback. The completion message is printed only after rsync succeeds.
+The helper runs no remote shell commands and performs no service restart/reload.
+
+Before using this workflow on a different installation, check the web SAPI
+OPcache configuration: `opcache.validate_timestamps` must be enabled. Allow its
+`opcache.revalidate_freq` interval before verifying PHP changes. With validation
+disabled, a separate runtime invalidation/reload procedure is required; a browser
+Reload or Redis purge does not invalidate PHP bytecode. Do not change that server
+policy implicitly as part of theme deployment.
 
 Neither Redis nor file caches are purged. Temporary files, durable face-detection
 data and the shared database's persistent cache are preserved. The deployment

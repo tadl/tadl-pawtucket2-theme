@@ -4,7 +4,7 @@ Standalone source repository for the `tadl` Pawtucket2 theme used for TADL local
 
 For Codex or a new workstation, start with [AGENTS.md](AGENTS.md) and the
 [current handoff](docs/CODEX_HANDOFF.md). The handoff explains the source map,
-recent changes, design decisions and all thirty-two standalone regression suites.
+recent changes, design decisions and all thirty-three standalone regression suites.
 It uses relative paths and does not require an application database for those tests.
 
 Feature guides:
@@ -25,7 +25,8 @@ Deployment is a separate, explicitly authorized step. A source commit/push does
 not authorize running the enclosing deployment helper or restarting production.
 The versioned `support/deploy-theme.sh user@host` contains the deployment steps;
 the enclosing helper delegates to it with the operator's local target. Routine
-deployment copies the theme, validates Apache configuration and reloads Apache.
+deployment copies the theme without reloading Apache; PHP OPcache timestamp
+validation must be enabled.
 It leaves application caches, sessions and `app/tmp` intact, regardless of whether
 the application uses Redis or file caching. See [Deployment](docs/DEPLOYMENT.md).
 
@@ -214,3 +215,16 @@ for test_file in tests/*_test.php; do
   php "$test_file" || exit 1
 done
 ```
+
+Production hardening keeps exception details and request parameters out of public
+error pages, returns 404 for failed dispatch/missing records and 500 for unexpected
+failures, and retains native server-side exception logging. Gallery entrypoints
+use a theme controller shim to require published sets of the configured gallery
+type before invoking the native controller; user lightboxes remain behind native
+ownership/sharing checks. Export failures log safe IDs, format and code location
+through PHP's server error log, without exception messages or request payloads.
+
+GitHub Actions runs PHP 8.3 syntax checks and all standalone suites on pushes and
+pull requests, with read-only repository permissions and no production access.
+See [Production verification](docs/PRODUCTION_CHECKS.md) for the remaining
+controlled account, email and export smoke checks.

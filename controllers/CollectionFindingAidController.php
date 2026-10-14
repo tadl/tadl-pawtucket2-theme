@@ -1,6 +1,7 @@
 <?php
 require_once(__CA_LIB_DIR__.'/pawtucket/BasePawtucketController.php');
 require_once(__DIR__.'/../helpers/finding_aid.php');
+require_once(__DIR__.'/../helpers/export_diagnostics.php');
 
 // "FindingAid" is reserved by Pawtucket's bundled plugin during URL parsing.
 class CollectionFindingAidController extends BasePawtucketController {
@@ -23,12 +24,14 @@ class CollectionFindingAidController extends BasePawtucketController {
 		$this->response->addHeader('Cache-Control', 'private, no-store');
 		$time_limit = (int)ini_get('max_execution_time');
 		if ($time_limit > 0) { set_time_limit(max($time_limit, 180)); }
+		$failure = null;
 		try {
 			$data = tadlFindingAidData($this->request, $collection, $config);
 			$this->view->setVar('finding_aid', $data);
 			$bytes = tadlFindingAidPDF($this->view->render('Details/finding_aid_pdf_html.php'));
-		} catch (Throwable $error) { $bytes = null; }
+		} catch (Throwable $error) { $bytes = null; $failure = $error; }
 		if (!$bytes) {
+			tadlLogExportFailure('finding_aid', ['collection_id' => $id, 'format' => 'pdf'], $failure);
 			$this->response->setHTTPResponseCode(503, 'Service Unavailable');
 			$this->response->addContent(_t('The finding aid could not be generated. Please try again later.')); return;
 		}

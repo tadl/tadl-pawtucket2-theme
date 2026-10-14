@@ -115,8 +115,11 @@ The native list filters sets through the catalog access mask (normally `[1]`),
 so changing it to `0` can make newly created lightboxes disappear even for their
 owner. Ownership and explicit user/group sharing still gate the Lightbox
 controller. Do not describe this access flag as a complete privacy policy;
-review set publication/export/presentation routes before offering private
-research storage. Do not broaden catalog access statuses just to show lightboxes.
+Gallery routes now require an access-1 set of the configured `gallery_set_type`
+before loading the upstream controller. This applies to numeric gallery pages and
+all AJAX set/item endpoints, so a user lightbox cannot bypass native ownership or
+sharing through a Gallery URL. Existing sets are not changed. Keep the gallery
+and user set types distinct; controlled cross-account checks remain required. Do not broaden catalog access statuses just to show lightboxes.
 Existing sets and permissions are not changed by this theme.
 
 Bulk selection / Add all results remain omitted. Individual additions are

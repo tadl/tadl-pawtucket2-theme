@@ -1,6 +1,6 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-12. This document carries the recent coding context to another
+Updated: 2026-10-14. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
@@ -59,8 +59,9 @@ enclosing workstation `deploy` helper delegates with its local target. Routine
 deploys preserve Redis/file application caches, sessions and temporary files.
 The previous recursive `app/tmp` deletion did not clear Redis and is removed.
 CSS/JS content versions and native configuration mtime checks handle ordinary
-theme updates. The existing Apache reload is retained, with a configuration test
-first. Transfer, configuration-test and reload failures stop completion.
+theme updates. As of 2026-10-14, Apache reload/configtest are removed from routine theme deploys.
+OPcache timestamp validation is a deployment prerequisite; transfer failures
+stop completion. Tests and documentation match this copy-only workflow.
 See [Deployment](DEPLOYMENT.md) for the operator workflow and maintenance scope.
 No deployment or production cache purge was performed for this source change.
 
@@ -904,7 +905,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The thirty-two committed tests are portable and use synthetic boundaries. They do not
+The thirty-three committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -942,7 +943,8 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/home_faq_test.php` | Published/readable Site Pages, drafts, incomplete entries, locale, rank, escaped questions and purified answers; optional real HTMLPurifier |
 | `tests/finding_aid_test.php` | Selected collection export, full nested/empty/wide hierarchy, natural sibling order and duplicate-named branches, access/ACL/bundle restrictions, complete unique counts over native caps, overlapping memberships, no individual object metadata/entries, collection field mappings, escaped PDF text and safe failure; optional real Dompdf |
 | `tests/asset_versions_test.php` | Stable/changed CSS and JS URLs, preserved timestamps, native loader options, subdirectory/absolute theme URLs, escaping, inline-code preservation and path boundaries |
-| `tests/theme_deploy_test.php` | Actual deployment shell with synthetic SSH/rsync boundaries, source paths with spaces, cache preservation and transfer/configuration/reload failure handling |
+| `tests/theme_deploy_test.php` | Actual deployment shell with synthetic SSH/rsync boundaries, source paths with spaces, cache preservation, transfer failure handling and no remote shell/service operations |
+| `tests/production_hardening_test.php` | Native Gallery guard shim, public/missing/private/user set boundaries, real HTTP error headers/statuses and safe export diagnostics |
 | `tests/media_preferences_test.php` | Eligibility SQL, lazy collection/authority descriptor fetching, related-object access/deletion/ACL/bundle checks, People/Organizations/Places/Events Tiles/List counts/paging/detail context, table cache isolation, route scope, invalid-media exhaustion, filtered result adapter and result rendering |
 | `tests/browse_navigation_test.php` | Configured logical browse defaults, actual single/multiple-target menu and detail Browse links, native Prev/Next preservation, Subjects entry reset, configurable directions and optional native configuration parsing |
 | `tests/family_contents_test.php` | Actual SQLite family/member scopes, bidirectional/subtype/deduplicated relationships, one-hop limits, root/member access/type/source/bundle/ACL checks, batched wide families, endpoint validation/current scope and native search delegation |
@@ -1075,3 +1077,36 @@ included in a workspace rsync and are not required by the committed tests.
   steps. Review the target and current configuration before any authorized deploy.
 
 No further feature implementation is requested by this handoff itself.
+
+## 2026-10-14 production hardening
+
+- `views/system/fatal_error_html.php` uses `helpers/public_errors.php` and a small
+  standalone themed stylesheet. It never renders exception messages, stack traces,
+  request parameters or file paths; missing/denied Gallery sets and native dispatch
+  failures return 404, unexpected exceptions return 500, and explicit error statuses
+  are preserved. Error responses are no-store/noindex and have a restrictive CSP.
+  The ordinary native Error view also hides diagnostics and provides a home link.
+- `controllers/GalleryController.php` is a guard shim, not a fork of upstream.
+  Before requiring the native controller it requires an access-1, non-deleted,
+  readable set of the configured gallery type. Numeric pages and native AJAX actions
+  use the same guard. Native lightbox ownership/sharing and all stored set access
+  remain unchanged. Keep user and gallery set types distinct.
+- JPG/PDF/finding-aid failures use `helpers/export_diagnostics.php`: bounded numeric
+  IDs, allowed format, exception class and basename/line go to PHP's server log;
+  exception messages, full paths and request data are never included. Existing
+  safe 503 responses remain.
+- Routine deployment is rsync only, with no cache purge, Apache reload or configtest.
+  It requires OPcache timestamp validation for PHP file changes. The existing user
+  edit removing reloads is now incorporated in source, tests and documentation.
+- `.github/workflows/checks.yml` runs PHP 8.3/Node 24 standalone checks, with pinned
+  official actions and read-only permissions. It has no deployment credentials.
+- `tests/production_hardening_test.php` covers actual Gallery guard/shim behavior,
+  real local HTTP error statuses/headers and safe diagnostic logging using synthetic
+  fixtures. [Production checks](PRODUCTION_CHECKS.md) distinguishes these from
+  the controlled authenticated/live-export pilot.
+
+The root robots policy was updated separately on 2026-10-14 after a private backup;
+its public HTTP response matched the source policy including all four new contents
+route exclusions. No Apache reload, cache clear or theme deployment was performed
+for that root-file update. The authenticated pilot still requires designated
+disposable accounts; it has not been performed by the standalone suites.
