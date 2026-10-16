@@ -2,7 +2,7 @@
 <div class="tadl-advanced-search">
 	<?php tadlAdvancedSearchHero($this->request, 'places', _t('Places Advanced Search'), _t('Search place names, descriptions, and related records.')); ?>
 
-	{{{form}}}
+	<?= tadlAdvancedSearchForm($this); ?>
 
 	<div class="advancedContainer tadl-advanced-search-card">
 		<section class="tadl-advanced-section">

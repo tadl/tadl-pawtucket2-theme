@@ -1176,3 +1176,21 @@ The theme's guard previously treated that inclusion as a Gallery dispatch with
 no set ID. `tadlGuardGalleryRequest()` now guards only actual Gallery requests;
 the public gallery type/access/deletion/readability checks remain intact for
 numeric pages and AJAX actions. The hardening suite exercises both paths.
+
+All six advanced-search forms and the query builder now submit GET. The header
+search already used GET and now declares it explicitly. Advanced templates call
+`tadlAdvancedSearchForm()` to change only the native opening form's method after
+native compilation, preserving action URLs, field arrays, booleans, relationship
+restrictions, hidden form metadata and widget scripts. The discovery pass still
+emits the native form tag. Pawtucket reads advanced values through `$_REQUEST`,
+so GET reaches the same native query builder. Result URLs and browser Back use
+GET without a form-resubmission prompt. The current public object form produces
+roughly 2.5 KB of encoded parameters for a short keyword search; no infrastructure
+change or new query parser is involved. Ordinary very long URL limits still apply.
+Account, contact, lightbox and preference forms retain their POST/CSRF behavior.
+Verification: all 34 standalone suites passed. A synthetic browser preview of the
+actual templates verified address wrapping at desktop/390px, GET search submission
+and Back from a result to the same search without a resubmission prompt. A local
+reference-tree check confirmed identical native advanced-query expressions,
+boolean handling and saved form values for equivalent GET/POST inputs. These
+checks do not deploy the theme or replace the pending archivist example checks.

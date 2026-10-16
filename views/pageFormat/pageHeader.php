@@ -284,7 +284,7 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
 				</a>
 			</div>
 			<div class="tadl-header-search">
-				<form class="tadl-search-form" role="search" action="<?= caNavUrl($this->request, '', 'MultiSearch', 'Index'); ?>" aria-label="<?= _t("Search"); ?>">
+				<form class="tadl-search-form" role="search" method="get" action="<?= caNavUrl($this->request, '', 'MultiSearch', 'Index'); ?>" aria-label="<?= _t("Search"); ?>">
 					<label class="sr-only" for="headerSearchInputDesktop"><?= _t("Search text"); ?></label>
 					<input type="text" class="form-control" id="headerSearchInputDesktop" placeholder="Search local history..." name="search" autocomplete="off" />
 					<button type="submit" class="tadl-search-button" id="headerSearchButtonDesktop">
@@ -304,7 +304,7 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
 		<!-- Collect the nav links, forms, and other content for toggling -->
 			<div class="collapse navbar-collapse" id="bs-main-navbar-collapse-1">
 				<div class="tadl-mobile-search">
-					<form class="tadl-search-form" role="search" action="<?= caNavUrl($this->request, '', 'MultiSearch', 'Index'); ?>" aria-label="<?= _t("Search"); ?>">
+					<form class="tadl-search-form" role="search" method="get" action="<?= caNavUrl($this->request, '', 'MultiSearch', 'Index'); ?>" aria-label="<?= _t("Search"); ?>">
 						<label class="sr-only" for="headerSearchInputMobile"><?= _t("Search text"); ?></label>
 						<input type="text" class="form-control" id="headerSearchInputMobile" placeholder="Search local history..." name="search" autocomplete="off" />
 						<button type="submit" class="tadl-search-button" id="headerSearchButtonMobile">

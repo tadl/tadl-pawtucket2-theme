@@ -12,6 +12,11 @@ function _p($value) { echo $value; }
 function caNavUrl($request, $module, $controller, $action) { return '/'.$controller.'/'.$action; }
 function caGetUserAccessValues($request) { return [1]; }
 function caDetailLink($request, $label, $class, $table, $id) { return '<a class="'.$class.'" href="/Detail/objects/'.$id.'">'.$label.'</a>'; }
+function caJSONLookupServiceUrl($request, $table, $options) { return []; }
+function caFormTag($request, $action, $id, $controller, $method, $encoding, $target, $options) {
+	uiCheck($options['noCSRFToken'] && $options['disableUnsavedChangesWarning'], 'Read-only builder search must preserve native form options.');
+	return '<form action="/Search/'.$action.'" id="'.$id.'" method="'.$method.'" enctype="'.$encoding.'">';
+}
 class ca_objects { function getTypeList($options = []) { return [1 => ['name_singular' => 'Synthetic image']]; } }
 class ca_entities { function getTypeIDForCode($code) { return 1; } }
 $directory = sys_get_temp_dir().'/tadl-ui-'.bin2hex(random_bytes(8)); mkdir($directory, 0700);
@@ -30,7 +35,7 @@ foreach (glob(dirname(__DIR__).'/views/Search/*advanced_search*html.php') as $fi
 	$view = new UIFormView(); $compiled = $view->render(basename($file));
 	preg_match_all('~\{\{\{(.*?)\}\}\}~s', $compiled, $matches);
 	foreach (array_unique($matches[1]) as $tag) {
-		if (in_array($tag, ['form','/form'], true)) { $view->vars[$tag] = $tag === 'form' ? '<form id="caAdvancedSearch">' : '</form>'; continue; }
+		if (in_array($tag, ['form','/form'], true)) { $view->vars[$tag] = $tag === 'form' ? '<form id="caAdvancedSearch" action="/Search/synthetic" method="post"><input type="hidden" name="_advanced" value="1">' : '</form>'; continue; }
 		[$field, $options] = array_pad(explode('%', $tag, 2), 2, ''); parse_str($options, $settings);
 		if (in_array($field, ['reset','submit'], true)) { $view->vars[$tag] = '<button type="button">'.ucfirst($field).'</button>'; continue; }
 		$name = $field.(isset($settings['restrictToRelationshipTypes']) ? '/'.$settings['restrictToRelationshipTypes'] : '').'[]';
@@ -42,6 +47,8 @@ foreach (glob(dirname(__DIR__).'/views/Search/*advanced_search*html.php') as $fi
 	$forms[basename($file)] = $html;
 	$dom = new DOMDocument(); $dom->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 	$xpath = new DOMXPath($dom); $ids = [];
+	uiCheck($xpath->query('//form')->item(0)->getAttribute('method') === 'get' && $xpath->query('//form')->item(0)->getAttribute('action') === '/Search/synthetic', basename($file).': advanced searches must use GET without changing the native action.');
+	uiCheck($xpath->query('//input[@name="_advanced" and @value="1"]')->length === 1, 'Native advanced mode must be preserved.');
 	foreach ($xpath->query('//*[@id]') as $node) { uiCheck(!isset($ids[$node->getAttribute('id')]), basename($file).': duplicate field ID'); $ids[$node->getAttribute('id')] = true; }
 	foreach ($xpath->query('//label[@for]') as $label) {
 		$control = $dom->getElementById($label->getAttribute('for'));
@@ -54,6 +61,19 @@ foreach (glob(dirname(__DIR__).'/views/Search/*advanced_search*html.php') as $fi
 		}
 	}
 }
+// Change only the search form method, keeping hidden metadata and native scripts intact.
+$view = new UIFormView();
+uiCheck(tadlAdvancedSearchForm($view) === '{{{form}}}', 'Compilation must retain the native form-discovery tag.');
+foreach (["'post'", '"POST"'] as $method) {
+	$view->vars['form'] = '<form action="/catalog/index.php/Search/people" method='.$method.' id="caAdvancedSearch"><input type="hidden" name="_formName" value="post"><script>syntheticNativeWidget();</script>';
+	$form = tadlAdvancedSearchForm($view);
+	uiCheck(str_contains($form, 'method="get"') && str_contains($form, 'value="post"') && str_contains($form, 'syntheticNativeWidget();') && str_contains($form, '/catalog/index.php/Search/people'), 'GET conversion must preserve native URLs, metadata and widget scripts.');
+}
+$view->vars = ['table'=>'ca_objects','type_id'=>7,'search'=>'harbor & "maps"','form_options'=>[]];
+$builder = $view->render('search_builder_controls_html.php');
+$dom = new DOMDocument(); $dom->loadHTML($builder, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $xpath = new DOMXPath($dom);
+uiCheck($xpath->query('//form[@id="SearchBuilderForm" and @method="get"]')->length === 1, 'Query-builder search must use GET.');
+uiCheck($xpath->query('//input[@name="search"]')->item(0)->getAttribute('value') === 'harbor & "maps"' && $xpath->query('//input[@name="type_id" and @value="7"]')->length === 1, 'Builder GET must preserve escaped queries and type restrictions.');
 // Native widget scripts must follow the new ID without changing submitted names.
 $view = new UIFormView(); $tag = '{{{synthetic%label=Test}}}';
 $view->vars['synthetic%label=Test'] = '<input name="synthetic[]" id="old[]"><script>jQuery("#old[]").syntheticWidget();</script>';

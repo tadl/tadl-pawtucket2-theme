@@ -2,7 +2,7 @@
 <div class="tadl-advanced-search">
 	<?php tadlAdvancedSearchHero($this->request, 'collections', _t('Collections Advanced Search'), _t('Search collection-level description, creators, dates, extent, subject terms, and rights statements.')); ?>
 
-	{{{form}}}
+	<?= tadlAdvancedSearchForm($this); ?>
 
 	<div class="advancedContainer tadl-advanced-search-card">
 		<section class="tadl-advanced-section">

@@ -36,7 +36,7 @@ if ($vn_type_id = intval($this->getVar('type_id'))) {
 $show_query = $this->getVar('show_search_builder_query');
 	
 ?>
-<?= caFormTag($this->request, 'objects', 'SearchBuilderForm', null, 'post', 'multipart/form-data', '_top', array('noCSRFToken' => true, 'disableUnsavedChangesWarning' => true)); ?>
+<?= caFormTag($this->request, 'objects', 'SearchBuilderForm', null, 'get', 'application/x-www-form-urlencoded', '_top', array('noCSRFToken' => true, 'disableUnsavedChangesWarning' => true)); ?>
 <?='<input type="'.($show_query ? 'text' : 'hidden').'" id="SearchBuilderInput" name="search" size="80" value="'.htmlspecialchars($this->getVar('search'), ENT_QUOTES, 'UTF-8').'" />'.$vs_type_id_form_element; ?>
 </form>
 

@@ -2,7 +2,7 @@
 <div class="tadl-advanced-search">
 	<?php tadlAdvancedSearchHero($this->request, 'occurrences', _t('Events Advanced Search'), _t('Search event names, identifiers, dates, source notes, and related people, organizations, places, collections, and objects.')); ?>
 
-	{{{form}}}
+	<?= tadlAdvancedSearchForm($this); ?>
 
 	<div class="advancedContainer tadl-advanced-search-card">
 		<section class="tadl-advanced-section">

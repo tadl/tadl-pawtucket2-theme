@@ -16,7 +16,7 @@
 <div class="tadl-advanced-search">
 	<?php tadlAdvancedSearchHero($this->request, 'objects', _t('Objects Advanced Search'), _t('Use one field for a broad search, or combine several fields to narrow results across titles, identifiers, dates, collections, people, subjects, rights, and physical description.')); ?>
 
-	{{{form}}}
+	<?= tadlAdvancedSearchForm($this); ?>
 
 	<div class="advancedContainer tadl-advanced-search-card">
 		<section class="tadl-advanced-section">

@@ -1,4 +1,14 @@
 <?php
+/** Preserve native actions, fields and widget scripts while using safe search GETs. */
+function tadlAdvancedSearchForm($view) {
+	$form = $view->getVar('form');
+	// Native compilation first renders the view to discover its field tags.
+	if (!is_string($form) || $form === '') { return '{{{form}}}'; }
+	return preg_replace_callback('~<form\b[^>]*>~i', static function ($match) {
+		return preg_replace('~\bmethod\s*=\s*([\'\"])post\1~i', 'method="get"', $match[0]);
+	}, $form, 1);
+}
+
 if (!function_exists('tadlAdvancedSearchTabs')) {
 	function tadlAdvancedSearchTabs($po_request, $ps_current) {
 		$va_tabs = array(

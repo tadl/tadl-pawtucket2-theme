@@ -209,6 +209,9 @@ Options can still change the sort; paging and detail **Prev / Next** preserve th
 displayed result order. Keyword searches retain their relevance defaults.
 Object details show only **Prev / Next**, without a Browse objects button; direct
 visits without result context omit the empty navigation toolbar.
+Header, advanced and query-builder searches use GET, allowing normal browser
+Back navigation without a form-resubmission prompt. Advanced forms retain their
+native fields, boolean operators and relationship restrictions.
 
 Run the standalone synthetic regression checks with PHP/PDO SQLite, Node.js and
 Python 3.11+:
