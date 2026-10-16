@@ -1365,3 +1365,11 @@ parent site's CSP or iframe sandbox. An observed Analytics collection request
 returned HTTP 204, with a separate canceled request; the user's pasted log alone
 does not establish the cause of its Analytics failures. No real form was submitted.
 The corrected header produced no Feature-Policy warnings in a local browser check.
+
+The shared page header now explicitly links a theme-local SVG favicon, avoiding
+the browser's implicit request for the missing root `/favicon.ico`. The icon reuses
+the clocktower and clock-face paths from the existing `graphics/logo.svg` on the
+theme's dark blue, without external assets or a root-file installation step. Local
+browser checks confirmed rendering at 32 and 128 pixels. The UI suite checks the
+header link and SVG parsing; all 35 suites and changed PHP lint passed. These
+console-cleanup source changes are separate commits and are not deployed by Codex.

@@ -30,6 +30,10 @@ class UIFormView {
 	function getVar($tag) { return $this->vars[$tag] ?? null; }
 	function render($path) { ob_start(); include dirname(__DIR__).'/views/Search/'.$path; return ob_get_clean(); }
 }
+$pageHeader=file_get_contents(dirname(__DIR__).'/views/pageFormat/pageHeader.php');
+uiCheck(str_contains($pageHeader,'rel="icon" type="image/svg+xml"') && str_contains($pageHeader,"getThemeUrlPath().'/assets/pawtucket/graphics/favicon.svg'"), 'The shared header must point browsers at the theme favicon instead of a missing root favicon.');
+$favicon=new DOMDocument();
+uiCheck($favicon->load(dirname(__DIR__).'/assets/pawtucket/graphics/favicon.svg',LIBXML_NONET), 'The linked favicon must be a valid local SVG asset.');
 $forms = [];
 foreach (glob(dirname(__DIR__).'/views/Search/*advanced_search*html.php') as $file) {
 	$view = new UIFormView(); $compiled = $view->render(basename($file));
