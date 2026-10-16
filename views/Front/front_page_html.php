@@ -80,7 +80,7 @@
 				</div>
 				<div class="tadl-access-actions">
 					<a class="tadl-feature-action" href="https://www.tadl.org/sites/default/files/2022-12/lhc_researcherform_RE.pdf">Research Request Form</a>
-					<a class="tadl-feature-action tadl-feature-action-secondary" href="mailto:ask@tadl.org">Ask a Question</a>
+					<a class="tadl-feature-action tadl-feature-action-secondary" href="<?= caNavUrl($this->request, '', 'Contact', 'Form'); ?>">Ask a Question</a>
 				</div>
 			</section>
 		</div>

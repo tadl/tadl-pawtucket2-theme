@@ -1267,5 +1267,7 @@ post-deployment HTTP confirmation remain separate operator steps.
 `conf/contact.conf` routes the Contact form and object Item Inquiry submissions
 to `localhistory@tadl.org`. Native `ContactController` reads `contact_email`
 through `caGetContactConfig()`. The placeholder recipient has been removed.
+The homepage's Ask a Question action links to the native `Contact/Form` page,
+using the same route as the navigation/footer Contact links.
 Native configuration parsing was checked locally; email delivery has not been
 tested. Deployment remains a separate operator step.
