@@ -29,8 +29,8 @@
 	if (sizeof($this->getVar('notifications'))) {
 		foreach($this->getVar('notifications') as $va_notification) {
 ?>
-			<div class="notificationMessage">
-				<div class="pull-right"><a href="#" aria-label="<?php print _t('Dismiss notification'); ?>" onclick="jQuery('.notificationMessage').hide(); return false;"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></a></div>
+			<div class="notificationMessage" role="<?= in_array($va_notification['type'], [__NOTIFICATION_TYPE_ERROR__, __NOTIFICATION_TYPE_WARNING__], true) ? 'alert' : 'status'; ?>">
+				<button type="button" class="pull-right tadl-dialog-close" aria-label="<?php print _t('Dismiss notification'); ?>" onclick="jQuery(this).closest('.notificationMessage').hide(); return false;"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></button>
 <?php
 			switch($va_notification['type']) {
 				case __NOTIFICATION_TYPE_ERROR__:

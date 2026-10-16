@@ -35,3 +35,16 @@ jobs:
       - name: Standalone regressions
         run: |
           for test_file in tests/*_test.php; do php "$test_file" || exit 1; done
+      - name: Prepare isolated accessibility browser tools
+        run: |
+          browser_tools=$(mktemp -d)
+          npm install --prefix "$browser_tools" --ignore-scripts --no-audit --no-fund playwright@1.62.1 axe-core@4.14.0
+          "$browser_tools/node_modules/.bin/playwright" install --with-deps chromium
+          browser_reference="$RUNNER_TEMP/pawtucket2-reference"
+          git clone --filter=blob:none --sparse --depth=1 --branch 2.0.10 https://github.com/collectiveaccess/pawtucket2.git "$browser_reference"
+          test "$(git -C "$browser_reference" rev-parse HEAD)" = 3d4fac153fa623c0ed93907500377aeb37666c10
+          git -C "$browser_reference" sparse-checkout set assets/bootstrap assets/jquery assets/ca assets/fontawesome
+          echo "NODE_PATH=$browser_tools/node_modules" >> "$GITHUB_ENV"
+          echo "TADL_REFERENCE_ROOT=$browser_reference" >> "$GITHUB_ENV"
+      - name: Accessibility browser regressions
+        run: node tests/accessibility_browser_test.js

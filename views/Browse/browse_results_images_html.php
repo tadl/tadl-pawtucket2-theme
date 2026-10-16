@@ -119,8 +119,10 @@
 				}
 				
 
-					$vs_idno_detail_link 	= caDetailLink($this->request, $qr_res->get("{$vs_table}.idno"), '', $vs_table, $vn_id);
-					$vs_label_detail_link 	= caDetailLink($this->request, $qr_res->get("{$vs_table}.preferred_labels"), '', $vs_table, $vn_id);
+					$vs_identifier = trim((string)$qr_res->get("{$vs_table}.idno"));
+					$vs_idno_detail_link = $vs_identifier !== '' ? caDetailLink($this->request, htmlspecialchars($vs_identifier, ENT_QUOTES, 'UTF-8'), '', $vs_table, $vn_id) : '';
+					$vs_record_label = trim((string)$qr_res->get("{$vs_table}.preferred_labels")) ?: _t('Untitled');
+					$vs_label_detail_link = caDetailLink($this->request, $vs_record_label, '', $vs_table, $vn_id);
 					$vs_thumbnail = "";
 					$vs_type_placeholder = "";
 					$vs_typecode = "";
@@ -137,29 +139,29 @@
 							}
 						}
 						$vs_info = null;
-						$vs_rep_detail_link 	= caDetailLink($this->request, tadlFocusThumbnail($vs_thumbnail), '', $vs_table, $vn_id);
+						$vs_rep_detail_link 	= caDetailLink($this->request, tadlFocusThumbnail($vs_thumbnail), '', $vs_table, $vn_id, null, ['aria-label' => _t('View %1', strip_tags($vs_record_label))]);
 					} else {
 						if(!empty($va_images[$vn_id])){
 							$vs_thumbnail = $va_images[$vn_id];
 						}else{
 							$vs_thumbnail = $vs_default_placeholder_tag;
 						}
-						$vs_rep_detail_link 	= caDetailLink($this->request, tadlFocusThumbnail($vs_thumbnail), '', $vs_table, $vn_id);
+						$vs_rep_detail_link 	= caDetailLink($this->request, tadlFocusThumbnail($vs_thumbnail), '', $vs_table, $vn_id, null, ['aria-label' => _t('View %1', strip_tags($vs_record_label))]);
 					}
 					$vs_expanded_info = $qr_res->getWithTemplate($vs_extended_info_template);
+					$vs_expanded_info = trim((string)$vs_expanded_info) !== ''
+						? '<details class="tadl-result-extra"><summary>'._t('More information').'</summary>'.$vs_expanded_info.'</details>'
+						: '';
 
 					$vs_result_output = "
 		<div class='bResultItemCol col-xs-{$vn_col_span_xs} col-sm-{$vn_col_span_sm} col-md-{$vn_col_span}'>
-			<div class='bResultItem' id='row{$vn_id}' onmouseover='jQuery(\"#bResultItemExpandedInfo{$vn_id}\").show();'  onmouseout='jQuery(\"#bResultItemExpandedInfo{$vn_id}\").hide();'>
+			<div class='bResultItem' id='row{$vn_id}'>
 				<div class='bResultItemContent'><div class='text-center bResultItemImg'>{$vs_rep_detail_link}</div>
 					<div class='bResultItemText'>
 						<small>{$vs_idno_detail_link}</small><br/>{$vs_label_detail_link}
 					</div><!-- end bResultItemText -->
 				</div><!-- end bResultItemContent -->
-				<div class='bResultItemExpandedInfo' id='bResultItemExpandedInfo{$vn_id}'>
-					<hr>
-					{$vs_expanded_info}
-				</div><!-- bResultItemExpandedInfo -->
+				{$vs_expanded_info}
 			</div><!-- end bResultItem -->
 		</div><!-- end col -->";
 					print $vs_result_output;

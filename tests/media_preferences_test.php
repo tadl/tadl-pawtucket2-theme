@@ -409,7 +409,7 @@ $previous = libxml_use_internal_errors(true);
 $dom->loadHTML($html);
 libxml_clear_errors(); libxml_use_internal_errors($previous);
 $xpath = new DOMXPath($dom);
-testAssert($xpath->query('//form[@role="group" and @aria-label and @method="post" and @action="/MediaPreference/Set"]')->length === 1, 'Toggle needs a labelled POST form.');
+testAssert($xpath->query('//form[not(@role) and @aria-label and @method="post" and @action="/MediaPreference/Set"]')->length === 1, 'Toggle needs a labelled POST form.');
 testAssert($xpath->query('//button[@type="submit" and @name="tadlMediaPreference"]')->length === 2, 'Toggle needs exactly two native submit buttons.');
 testAssert($xpath->query('//button[@aria-pressed="true"]')->length === 1, 'Selected toggle state is not unique.');
 testAssert($xpath->query('//button[@aria-pressed="true"]')->item(0)->textContent === '✓Only items with media', 'Wrong selected label.');
@@ -704,6 +704,8 @@ foreach (['only' => [10, 1, 609], 'all' => [30, 9, 609]] as $mode => $expected) 
     $pagers = $xpath->query('//nav[@class="tadl-collections-pagination"]');
     testAssert($pagers->length === 2, $mode.': collections require matching top and bottom pagers.');
     testAssert($xpath->query('//div[@class="tadl-collections-tools"]/nav[@class="tadl-collections-pagination"]')->length === 1, $mode.': top pager must sit with the count and view controls.');
+    testAssert($pagers->item(0)->getAttribute('aria-label') !== $pagers->item(1)->getAttribute('aria-label'), $mode.': top and bottom pagination landmarks need distinguishable names.');
+    $pagers->item(1)->setAttribute('aria-label', $pagers->item(0)->getAttribute('aria-label'));
     testAssert($document->saveHTML($pagers->item(0)) === $document->saveHTML($pagers->item(1)), $mode.': pagers disagree about page/view state.');
 }
 $emptyView = new TestView(testMediaRequest('only', [], 'Collections', 'Index'), ['collection_results' => new SearchResult('ca_collections', [200,201,202,203,204,205]), 'collections_config' => $collectionConfig, 'section_name' => 'Example collections']);

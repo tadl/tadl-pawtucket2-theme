@@ -1,11 +1,27 @@
 /* Bootstrap 3.0 handles the menu but does not update its accessible state. */
 (function ($) {
     'use strict';
-    $(document).on('shown.bs.dropdown hidden.bs.dropdown', '.tadl-main-nav .dropdown', function (event) {
-        $(this).children('.dropdown-toggle').attr('aria-expanded', event.type === 'shown' ? 'true' : 'false');
+    $(document).on('shown.bs.dropdown hidden.bs.dropdown', '.dropdown, .btn-group', function (event) {
+        $(this).children('[data-toggle="dropdown"]').attr('aria-expanded', event.type === 'shown' ? 'true' : 'false');
     });
     $(document).on('shown.bs.collapse hidden.bs.collapse', '#bs-main-navbar-collapse-1', function (event) {
         $('.tadl-header .navbar-toggle').attr('aria-expanded', event.type === 'shown' ? 'true' : 'false');
+    });
+    // Native navigation lists use normal Tab order rather than ARIA menu roles.
+    $(document).on('keydown', '.dropdown-menu', function (event) {
+        if (event.key !== 'Escape') { return; }
+        var toggle = $(this).parent('.open').children('[data-toggle="dropdown"]');
+        if (toggle.length) {
+            event.preventDefault();
+            event.stopPropagation();
+            toggle.dropdown('toggle').trigger('focus');
+        }
+    });
+    $(document).on('keydown', '#bMorePanel', function (event) {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            $('#bMorePanelClose').trigger('click');
+        }
     });
 })(jQuery);
 
@@ -26,7 +42,7 @@
         }
         function focusContent() {
             if (!open || (document.activeElement !== panel && panel.contains(document.activeElement))) { return; }
-            var target = panel.querySelector('.close');
+            var target = panel.querySelector('[data-tadl-error-summary], .tadl-dialog-close, .close a, .close button, button.close, a.close');
             if (target && target.getClientRects().length) { target.focus(); }
             else { panel.focus(); }
         }
@@ -34,9 +50,18 @@
             if (!open) {
                 open = true;
                 opener = document.activeElement;
-                background = Array.prototype.filter.call(document.body.children, function (node) {
-                    return node !== panel && !node.contains(panel) && !/^(SCRIPT|STYLE|LINK)$/.test(node.tagName);
-                }).map(function (node) {
+                // A panel may live inside main rather than directly under body.
+                // Hide siblings along that path without hiding the dialog itself.
+                var branch = panel, parent = panel.parentElement || document.body, siblings = [];
+                while (parent) {
+                    siblings = siblings.concat(Array.prototype.filter.call(parent.children, function (node) {
+                        return node !== branch && !/^(SCRIPT|STYLE|LINK)$/.test(node.tagName);
+                    }));
+                    if (parent === document.body) { break; }
+                    branch = parent;
+                    parent = parent.parentElement;
+                }
+                background = siblings.map(function (node) {
                     var saved = {node: node, inert: node.hasAttribute('inert'), hidden: node.getAttribute('aria-hidden')};
                     node.setAttribute('inert', ''); node.setAttribute('aria-hidden', 'true');
                     return saved;
@@ -49,7 +74,6 @@
         };
         controller.finallyCallback = function () {
             open = false;
-            panel.setAttribute('aria-hidden', 'true');
             background.forEach(function (saved) {
                 if (!saved.inert) { saved.node.removeAttribute('inert'); }
                 if (saved.hidden === null) { saved.node.removeAttribute('aria-hidden'); }
@@ -57,6 +81,11 @@
             });
             background = [];
             if (opener && opener.isConnected && opener.getClientRects().length) { opener.focus(); }
+            else {
+                var main = document.querySelector('#main');
+                if (main) { main.focus(); }
+            }
+            panel.setAttribute('aria-hidden', 'true');
             if (onFinally) { onFinally.apply(controller, arguments); }
         };
         // The native onOpen callback precedes the .load() completion. Focus the
@@ -75,4 +104,19 @@
             if (open && !panel.contains(event.target)) { panel.focus(); }
         });
     };
+})();
+
+/* Error summaries and motion preferences apply to normal pages as well as panels. */
+(function () {
+    'use strict';
+    document.addEventListener('DOMContentLoaded', function () {
+        var summary = document.querySelector('[data-tadl-error-summary]');
+        if (summary) { summary.focus(); }
+    });
+    if (window.matchMedia && jQuery.fx) {
+        var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        function updateMotion() { jQuery.fx.off = reducedMotion.matches; }
+        updateMotion();
+        if (reducedMotion.addEventListener) { reducedMotion.addEventListener('change', updateMotion); }
+    }
 })();

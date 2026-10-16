@@ -27,7 +27,7 @@
  */
 ?>
 		<div style="clear:both; height:1px;"><!-- empty --></div>
-		</div><!-- end pageArea --></div><!-- end main --></div><!-- end col --></div><!-- end row --></div><!-- end container -->
+		</div><!-- end pageArea --></main><!-- end main --></div><!-- end col --></div><!-- end row --></div><!-- end container -->
 		<footer id="footer" role="contentinfo">
 			<div class="container tadl-footer-shell">
 				<div class="tadl-footer-inner">

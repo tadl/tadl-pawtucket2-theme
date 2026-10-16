@@ -30,14 +30,14 @@
 	if($this->request->isAjax()){
 		$vn_label_col = 4;
 ?>
-		<div id="caFormOverlay"><div class="pull-right pointer" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle"></span></div>
+		<div id="caFormOverlay"><button type="button" class="pull-right tadl-dialog-close" aria-label="<?= _t('Close dialog'); ?>" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle" aria-hidden="true"></span></button>
 <?php
 	}
 ?>
 			<H1><?php print _t("Login"); ?></H1>
 <?php
 	if($this->getVar("message")){
-		print "<div class='alert alert-danger'>".htmlspecialchars((string)$this->getVar("message"), ENT_QUOTES, 'UTF-8')."</div>";
+		print "<div class='alert alert-danger' role='alert'>".htmlspecialchars((string)$this->getVar("message"), ENT_QUOTES, 'UTF-8')."</div>";
 	}
 ?>
 			<form id="LoginForm" action="<?php print caNavUrl($this->request, "", "LoginReg", "login"); ?>" class="form-horizontal" method="POST">

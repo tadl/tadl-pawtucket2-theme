@@ -50,9 +50,9 @@
 	unset($va_facet_info);
 	
 	if(is_array($va_facets) && sizeof($va_facets)){
-		print "<div id='bMorePanel'><!-- long lists of facets are loaded here --></div>";
+		print "<div id='bMorePanel' role='region' aria-label='"._t('Filter choices')."' tabindex='-1'><!-- long lists of facets are loaded here --></div>";
 		print "<div id='bRefine'>";
-		print "<a href='#' class='pull-right' id='bRefineClose' aria-label='"._t("Close filters")."' onclick='jQuery(\"#bRefine\").toggle(); jQuery(\"#bRefineButton\").attr(\"aria-expanded\", \"false\"); return false;'><span class='glyphicon glyphicon-remove-circle' aria-hidden='true'></span></a>";
+		print "<button type='button' class='pull-right tadl-dialog-close' id='bRefineClose' aria-label='"._t("Close filters")."' onclick='jQuery(\"#bRefine\").hide(); jQuery(\"#bRefineButton\").attr(\"aria-expanded\", \"false\").focus(); return false;'><span class='glyphicon glyphicon-remove-circle' aria-hidden='true'></span></button>";
 		print "<H2>"._t("Filter by")."</H2>";
 		foreach($va_facets as $vs_facet_name => $va_facet_info) {
 			print "<h3>".htmlspecialchars(tadlResultFacetHeading($va_facet_info), ENT_QUOTES, 'UTF-8')."</h3>";

@@ -418,8 +418,8 @@ foreach ($galleryItems as $position => $item) {
 	sort($formats);
 	checkDownload($formats === ($item['format'] === 'tiff' ? ['jpg', 'pdf', 'tiff'] : ['jpg', 'pdf']), 'Gallery download formats did not follow the selected original.');
 	checkDownload($xpath->query('//a['.$class('setsButton').' or '.$class('dlButton').']')->length === 0, 'Gallery retained replaced Lightbox/download actions.');
-	$previousArrow = $xpath->query('//a['.$class('galleryDetailPrevious').']');
-	$nextArrow = $xpath->query('//a['.$class('galleryDetailNext').']');
+	$previousArrow = $xpath->query('//button['.$class('galleryDetailPrevious').']');
+	$nextArrow = $xpath->query('//button['.$class('galleryDetailNext').']');
 	checkDownload($previousArrow->length === 1 && $nextArrow->length === 1, 'Gallery navigation controls disappeared.');
 	$galleryFixtures[] = [
 		'item' => $item, 'previous' => $previous, 'next' => $next, 'zoomUrl' => $zoomUrl,
@@ -513,7 +513,10 @@ menusContext.tadlPlaceViewerDownload(null);
 const loads = [], highlights = [], opened = [];
 const galleryContext = vm.createContext({
  window: {},
+ document: {activeElement: null},
  jQuery(selector) { return {
+  attr() { return this; },
+  is() { return false; },
   load(url) { loads.push({selector, url}); return this; },
   data(key) { assert.equal(selector, '#syntheticMediaPanel'); assert.equal(key, 'reloadUrl'); return '/Gallery/301?set_item_id=22'; }
  }; },

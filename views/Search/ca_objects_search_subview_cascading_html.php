@@ -104,19 +104,19 @@
 				$vs_expanded_info = "";
 				if($vs_extended_info_template){
 					$vs_expanded_info = $qr_res->getWithTemplate($vs_extended_info_template);
+					$vs_expanded_info = trim((string)$vs_expanded_info) !== ''
+						? '<details class="tadl-result-extra"><summary>'._t('More information').'</summary>'.$vs_expanded_info.'</details>'
+						: '';
 				}
 				print "
 	<div class='bResultItemCol col-xs-12 col-sm-3 col-lg-2'>
-		<div class='bResultItem' onmouseover='jQuery(\"#bResultItemExpandedInfo{$vn_id}\").show();'  onmouseout='jQuery(\"#bResultItemExpandedInfo{$vn_id}\").hide();'>
+		<div class='bResultItem'>
 			<div class='bResultItemContent'><div class='text-center bResultItemImg'>{$vs_rep_detail_link}</div>
 				<div class='bResultItemText'>
 					<small>{$vs_idno_detail_link}</small><br/>{$vs_label_detail_link}
 				</div><!-- end bResultItemText -->
 			</div><!-- end bResultItemContent -->
-			<div class='bResultItemExpandedInfo' id='bResultItemExpandedInfo{$vn_id}'>
-				<hr>
-				{$vs_expanded_info}
-			</div><!-- bResultItemExpandedInfo -->
+			{$vs_expanded_info}
 		</div><!-- end bResultItem -->
 	</div><!-- end col -->";
 

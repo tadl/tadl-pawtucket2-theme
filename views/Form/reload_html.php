@@ -3,7 +3,7 @@
 	$vn_row_id = $this->getVar("row_id");
 	if($vs_message){
 ?>
-	<div id="caFormOverlay"><div class='alert alert-info'>
+	<div id="caFormOverlay"><div class='alert alert-info' role='status'>
 <?php
 		print $vs_message;
 ?>

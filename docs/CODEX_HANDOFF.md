@@ -20,6 +20,44 @@ Changes belong here rather than in upstream CollectiveAccess. The surrounding
 workspace has reference checkouts of Pawtucket and Providence at local tag
 `2.0.10`; that is a local source fact, not a verified current production version.
 
+## 2026-10-16: WCAG 2.2 AA theme pass
+
+Read [Accessibility](ACCESSIBILITY.md) for the source audit, all 55 A/AA criterion
+entries, coverage boundaries and remaining manual/content/third-party work.
+This is a source remediation pass; no deployment or AA conformance claim was made.
+
+The shared shell now has a focusable native main landmark, stronger focus/input
+contrast, valid preference semantics and distinct pagination landmarks. Empty
+identifier links are omitted, thumbnails have useful names, extra result details
+use native disclosures, and Browse/Filters/dialog closes use native buttons.
+Contact errors expose field associations and a focused summary. Account controls
+carry appropriate autocomplete; password confirmation labels and cookie radios
+are repaired. Gallery AJAX retains focus and announces selection; featured items
+announce the visible range. The PDF.js template no longer imposes positive
+tabindex values, and presentation mode permits zoom.
+
+Editable lightboxes now offer Move earlier/later alongside dragging. Both use
+the existing native reorder endpoint/CSRF/access checks through
+`assets/pawtucket/js/lightbox-order.js`; save failures restore the prior DOM order
+and announce the failure. Preserve this asset, its configuration entry, the
+`data-order-*` container attributes and `Lightbox/order_buttons_html.php` together.
+Read-only sets do not initialize reordering or expose move buttons.
+
+`tests/accessibility_test.php` renders actual components and the shared shell
+with synthetic native boundaries. `tests/accessibility_browser_test.js` uses
+native static jQuery/Bootstrap/panel/sortable assets; it exercises axe, 320px and
+desktop reflow, text sizing/spacing, keyboard controls, AJAX focus, modal return,
+cookie selection and reorder rollback without a database or external requests.
+The ordinary suite count is now 36. CI adds pinned Playwright/axe browser checks;
+local tool configuration and pending acceptance work are in the guide.
+
+The new `css/accessibility.css` is intentionally loaded after existing theme
+rules. Its reduced-motion override includes native CSS transitions; the shared
+JavaScript also respects that preference for jQuery animations. Existing data,
+access filtering, permissions, submitted field names and source deployment policy
+remain in force. No account, catalogue, server mail or production cache state was
+changed during the accessibility work.
+
 ## Completed work and useful commits
 
 | Commit | Result |

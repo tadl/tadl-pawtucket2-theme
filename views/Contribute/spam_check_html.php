@@ -40,8 +40,8 @@
 						<?php print _t('Simple Math Quiz (to prevent SPAMbots)'); ?>
 						<br/>
 						<div style="margin-left: 40px;">
-							<span id="securityText"><?php print $vn_1; ?> + <?php print $vn_2; ?> = </span>
-							<input name="security" value="" id="security" type="text" size="3" style="width:40px;" />
+							<label for="security" id="securityText"><?php print $vn_1; ?> + <?php print $vn_2; ?> = </label>
+							<input name="security" value="" id="security" type="text" inputmode="numeric" size="3" style="width:60px;" />
 						</div>
 				</span>
 			</div>

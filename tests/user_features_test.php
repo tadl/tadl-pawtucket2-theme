@@ -11,7 +11,7 @@ function checkUserFeature($condition, $message) {
 	$GLOBALS['assertions']++;
 	if (!$condition) { throw new RuntimeException($message); }
 }
-function _t($text) { return $text; }
+function _t($text, ...$values) { foreach ($values as $i => $value) { $text = str_replace('%'.($i + 1), (string)$value, $text); } return $text; }
 function caDisplayLightbox($request) { return $request->isLoggedIn() && !$request->config->get('disable_lightbox'); }
 function caNavUrl($request, $module, $controller, $action, $params = []) { return '/'.$controller.'/'.$action.($params ? '?'.http_build_query($params) : ''); }
 function caNavLink($request, $label, $class, $module, $controller, $action, $params = [], $attributes = []) {
@@ -27,7 +27,11 @@ function caGetBundleAccessLevel($table, $bundle) { return 0; }
 function caObjectRepresentationThumbnails($request, $representationID, $object, $options) { return []; }
 function caGetIconsConfig() { return new FeatureConfig(); }
 function caGetInfoForBrowseType($type) { return ['sortBy' => ['Identifier' => 'ca_objects.idno']]; }
-function caDetailLink($request, $label, $class, $table, $id) { return '<a href="/Detail/objects/'.(int)$id.'">'.$label.'</a>'; }
+function caDetailLink($request, $label, $class, $table, $id, $params = null, $attributes = []) {
+	$extra = '';
+	foreach ((array)$attributes as $key => $value) { $extra .= ' '.$key.'="'.htmlspecialchars($value, ENT_QUOTES, 'UTF-8').'"'; }
+	return '<a href="/Detail/objects/'.(int)$id.'"'.$extra.'>'.$label.'</a>';
+}
 class FeatureConfig {
 	function __construct(public array $values = []) {}
 	function get($key) {
@@ -51,6 +55,7 @@ class FeatureRequest {
 	function isAjax() { return $this->ajax; }
 }
 class FeatureResult {
+	public static string $identifier = 'SYNTHETIC.42', $label = 'Synthetic object', $extra = '';
 	private bool $done = false;
 	function numHits() { return 1; }
 	function seek($start) { $this->done = false; }
@@ -58,14 +63,14 @@ class FeatureResult {
 	function get($key, $options = []) {
 		return match ($key) {
 			'ca_objects.object_id' => 42,
-			'ca_objects.idno' => 'SYNTHETIC.42',
-			'ca_objects.preferred_labels' => 'Synthetic object',
+			'ca_objects.idno' => self::$identifier,
+			'ca_objects.preferred_labels' => self::$label,
 			'ca_object_representations.media.medium' => '<img src="/synthetic.jpg" alt="">',
 			default => null
 		};
 	}
 	function getMediaTag($field, $version, $options) { return '<img src="/synthetic.jpg" alt="">'; }
-	function getWithTemplate($template) { return ''; }
+	function getWithTemplate($template) { return self::$extra; }
 }
 function caGetPlaceholder($type, $key) { return ''; }
 class ca_list_items {
@@ -159,6 +164,18 @@ foreach ([false, true] as $ajax) {
 	checkUserFeature($xpath->query('//form[@method="POST" and @action="/LoginReg/login"]')->length === 1 && $xpath->query('//input[@name="csrfToken" and @value="synthetic-token"]')->length === 1, 'Login must keep native POST action and CSRF.');
 	checkUserFeature($xpath->query('//input[@autocomplete="username"]')->length === 1 && $xpath->query('//input[@type="password" and @autocomplete="current-password"]')->length === 1, 'Login should work with password managers.');
 	checkUserFeature(!str_contains($html, 'registerForm') && str_contains($html, 'Forgot your password?') && !str_contains($html, '<script>synthetic</script>'), 'Login pilot must hide registration, retain reset and escape errors.');
+}
+FeatureResult::$identifier = '';
+FeatureResult::$label = '';
+FeatureResult::$extra = '<p>Synthetic extra information with <a href="/synthetic">a related link</a>.</p>';
+foreach (['images', 'list'] as $viewName) {
+	$request = new FeatureRequest(false);
+	$html = (new FeatureView($request, ['result' => new FeatureResult(), 'facets' => [], 'criteria' => [], 'key' => 'synthetic-key', 'start' => 0, 'row_id' => 0, 'options' => [], 'table' => 'ca_objects', 'primaryKey' => 'object_id', 'config' => $request->config, 'view' => $viewName]))->render('Browse/browse_results_'.$viewName.'_html.php');
+	$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+	$xpath = new DOMXPath($document);
+	checkUserFeature($xpath->query('//small/a')->length === 0, 'A missing identifier must not produce an empty link.');
+	checkUserFeature($xpath->query('//a[@aria-label="View Untitled"]')->length === 1, 'A thumbnail needs a usable name even without a record label.');
+	checkUserFeature($xpath->query('//details[@class="tadl-result-extra"]/summary')->length === 1 && !str_contains($html, 'onmouseover'), 'Additional information must have a native keyboard disclosure instead of hover-only content.');
 }
 $header = file_get_contents(dirname(__DIR__).'/views/pageFormat/pageHeader.php');
 checkUserFeature(str_contains($header, 'tadlUserMenu($this->request)') && !str_contains($header, 'LoginForm') && !str_contains($header, 'RegisterForm'), 'Shared header must render the gated menu without anonymous auth links.');

@@ -33,14 +33,14 @@
 	$va_errors = $this->getVar("errors");
 	$vs_display_name = $this->getVar("display_name");
 ?>
-<div id="caFormOverlay"><div class="pull-right pointer" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle"></span></div>
+<div id="caFormOverlay"><button type="button" class="pull-right tadl-dialog-close" aria-label="<?= _t('Close dialog'); ?>" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle" aria-hidden="true"></span></button>
 <H1><?php print _t("Share %1", ucfirst($vs_display_name)); ?></H1>
 <?php
 	if($this->getVar("message")){
-		print "<div class='alert alert-info'>".$this->getVar("message")."</div>";
+		print "<div class='alert alert-info' role='status'>".$this->getVar("message")."</div>";
 	}
 	if($va_errors["general"]){
-		print "<div class='alert alert-danger'>".$va_errors["general"]."</div>";
+		print "<div class='alert alert-danger' role='alert'>".$va_errors["general"]."</div>";
 	}
 ?>
 	<form id="ShareSetForm" action="#" class="form-horizontal" role="form">
@@ -48,9 +48,9 @@
 		print caHTMLHiddenInput('csrfToken', array('value' => caGenerateCSRFToken($this->request)));
 		if(is_array($va_user_groups) && sizeof($va_user_groups)){
 			if($va_errors["group_id"]){
-				print "<div class='alert alert-danger'>".$va_errors["group_id"]."</div>\n";
+				print "<div class='alert alert-danger' role='alert'>".$va_errors["group_id"]."</div>\n";
 			}
-			print "<div class='form-group".(($va_errors["group_id"]) ? " has-error" : "")."'><label for='group_id' class='col-sm-4 control-label'>"._t("Select a group")."</label><div class='col-sm-7'><select name='group_id' class='form-control'>\n";
+			print "<div class='form-group".(($va_errors["group_id"]) ? " has-error" : "")."'><label for='group_id' class='col-sm-4 control-label'>"._t("Select a group")."</label><div class='col-sm-7'><select name='group_id' id='group_id' class='form-control'>\n";
 			print "<option value='0'>"._t("Select a user group")."</option>\n";
 			foreach($va_user_groups as $va_user_group){
 				print "<option value='".$va_user_group["group_id"]."'>".$va_user_group["name"]."</option>\n";
@@ -59,20 +59,20 @@
 			print "</div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
 		}
 		if($va_errors["user"]){
-			print "<div class='alert alert-danger'>".$va_errors["user"]."</div>\n";
+			print "<div class='alert alert-danger' role='alert'>".$va_errors["user"]."</div>\n";
 		}
-		print "<div class='form-group".(($va_errors["user"]) ? " has-error" : "")."'><label for='user' class='col-sm-4 control-label'>".((is_array($va_user_groups) && sizeof($va_user_groups)) ? _t("OR enter a user") : _t("Enter a user"))."</label><div class='col-sm-7'><input type='text' name='user' class='form-control'><small>"._t("email address or multiple addresses separated by comma")."</small></div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
+		print "<div class='form-group".(($va_errors["user"]) ? " has-error" : "")."'><label for='user' class='col-sm-4 control-label'>".((is_array($va_user_groups) && sizeof($va_user_groups)) ? _t("OR enter a user") : _t("Enter a user"))."</label><div class='col-sm-7'><input type='text' name='user' id='user' class='form-control'><small>"._t("email address or multiple addresses separated by comma")."</small></div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
 		if($va_errors["access"]){
-			print "<div class='alert alert-danger'>".$va_errors["access"]."</div>\n";
+			print "<div class='alert alert-danger' role='alert'>".$va_errors["access"]."</div>\n";
 		}
 		if($this->request->getController() == "Lightbox"){
-			print "<div class='form-group".(($va_errors["access"]) ? " has-error" : "")."'><label for='access' class='col-sm-4 control-label'>"._t("Access")."</label><div class='col-sm-7'><select name='access' class='form-control'>\n";
+			print "<div class='form-group".(($va_errors["access"]) ? " has-error" : "")."'><label for='access' class='col-sm-4 control-label'>"._t("Access")."</label><div class='col-sm-7'><select name='access' id='access' class='form-control'>\n";
 			print "<option value='1'>"._t("Can read")."</option>\n";
 			print "<option value='2'>"._t("Can edit")."</option>\n";
 			print "</select>\n";
 			print "</div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
 			
-			print "<div class='form-group'><label for='message' class='col-sm-4 control-label'>"._t("Message")."</label><div class='col-sm-7'><textarea name='share_message' class='form-control'>".(($vs_message = $this->getVar("share_message")) ? $vs_message : "")."</textarea></div></div>\n";
+			print "<div class='form-group'><label for='message' class='col-sm-4 control-label'>"._t("Message")."</label><div class='col-sm-7'><textarea name='share_message' id='message' class='form-control'>".(($vs_message = $this->getVar("share_message")) ? $vs_message : "")."</textarea></div></div>\n";
 			
 		}else{
 			print "<input type='hidden' name='access' value='1'>";

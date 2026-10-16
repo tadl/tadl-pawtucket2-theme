@@ -162,7 +162,7 @@ foreach ([['place_facet', 42, 'Synthetic Harbor'], ['entity_facet', 42, 'Synthet
 	checkContext(str_contains($html, '<p class="tadl-results-context-count">45 items</p>'), $facet.': missing accurate count subtitle.');
 	checkContext(str_contains($html, 'removeCriterion='.$facet.'&amp;removeID='.$id) && str_contains($html, 'key=synthetic-key'), $facet.': criterion removal/key changed.');
 	checkContext(!str_contains($html, 'Native label must not be trusted'), $facet.': unsafe native label used.');
-	checkContext(str_contains($html, 'aria-label=\'Results pagination\'') && str_contains($html, 'Page 1 of 5'), $facet.': pagination changed.');
+	checkContext(str_contains($html, 'aria-label=\'Results pagination above results\'') && str_contains($html, 'Page 1 of 5'), $facet.': top pagination must retain page state and identify its position.');
 }
 foreach (['entity_id:42' => 'Synthetic Person', 'place_id:42' => 'Synthetic Harbor', 'occurrence_id:42' => 'Synthetic Exhibition', 'collection_id:42' => 'Synthetic Collection', ' ca_places.place_id : 42 ' => 'Synthetic Harbor'] as $query => $label) {
 	$criteria = [contextCriterion('_search', $query, 'Raw display query: '.$query), contextCriterion('type_facet', 3, 'Synthetic type')];

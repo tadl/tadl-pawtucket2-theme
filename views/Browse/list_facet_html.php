@@ -103,7 +103,7 @@
 			$vs_facet_list .= "<div>".caNavLink($this->request, $va_item['label'].$vs_content_count, '', '*', '*', '*', array('facet' => $vs_facet_name, 'id' => $va_item['id'], 'view' => $vs_view, 'key' => $vs_key))."</div>\n";
 			$vn_c++;
 		}
-		print "<a href='#' class='pull-right' id='bMorePanelClose' onclick='jQuery(\"#bMorePanel\").toggle(); return false;'><span class='glyphicon glyphicon-remove-circle'></span></a>";
+		print "<button type='button' class='pull-right tadl-dialog-close' id='bMorePanelClose' aria-label='"._t('Close filter choices')."' onclick='var panel = jQuery(\"#bMorePanel\").hide(); var opener = panel.data(\"tadlOpener\"); if (opener && opener.isConnected) { jQuery(opener).focus(); } else { jQuery(\"#bRefineButton\").focus(); } return false;'><span class='glyphicon glyphicon-remove-circle' aria-hidden='true'></span></button>";
 		print "<H1 id='bScrollListLabel'>".$va_facet_info["label_plural"]."<span class='bFilterCount'> (".sizeof($va_facet_content)." total)</span></H1>";
 		if($va_facet_info["group_mode"]== "alphabetical"){
 			print "<div id='bLetterBar'>";

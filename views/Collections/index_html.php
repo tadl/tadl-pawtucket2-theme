@@ -59,7 +59,7 @@
 		}
 ?>
 					</div>
-					<?php print tadlCollectionIndexPager($this->request, $vn_page, $vn_total_pages, $vs_collection_view); ?>
+					<?php print tadlCollectionIndexPager($this->request, $vn_page, $vn_total_pages, $vs_collection_view, 'top'); ?>
 				</div>
 <?php
 	}
@@ -99,7 +99,7 @@
 			print "</article>";
 		}
 		print "</div>";
-		print tadlCollectionIndexPager($this->request, $vn_page, $vn_total_pages, $vs_collection_view);
+		print tadlCollectionIndexPager($this->request, $vn_page, $vn_total_pages, $vs_collection_view, 'bottom');
 	} else {
 		print _t('No collections available');
 	}

@@ -75,11 +75,8 @@ if($link_to == "morePanel"){
 <script type="text/javascript">
 jQuery(document).ready(function() {
 	jQuery(".caSubItem<?php print $facet_name; ?>").on('click', function(e) {
-		jQuery('#bMorePanel').load('<?php print caNavUrl($this->request, '*', '*', $browse_type); ?>', { getFacet: 1, facet: '<?php print $facet_name; ?>', view: '<?php print $view; ?>', key: '<?php print $key; ?>', browseType: '<?php print $browse_type; ?>', id: jQuery(this).data('item_id'), isNav: <?php print $is_nav ? 1 : 0; ?>},
-			function(){jQuery("#bMorePanel").show();
-			jQuery("#bMorePanel").mouseleave(function(){
-				jQuery("#bMorePanel").hide();
-			});
+		jQuery('#bMorePanel').data('tadlOpener', this).load('<?php print caNavUrl($this->request, '*', '*', $browse_type); ?>', { getFacet: 1, facet: '<?php print $facet_name; ?>', view: '<?php print $view; ?>', key: '<?php print $key; ?>', browseType: '<?php print $browse_type; ?>', id: jQuery(this).data('item_id'), isNav: <?php print $is_nav ? 1 : 0; ?>},
+			function(){jQuery("#bMorePanel").show().focus();
 		});
 		return false;
 	});

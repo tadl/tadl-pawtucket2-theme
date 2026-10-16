@@ -26,6 +26,7 @@
  * ----------------------------------------------------------------------
  */
  
+	require_once(__DIR__.'/../../helpers/form_accessibility.php');
 	$va_errors = $this->getVar("errors");
 	$t_user = $this->getVar("t_user");
 	$co_security = $this->request->config->get('registration_security');
@@ -53,7 +54,7 @@
 ?>
 		<div class="row">
 			<div class="col-sm-12">
-				<div class="pull-right pointer" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle"></span></div>
+				<button type="button" class="pull-right tadl-dialog-close" aria-label="<?= _t('Close dialog'); ?>" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle" aria-hidden="true"></span></button>
 				<H1><?php print _t("Register"); ?></H1>
 			</div>
 		</div>
@@ -64,19 +65,19 @@
 <?php
 	}
 	if($va_errors["register"]){
-		print "<div class='alert alert-danger'>".$va_errors["register"]."</div>";
+		print "<div class='alert alert-danger' role='alert'>".$va_errors["register"]."</div>";
 	}
 		foreach(array("fname", "lname", "email") as $vs_field){
 			if($va_errors[$vs_field]){
-				print "<div class='alert alert-danger'>".$va_errors[$vs_field]."</div>";
+				print "<div class='alert alert-danger' role='alert'>".$va_errors[$vs_field]."</div>";
 			}	
-			print $t_user->htmlFormElement($vs_field,"<div class='form-group".(($va_errors[$vs_field]) ? " has-error" : "")."'><label for='".$vs_field."' class='col-sm-4 control-label'>^LABEL</label><div class='col-sm-7'>^ELEMENT</div><!-- end col-sm-7 --></div><!-- end form-group -->\n", array("classname" => "form-control"));
+			print tadlAccessibleAccountControl($t_user->htmlFormElement($vs_field,"<div class='form-group".(($va_errors[$vs_field]) ? " has-error" : "")."'><label for='".$vs_field."' class='col-sm-4 control-label'>^LABEL</label><div class='col-sm-7'>^ELEMENT</div><!-- end col-sm-7 --></div><!-- end form-group -->\n", array("classname" => "form-control")), $vs_field, $va_errors[$vs_field] ?? null);
 		}
 		$va_profile_settings = $this->getVar("profile_settings");
 		if(is_array($va_profile_settings) and sizeof($va_profile_settings)){
 			foreach($va_profile_settings as $vs_field => $va_profile_element){
 				if($va_errors[$vs_field]){
-					print "<div class='alert alert-danger'>".$va_errors[$vs_field]."</div>";
+					print "<div class='alert alert-danger' role='alert'>".$va_errors[$vs_field]."</div>";
 				}
 				
 				print "<div class='form-group".(($va_errors[$vs_field]) ? " has-error" : "")."'>"; 
@@ -98,7 +99,7 @@
 <?php		
 		} else {
 			if($va_errors["security"]){
-				print "<div class='alert alert-danger'>".$va_errors["security"]."</div>";
+				print "<div class='alert alert-danger' role='alert'>".$va_errors["security"]."</div>";
 			}
 			$vn_num1 = rand(1,10);
 			$vn_num2 = rand(1,10);
@@ -108,28 +109,28 @@
 				<label for='security' class='col-sm-4 control-label'><?php print _t("Security Question"); ?></label>
 				<div class='col-sm-7'>
 					<div class='col-sm-5'>
-						<p class="form-control-static"><?php print $vn_num1; ?> + <?php print $vn_num2; ?> = </p>
+						<p class="form-control-static" id="registration-security-question"><?php print $vn_num1; ?> + <?php print $vn_num2; ?> = </p>
 					</div>
 					<div class='col-sm-5'>
-						<input name="security" value="" id="security" type="text" class="form-control" />
+						<input name="security" value="" id="security" type="text" inputmode="numeric" aria-describedby="registration-security-question" class="form-control" />
 					</div>
 				</div><!-- end col-sm-7 -->
 			</div><!-- end form-group -->
 <?php
 		}
 		if($va_errors["password"]){
-			print "<div class='alert alert-danger'>".$va_errors["password"]."</div>";
+			print "<div class='alert alert-danger' role='alert'>".$va_errors["password"]."</div>";
 		}
-		print $t_user->htmlFormElement("password", "<div class='form-group".(($va_errors["password"]) ? " has-error" : "")."'><label for='password' class='col-sm-4 control-label'>^LABEL</label><div class='col-sm-7'>^ELEMENT</div><!-- end col-sm-7 --></div><!-- end form-group -->\n", array("classname" => "form-control"));
+		print tadlAccessibleAccountControl($t_user->htmlFormElement("password", "<div class='form-group".(($va_errors["password"]) ? " has-error" : "")."'><label for='password' class='col-sm-4 control-label'>^LABEL</label><div class='col-sm-7'>^ELEMENT</div><!-- end col-sm-7 --></div><!-- end form-group -->\n", array("classname" => "form-control")), "password", $va_errors["password"] ?? null);
 ?>
 		<div class="form-group<?php print (($va_errors["password"]) ? " has-error" : ""); ?>">
 			<label for='password2' class='col-sm-4 control-label'><?php print _t('Re-Type password'); ?></label>
-			<div class="col-sm-7"><input type="password" name="password2" id="password2" size="40" class="form-control"  autocomplete="off" /></div><!-- end col-sm-7 -->
+			<div class="col-sm-7"><input type="password" name="password2" id="password2" size="40" class="form-control"  autocomplete="new-password" /></div><!-- end col-sm-7 -->
 		</div><!-- end form-group -->
 		
 <?php	
 		if($va_errors["group_code"]){
-			print "<div class='alert alert-danger'>".$va_errors["group_code"]."</div>";
+			print "<div class='alert alert-danger' role='alert'>".$va_errors["group_code"]."</div>";
 		}
 		print "<div class='form-group".(($va_errors["group_code"]) ? " has-error" : "")."'><label for='registrationGroupCode' class='col-sm-4 control-label'>"._t("Group code (optional)")."</label><div class='col-sm-7'>".caHTMLTextInput("group_code", ['class' => 'form-control', 'id' => 'registrationGroupCode'], [])."</div></div>\n";
 ?>

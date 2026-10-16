@@ -38,11 +38,11 @@
 	$vs_set_description = $this->getVar("set_description");
 	$vn_last_set_id = $this->getVar("lightboxLastSetId");
 ?>
-<div id="caFormOverlay"><div class="pull-right pointer" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle"></span></div>
+<div id="caFormOverlay"><button type="button" class="pull-right tadl-dialog-close" aria-label="<?= _t('Close dialog'); ?>" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle" aria-hidden="true"></span></button>
 <H1><?php print _t("Add item to %1", $vs_display_name); ?></H1>
 <?php
 	if($va_errors["general"]){
-		print "<div class='alert alert-danger'>".$va_errors["general"]."</div>";
+		print "<div class='alert alert-danger' role='alert'>".$va_errors["general"]."</div>";
 	}
 ?>
 	<form id="AddItemForm" action="#" class="form-horizontal" role="form">

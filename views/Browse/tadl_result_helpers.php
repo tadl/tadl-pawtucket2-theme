@@ -23,7 +23,7 @@ function tadlBrowseResultLink($request, $label, $class, $params) {
 }
 
 if (!function_exists('tadlBrowseResultPager')) {
-	function tadlBrowseResultPager($po_request, $pn_total, $pn_start, $pn_per_page, $ps_browse_key, $ps_view, $ps_sort, $ps_sort_dir, $pb_is_advanced) {
+	function tadlBrowseResultPager($po_request, $pn_total, $pn_start, $pn_per_page, $ps_browse_key, $ps_view, $ps_sort, $ps_sort_dir, $pb_is_advanced, $position = 'bottom') {
 		$pn_total = (int)$pn_total;
 		$pn_start = max(0, (int)$pn_start);
 		$pn_per_page = max(1, (int)$pn_per_page);
@@ -46,7 +46,7 @@ if (!function_exists('tadlBrowseResultPager')) {
 		})));
 		sort($va_pages);
 
-		$vs_output = "<nav class='tadl-results-pagination' aria-label='"._t('Results pagination')."'>";
+		$vs_output = "<nav class='tadl-results-pagination' aria-label='".($position === 'top' ? _t('Results pagination above results') : _t('Results pagination below results'))."'>";
 		$vs_output .= "<span class='tadl-results-page-status'>"._t('Page %1 of %2', $vn_current_page, $vn_total_pages)."</span>";
 
 		if ($vn_current_page > 1) {

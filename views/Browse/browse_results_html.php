@@ -125,7 +125,7 @@
 		print '<p class="tadl-related-results-summary" data-tadl-result-count="'.(int)$vn_result_size.'">'.htmlspecialchars(tadlResultItemCount($vn_result_size), ENT_QUOTES, 'UTF-8').'</p></div>';
 		print '<div class="tadl-collection-results-options">'.$vs_tadl_result_options.$vs_tadl_result_view_controls.'</div>';
 		if ($vn_tadl_page_size) {
-			print '<div class="tadl-results-top-pager">'.tadlBrowseResultPager($this->request, $vn_result_size, $vn_start, $vn_tadl_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $vn_is_advanced ? true : false).'</div>';
+			print '<div class="tadl-results-top-pager">'.tadlBrowseResultPager($this->request, $vn_result_size, $vn_start, $vn_tadl_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $vn_is_advanced ? true : false, 'top').'</div>';
 		}
 		print '</div>';
 	}
@@ -176,7 +176,7 @@ if (!$vb_ajax) {	// !ajax
 <?php
 			if ($vb_has_filters) {
 ?>
-			<a href='#' id='bRefineButton' class='tadl-results-action tadl-results-filter' aria-controls='bRefine' aria-expanded='<?= $vb_subject_browse ? 'true' : 'false'; ?>' aria-label='<?php print _t("Toggle filters"); ?>' onclick='var expanded = jQuery("#bRefine").is(":visible"); jQuery("#bRefine").toggle(); jQuery(this).attr("aria-expanded", expanded ? "false" : "true"); return false;'><i class="fa fa-filter" aria-hidden="true"></i><span class="tadl-results-action-label"><?php print _t('Filters'); ?></span></a>
+			<button type='button' id='bRefineButton' class='tadl-results-action tadl-results-filter' aria-controls='bRefine' aria-expanded='<?= $vb_subject_browse ? 'true' : 'false'; ?>' aria-label='<?php print _t("Toggle filters"); ?>' onclick='var expanded = jQuery("#bRefine").is(":visible"); jQuery("#bRefine").toggle(); jQuery(this).attr("aria-expanded", expanded ? "false" : "true"); return false;'><i class="fa fa-filter" aria-hidden="true"></i><span class="tadl-results-action-label"><?php print _t('Filters'); ?></span></button>
 <?php
 			}
 ?>
@@ -210,7 +210,7 @@ if (!$vb_ajax) {	// !ajax
 		print $vs_tadl_result_view_controls;
 		if ($vn_tadl_page_size) {
 			print "<div class='tadl-results-top-pager'>";
-			print tadlBrowseResultPager($this->request, $vn_result_size, $vn_start, $vn_tadl_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $vn_is_advanced ? true : false);
+			print tadlBrowseResultPager($this->request, $vn_result_size, $vn_start, $vn_tadl_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $vn_is_advanced ? true : false, 'top');
 			print "</div>";
 		}
 ?>

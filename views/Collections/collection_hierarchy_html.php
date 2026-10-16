@@ -41,7 +41,7 @@
 	}
 	if($vb_has_children){
 ?>					
-			<div class='text-right'><a href='#' onclick='$("#collectionsWrapper").toggle(300);return false;' class='showHide'>Show/Hide Collection Browser</a></div>
+			<div class="text-right"><button type="button" class="btn btn-default showHide" aria-controls="collectionsWrapper" aria-expanded="<?= $o_collections_config->get('browser_closed') ? 'false' : 'true'; ?>" onclick="var panel = jQuery('#collectionsWrapper'); panel.toggle(); jQuery(this).attr('aria-expanded', panel.is(':visible') ? 'true' : 'false');"><?= _t('Show/Hide Collection Browser'); ?></button></div>
 				<div class="row" id="collectionsWrapper" <?php print ($o_collections_config->get("browser_closed")) ? "style='display:none;'" : ""; ?>>			
 					<div class='col-sm-12'>
 					
@@ -96,7 +96,7 @@
 					if($vb_has_grandchildren){
 						$vs_loading_html = caBusyIndicatorIcon($this->request).' '._t('Loading...');
 ?>
-							<div id='collectionLoad' class='col-xs-12 col-sm-8 col-md-8 col-lg-8' role='region' aria-live='polite' aria-busy='false'>
+							<div id='collectionLoad' class='col-xs-12 col-sm-8 col-md-8 col-lg-8' role='region' aria-label='<?= _t('Selected collection contents'); ?>' aria-live='polite' aria-busy='false'>
 								<i class='fa fa-arrow-left' aria-hidden='true'></i> Click a <?php print ucFirst($t_item->get("ca_collections.type_id", array('convertCodesToDisplayText' => true))); ?> container to the left to see its contents.
 							</div>
 							<script>

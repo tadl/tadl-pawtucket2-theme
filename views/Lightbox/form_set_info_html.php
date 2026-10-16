@@ -36,11 +36,11 @@
 	$vs_lightbox_displayname_plural = $va_lightboxDisplayName["plural"];
 	$vs_description_attribute 		= $this->getVar("description_attribute");
 ?>
-<div id="caFormOverlay"><div class="pull-right pointer" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle"></span></div>
+<div id="caFormOverlay"><button type="button" class="pull-right tadl-dialog-close" aria-label="<?= _t('Close dialog'); ?>" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle" aria-hidden="true"></span></button>
 <H1><?php print _t("%1 Information", ucfirst($vs_lightbox_displayname)); ?></H1>
 <?php
 	if($va_errors["general"]){
-		print "<div class='alert alert-danger'>".$va_errors["general"]."</div>";
+		print "<div class='alert alert-danger' role='alert'>".$va_errors["general"]."</div>";
 	}
 ?>
 	<form id="SetForm" action="#" class="form-horizontal" role="form">
@@ -48,13 +48,13 @@
 		print caHTMLHiddenInput('csrfToken', array('value' => caGenerateCSRFToken($this->request)));
 
 		if($va_errors["name"]){
-			print "<div class='alert alert-danger'>".$va_errors["name"]."</div>";
+			print "<div class='alert alert-danger' role='alert'>".$va_errors["name"]."</div>";
 		}
-		print "<div class='form-group".(($va_errors["name"]) ? " has-error" : "")."'><label for='name' class='col-sm-4 control-label'>"._t("Name")."</label><div class='col-sm-7'><input type='text' name='name' value='".htmlentities($this->getVar("name"), ENT_QUOTES, 'UTF-8', false)."' class='form-control'></div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
+		print "<div class='form-group".(($va_errors["name"]) ? " has-error" : "")."'><label for='name' class='col-sm-4 control-label'>"._t("Name")."</label><div class='col-sm-7'><input type='text' name='name' id='name' value='".htmlentities($this->getVar("name"), ENT_QUOTES, 'UTF-8', false)."' class='form-control'></div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
 		if($va_errors["description"]){
-			print "<div class='alert alert-danger'>".$va_errors["description"]."</div>";
+			print "<div class='alert alert-danger' role='alert'>".$va_errors["description"]."</div>";
 		}
-		print "<div class='form-group".(($va_errors["description"]) ? " has-error" : "")."'><label for='".$vs_description_attribute."' class='col-sm-4 control-label'>"._t("Description")."</label><div class='col-sm-7'><textarea name='".$vs_description_attribute."' class='form-control' rows='3'>".htmlentities($this->getVar("description"), ENT_QUOTES, 'UTF-8', false)."</textarea></div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
+		print "<div class='form-group".(($va_errors["description"]) ? " has-error" : "")."'><label for='lightbox-description' class='col-sm-4 control-label'>"._t("Description")."</label><div class='col-sm-7'><textarea name='".$vs_description_attribute."' id='lightbox-description' class='form-control' rows='3'>".htmlentities($this->getVar("description"), ENT_QUOTES, 'UTF-8', false)."</textarea></div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
 ?>
 		<div class="form-group">
 			<div class="col-sm-offset-4 col-sm-7">
@@ -75,7 +75,7 @@
 						var errors = $.map(data.errors, function(e){
 							return e;
 						}).join('; ');
-						jQuery('#SetForm').prepend('<div class="alert alert-danger">' + errors + '</div>');
+						jQuery('#SetForm').prepend('<div class="alert alert-danger" role="alert">' + errors + '</div>');
 					}else{
 						jQuery("#lbSetName" + data.set_id).html(data.name);
 						jQuery("#lbSetDescription" + data.set_id).html(data.description);

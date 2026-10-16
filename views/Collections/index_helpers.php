@@ -1,6 +1,6 @@
 <?php
 if (!function_exists('tadlCollectionIndexPager')) {
-	function tadlCollectionIndexPager($po_request, $pn_page, $pn_total_pages, $ps_view) {
+	function tadlCollectionIndexPager($po_request, $pn_page, $pn_total_pages, $ps_view, $position = 'top') {
 		if ($pn_total_pages <= 1) { return ''; }
 
 		$link = function($page, $label, $aria_label) use ($po_request, $ps_view) {
@@ -12,7 +12,7 @@ if (!function_exists('tadlCollectionIndexPager')) {
 		})));
 		sort($pages);
 
-		$output = '<nav class="tadl-collections-pagination" aria-label="'.htmlspecialchars(_t('Collections pages'), ENT_QUOTES, 'UTF-8').'">';
+		$output = '<nav class="tadl-collections-pagination" aria-label="'.htmlspecialchars(($position === 'top' ? _t('Collections pages above results') : _t('Collections pages below results')), ENT_QUOTES, 'UTF-8').'">';
 		$output .= '<span class="tadl-results-page-status">'._t('Page %1 of %2', $pn_page, $pn_total_pages).'</span>';
 		$output .= $pn_page > 1
 			? $link($pn_page - 1, '&lsaquo;', _t('Previous page'))

@@ -19,25 +19,25 @@
 	}
 	$va_errors = $this->getVar("errors");
 ?>
-<div id="caFormOverlay"><div class="pull-right pointer" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle"></span></div>
+<div id="caFormOverlay"><button type="button" class="pull-right tadl-dialog-close" aria-label="<?= _t('Close dialog'); ?>" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle" aria-hidden="true"></span></button>
 <H1><?php print _t("Share this item"); ?></H1>
 <?php
 	if($va_errors["general"]){
-		print "<div class='alert alert-danger'>".$va_errors["general"]."</div>";
+		print "<div class='alert alert-danger' role='alert'>".$va_errors["general"]."</div>";
 	}
 ?>
 	<form method="post" id="shareForm" action="#" class="form-horizontal" role="form" enctype="multipart/form-data">
 <?php
 		if($va_errors["to_email"]){
-			print "<div class='alert alert-danger'>".$va_errors["to_email"]."</div>";
+			print "<div class='alert alert-danger' role='alert'>".$va_errors["to_email"]."</div>";
 		}
 		print "<div class='form-group".(($va_errors["to_email"]) ? " has-error" : "")."'><label for='to_email' class='col-sm-4 control-label'>"._t("To e-mail address")."</label><div class='col-sm-7'><input type='text' name='to_email' id='to_email' value='".$vs_to_email."' class='form-control' placeholder='"._t("Enter multiple addresses separated by commas")."'></div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
 		if($va_errors["from_name"]){
-			print "<div class='alert alert-danger'>".$va_errors["from_name"]."</div>";
+			print "<div class='alert alert-danger' role='alert'>".$va_errors["from_name"]."</div>";
 		}
 		print "<div class='form-group".(($va_errors["from_name"]) ? " has-error" : "")."'><label for='from_name' class='col-sm-4 control-label'>"._t("Your name")."</label><div class='col-sm-7'><input type='text' name='from_name' id='from_name' value='".$vs_from_name."' class='form-control'></div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
 		if($va_errors["from_email"]){
-			print "<div class='alert alert-danger'>".$va_errors["from_email"]."</div>";
+			print "<div class='alert alert-danger' role='alert'>".$va_errors["from_email"]."</div>";
 		}
 		print "<div class='form-group".(($va_errors["from_email"]) ? " has-error" : "")."'><label for='from_email' class='col-sm-4 control-label'>"._t("Your email address")."</label><div class='col-sm-7'><input type='text' name='from_email' id='from_email' value='".$vs_from_email."' class='form-control'></div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
 		if(!$this->request->isLoggedIn()){				
@@ -45,7 +45,7 @@
 			$vn_num2 = rand(1,10);
 			$vn_sum = $vn_num1 + $vn_num2;
 			if($va_errors["security"]){
-				print "<div class='alert alert-danger'>".$va_errors["security"]."</div>";
+				print "<div class='alert alert-danger' role='alert'>".$va_errors["security"]."</div>";
 			}
 ?>
 			<div class='form-group<?php print (($va_errors["security"]) ? " has-error" : ""); ?>'>
@@ -63,11 +63,11 @@
 <?php
 		}
 		if($va_errors["subject"]){
-			print "<div class='alert alert-danger'>".$va_errors["subject"]."</div>";
+			print "<div class='alert alert-danger' role='alert'>".$va_errors["subject"]."</div>";
 		}
 		print "<div class='form-group".(($va_errors["subject"]) ? " has-error" : "")."'><label for='subject' class='col-sm-4 control-label'>"._t("Subject")."</label><div class='col-sm-7'><input type='text' name='subject' id='subject' value='".htmlspecialchars(strip_tags($vs_subject))."' class='form-control'></div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
 		if($va_errors["message"]){
-			print "<div class='alert alert-danger'>".$va_errors["message"]."</div>";
+			print "<div class='alert alert-danger' role='alert'>".$va_errors["message"]."</div>";
 		}
 		print "<div class='form-group".(($va_errors["message"]) ? " has-error" : "")."'><label for='message' class='col-sm-4 control-label'>"._t("Message")."</label><div class='col-sm-7'><textarea name='message' id='message' class='form-control' rows='3'>".htmlspecialchars(strip_tags($vs_message))."</textarea></div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
 ?>

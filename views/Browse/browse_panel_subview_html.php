@@ -26,7 +26,7 @@
  * ----------------------------------------------------------------------
  */
 ?>
-<div id="caBrowsePanel"> 
+<div id="caBrowsePanel" role="dialog" aria-modal="true" aria-label="<?= _t('Browse filters'); ?>" aria-hidden="true" tabindex="-1">
 	<div id="caBrowsePanelContentArea">
 	
 	</div>
@@ -49,6 +49,7 @@ jQuery(document).ready(function() {
 			mobileSafariViewportTagID: '_msafari_viewport',
 			closeButtonSelector: '.close'					/* anything with the CSS classname "close" will trigger the panel to close */
 		});
+		if (window.tadlAccessiblePanel) { window.tadlAccessiblePanel(caBrowsePanel, document.getElementById('caBrowsePanel')); }
 	}
 });
 </script>

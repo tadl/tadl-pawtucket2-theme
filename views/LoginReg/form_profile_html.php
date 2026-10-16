@@ -26,11 +26,12 @@
  * ----------------------------------------------------------------------
  */
  
+	require_once(__DIR__.'/../../helpers/form_accessibility.php');
 	$va_errors = (array)$this->getVar("errors");
 	$t_user = $this->getVar("t_user");
 	if($this->request->isAjax()){
 ?>
-<div id="caFormOverlay"><div class="pull-right pointer" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle"></span></div>
+<div id="caFormOverlay"><button type="button" class="pull-right tadl-dialog-close" aria-label="<?= _t('Close dialog'); ?>" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle" aria-hidden="true"></span></button>
 <?php
 	}
 ?>
@@ -42,7 +43,7 @@
 
 <?php
 	if(!empty($va_errors["general"])){
-		print "<div class='alert alert-danger'>".htmlspecialchars($va_errors["general"], ENT_QUOTES, "UTF-8")."</div>";
+		print "<div class='alert alert-danger' role='alert'>".htmlspecialchars($va_errors["general"], ENT_QUOTES, "UTF-8")."</div>";
 	}
 ?>
 	<form id="ProfileForm" action="<?php print caNavUrl($this->request, "", "AccountProfile", "profileSave"); ?>" class="form-horizontal" method="POST">
@@ -50,15 +51,15 @@
 <?php
 		foreach(array("fname", "lname", "email") as $vs_field){
 			if(!empty($va_errors[$vs_field])){
-				print "<div class='alert alert-danger'>".htmlspecialchars($va_errors[$vs_field], ENT_QUOTES, "UTF-8")."</div>";
+				print "<div class='alert alert-danger' role='alert'>".htmlspecialchars($va_errors[$vs_field], ENT_QUOTES, "UTF-8")."</div>";
 			}	
-			print $t_user->htmlFormElement($vs_field,"<div class='form-group".((!empty($va_errors[$vs_field])) ? " has-error" : "")."'><label for='".$vs_field."' class='col-sm-4 control-label'>^LABEL</label><div class='col-sm-7'>^ELEMENT</div><!-- end col-sm-7 --></div><!-- end form-group -->\n", array("classname" => "form-control"));
+			print tadlAccessibleAccountControl($t_user->htmlFormElement($vs_field,"<div class='form-group".((!empty($va_errors[$vs_field])) ? " has-error" : "")."'><label for='".$vs_field."' class='col-sm-4 control-label'>^LABEL</label><div class='col-sm-7'>^ELEMENT</div><!-- end col-sm-7 --></div><!-- end form-group -->\n", array("classname" => "form-control")), $vs_field, $va_errors[$vs_field] ?? null);
 		}
 		$va_profile_settings = $this->getVar("profile_settings");
 		if(is_array($va_profile_settings) and sizeof($va_profile_settings)){
 			foreach($va_profile_settings as $vs_field => $va_profile_element){
 				if(!empty($va_errors[$vs_field])){
-					print "<div class='alert alert-danger'>".htmlspecialchars($va_errors[$vs_field], ENT_QUOTES, "UTF-8")."</div>";
+					print "<div class='alert alert-danger' role='alert'>".htmlspecialchars($va_errors[$vs_field], ENT_QUOTES, "UTF-8")."</div>";
 				}
 				print "<div class='form-group".((!empty($va_errors[$vs_field])) ? " has-error" : "")."'>";
 				print $va_profile_element["bs_formatted_element"];
@@ -66,21 +67,21 @@
 			}
 		}
 		if(!empty($va_errors["password"])){
-			print "<div class='alert alert-danger'>".htmlspecialchars($va_errors["password"], ENT_QUOTES, "UTF-8")."</div>";
+			print "<div class='alert alert-danger' role='alert'>".htmlspecialchars($va_errors["password"], ENT_QUOTES, "UTF-8")."</div>";
 		}		
 ?>
 		<div class="form-group<?php print ((!empty($va_errors["password"])) ? " has-error" : ""); ?>">
 			<label for='password' class='col-sm-4 control-label'><?php print _t('Reset Password'); ?></label>
-			<div class="col-sm-7"><p class="help-block"><?php print _t("Only enter if you would like to change your current password"); ?></p><input type="password" name="password" id="password" size="40" class="form-control"  autocomplete="off" /></div><!-- end col-sm-7 -->
+			<div class="col-sm-7"><p class="help-block"><?php print _t("Only enter if you would like to change your current password"); ?></p><input type="password" name="password" id="password" size="40" class="form-control" autocomplete="new-password" /></div><!-- end col-sm-7 -->
 		</div><!-- end form-group -->
 		<div class="form-group<?php print ((!empty($va_errors["password"])) ? " has-error" : ""); ?>">
 			<label for='password2' class='col-sm-4 control-label'><?php print _t('Re-Type password'); ?></label>
-			<div class="col-sm-7"><input type="password" name="password2" id="password2" size="40" class="form-control" /></div><!-- end col-sm-7 -->
+			<div class="col-sm-7"><input type="password" name="password2" id="password2" size="40" class="form-control" autocomplete="new-password" /></div><!-- end col-sm-7 -->
 		</div><!-- end form-group -->
 
 <?php
 	if (!empty($va_errors["group_code"])) {
-		print "<div class='alert alert-danger'>".htmlspecialchars($va_errors["group_code"], ENT_QUOTES, "UTF-8")."</div>";
+		print "<div class='alert alert-danger' role='alert'>".htmlspecialchars($va_errors["group_code"], ENT_QUOTES, "UTF-8")."</div>";
 	}
 ?>
 	<div class="row"><div class="col-sm-4"><H2<?php print (!$this->request->isAjax()) ? ' class="text-right"' : ''; ?>><?php print _t("Groups"); ?></H2></div></div>

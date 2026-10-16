@@ -35,14 +35,14 @@
 	$vs_lightbox_displayname = $va_lightboxDisplayName["singular"];
 	$vs_lightbox_displayname_plural = $va_lightboxDisplayName["plural"];
 ?>
-<div id="caFormOverlay"><div class="pull-right pointer" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle"></span></div>
+<div id="caFormOverlay"><button type="button" class="pull-right tadl-dialog-close" aria-label="<?= _t('Close dialog'); ?>" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle" aria-hidden="true"></span></button>
 <H1><?php print _t("%1 Access", ucfirst($vs_lightbox_displayname)); ?></H1>
 <?php
 	if($this->getVar("message")){
-		print "<div class='alert alert-info'>".$this->getVar("message")."</div>";
+		print "<div class='alert alert-info' role='status'>".$this->getVar("message")."</div>";
 	}
 	if($this->getVar("errors")){
-		print "<div class='alert alert-danger'>".$this->getVar("errors")."</div>";
+		print "<div class='alert alert-danger' role='alert'>".$this->getVar("errors")."</div>";
 	}
 	if(sizeof($va_user_groups)){
 		print "<H3>"._t("User Groups")."</H3>";

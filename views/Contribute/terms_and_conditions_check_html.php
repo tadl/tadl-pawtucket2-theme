@@ -39,7 +39,7 @@
 						<br/>
 						<div style="margin-left: 40px;">
 							<input name="iAgreeToTerms" value="1" id="iAgreeToTerms" type="checkbox"/>
-							<?php print _t('I agree to the Terms and Conditions set out herein'); ?>
+							<label for="iAgreeToTerms"><?php print _t('I agree to the Terms and Conditions set out herein'); ?></label>
 						</div>
 				</span>
 			</div>

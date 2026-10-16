@@ -202,7 +202,8 @@ if (!$vb_ajax) {	// !ajax
 	</div><!-- end row -->
 	<div class="row">
 		<div class="<?php print ($vs_left_col_class = $o_lightbox_config->get("setDetailLeftColClass")) ? $vs_left_col_class : "col-sm-9 col-md-9 col-lg-8"; ?>">
-			<div id="lbSetResultLoadContainer">
+			<p id="tadl-lightbox-order-status" role="status"></p>
+			<div id="lbSetResultLoadContainer" data-order-url="<?= $vb_write_access ? htmlspecialchars(caNavUrl($this->request, '', 'Lightbox', 'AjaxReorderItems', ['csrfToken' => caGenerateCSRFToken($this->request)]), ENT_QUOTES, 'UTF-8') : ''; ?>" data-order-success="<?= htmlspecialchars(_t('Item order saved.'), ENT_QUOTES, 'UTF-8'); ?>" data-order-error="<?= htmlspecialchars(_t('Could not save item order. The previous order has been restored.'), ENT_QUOTES, 'UTF-8'); ?>" data-order-boundary="<?= htmlspecialchars(_t('The item is already at this end of the list.'), ENT_QUOTES, 'UTF-8'); ?>">
 <?php
 } // !ajax
 
@@ -280,6 +281,7 @@ if (!$vb_ajax) {	// !ajax
 										print "<div class='col-xs-6 col-sm-4 col-md-3 col-lg-3 lbItem{$vn_item_id}' id='row-{$vn_object_id}'><div class='lbItemContainer'>";
 										break;
 								}
+								if ($vb_write_access) { print $this->render('Lightbox/order_buttons_html.php'); }
 								print $this->render("Lightbox/set_detail_item_html.php");
 								print "</div></div><!-- end col 3 -->";
 							}
@@ -397,20 +399,17 @@ if (!$vb_ajax) {    // !ajax
     });
 
     jQuery(document).ready(function() {
+        <?php if ($vb_write_access): ?>
         $("#lbSetResultLoadContainer").sortable({
             cursor: "move",
             opacity: 0.8,
             helper: 'clone',
             appendTo: 'body',
             zIndex: 10000,
-            update: function( event, ui ) {
-                var data = $(this).sortable('serialize');
-                jQuery.ajax({
-                    type: 'POST',
-                    url: '<?php print caNavUrl($this->request, "", "Lightbox", "AjaxReorderItems", ['csrfToken' => caGenerateCSRFToken($this->request)]); ?>/row_ids/' + data
-                });
-            }
+            start: function () { window.tadlRememberLightboxOrder(this); },
+            update: function () { window.tadlSaveLightboxOrder(this); }
         });
+        <?php endif; ?>
 
         jQuery("#lbSetResultLoadContainer").on('click', ".lbItemDeleteButton", function(e) {
                 var id = jQuery(this).data("item_id");

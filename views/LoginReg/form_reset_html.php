@@ -1,14 +1,14 @@
 <?php
 	if($this->request->isAjax()){
 ?>
-		<div id="caFormOverlay"><div class="pull-right pointer" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle"></span></div>
+		<div id="caFormOverlay"><button type="button" class="pull-right tadl-dialog-close" aria-label="<?= _t('Close dialog'); ?>" onclick="caMediaPanel.hidePanel(); return false;"><span class="glyphicon glyphicon-remove-circle" aria-hidden="true"></span></button>
 <?php
 	}
 ?>
 			<H1><?php print _t("Reset Your Password"); ?></H1>
 <?php
 	if($this->getVar("message")){
-		print "<div class='alert alert-danger'>".$this->getVar("message")."</div>";
+		print "<div class='alert alert-danger' role='alert'>".$this->getVar("message")."</div>";
 	}
 			switch($this->getVar("action")) {
 				case 'send':
@@ -26,7 +26,7 @@
 				# ---------------------------------------------------------------------------------------------
 				case 'reset_success':
 		?>
-					<div class='alert alert-success'><?php print _t("Your password has been reset!"); ?></div>
+					<div class='alert alert-success' role='status'><?php print _t("Your password has been reset!"); ?></div>
 					<p align="center">
 						<?php print _t("You may now"); ?> <?php print caNavLink($this->request, _t("login"), "", "", "LoginReg", "loginForm"); ?>.
 					</p>
@@ -46,19 +46,19 @@
 				case 'reset':
 		?>
 					<p><?php print _t("Please enter your new password."); ?></p>
-					<form id="ResetForm" action="<?php print caNavUrl($this->request, '', 'LoginReg', 'resetSave'); ?>" method="post" class="form-horizontal" method="POST">
+					<form id="ResetForm" action="<?php print caNavUrl($this->request, '', 'LoginReg', 'resetSave'); ?>" method="post" class="form-horizontal">
 
 
 						<div class="form-group">
 							<label for="password" class="col-sm-2 control-label"><?php print _t("New password"); ?></label>
 							<div class="col-sm-7">
-								<input type="password" name="password" class="form-control" id="password" autocomplete="off" />
+								<input type="password" name="password" class="form-control" id="password" autocomplete="new-password" required />
 							</div><!-- end col-sm-7 -->
 						</div><!-- end form-group -->
 						<div class="form-group">
-							<label for="password" class="col-sm-2 control-label"><?php print _t("Confirm new password"); ?></label>
+							<label for="password_confirm" class="col-sm-2 control-label"><?php print _t("Confirm new password"); ?></label>
 							<div class="col-sm-7">
-								<input type="password" name="password_confirm" class="form-control" id="password_confirm" autocomplete="off" />
+								<input type="password" name="password_confirm" class="form-control" id="password_confirm" autocomplete="new-password" required />
 							</div><!-- end col-sm-7 -->
 						</div><!-- end form-group -->
 						<div class="form-group">
@@ -80,7 +80,7 @@
 						<div class="form-group">
 							<label for="reset_email" class="col-sm-4 control-label"><?php print _t("E-mail"); ?></label>
 							<div class="col-sm-7">
-								<input type="test" name="reset_email" class="form-control" id="reset_email" autocomplete="off" />
+								<input type="email" name="reset_email" class="form-control" id="reset_email" autocomplete="email" required />
 							</div><!-- end col-sm-7 -->
 						</div><!-- end form-group -->
 						<div class="form-group">

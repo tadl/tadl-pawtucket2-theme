@@ -1,0 +1,119 @@
+/* Loaded after the theme and native widget rules. */
+#skipNavigation a:focus {
+    position: fixed;
+    z-index: 100000;
+    top: 12px;
+    left: 12px;
+    margin: 0;
+    padding: 12px 18px;
+    border: 2px solid #fff;
+    background: #0b2f57;
+    color: #fff;
+    font-size: 18px;
+    text-decoration: underline;
+}
+
+/* The white inner ring remains visible on dark controls and media. */
+body :is(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+    outline: 3px solid #0b2f57;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 2px #fff;
+}
+
+html { scroll-padding-block: 12px; }
+:is(a, button, input, textarea, select, summary, [tabindex]) { scroll-margin-block: 12px; }
+
+/* A border identifies editable fields on white and pale surfaces. */
+.form-control:not(:disabled) { border-color: #758597; }
+.form-control::placeholder { color: #666; opacity: 1; }
+
+/* Links embedded in prose must not depend on color alone. */
+#main :is(p, .unit, .tadl-detail-metadata, .help-block) a:not(.btn) {
+    text-decoration: underline;
+    text-underline-offset: .15em;
+}
+
+.tadl-dialog-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 6px;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    background: #fff;
+    color: #0b2f57;
+    font: inherit;
+    cursor: pointer;
+}
+
+.caMediaOverlayControls .tadl-dialog-close,
+.caMediaOverlayControlsMinimal .tadl-dialog-close {
+    border-color: #fff;
+    background: #0b2f57;
+    color: #fff;
+}
+.caMediaOverlayControlsMinimal .close { opacity: 1; }
+.tadl-result-extra { margin-top: 12px; }
+.tadl-result-extra > summary { min-height: 32px; color: #0b2f57; cursor: pointer; }
+
+.tadl-gallery-media-stage :is(.galleryDetailPrevious, .galleryDetailNext) {
+    position: absolute;
+    border: 0;
+    font: inherit;
+    cursor: pointer;
+}
+.tadl-gallery-media-stage button:disabled { cursor: default; }
+
+.tadl-form-error { color: #8c2525; font-weight: 600; }
+.alert-danger { color: #8c2525; }
+.alert-success { color: #235c2c; }
+.alert-warning { color: #6d4c12; }
+.alert-info { color: #1b526c; }
+.notificationMessage { color: #1b526c; }
+.tadl-error-summary { scroll-margin-block: 20px; }
+.tadl-error-summary h2 { margin-top: 0; font-size: 1.25em; }
+
+/* Long content and translated labels must survive text spacing and narrow views. */
+#main, #pageArea, .tadl-content-shell .row > [class*="col-"] { min-width: 0; }
+#main :is(p, li, dd, .unit, .form-group, .tadl-record-heading) { overflow-wrap: anywhere; }
+.form-control, button, .btn { max-width: 100%; }
+.btn { white-space: normal; }
+textarea.form-control { resize: vertical; }
+.form-control:not(textarea):not(select) { height: auto; min-height: 42px; }
+.cookieCount { font: inherit; color: inherit; }
+.cookiesList[open] { display: block; }
+.tadl-cookie-category { padding-block: 16px; border-top: 1px solid #758597; }
+.tadl-cookie-options { margin-block: 16px; }
+.tadl-cookie-options legend { margin-bottom: 4px; font-size: 1em; }
+.tadl-cookie-options label { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; margin-right: 24px; }
+.cookieByCategory summary { min-height: 44px; cursor: pointer; }
+.tadl-lightbox-order-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.tadl-lightbox-order-buttons .btn { min-height: 32px; font-size: inherit; }
+
+.tadl-main-nav .tadl-menu-items > li > button.dropdown-toggle {
+    position: relative;
+    z-index: 2;
+    display: block;
+    width: 100%;
+    padding: 18px 13px;
+    border: 0;
+    background: transparent;
+    color: #111;
+    font: 700 18px/1.2 "Merriweather Sans", "Open Sans", Arial, sans-serif;
+    letter-spacing: .04em;
+    text-align: left;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

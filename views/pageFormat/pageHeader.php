@@ -299,7 +299,7 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
 		</div>
 		<div class="tadl-accent-bar"></div>
 	</header>
-	<nav class="navbar navbar-default yamm tadl-main-nav" role="navigation">
+	<nav class="navbar navbar-default yamm tadl-main-nav" aria-label="<?= _t('Primary navigation'); ?>">
 		<div class="container menuBar">
 
 		<!-- Collect the nav links, forms, and other content for toggling -->
@@ -328,4 +328,4 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
 		</div><!-- end container -->
 	</nav>
 	<div class="container tadl-content-shell"><div class="row"><div class="col-xs-12">
-		<div role="main" id="main"><div id="pageArea" <?= caGetPageCSSClasses(); ?>>
+		<main id="main" tabindex="-1"><div id="pageArea" <?= caGetPageCSSClasses(); ?>>

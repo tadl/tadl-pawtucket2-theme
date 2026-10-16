@@ -200,15 +200,15 @@ $current_sort_dir 					= $this->getVar('direction');
 	// Delete set confirm dialog
 	//
 ?>
-<div class="modal fade" id="confirm-delete" tabindex="-1" role="dialog" aria-labelledby="Confirm delete" aria-hidden="true">
+<div class="modal fade" id="confirm-delete" tabindex="-1" role="dialog" aria-label="<?= _t('Confirm delete'); ?>" aria-modal="true" aria-hidden="true">
 	<div class="modal-dialog">
 		<div class="modal-content">
 			<div class="modal-body">
 				
 			</div>
 			<div class="modal-footer">
-				<a class="btn btn-ok btn-delete"><span class="glyphicon glyphicon-trash"></span> <?php print _t('Delete'); ?></a>
-				<a class="btn" data-dismiss="modal"><?php print _t('Cancel'); ?></a>
+				<button type="button" class="btn btn-ok btn-delete"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span> <?php print _t('Delete'); ?></button>
+				<button type="button" class="btn" data-dismiss="modal"><?php print _t('Cancel'); ?></button>
 			</div>
 		</div>
 	</div>
@@ -219,8 +219,8 @@ $current_sort_dir 					= $this->getVar('direction');
 			var set_id = jQuery(e.relatedTarget).data('set_id');
 			var set_name = jQuery(e.relatedTarget).data('set_name');
 	
-			var b = '<?php print addslashes(_t('Really delete <strong><em>%1</em></strong>? This action cannot be undone.', "^set_name")); ?>';
-			jQuery(".modal-body").html(b.replace("^set_name", set_name));
+			var b = '<?php print addslashes(_t('Really delete %1? This action cannot be undone.', "^set_name")); ?>';
+			jQuery("#confirm-delete .modal-body").text(b.replace("^set_name", set_name));
 			jQuery('#confirm-delete .btn-delete').data('set_id', set_id);
 		}).find('.btn-delete').on('click', function(e) {
 			var set_id = jQuery(this).data('set_id');

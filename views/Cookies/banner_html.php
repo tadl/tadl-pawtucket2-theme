@@ -7,12 +7,12 @@
 			$text = $config->get("cookiesBannerText");
 		}
 ?>
-<div id="cookieNotice" role="dialog" aria-labelledby="Cookie Window">
+<div id="cookieNotice" role="region" aria-labelledby="tadl-cookie-heading">
 	<div class="row">
 		<div class="col-sm-12 col-md-offset-3 col-md-6">
-			<div class="cookieNoticeHeading">
+			<h2 class="cookieNoticeHeading" id="tadl-cookie-heading">
 				<?= _t('This website uses cookies'); ?>
-			</div>
+			</h2>
 			<div>
 				<?= $text; ?>
 			</div>

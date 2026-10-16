@@ -34,7 +34,7 @@ if (is_array($va_item_ids) && sizeof($va_item_ids)) {
 
 if (sizeof($va_slides)) {
 ?>
-	<div class="tadl-hero-slider" data-tadl-slider>
+	<div class="tadl-hero-slider" data-tadl-slider role="region" aria-label="<?= _t('Featured items'); ?>" aria-roledescription="<?= _t('carousel'); ?>">
 		<div class="tadl-hero-slides">
 			<div class="tadl-hero-track" data-tadl-track>
 <?php
@@ -60,10 +60,11 @@ if (sizeof($va_slides)) {
 <?php
 	if (sizeof($va_slides) > 1) {
 ?>
-		<button class="tadl-hero-control tadl-hero-control-prev" type="button" data-tadl-prev aria-label="<?= _t("Previous"); ?>">
+		<p class="sr-only" role="status" data-tadl-slide-status></p>
+		<button class="tadl-hero-control tadl-hero-control-prev" type="button" data-tadl-prev aria-label="<?= _t("Previous featured items"); ?>">
 			<i class="fa fa-angle-left" aria-hidden="true"></i>
 		</button>
-		<button class="tadl-hero-control tadl-hero-control-next" type="button" data-tadl-next aria-label="<?= _t("Next"); ?>">
+		<button class="tadl-hero-control tadl-hero-control-next" type="button" data-tadl-next aria-label="<?= _t("Next featured items"); ?>">
 			<i class="fa fa-angle-right" aria-hidden="true"></i>
 		</button>
 <?php
@@ -110,6 +111,8 @@ if (sizeof($va_slides)) {
 				function setVisibleSlides() {
 					$slides.removeClass('is-visible').attr('aria-hidden', 'true').find('a, button').attr('tabindex', '-1');
 					$slides.slice(current, current + perView).addClass('is-visible').attr('aria-hidden', 'false').find('a, button').removeAttr('tabindex');
+					var status = <?= json_encode(_t('Items %1 through %2 of %3'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+					$root.find('[data-tadl-slide-status]').text(status.replace('%1', current + 1).replace('%2', Math.min(current + perView, $slides.length)).replace('%3', $slides.length));
 				}
 
 				function applyPosition() {

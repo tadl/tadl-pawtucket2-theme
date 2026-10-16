@@ -12,14 +12,14 @@
 	$pn_rep_id = $this->getVar("representation_id");
 	print "<div id='galleryDetailImageWrapper'><div class='tadl-gallery-media-stage'>";
 	if($pn_previous_item_id > 0){
-		print "<a href='#' class='galleryDetailPrevious' onclick='caGalleryNav(\"previous\"); return false;'><i class='fa fa-chevron-left' role='graphics-document' aria-label='previous'></i></a>";
+		print "<button type='button' class='galleryDetailPrevious' aria-label='"._t('Previous gallery item')."' onclick='caGalleryNav(\"previous\"); return false;'><i class='fa fa-chevron-left' aria-hidden='true'></i></button>";
 	}else{
-		print "<a href='#' class='galleryDetailPrevious inactive' onClick='return false;'><i class='fa fa-chevron-left' role='graphics-document' aria-label='previous'></i></a>";
+		print "<button type='button' class='galleryDetailPrevious inactive' aria-label='"._t('Previous gallery item')."' disabled><i class='fa fa-chevron-left' aria-hidden='true'></i></button>";
 	}
 	if($pn_next_item_id > 0){
-		print "<a href='#' class='galleryDetailNext' onclick='caGalleryNav(\"next\"); return false;'><i class='fa fa-chevron-right' role='graphics-document' aria-label='next'></i></a>";
+		print "<button type='button' class='galleryDetailNext' aria-label='"._t('Next gallery item')."' onclick='caGalleryNav(\"next\"); return false;'><i class='fa fa-chevron-right' aria-hidden='true'></i></button>";
 	}else{
-		print "<a href='#' class='galleryDetailNext inactive' onClick='return false;'><i class='fa fa-chevron-right' role='graphics-document' aria-label='next'></i></a>";
+		print "<button type='button' class='galleryDetailNext inactive' aria-label='"._t('Next gallery item')."' disabled><i class='fa fa-chevron-right' aria-hidden='true'></i></button>";
 	}
 	$vs_rep_toolbar = $this->getVar('repToolBar');
 	require_once(__DIR__.'/../../helpers/image_downloads.php');
@@ -37,23 +37,39 @@
 ?>
 
 
-<script type="text/javascript">
-	function caGalleryNav(mode) {
 <?php
-	if($pn_previous_item_id > 0) {
+    $gallery_navigation = [];
+    foreach (['previous', 'next'] as $direction) {
+        $item_id = $this->getVar($direction.'_item_id');
+        if (!$item_id) { continue; }
+        $gallery_navigation[$direction] = [
+            'representation' => caNavUrl($this->request, '', 'Gallery', 'getSetItemRep', ['item_id' => $item_id, 'set_id' => $pn_set_id]),
+            'information' => caNavUrl($this->request, '', 'Gallery', 'getSetItemInfo', ['item_id' => $item_id, 'set_id' => $pn_set_id]),
+            'overlay' => caNavUrl($this->request, '', 'Detail', 'GetMediaOverlay', [
+                'context' => 'gallery', 'id' => $this->getVar($direction.'_row_id'),
+                'representation_id' => $this->getVar($direction.'_representation_id'), 'set_id' => $pn_set_id, 'overlay' => 1
+            ]),
+            'thumbnail' => 'galleryIcon'.(int)$item_id
+        ];
+    }
 ?>
-		if(mode == 'previous') {
-			<?= "jQuery(\"#galleryDetailImageArea\").load(\"".caNavUrl($this->request, '', 'Gallery', 'getSetItemRep', array('item_id' => $pn_previous_item_id, 'set_id' => $pn_set_id))."\"); jQuery(\"#galleryDetailObjectInfo\").load(\"".caNavUrl($this->request, '', 'Gallery', 'getSetItemInfo', array('item_id' => $pn_previous_item_id, 'set_id' => $pn_set_id))."\"); galleryHighlightThumbnail(\"galleryIcon".$pn_previous_item_id."\"); jQuery(\"#\caMediaPanelContentArea:visible\").load(\"".caNavUrl($this->request, '', 'Detail', 'GetMediaOverlay', array('context' => 'gallery', 'id' => $pn_previous_row_id, 'representation_id' => $pn_previous_rep_id, 'set_id' => $pn_set_id, 'overlay' => 1))."\");"; ?>
-		} 
-<?php 
-	}
-	if($pn_next_item_id > 0) {
-?>
-		if(mode == 'next') {
-			<?= "jQuery(\"#galleryDetailImageArea\").load(\"".caNavUrl($this->request, '', 'Gallery', 'getSetItemRep', array('item_id' => $pn_next_item_id, 'set_id' => $pn_set_id))."\"); jQuery(\"#galleryDetailObjectInfo\").load(\"".caNavUrl($this->request, '', 'Gallery', 'getSetItemInfo', array('item_id' => $pn_next_item_id, 'set_id' => $pn_set_id))."\"); galleryHighlightThumbnail(\"galleryIcon".$pn_next_item_id."\"); jQuery(\"#\caMediaPanelContentArea:visible\").load(\"".caNavUrl($this->request, '', 'Detail', 'GetMediaOverlay', array('context' => 'gallery', 'id' => $pn_next_row_id, 'representation_id' => $pn_next_rep_id, 'set_id' => $pn_set_id, 'overlay' => 1))."\");"; ?>
-		}
-<?php
-	}
-?>
-	}
+<script>
+    function caGalleryNav(mode) {
+        var navigation = <?= json_encode($gallery_navigation, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+        var target = navigation[mode];
+        if (!target) { return; }
+        var selector = mode === 'previous' ? '.galleryDetailPrevious' : '.galleryDetailNext';
+        var restoreFocus = jQuery(document.activeElement).is(selector);
+        jQuery('#galleryDetailImageArea').attr('aria-busy', 'true').load(target.representation, function () {
+            jQuery(this).attr('aria-busy', 'false');
+            if (restoreFocus) {
+                var control = jQuery(this).find(selector + ':not(:disabled)').first();
+                if (!control.length) { control = jQuery(this).find('button:not(:disabled), a[href]').first(); }
+                control.trigger('focus');
+            }
+        });
+        jQuery('#galleryDetailObjectInfo').load(target.information);
+        galleryHighlightThumbnail(target.thumbnail);
+        jQuery('#caMediaPanelContentArea:visible').load(target.overlay);
+    }
 </script>

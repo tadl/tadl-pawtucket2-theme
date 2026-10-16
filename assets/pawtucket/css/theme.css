@@ -11,7 +11,7 @@
     --tadl-shadow: 0 18px 42px rgba(11, 47, 87, 0.14);
     --tadl-radius: 4px;
     --tadl-soft-shadow: 0 14px 32px rgba(13, 49, 83, 0.1);
-    --tadl-focus: #f2c94c;
+    --tadl-focus: #0b2f57;
 }
 
 html {
@@ -165,6 +165,7 @@ select:focus-visible,
 [tabindex]:focus-visible {
     outline: 3px solid var(--tadl-focus);
     outline-offset: 3px;
+    box-shadow: 0 0 0 2px #fff;
 }
 
 h1, h2, h3, h4, h5, h6,

@@ -9,6 +9,7 @@ function check(actual, expected) { checks++; assert.deepEqual(actual, expected);
 const events = {}, bootstrapEvents = {};
 const document = {
     activeElement: null,
+    querySelector(selector) { return selector === '#main' ? page : null; },
     addEventListener(name, callback) { events[name] = callback; },
     body: {children: []}
 };
@@ -37,7 +38,7 @@ const observers = [];
 function jQuery(node) {
     if (node === document) { return {on(names, selector, callback) { bootstrapEvents[names] = callback; }}; }
     if (typeof node === 'string') { return {attr(name, value) { panel.toggleValue = value; }}; }
-    return {children(selector) { check(selector, '.dropdown-toggle'); return {attr(name, value) { node.setAttribute(name, value); }}; }};
+    return {children(selector) { check(selector, '[data-toggle="dropdown"]'); return {attr(name, value) { node.setAttribute(name, value); }}; }};
 }
 class MutationObserver {
     constructor(callback) { this.callback = callback; observers.push(this); }
@@ -91,5 +92,6 @@ check(tab(), false);
 const nextOpener = new Element('a'); page.children.push(nextOpener); nextOpener.focus();
 controller.onOpenCallback('native argument'); nextOpener.isConnected = false;
 controller.finallyCallback('close argument'); check(document.activeElement === nextOpener, false);
+check(document.activeElement, page); // Removed launchers fall back to the focusable main landmark.
 check(opened, 2); check(closed, 2);
 console.log(`Viewer accessibility passed: ${checks} assertions (focus, AJAX lifecycle, native callbacks and Bootstrap ARIA).`);

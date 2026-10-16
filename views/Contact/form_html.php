@@ -1,6 +1,18 @@
 <?php
 	$o_config = caGetContactConfig();
 	$va_errors = $this->getVar("errors") ?: [];
+	$contact_error_text = [
+		'name' => _t('Enter your name.'),
+		'email' => _t('Enter a valid email address, such as name@example.org.'),
+		'message' => _t('Enter your message.'),
+		'security' => _t('Enter the answer to the security question.')
+	];
+	$field_error_attributes = static function ($field) use ($va_errors) {
+		return !empty($va_errors[$field]) ? ' aria-invalid="true" aria-describedby="contact-'.$field.'-error"' : '';
+	};
+	$field_error = static function ($field) use ($va_errors, $contact_error_text) {
+		return !empty($va_errors[$field]) ? '<p class="tadl-form-error" id="contact-'.$field.'-error">'.htmlspecialchars($contact_error_text[$field], ENT_QUOTES, 'UTF-8').'</p>' : '';
+	};
 	$use_turnstile = (bool)$this->getVar('turnstile_active');
 	$show_math = !$use_turnstile && $o_config->get('check_security');
 	$field_columns = $show_math ? 'col-sm-4' : 'col-sm-6';
@@ -28,10 +40,13 @@
 	<H1><?= $vs_page_title; ?></H1>
 <?php
 	if(!empty($va_errors["display_errors"])){
-		print "<div class='alert alert-danger'>".implode("<br/>", $va_errors["display_errors"])."</div>";
+		print "<div class='alert alert-danger tadl-error-summary' role='alert' tabindex='-1' data-tadl-error-summary><h2>"._t('Please check your message')."</h2>";
+		foreach ($va_errors['display_errors'] as $error) { print '<p>'.htmlspecialchars((string)$error, ENT_QUOTES, 'UTF-8').'</p>'; }
+		print '</div>';
 	}
 ?>
 	<form id="contactForm" action="<?= caNavUrl($this->request, "", "Contact", "send"); ?>" method="post">
+		<p><?= _t('Your name, email address and message are required.'); ?></p>
 	    <input type="hidden" name="csrfToken" value="<?= caGenerateCSRFToken($this->request); ?>"/>
 <?php
 	if($pn_id && $t_item->getPrimaryKey()){
@@ -59,13 +74,15 @@
 					<div class="<?= $field_columns; ?>">
 						<div class="form-group<?= (!empty($va_errors["name"]) ? " has-error" : ""); ?>">
 							<label for="name"><?= _t("Your name"); ?></label>
-							<input type="text" class="form-control input-sm" placeholder="Enter your name" autocomplete="name" name="name" value="{{{name}}}" id="name">
+							<input type="text" class="form-control input-sm" placeholder="Enter your name" autocomplete="name" name="name" value="{{{name}}}" id="name" required<?= $field_error_attributes('name'); ?>>
+							<?= $field_error('name'); ?>
 						</div>
 					</div><!-- end col -->
 					<div class="<?= $field_columns; ?>">
 						<div class="form-group<?= (!empty($va_errors["email"]) ? " has-error" : ""); ?>">
 							<label for="email"><?= _t("Email address"); ?></label>
-							<input type="text" class="form-control input-sm" id="email" placeholder="Enter email" name="email" value="{{{email}}}">
+							<input type="email" class="form-control input-sm" id="email" placeholder="Enter email" autocomplete="email" name="email" value="{{{email}}}" required<?= $field_error_attributes('email'); ?>>
+							<?= $field_error('email'); ?>
 						</div>
 					</div><!-- end col -->
 <?php if ($show_math) { ?>
@@ -74,10 +91,11 @@
 							<label for="security"><?= _t("Security Question"); ?></label>
 							<div class='row'>
 								<div class='col-sm-6'>
-									<p class="form-control-static"><?= $vn_num1; ?> + <?= $vn_num2; ?> = </p>
+									<p class="form-control-static" id="contact-security-question"><?= $vn_num1; ?> + <?= $vn_num2; ?> = </p>
 								</div>
 								<div class='col-sm-6'>
-									<input name="security" value="" id="security" type="text" class="form-control input-sm" />
+									<input name="security" value="" id="security" type="text" inputmode="numeric" class="form-control input-sm" required aria-describedby="contact-security-question<?= !empty($va_errors['security']) ? ' contact-security-error' : ''; ?>"<?= !empty($va_errors['security']) ? ' aria-invalid="true"' : ''; ?> />
+									<?= $field_error('security'); ?>
 								</div>
 							</div><!--end row-->	
 						</div><!-- end form-group -->
@@ -90,7 +108,8 @@
 			<div class="col-md-9">
 				<div class="form-group<?= (!empty($va_errors["message"]) ? " has-error" : ""); ?>">
 					<label for="message"><?= _t("Message"); ?></label>
-					<textarea class="form-control input-sm" id="message" name="message" rows="5">{{{message}}}</textarea>
+					<textarea class="form-control input-sm" id="message" name="message" rows="5" required<?= $field_error_attributes('message'); ?>>{{{message}}}</textarea>
+					<?= $field_error('message'); ?>
 				</div>
 			</div><!-- end col -->
 		</div><!-- end row -->

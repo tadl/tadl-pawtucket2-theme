@@ -20,6 +20,7 @@
 ?>
 <div class="tadl-gallery-detail">
 	<h1><?= htmlspecialchars((string)$this->getVar('section_name').': '.(string)$this->getVar('label'), ENT_QUOTES, 'UTF-8'); ?></h1>
+	<p id="tadl-gallery-status" class="sr-only" role="status"></p>
 	<div class="tadl-gallery-detail-columns tadl-gallery-detail-main">
 		<div id="galleryDetailImageArea"><?php if (!$vn_initial_item_id) { print '<p>'._t('No gallery items are currently available.').'</p>'; } ?></div>
 		<div id="galleryDetailObjectInfo"></div>
@@ -70,6 +71,7 @@
 	});
 	function galleryHighlightThumbnail(id) {
 		jQuery('#galleryDetailImageGrid a').removeClass('galleryIconActive').removeAttr('aria-current');
-		jQuery('#' + id).addClass('galleryIconActive').attr('aria-current', 'true');
+		var selected = jQuery('#' + id).addClass('galleryIconActive').attr('aria-current', 'true');
+		jQuery('#tadl-gallery-status').text(selected.attr('aria-label') || '');
 	}
 </script>

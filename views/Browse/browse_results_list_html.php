@@ -118,8 +118,10 @@
 				}
 
 				
-					$vs_idno_detail_link 	= caDetailLink($this->request, $qr_res->get("{$vs_table}.idno"), '', $vs_table, $vn_id);
-					$vs_label_detail_link 	= caDetailLink($this->request, $qr_res->get("{$vs_table}.preferred_labels"), '', $vs_table, $vn_id);
+					$vs_identifier = trim((string)$qr_res->get("{$vs_table}.idno"));
+					$vs_idno_detail_link = $vs_identifier !== '' ? caDetailLink($this->request, htmlspecialchars($vs_identifier, ENT_QUOTES, 'UTF-8'), '', $vs_table, $vn_id) : '';
+					$vs_record_label = trim((string)$qr_res->get("{$vs_table}.preferred_labels")) ?: _t('Untitled');
+					$vs_label_detail_link = caDetailLink($this->request, $vs_record_label, '', $vs_table, $vn_id);
 					$vs_thumbnail = "";
 					$vs_type_placeholder = "";
 					$vs_typecode = "";
@@ -139,22 +141,22 @@
 							$vs_image = $vs_default_placeholder_tag;
 						}
 					}
-					$vs_rep_detail_link 	= caDetailLink($this->request, tadlFocusThumbnail($vs_image), '', $vs_table, $vn_id);
+					$vs_rep_detail_link 	= caDetailLink($this->request, tadlFocusThumbnail($vs_image), '', $vs_table, $vn_id, null, ['aria-label' => _t('View %1', strip_tags($vs_record_label))]);
 				
 					$vs_expanded_info = $qr_res->getWithTemplate($vs_extended_info_template);
+					$vs_expanded_info = trim((string)$vs_expanded_info) !== ''
+						? '<details class="tadl-result-extra"><summary>'._t('More information').'</summary>'.$vs_expanded_info.'</details>'
+						: '';
 
 					$vs_result_output = "
 		<div class='bResultListItemCol col-xs-{$vn_col_span_xs} col-sm-{$vn_col_span_sm} col-md-{$vn_col_span}'>
-			<div class='bResultListItem' id='row{$vn_id}' onmouseover='jQuery(\"#bResultListItemExpandedInfo{$vn_id}\").show();'  onmouseout='jQuery(\"#bResultListItemExpandedInfo{$vn_id}\").hide();'>
+			<div class='bResultListItem' id='row{$vn_id}'>
 				<div class='bResultListItemContent'><div class='text-center bResultListItemImg'>{$vs_rep_detail_link}</div>
 					<div class='bResultListItemText'>
 						<small>{$vs_idno_detail_link}</small><br/>{$vs_label_detail_link}
 					</div><!-- end bResultListItemText -->
 				</div><!-- end bResultListItemContent -->
-				<div class='bResultListItemExpandedInfo' id='bResultListItemExpandedInfo{$vn_id}'>
-					<hr>
-					{$vs_expanded_info}
-				</div><!-- bResultListItemExpandedInfo -->
+				{$vs_expanded_info}
 			</div><!-- end bResultListItem -->
 		</div><!-- end col -->";
 					print $vs_result_output;
