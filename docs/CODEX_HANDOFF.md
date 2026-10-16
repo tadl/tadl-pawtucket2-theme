@@ -954,7 +954,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/media_preferences_test.php` | Eligibility SQL, lazy collection/authority descriptor fetching, related-object access/deletion/ACL/bundle checks, People/Organizations/Places/Events Tiles/List counts/paging/detail context, table cache isolation, route scope, invalid-media exhaustion, filtered result adapter and result rendering |
 | `tests/browse_navigation_test.php` | Configured logical browse defaults, actual single/multiple-target menu and detail Browse links, native Prev/Next preservation, Subjects entry reset, configurable directions and optional native configuration parsing |
 | `tests/family_contents_test.php` | Actual SQLite family/member scopes, bidirectional/subtype/deduplicated relationships, one-hop limits, root/member access/type/source/bundle/ACL checks, batched wide families, endpoint validation/current scope and native search delegation |
-| `tests/place_contents_test.php` | Actual SQLite descendant scopes, hierarchy isolation, private/deleted/ACL/type ancestor pruning, bounded queries, controller input/paging and native search delegation |
+| `tests/place_contents_test.php` | Actual SQLite descendant scopes and object relationships, private/deleted/ACL/type branch pruning, a 6,000-descendant branch, bounded queries, native search replacement and controller scope/paging |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |
 | `tests/collection_detail_scripts_test.php` | Collection detail loader JavaScript, empty/populated field/relationship headings, long-field controls and narrative/facts column placement |
 | `tests/collection_contents_test.php` | Actual helper/controller, SQLite hierarchy/membership queries, deep/wide branches, unique descendant rollup counts, media preference, scope/access/deletion/ACL/bundle pruning, cycles, duplicate memberships, bounded queries and canonical native search delegation |
@@ -1150,10 +1150,10 @@ Deployment remains a separate operator step with no cache purge or Apache reload
 
 Entity addresses now use the structured field described above. Place details use
 `PlaceContents/Objects/place_id/ID` for both inline related items and the full
-results link. Each GET recomputes a numeric place search for the selected place
-and its complete readable branch, with native object sorting, deduplication,
-access, exports and media filtering retained. Paging/view/sort links retain the
-root place and headings name it rather than displaying the compound query.
+results link. Each GET recomputes the selected place's complete readable branch
+and resolves object relationships through batched SQL, with native object sorting,
+deduplication, access, exports and media filtering retained. Paging/view/sort links
+retain the root place and headings identify it.
 
 `tadlReadableHierarchyBranches()` shares the existing batched collection branch
 boundary with places, using the native hierarchy ID and nested-set bounds plus
@@ -1194,3 +1194,39 @@ and Back from a result to the same search without a resubmission prompt. A local
 reference-tree check confirmed identical native advanced-query expressions,
 boolean handling and saved form values for equivalent GET/POST inputs. These
 checks do not deploy the theme or replace the pending archivist example checks.
+
+### Large place branches: avoid compound Lucene queries
+
+The initial implementation generated one `place_id` OR term per readable place.
+Large branches hit PHP's 30-second execution limit in the native Lucene parser;
+adding a database index cannot fix parsing time. The native hierarchy and
+object/place relationship indexes are already present, and read-only inspection
+confirmed that the relationship query itself completes well below a second.
+
+`helpers/place_contents.php` now reads distinct object IDs from the relationship
+table in batches of at most 500 places. Both place branches and objects pass
+the shared record/type/source/bundle/Pawtucket ACL boundary. The automatically
+discovered theme plugin `plugins/tadlPlaceContents/tadlPlaceContentsPlugin.php`
+uses native `hookReplaceSearch` only for `PlaceContents/Objects`: a constant
+wildcard plus an intrinsic object-ID result filter replaces the compound search.
+Empty scopes use ID zero. Native configured type/base criteria, object access,
+sorting, result context, renderer and exports remain in use. Unused facets are
+not calculated. Result filters are not in native browse cache keys, so this
+browse has its own context and always recomputes membership/permissions; it
+never reloads caller-supplied browse keys. The short root reference is retained
+only for native labels and navigation.
+
+Deploy the complete theme including `plugins/`; no separate plugin activation
+or upstream edit is required. The controller fails closed if the plugin is
+unavailable. Other search/browse controllers are untouched. No database schema
+change, cache purge, timeout increase or service restart is required.
+
+All 34 standalone suites and changed-file PHP lint passed. Verification includes
+an actual SQLite branch with 6,000 descendants and overlapping object links,
+plus the existing privacy/media/pager regressions.
+An anonymous native application probe, loading the proposed PHP into memory
+without replacing installed files, verified the affected large branch's first
+and second tile pages, list view, media-only results and inline AJAX rendering.
+Those controller/render checks completed in approximately 0.4–0.9 seconds.
+This is a server-side CLI probe, not a deployed HTTP response or a browser timing;
+the live URLs still require post-deployment verification by the operator.

@@ -18,13 +18,17 @@ class PlaceContentsController extends SearchController {
 			|| !tadlReadableIDs($this->request, 'ca_places', [$id], $access, 'preferred_labels')) {
 			$this->response->setHTTPResponseCode(404, 'Not Found'); return;
 		}
-		$scope = tadlPlaceScopes($this->request, [$id])[$id] ?? [];
+		if (!(ApplicationPluginManager::checkPluginStatus('tadlPlaceContents')['available'] ?? false)) {
+			throw new RuntimeException('The place contents search plugin is unavailable.');
+		}
 		$sorts = (array)(caGetBrowseConfig()->getAssoc('browseTypes')['objects']['sortBy'] ?? []);
 		$sort = (string)$this->request->getParameter('sort', pString);
 		$view = (string)$this->request->getParameter('view', pString);
 		$direction = (string)$this->request->getParameter('direction', pString);
 		$params = [
-			'search' => tadlPlaceContentsSearch($scope),
+			// The theme's hookReplaceSearch resolves descendants through SQL. Keep
+			// only this short root reference for native headings/result navigation.
+			'search' => 'place_id:'.$id,
 			'view' => in_array($view, ['images', 'list', 'pdf', 'xlsx', 'pptx'], true) ? $view : 'images',
 			'sort' => isset($sorts[$sort]) ? $sort : 'Identifier',
 			'direction' => in_array($direction, ['asc', 'desc'], true) ? $direction : 'asc',
