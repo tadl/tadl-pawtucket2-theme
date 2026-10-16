@@ -96,20 +96,15 @@
 		</div><!-- end row -->
 <?php
 	if ($use_turnstile && !$this->request->isLoggedIn()) {
-		$contact_addresses = (array)$o_config->get('contact_email');
-		$help_address = reset($contact_addresses);
 ?>
 		<div class="row"><div class="col-md-9">
 			<div class="form-group<?= (!empty($va_errors['turnstile']) ? ' has-error' : ''); ?>">
 <?php if ($this->getVar('turnstile_ready')) { ?>
 				<div class="cf-turnstile" data-sitekey="<?= htmlspecialchars($this->getVar('turnstile_site_key'), ENT_QUOTES, 'UTF-8'); ?>" data-action="contact" data-theme="light" data-size="flexible"></div>
 				<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-				<noscript><p><?= _t('Please enable JavaScript to complete verification, or email us directly.'); ?></p></noscript>
+				<noscript><p><?= _t('Please enable JavaScript to complete verification.'); ?></p></noscript>
 <?php } else { ?>
-				<p role="alert"><?= _t('Verification is temporarily unavailable. Please email us directly.'); ?></p>
-<?php }
-		if (is_string($help_address) && caCheckEmailAddress($help_address)) { ?>
-				<p><?= _t('Having trouble?'); ?> <a href="mailto:<?= htmlspecialchars($help_address, ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars($help_address, ENT_QUOTES, 'UTF-8'); ?></a></p>
+				<p role="alert"><?= _t('Verification is temporarily unavailable. Please try again later.'); ?></p>
 <?php } ?>
 			</div>
 		</div></div>

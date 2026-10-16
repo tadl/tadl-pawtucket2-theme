@@ -118,7 +118,7 @@ class ContactController extends BasePawtucketController {
 		if (!$errors && $this->turnstile->enabled() && !$this->request->isLoggedIn()
 			&& !$this->turnstile->verify($this->request->getParameter('cf-turnstile-response', pString))) {
 			$errors['turnstile'] = true;
-			$errors['display_errors']['turnstile'] = _t('Verification could not be completed. Please try again, or email us using the link below.');
+			$errors['display_errors']['turnstile'] = _t('Verification could not be completed. Please try again.');
 		}
 		if(sizeof($errors) == 0){
 			// Give the mailer a separate address/name pair; it handles MIME quoting.

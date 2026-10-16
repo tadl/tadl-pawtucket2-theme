@@ -52,7 +52,7 @@ php -l /var/www/pawtucket2/setup.php
 
 Either non-empty key selects Turnstile for these forms. Both keys and a nonempty
 valid hostname list are required to send anonymous submissions. Partial setup
-blocks anonymous sending and shows an email alternative. With no keys, existing
+blocks anonymous sending and shows retry guidance. With no keys, existing
 arithmetic/reCAPTCHA behavior remains. Turnstile replaces those controls when
 enabled; no change to `check_security` is necessary. To revert, remove all three
 Turnstile constants; the configured legacy challenge resumes.
@@ -80,8 +80,8 @@ to reach `challenges.cloudflare.com`; a restrictive CSP must permit Cloudflare's
 Server verification sends only the token and secret, without contact fields or an
 optional visitor-IP parameter. Cloudflare's browser widget processes its own
 verification signals. The secret, tokens and submissions are not logged by this
-integration. Visitors who cannot use JavaScript or complete verification have a
-direct email link using the form's configured recipient.
+integration. Visitors without JavaScript receive instructions to enable it;
+verification failures provide retry guidance. The form omits the email-help line.
 
 After deployment and configuration:
 

@@ -174,16 +174,17 @@ function contactFormHTML($turnstile, $loggedIn=false) {
 	$controller=new ContactControllerFixture($request,$response); $controller->setTurnstile($turnstile); $controller->Form();
 	$html=$controller->view->render('Contact/form_html.php');
 	contactCheck(!str_contains($html,'synthetic-secret-key') && !in_array('synthetic-secret-key',$controller->view->vars,true), 'The secret must never enter the view or rendered HTML.');
+	contactCheck(!str_contains($html,'Having trouble?') && !str_contains($html,'mailto:') && !str_contains($html,'email us'), 'The form must not display the removed email-help line or refer to it.');
 	return $html;
 }
 $html=contactFormHTML($turnstile);
 contactCheck(str_contains($html,'https://challenges.cloudflare.com/turnstile/v0/api.js') && str_contains($html,'data-action="contact"') && str_contains($html,'data-size="flexible"'), 'The anonymous form must load the managed widget with the verified action and responsive size.');
 contactCheck(!str_contains($html,'name="security"') && !str_contains($html,'name="sum"') && !str_contains($html,'recaptcha/api.js'), 'Turnstile must replace both legacy CAPTCHA controls.');
-contactCheck(str_contains($html,'<noscript>') && str_contains($html,'mailto:questions@example.org'), 'Visitors unable to run the challenge must have an email alternative.');
+contactCheck(str_contains($html,'<noscript>') && str_contains($html,'Please enable JavaScript to complete verification.'), 'Visitors without JavaScript must receive verification instructions.');
 $html=contactFormHTML($turnstile,true);
 contactCheck(!str_contains($html,'challenges.cloudflare.com') && !str_contains($html,'name="security"'), 'Signed-in forms must not load a challenge.');
 $html=contactFormHTML(new ContactTurnstileFixture('synthetic-site-key'));
-contactCheck(str_contains($html,'temporarily unavailable') && !str_contains($html,'challenges.cloudflare.com'), 'Partial configuration must show an actionable alternative without a broken widget.');
+contactCheck(str_contains($html,'Please try again later.') && !str_contains($html,'challenges.cloudflare.com'), 'Partial configuration must show retry guidance without a broken widget.');
 $html=contactFormHTML(new TadlContactTurnstile());
 contactCheck(str_contains($html,'name="security"') && str_contains($html,'name="sum"'), 'Absent Turnstile setup must preserve the existing arithmetic form.');
 $contactConfig->values['check_security']=0;
