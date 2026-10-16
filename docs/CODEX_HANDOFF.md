@@ -946,7 +946,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/thumbnail_detector_test.php` | Actual CLI/SQL with synthetic catalogues, global keyset scans, public/shared/nonprimary selection, bounded runs, durable migration/purge survival, locks and retries |
 | `tests/faq_setup_test.php` | Read-only setup plans, targeted native template registration, additive editor placements, private pre-change backup, no-op reruns, preserving unrelated configuration and transactional rollback |
 | `tests/profile_save_test.php` | Own-email/staff-public login behavior, collisions, separate user staging, request-close persistence, validation/setter/model failures, native password delegation, POST/session/CSRF boundaries, public-use groups and direct/AJAX profile form error escaping |
-| `tests/contact_mail_test.php` | Actual contact controller/mail templates; named Reply-To, Unicode/quote/header-control normalization, valid/invalid emails, fixed sender/recipient, POST/CSRF, CAPTCHA, item inquiries and mail failures; captured mail only |
+| `tests/contact_mail_test.php` | Actual contact controller/mail templates; named Reply-To, Unicode/quote/header-control normalization, unique subject references, valid/invalid emails, fixed sender/recipient, POST/CSRF, CAPTCHA, item inquiries and mail failures; captured mail only |
 | `tests/user_features_test.php` | Anonymous/authenticated navigation and result actions, staff-only Providence shortcut in actual object detail HTML, valid object IDs/new-tab safety, native login POST/CSRF, registration policy, password-manager fields and cache separation |
 | `tests/home_faq_test.php` | Published/readable Site Pages, drafts, incomplete entries, locale, rank, escaped questions and purified answers; optional real HTMLPurifier |
 | `tests/finding_aid_test.php` | Selected collection export, full nested/empty/wide hierarchy, natural sibling order and duplicate-named branches, access/ACL/bundle restrictions, complete unique counts over native caps, overlapping memberships, no individual object metadata/entries, collection field mappings, escaped PDF text and safe failure; optional real Dompdf |
@@ -1289,6 +1289,17 @@ checks, arithmetic and anonymous reCAPTCHA behavior remain. Send accepts POST
 only and explicitly rejects a failed native CSRF check. The controller is derived
 from Pawtucket's implementation; compare it with upstream ContactController when
 upgrading. No upstream file or provider configuration is modified.
+
+The subject template appends a fresh `CF-` reference generated from eight random
+bytes for every submission, including Item Inquiry. This preserves the archive's
+subject prefix while giving unrelated submissions different subjects for Gmail
+conversation grouping. Names, email addresses and message text are not added to
+subjects. Tests check fresh subject references and named Reply-To with captured
+mail; live mailbox delivery/threading remains an operator verification step.
+All 35 standalone suites and changed-file PHP/template lint passed. Local native
+PHPMailer `preSend()` checks verified MIME-encoded named Reply-To and subject
+headers, including quoted/Unicode names and header-control input, without invoking
+a delivery transport. No deployment or live email send was performed.
 
 The contact form's visible name label and the name label in notification emails
 now say Your name; the submitted field remains `name`. The input uses its associated visible label

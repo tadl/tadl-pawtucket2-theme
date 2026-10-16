@@ -26,5 +26,7 @@
  * ----------------------------------------------------------------------
  */
 
-	print $this->request->config->get("app_display_name").": "._t("Contact form email");
+	// A per-submission subject keeps unrelated questions out of one mail thread.
+	$reference = 'CF-'.strtoupper(bin2hex(random_bytes(8)));
+	print $this->request->config->get("app_display_name").": "._t("Contact form email")." [{$reference}]";
 ?>

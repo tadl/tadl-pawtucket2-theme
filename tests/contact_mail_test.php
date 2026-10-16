@@ -5,7 +5,7 @@ set_error_handler(static function ($severity, $message, $file, $line) {
 	if (!(error_reporting() & $severity)) { return false; }
 	throw new ErrorException($message, 0, $severity, $file, $line);
 });
-$checks = 0; $sent = []; $mailSuccess = true; $captchaAccepted = true;
+$checks = 0; $sent = []; $mailSuccess = true; $captchaAccepted = true; $subjects = [];
 function contactCheck($value, $message) { $GLOBALS['checks']++; if (!$value) { throw new RuntimeException($message); } }
 function _t($text, ...$values) { foreach ($values as $i=>$value) { $text=str_replace('%'.($i+1), $value, $text); } return $text; }
 function caGetContactConfig() { return $GLOBALS['contactConfig']; }
@@ -85,6 +85,8 @@ foreach ([
 	contactCheck(count($messages)===1 && $messages[0]['options']['replyTo']===['alice@example.org'=>$expected], 'Unexpected synthetic Reply-To: '.json_encode(['expected'=>$expected,'actual'=>$messages[0]['options']['replyTo'] ?? null]));
 	contactCheck($messages[0]['from']==='sender@example.org' && $messages[0]['to']===['questions@example.org'], 'The site sender and configured recipient must stay independent of submitted headers.');
 	contactCheck($controller->rendered===['Contact/success_html.php'], 'Successful sends must retain the native success page.');
+	contactCheck(preg_match('/\ASynthetic Archive: Contact form email \[CF-[A-F0-9]{16}\]\z/', $messages[0]['subject'])===1 && !isset($subjects[$messages[0]['subject']]), 'Each submission must have a fresh reference in its subject without user-supplied header text.');
+	$subjects[$messages[0]['subject']]=true;
 }
 foreach (['','not-an-address',"alice@example.org\r\nBcc: other@example.org"] as $email) {
 	[$controller,$response,$messages]=contactRun(['email'=>$email]);
@@ -109,6 +111,7 @@ contactCheck(count($messages)===1, 'Signed-in users must retain the native reCAP
 $contactConfig->values['from_email']='configured-sender@example.org';
 [$controller,$response,$messages]=contactRun(['itemTitle'=>'Synthetic Item','itemId'=>'SYNTHETIC.42','itemURL'=>'https://archive.example.org/Detail/objects/42']);
 contactCheck($messages[0]['from']==='configured-sender@example.org' && str_contains($messages[0]['text'],'SYNTHETIC.42') && $messages[0]['options']['replyTo']===['alice@example.org'=>'Synthetic Visitor'], 'Item inquiries must retain their metadata and explicit sender.');
+contactCheck(preg_match('/\[CF-[A-F0-9]{16}\]\z/', $messages[0]['subject'])===1 && !isset($subjects[$messages[0]['subject']]), 'Item inquiries must also have a distinct subject reference.');
 $mailSuccess=false; [$controller,$response,$messages]=contactRun();
 contactCheck(!empty($controller->view->vars['errors']['display_errors']['send_error']) && $controller->rendered===['Contact/form_html.php'], 'Mail delivery failures must retain the form and show an error.');
 echo "Contact mail passed: {$checks} assertions (actual controller/templates; synthetic mail/request boundaries; no mail sent).\n";
