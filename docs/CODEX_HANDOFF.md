@@ -1261,3 +1261,11 @@ configuration only in process memory confirmed identical complete result sets
 and order for the same keyword, with Relevance ascending on both paths despite
 older saved sort settings. Installed files were not changed; deployment and
 post-deployment HTTP confirmation remain separate operator steps.
+
+### Contact form recipient
+
+`conf/contact.conf` routes the Contact form and object Item Inquiry submissions
+to `localhistory@tadl.org`. Native `ContactController` reads `contact_email`
+through `caGetContactConfig()`. The placeholder recipient has been removed.
+Native configuration parsing was checked locally; email delivery has not been
+tested. Deployment remains a separate operator step.
