@@ -55,7 +55,7 @@
 			<section class="tadl-home-section tadl-blog-section">
 				<div class="tadl-section-header">
 					<div>
-						<h2 class="tadl-section-title">Recent Local History Writing</h2>
+						<h2 class="tadl-section-title">Recent blog posts</h2>
 					</div>
 					<a class="tadl-section-link" href="https://www.tadl.org/posts?field_bl_type_target_id%5B295%5D=295&amp;field_bl_tags_target_id%5B414%5D=414">View More</a>
 				</div>

@@ -882,7 +882,7 @@ link, flatten the value arrays, patch core, or repair catalog data as a side eff
 heading, introduction and panel wrappers. Recent writing now follows the intro
 and quick links directly. The FAQ and research-request sections remain.
 
-**Recent Local History Writing** progressively replaces its two fallback cards
+**Recent blog posts** progressively replaces its two fallback cards
 with the latest two entries from
 `https://feeds.tools.tadl.org/local_history_posts.json?limit=2`. `View More` retains
 the source's type 295/tag 414 filters. The companion `TADLFeeds` source repository
