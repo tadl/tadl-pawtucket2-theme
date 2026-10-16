@@ -194,4 +194,38 @@ define('__TADL_TURNSTILE_SECRET_KEY__','synthetic-secret-key');
 define('__TADL_TURNSTILE_HOSTNAMES__',['archive.example.org','history.example.org']);
 $settings=TadlContactTurnstile::fromSetup();
 contactCheck($settings->enabled() && $settings->ready() && $settings->siteKey()==='synthetic-site-key', 'Private setup constants must enable the production verifier.');
+
+// The native default CSP blocks Turnstile even when the form embeds it correctly.
+$headerSource=file_get_contents(dirname(__DIR__).'/conf/headers.conf');
+contactCheck(preg_match('/^#!merge\s*$/m',$headerSource)===1, 'The theme must merge its header overrides without dropping unrelated security headers.');
+foreach (['Content-Security-Policy','X-Content-Security-Policy'] as $header) {
+	contactCheck(preg_match('/^\s*'.preg_quote($header,'/').'\s*=\s*"([^"]+)"/m',$headerSource,$match)===1, 'Each CSP override must replace the previous policy with one scalar value.');
+	$policy=$match[1];
+	contactCheck(str_contains($policy,'https://challenges.cloudflare.com') && !str_contains($policy,'https: ') && !str_contains($policy,'*'), 'The CSP must permit the exact Turnstile script origin without allowing arbitrary origins.');
+	contactCheck(str_contains($policy,"script-src 'self'") && str_contains($policy,'www.google.com/recaptcha/') && str_contains($policy,'www.googletagmanager.com'), 'The policy must retain native script sources used elsewhere on the site.');
+}
+contactCheck(str_contains($headerSource,"frame-ancestors 'self'"), 'Allowing challenge scripts must preserve the native anti-framing policy.');
+// An unset frame-src/default-src already permits the Cloudflare challenge frame;
+// adding a restrictive frame-src would break existing native media/map frames.
+contactCheck(!str_contains($headerSource,'frame-src') && !str_contains($headerSource,'default-src'), 'The override must preserve existing iframe behavior.');
+if ($parser=getenv('TADL_TEST_CONFIGURATION')) {
+	require_once $parser;
+	$reflection=new ReflectionClass(Configuration::class);
+	$config=$reflection->newInstanceWithoutConstructor();
+	$reflection->getProperty('ops_config_settings')->setValue($config,['scalars'=>[],'lists'=>[],'assoc'=>[]]);
+	contactCheck($config->loadFile(dirname($parser).'/../conf/headers.conf'), 'Native default headers must parse.');
+	$before=$config->getAssoc('security');
+	contactCheck($config->loadFile(dirname(__DIR__).'/conf/headers.conf'), 'Native parser must accept theme header overrides.');
+	$after=$config->getAssoc('security');
+	foreach ($before as $header=>$value) {
+		if (in_array($header,['Content-Security-Policy','X-Content-Security-Policy'],true)) {
+			contactCheck(is_string($after[$header]) && str_contains($after[$header],'https://challenges.cloudflare.com'), 'The merged policy must replace the restrictive native header.');
+			$nativePolicy=is_array($value) ? implode(' ', $value) : $value;
+			$withoutTurnstile=str_replace(' https://challenges.cloudflare.com','',$after[$header]);
+			contactCheck(preg_replace('/\s+/',' ',$nativePolicy)===preg_replace('/\s+/',' ',$withoutTurnstile), 'The only policy change must be allowing the exact Cloudflare challenge origin.');
+		} else {
+			contactCheck(($after[$header] ?? null)===$value, 'The native '.$header.' header must remain unchanged.');
+		}
+	}
+}
 echo "Contact mail passed: {$checks} assertions (actual controller/templates/verifier; synthetic HTTP/mail boundaries; no mail sent).\n";

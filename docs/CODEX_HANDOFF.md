@@ -946,7 +946,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/thumbnail_detector_test.php` | Actual CLI/SQL with synthetic catalogues, global keyset scans, public/shared/nonprimary selection, bounded runs, durable migration/purge survival, locks and retries |
 | `tests/faq_setup_test.php` | Read-only setup plans, targeted native template registration, additive editor placements, private pre-change backup, no-op reruns, preserving unrelated configuration and transactional rollback |
 | `tests/profile_save_test.php` | Own-email/staff-public login behavior, collisions, separate user staging, request-close persistence, validation/setter/model failures, native password delegation, POST/session/CSRF boundaries, public-use groups and direct/AJAX profile form error escaping |
-| `tests/contact_mail_test.php` | Actual contact controller/form/mail templates and Turnstile verifier; named Reply-To, unique subjects, validation/POST/CSRF, legacy CAPTCHA, two-host Turnstile success/failures, partial setup and retry guidance; synthetic HTTP and captured mail only |
+| `tests/contact_mail_test.php` | Actual contact controller/form/mail templates and Turnstile verifier; named Reply-To, unique subjects, validation/POST/CSRF, legacy CAPTCHA, two-host Turnstile success/failures, partial setup, retry guidance and CSP override; optional native header merge check; synthetic HTTP and captured mail only |
 | `tests/user_features_test.php` | Anonymous/authenticated navigation and result actions, staff-only Providence shortcut in actual object detail HTML, valid object IDs/new-tab safety, native login POST/CSRF, registration policy, password-manager fields and cache separation |
 | `tests/home_faq_test.php` | Published/readable Site Pages, drafts, incomplete entries, locale, rank, escaped questions and purified answers; optional real HTMLPurifier |
 | `tests/finding_aid_test.php` | Selected collection export, full nested/empty/wide hierarchy, natural sibling order and duplicate-named branches, access/ACL/bundle restrictions, complete unique counts over native caps, overlapping memberships, no individual object metadata/entries, collection field mappings, escaped PDF text and safe failure; optional real Dompdf |
@@ -1333,3 +1333,22 @@ All 35 standalone suites and changed-file PHP lint passed. A local browser previ
 rendered Cloudflare's public test widget and checked phone widths without sending
 mail or using production keys. Live verification/delivery on either hostname has
 not been tested by Codex for this source change.
+
+The subsequent missing-widget report was traced read-only to the live native
+Content-Security-Policy: it omitted `challenges.cloudflare.com`, blocking the
+embedded API script before a token field could be created. The tracked theme
+`conf/headers.conf` now uses native `#!merge` to retain other security headers and
+replaces both CSP script policies with the existing source list plus that exact
+HTTPS origin. Existing child-frame behavior and frame-ancestor restrictions stay
+unchanged. The default theme's `content_security_policy_include` setting is unused
+by the current native header emitter, so it cannot fix this on its own. Contact
+tests cover the policy and optionally native header parsing/merge preservation;
+server-side token/host/action validation remains mandatory for anonymous mail.
+The browser regression reproduced an empty container/no token under the native
+policy, then rendered the public test widget and generated its token under the
+merged policy. A read-only CLI probe on the production server confirmed HTTPS
+Siteverify transport with Cloudflare's public dummy credentials (HTTP 200/test
+success), without bootstrapping the application, using real keys or sending mail.
+All 35 standalone suites passed; the optional native parser check also confirms
+that the exact challenge origin is the only policy change. The fix still requires
+the operator's normal theme deployment and a real anonymous submission check.

@@ -76,6 +76,19 @@ TLS/network failures and an eight-second request timeout prevent mail. Form valu
 remain available on retry, with a fresh widget. The browser and server must be able
 to reach `challenges.cloudflare.com`; a restrictive CSP must permit Cloudflare's
 [required script/frame sources](https://developers.cloudflare.com/turnstile/reference/content-security-policy/).
+The theme's `conf/headers.conf` merges native security headers and replaces the
+modern and legacy script policies with the native source list plus the exact
+`https://challenges.cloudflare.com` origin. Native policy does not restrict child
+frame sources, so challenge frames are already permitted; `frame-ancestors 'self'`
+continues to restrict who may embed this site. Adding the origin only through
+`content_security_policy_include` in `app.conf` is insufficient on Pawtucket 2.0.10:
+its active headers come from `headers.conf`. Preserve the theme override during
+deployment and review native source-list changes when upgrading Pawtucket.
+
+If verification fails and the widget is absent, first inspect the actual HTTP
+Content-Security-Policy header and browser console. A blocked Cloudflare script
+leaves an empty widget container and no `cf-turnstile-response` field. Do not
+disable server-side verification to work around a loading failure.
 
 Server verification sends only the token and secret, without contact fields or an
 optional visitor-IP parameter. Cloudflare's browser widget processes its own
@@ -100,4 +113,12 @@ permitted hostnames. It does not contact Cloudflare or send mail:
 
 ```sh
 php tests/contact_mail_test.php
+```
+
+With an upstream reference tree available, the same suite can also use its real
+configuration parser without bootstrapping the application or its database:
+
+```sh
+TADL_TEST_CONFIGURATION=/path/to/pawtucket2/app/lib/Configuration.php \
+  php tests/contact_mail_test.php
 ```
