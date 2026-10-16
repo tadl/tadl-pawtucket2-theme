@@ -15,7 +15,8 @@ class HardeningConfig { function get($name) { return $GLOBALS['galleryType']; } 
 class HardeningRequest {
 	public bool $ajax = false, $download = false, $cleanURLs = false;
 	public string $base = '/catalog';
-	function __construct(public string $action, public array $params = [], public array $access = [1]) {}
+	function __construct(public string $action, public array $params = [], public array $access = [1], public string $controller = 'Gallery') {}
+	function getController() { return $this->controller; }
 	function getAction() { return $this->action; }
 	function getParameter($name, $type) { hardeningCheck($type === pInteger, 'Set ID must use native parsing.'); return $this->params[$name] ?? 0; }
 	function isAjax() { return $this->ajax; }
@@ -26,7 +27,7 @@ function caGetUserAccessValues($request) { return $request->access; }
 class ca_lists { function getItemIDFromList($list, $code) { return $code === 'public_presentation' ? 8 : 0; } }
 class ca_sets {
 	private array $row;
-	function load($id) { $this->row = $GLOBALS['sets'][$id] ?? []; return (bool)$this->row; }
+	function load($id) { $GLOBALS['galleryLoadCount']++; $this->row = $GLOBALS['sets'][$id] ?? []; return (bool)$this->row; }
 	function get($field) { return $this->row[$field] ?? null; }
 	function isReadable($request) { return $this->row['readable']; }
 }
@@ -60,11 +61,19 @@ define('__CA_MODELS_DIR__', $directory.'/models'); define('__CA_APP_DIR__', $dir
 foreach (['ca_sets', 'ca_lists'] as $model) { file_put_contents($directory.'/models/'.$model.'.php', '<?php'); }
 file_put_contents($directory.'/controllers/GalleryController.php', '<?php $GLOBALS["nativeGalleryLoaded"] = true;');
 $GLOBALS['galleryType'] = 'public_presentation';
+$GLOBALS['galleryLoadCount'] = 0;
 $GLOBALS['sets'] = [42 => ['type_id' => 8, 'access' => 1, 'deleted' => 0, 'readable' => true]];
 require $root.'/helpers/gallery_access.php';
 require $root.'/helpers/export_diagnostics.php';
 $process = null;
 try {
+	// Native ResultContext includes this shim from Detail to call the static
+	// return-to-gallery helper. No Gallery action is being dispatched there.
+	foreach (['Detail'=>'objects', 'Search'=>'objects', 'Lightbox'=>'Index'] as $controller=>$action) {
+		AppController::$request = new HardeningRequest($action, [], [1], $controller);
+		require $root.'/controllers/GalleryController.php';
+		hardeningCheck(!empty($GLOBALS['nativeGalleryLoaded']) && $GLOBALS['galleryLoadCount'] === 0, 'Including Gallery for '.$controller.' navigation must load native helpers without treating the current object as a gallery set.');
+	}
 	foreach (['42', 'getSetInfo', 'getSetInfoAsJSON', 'getSetItemRep', 'getSetItemInfo', 'ajaxGetMapItem'] as $action) {
 		AppController::$request = new HardeningRequest($action, ['set_id' => 42]);
 		require $root.'/controllers/GalleryController.php';

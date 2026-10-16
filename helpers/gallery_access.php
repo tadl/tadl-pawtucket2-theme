@@ -3,6 +3,9 @@ require_once(__DIR__.'/public_errors.php');
 
 /** Gallery is for published presentations; user lightboxes retain native sharing. */
 function tadlGuardGalleryRequest($request) {
+	// ResultContext includes the Gallery controller for static navigation helpers
+	// while rendering Detail pages. Validate only a dispatched Gallery request.
+	if (strcasecmp((string)$request->getController(), 'Gallery') !== 0) { return; }
 	$action = strtolower((string)$request->getAction());
 	if ($action === 'index') { return; }
 	// Numeric gallery pages and every native AJAX action resolve the same set.

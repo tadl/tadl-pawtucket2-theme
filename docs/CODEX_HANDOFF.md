@@ -1167,3 +1167,12 @@ keyword search keeps the native index behavior. The root robots source adds
 Live examples requested: an entity whose public address is missing and a gallery
 whose image link fails. The user will obtain both from the archivists. Keep this
 follow-up open for post-deployment confirmation even after synthetic checks pass.
+
+The gallery report was reproduced with an anonymous session: opening a gallery,
+loading its item/info partials and then following its correct object URL returned
+404, while a direct object visit succeeded. Native `ResultContext` includes
+`GalleryController.php` from Detail to call a static return-to-results helper.
+The theme's guard previously treated that inclusion as a Gallery dispatch with
+no set ID. `tadlGuardGalleryRequest()` now guards only actual Gallery requests;
+the public gallery type/access/deletion/readability checks remain intact for
+numeric pages and AJAX actions. The hardening suite exercises both paths.
