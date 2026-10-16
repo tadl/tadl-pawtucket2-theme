@@ -22,6 +22,9 @@ workspace has reference checkouts of Pawtucket and Providence at local tag
 
 ## 2026-10-16: WCAG 2.2 AA theme pass
 
+The shared desktop/mobile primary menu order is About, Browse, Collections,
+Gallery, Advanced Search and Contact, followed by My account when signed in.
+
 Read [Accessibility](ACCESSIBILITY.md) for the source audit, all 55 A/AA criterion
 entries, coverage boundaries and remaining manual/content/third-party work.
 This is a source remediation pass; no deployment or AA conformance claim was made.

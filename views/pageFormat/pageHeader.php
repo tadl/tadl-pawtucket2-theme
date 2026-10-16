@@ -318,9 +318,9 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
 				<ul class="nav navbar-nav navbar-right menuItems tadl-menu-items" role="list" aria-label="<?= _t("Primary Navigation"); ?>">
 					<li <?= ($this->request->getController() == "About") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("About"), "", "", "About", "Index"); ?></li>
 					<?= $this->render("pageFormat/browseMenu.php"); ?>	
-					<li <?= (($this->request->getController() == "Search") && ($this->request->getAction() == "advanced")) ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Advanced Search"), "", "", "Search", "advanced/objects", null, ['rel' => 'nofollow']); ?></li>
-					<li <?= ($this->request->getController() == "Gallery") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Gallery"), "", "", "Gallery", "Index"); ?></li>
 					<li <?= ($this->request->getController() == "Collections") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Collections"), "", "", "Collections", "index"); ?></li>
+					<li <?= ($this->request->getController() == "Gallery") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Gallery"), "", "", "Gallery", "Index"); ?></li>
+					<li <?= (($this->request->getController() == "Search") && ($this->request->getAction() == "advanced")) ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Advanced Search"), "", "", "Search", "advanced/objects", null, ['rel' => 'nofollow']); ?></li>
 					<li <?= ($this->request->getController() == "Contact") ? 'class="active"' : ''; ?>><?= caNavLink($this->request, _t("Contact"), "", "", "Contact", "Form"); ?></li>
 					<?= tadlUserMenu($this->request); ?>
 				</ul>
