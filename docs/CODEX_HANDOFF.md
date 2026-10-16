@@ -1272,6 +1272,13 @@ using the same route as the navigation/footer Contact links.
 Native configuration parsing was checked locally; email delivery has not been
 tested. Deployment remains a separate operator step.
 
+The email field enables native `use_as_from_address`, which despite its name
+sets **Reply-To** rather than From in the current ContactController. Required
+email validation runs before mail is sent; invalid addresses retain the form's
+validation error and do not send a message. From remains the configured site
+sender. This applies to Contact and Item Inquiry. Configuration/native-controller
+checks use synthetic submissions and a captured mail call; no real email is sent.
+
 The contact form's visible name label and the name label in notification emails
 now say Your name; the submitted field remains `name`. The input uses its associated visible label
 for its accessible name and supports browser name autofill.
