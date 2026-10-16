@@ -48,7 +48,7 @@ const server = http.createServer((request, response) => {
     }
     let base, relative;
     if (url.pathname.startsWith('/native/')) { base = path.join(reference, 'assets'); relative = url.pathname.slice(8); }
-    if (url.pathname.startsWith('/themes/tadl/')) { base = theme; relative = url.pathname.slice(13); }
+    if (url.pathname.startsWith('/themes/tadl/assets/')) { base = path.join(theme, 'assets'); relative = url.pathname.slice('/themes/tadl/assets/'.length); }
     if (base) {
         const file = path.resolve(base, relative);
         if (file.startsWith(base + path.sep) && fs.existsSync(file) && fs.statSync(file).isFile()) {
