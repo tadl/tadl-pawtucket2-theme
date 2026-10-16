@@ -912,7 +912,7 @@ unverified until deployment and a live check; source changes do not deploy them.
 
 ## Local verification on the laptop
 
-The thirty-three committed tests are portable and use synthetic boundaries. They do not
+The thirty-five committed tests are portable and use synthetic boundaries. They do not
 bootstrap CollectiveAccess or need its database; the media test uses SQLite in
 memory. No Composer/npm install is needed for these standalone checks.
 
@@ -946,6 +946,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/thumbnail_detector_test.php` | Actual CLI/SQL with synthetic catalogues, global keyset scans, public/shared/nonprimary selection, bounded runs, durable migration/purge survival, locks and retries |
 | `tests/faq_setup_test.php` | Read-only setup plans, targeted native template registration, additive editor placements, private pre-change backup, no-op reruns, preserving unrelated configuration and transactional rollback |
 | `tests/profile_save_test.php` | Own-email/staff-public login behavior, collisions, separate user staging, request-close persistence, validation/setter/model failures, native password delegation, POST/session/CSRF boundaries, public-use groups and direct/AJAX profile form error escaping |
+| `tests/contact_mail_test.php` | Actual contact controller/mail templates; named Reply-To, Unicode/quote/header-control normalization, valid/invalid emails, fixed sender/recipient, POST/CSRF, CAPTCHA, item inquiries and mail failures; captured mail only |
 | `tests/user_features_test.php` | Anonymous/authenticated navigation and result actions, staff-only Providence shortcut in actual object detail HTML, valid object IDs/new-tab safety, native login POST/CSRF, registration policy, password-manager fields and cache separation |
 | `tests/home_faq_test.php` | Published/readable Site Pages, drafts, incomplete entries, locale, rank, escaped questions and purified answers; optional real HTMLPurifier |
 | `tests/finding_aid_test.php` | Selected collection export, full nested/empty/wide hierarchy, natural sibling order and duplicate-named branches, access/ACL/bundle restrictions, complete unique counts over native caps, overlapping memberships, no individual object metadata/entries, collection field mappings, escaped PDF text and safe failure; optional real Dompdf |
@@ -1278,6 +1279,16 @@ email validation runs before mail is sent; invalid addresses retain the form's
 validation error and do not send a message. From remains the configured site
 sender. This applies to Contact and Item Inquiry. Configuration/native-controller
 checks use synthetic submissions and a captured mail call; no real email is sent.
+
+`controllers/ContactController.php` now overrides the native controller to pair
+the validated Reply-To email with the submitted `name`. The display name has
+markup/entities and header control characters normalized, then the native mailer
+receives an address-to-name map and handles MIME encoding/quoting. Recipient and
+From remain configured values. Native form views, mail templates, required/email
+checks, arithmetic and anonymous reCAPTCHA behavior remain. Send accepts POST
+only and explicitly rejects a failed native CSRF check. The controller is derived
+from Pawtucket's implementation; compare it with upstream ContactController when
+upgrading. No upstream file or provider configuration is modified.
 
 The contact form's visible name label and the name label in notification emails
 now say Your name; the submitted field remains `name`. The input uses its associated visible label
