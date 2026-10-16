@@ -84,6 +84,9 @@ continues to restrict who may embed this site. Adding the origin only through
 `content_security_policy_include` in `app.conf` is insufficient on Pawtucket 2.0.10:
 its active headers come from `headers.conf`. Preserve the theme override during
 deployment and review native source-list changes when upgrading Pawtucket.
+The same override repairs the native Feature-Policy's missing autoplay quote and
+omits its obsolete `battery` and `document-domain` directives. Supported feature
+restrictions remain; the change does not relax challenge iframe sandboxing.
 
 If verification fails and the widget is absent, first inspect the actual HTTP
 Content-Security-Policy header and browser console. A blocked Cloudflare script

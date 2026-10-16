@@ -208,6 +208,14 @@ contactCheck(str_contains($headerSource,"frame-ancestors 'self'"), 'Allowing cha
 // An unset frame-src/default-src already permits the Cloudflare challenge frame;
 // adding a restrictive frame-src would break existing native media/map frames.
 contactCheck(!str_contains($headerSource,'frame-src') && !str_contains($headerSource,'default-src'), 'The override must preserve existing iframe behavior.');
+contactCheck(preg_match('/^\s*Feature-Policy\s*=\s*"([^"]+)"/m',$headerSource,$featureMatch)===1, 'The malformed native feature policy must have a theme override.');
+$featureDirectives=array_values(array_filter(array_map('trim',explode(';',$featureMatch[1]))));
+$features=[];
+foreach ($featureDirectives as $directive) {
+	contactCheck(preg_match("/\A([a-z-]+) 'none'\z/",$directive,$feature)===1, 'Every disabled feature must have a correctly quoted none allowlist.');
+	$features[]=$feature[1];
+}
+contactCheck($features===['microphone','geolocation','accelerometer','autoplay','camera','display-capture','encrypted-media','gyroscope','magnetometer','midi','usb'], 'The feature policy must preserve supported native restrictions and omit the obsolete battery/document-domain directives.');
 if ($parser=getenv('TADL_TEST_CONFIGURATION')) {
 	require_once $parser;
 	$reflection=new ReflectionClass(Configuration::class);
@@ -223,6 +231,9 @@ if ($parser=getenv('TADL_TEST_CONFIGURATION')) {
 			$nativePolicy=is_array($value) ? implode(' ', $value) : $value;
 			$withoutTurnstile=str_replace(' https://challenges.cloudflare.com','',$after[$header]);
 			contactCheck(preg_replace('/\s+/',' ',$nativePolicy)===preg_replace('/\s+/',' ',$withoutTurnstile), 'The only policy change must be allowing the exact Cloudflare challenge origin.');
+		} elseif ($header==='Feature-Policy') {
+			$expectedPolicy=str_replace(["autoplay 'none;", "battery 'none';", "document-domain 'none';"],["autoplay 'none';",'',''],$value);
+			contactCheck(preg_replace('/\s+/',' ',$after[$header])===preg_replace('/\s+/',' ',$expectedPolicy), 'Feature policy changes must be limited to fixing the quote and removing unsupported directives.');
 		} else {
 			contactCheck(($after[$header] ?? null)===$value, 'The native '.$header.' header must remain unchanged.');
 		}

@@ -1352,3 +1352,16 @@ success), without bootstrapping the application, using real keys or sending mail
 All 35 standalone suites passed; the optional native parser check also confirms
 that the exact challenge origin is the only policy change. The fix still requires
 the operator's normal theme deployment and a real anonymous submission check.
+
+After the operator configured real keys, the widget reported Success. The remaining
+console report includes a malformed native Feature-Policy, a root favicon 404,
+Analytics request cancellations and diagnostics originating inside the Cloudflare
+frame. `conf/headers.conf` now fixes the missing quote in `autoplay 'none'` and
+omits unsupported `battery`/`document-domain` directives while preserving every
+supported native restriction. The contact suite checks syntax and the exact native
+merge delta. Cloudflare PAT/DNS probes can fail during successful challenges;
+its iframe's `data:,` CSP/sandbox/font/GPU messages are not a reason to loosen the
+parent site's CSP or iframe sandbox. An observed Analytics collection request
+returned HTTP 204, with a separate canceled request; the user's pasted log alone
+does not establish the cause of its Analytics failures. No real form was submitted.
+The corrected header produced no Feature-Policy warnings in a local browser check.
