@@ -780,6 +780,11 @@ the same muted links as object records. The redundant visible About heading is
 replaced by the section's accessible name. Desktop sidebars have no extra left
 border/padding, and relationships have no individual row separators; the mobile
 section separator and expandable relationship groups remain.
+Entities show repeatable **Address** values in the same sidebar for people,
+organizations and families. Structured native `ca_entities.address` reads retain
+bundle permissions, access filtering and no-default behavior. Address lines,
+locality and country are followed by that row's optional type and dates; empty
+addresses are omitted and all stored text is escaped before adding line breaks.
 Individual entities (the `ind` type and its descendants) show **Occupation** with
 each optional occupation date in parentheses. Native structured `occupation`
 attributes preserve name/date pairing; empty names are skipped and the bundle's

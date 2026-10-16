@@ -10,6 +10,37 @@ function tadlAuthorityEscape($value) {
 	return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+/** Keep repeatable historical addresses, types and dates within their own row. */
+function tadlAuthorityAddresses($request, $item) {
+	if (caGetBundleAccessLevel('ca_entities', 'address') < __CA_BUNDLE_ACCESS_READONLY__) { return ''; }
+	$rows = $item->get('ca_entities.address', [
+		'returnWithStructure' => true, 'convertCodesToDisplayText' => true,
+		'checkAccess' => caGetUserAccessValues($request), 'dontReturnDefault' => true,
+		'convertLineBreaks' => false
+	])[(int)$item->get('entity_id')] ?? [];
+	$addresses = [];
+	foreach ($rows as $row) {
+		$values = [];
+		foreach (['address1', 'address2', 'city', 'stateprovince', 'postalcode', 'country', 'address_type', 'address_date'] as $code) {
+			$values[$code] = tadlDetailHasContent($row[$code] ?? '') ? trim((string)$row[$code]) : '';
+		}
+		$lines = array_filter([$values['address1'], $values['address2']], static fn($value) => $value !== '');
+		$locality = $values['city'];
+		if ($values['stateprovince'] !== '') { $locality .= ($locality !== '' ? ', ' : '').$values['stateprovince']; }
+		if ($values['postalcode'] !== '') { $locality .= ($locality !== '' ? ' ' : '').$values['postalcode']; }
+		if ($locality !== '') { $lines[] = $locality; }
+		if ($values['country'] !== '') { $lines[] = $values['country']; }
+		if (!$lines) { continue; }
+		$context = $values['address_type'];
+		if ($values['address_date'] !== '') { $context .= ($context !== '' ? ' (' : '').$values['address_date'].($context !== '' ? ')' : ''); }
+		if ($context !== '') { $lines[] = $context; }
+		$addresses[] = join('<br/>', array_map(static fn($line) => nl2br(tadlAuthorityEscape($line), false), $lines));
+	}
+	if (!$addresses) { return ''; }
+	return "<div class='unit'><label>".tadlAuthorityEscape(_t('Address'))."</label>"
+		.tadlDetailExpandableValue(join('<br/><br/>', $addresses), _t('Address'))."</div>\n";
+}
+
 /** Keep each occupation and its optional date within the same attribute row. */
 function tadlAuthorityOccupations($request, $item) {
 	if (caGetBundleAccessLevel('ca_entities', 'occupation') < __CA_BUNDLE_ACCESS_READONLY__) { return ''; }

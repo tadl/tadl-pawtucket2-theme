@@ -88,6 +88,7 @@ class AuthorityItem {
 	public array $relationships = [];
 	public array $fields = [];
 	public array $occupations = [];
+	public array $addresses = [];
 	public array $types = [
 		10 => ['idno' => 'ind', 'parent_id' => 1],
 		11 => ['idno' => 'synthetic_artist', 'parent_id' => 10],
@@ -104,10 +105,11 @@ class AuthorityItem {
 	function get($name, $options = []) {
 		$this->intrinsicReads[] = $name;
 		if ($name === 'type_id') { return $this->typeID; }
-		if ($name === 'ca_entities.occupation') {
-			checkAuthority(($options['checkAccess'] ?? null) === [1] && ($options['convertCodesToDisplayText'] ?? false) === true, 'Occupation reads must retain access checks and display labels.');
-			checkAuthority(($options['returnWithStructure'] ?? false) === true && ($options['dontReturnDefault'] ?? false) === true, 'Occupation dates must stay paired with their names without default values.');
-			return [42 => $this->occupations];
+		if (in_array($name, ['ca_entities.occupation', 'ca_entities.address'], true)) {
+			checkAuthority(($options['checkAccess'] ?? null) === [1] && ($options['convertCodesToDisplayText'] ?? false) === true, 'Structured attribute reads must retain access checks and display labels.');
+			checkAuthority(($options['returnWithStructure'] ?? false) === true && ($options['dontReturnDefault'] ?? false) === true, 'Repeatable attribute values must stay paired without defaults.');
+			if ($name === 'ca_entities.address') { checkAuthority(($options['convertLineBreaks'] ?? null) === false, 'Address lines must be escaped before adding HTML line breaks.'); }
+			return [42 => $name === 'ca_entities.address' ? $this->addresses : $this->occupations];
 		}
 		if (in_array($name, ['entity_id', 'place_id', 'occurrence_id'], true)) { return 42; }
 		if ($name === 'ca_objects.object_id') { return $this->objectCount ? range(101, 100 + $this->objectCount) : []; }
@@ -329,6 +331,31 @@ checkAuthority(str_contains($html, 'aria-label="About this organization"') && st
 $metadataXPath = authorityDocument($html);
 checkAuthority($metadataXPath->query('//aside[contains(@class,"tadl-detail-metadata")]//section[contains(@class,"tadl-authority-about")]/h2')->length === 0, 'Metadata must start with field labels, without a redundant visible About heading.');
 checkAuthority(str_contains($html, 'Comments (1)') && str_contains($html, 'Synthetic comment.') && str_contains($html, '/synthetic/share'), 'Native comment/share content was lost.');
+
+$item = new AuthorityItem('ca_entities', 12, 'Synthetic photographer');
+$item->addresses = [
+	401 => ['address1' => '123 Example Street', 'address2' => 'Suite 4', 'city' => 'Exampleville', 'stateprovince' => 'MI', 'postalcode' => '00000', 'country' => 'Example country', 'address_type' => 'Studio', 'address_date' => '1900–1920'],
+	402 => ['city' => 'Synthetic town', 'address_type' => 'Home'],
+	403 => ['address_type' => 'No address', 'address_date' => '1999'],
+	404 => ['address1' => "<script>synthetic</script> & \"quoted\"\nSecond line", 'address_date' => '<b>1930</b>'],
+	405 => ['address1' => ' ', 'city' => '&nbsp;']
+];
+foreach ([10, 20, 30] as $entityType) {
+	$item->typeID = $entityType;
+	$html = (new AuthorityView(new AuthorityRequest('all'), $item))->render();
+	$address = authorityDocument($html)->query('//div[label="Address"]')->item(0);
+	checkAuthority($address && str_contains($html, '123 Example Street<br/>Suite 4<br/>Exampleville, MI 00000<br/>Example country<br/>Studio (1900–1920)<br/><br/>Synthetic town<br/>Home'), 'People, organizations and families need correctly paired repeatable addresses.');
+	checkAuthority(!str_contains($html, 'No address') && !str_contains($html, '1999') && !str_contains($html, 'Home ()'), 'Empty addresses and optional context must not create headings or punctuation.');
+	checkAuthority(str_contains($html, '&lt;script&gt;synthetic&lt;/script&gt; &amp; &quot;quoted&quot;<br>') && str_contains($html, '&lt;b&gt;1930&lt;/b&gt;') && !$address->getElementsByTagName('script')->length, 'Address values and historical context must be escaped with line breaks preserved.');
+}
+$GLOBALS['authorityBundleAccess']['ca_entities:address'] = 0;
+$item->intrinsicReads = [];
+$html = (new AuthorityView(new AuthorityRequest(), $item))->render();
+checkAuthority(!str_contains($html, '<label>Address</label>') && !in_array('ca_entities.address', $item->intrinsicReads, true), 'Denied addresses must not be read or displayed.');
+$GLOBALS['authorityBundleAccess'] = [];
+$item->addresses = [];
+$html = (new AuthorityView(new AuthorityRequest(), $item))->render();
+checkAuthority(!str_contains($html, '<label>Address</label>'), 'An entity without an address must omit the field heading.');
 
 $item = new AuthorityItem('ca_entities', 12, 'Synthetic photographer');
 $item->occupations = [

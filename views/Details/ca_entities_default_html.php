@@ -39,6 +39,7 @@ if ($authority['browse'] === 'people') {
 	$authority_fields .= tadlDetailFirstAvailableField($this->request, $t_item, 'Death date', ['^ca_entities.individual_dates.individual_dates_death', '^ca_entities.individual_dates.individual_deathdate']);
 }
 $authority_fields .= tadlDetailField($this->request, $t_item, 'Dates', '^ca_entities.date.dates_value');
+$authority_fields .= tadlAuthorityAddresses($this->request, $t_item);
 $authority_fields .= tadlDetailFirstAvailableField($this->request, $t_item, 'Description', ['^ca_entities.biography', '^ca_entities.description']);
 $authority_fields .= tadlDetailFirstAvailableField($this->request, $t_item, 'Source of description', ['^ca_entities.biography_source', '^ca_entities.description_source']);
 $authority_fields .= tadlDetailField($this->request, $t_item, 'External links', '<unit relativeTo="ca_entities.external_link" delimiter="<br/>"><ifdef code="ca_entities.external_link.url_source">^ca_entities.external_link.url_source: </ifdef><a href="^ca_entities.external_link.url_entry">^ca_entities.external_link.url_entry</a></unit>');
