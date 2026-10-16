@@ -55,8 +55,8 @@
 				<div class="row">
 					<div class="col-sm-4">
 						<div class="form-group<?= (($va_errors["name"]) ? " has-error" : ""); ?>">
-							<label for="name"><?= _t("Name"); ?></label>
-							<input type="text" class="form-control input-sm" aria-label="enter name" placeholder="Enter name" name="name" value="{{{name}}}" id="name">
+							<label for="name"><?= _t("Your name"); ?></label>
+							<input type="text" class="form-control input-sm" placeholder="Enter your name" autocomplete="name" name="name" value="{{{name}}}" id="name">
 						</div>
 					</div><!-- end col -->
 					<div class="col-sm-4">

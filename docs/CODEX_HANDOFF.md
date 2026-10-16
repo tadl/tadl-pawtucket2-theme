@@ -1271,3 +1271,16 @@ The homepage's Ask a Question action links to the native `Contact/Form` page,
 using the same route as the navigation/footer Contact links.
 Native configuration parsing was checked locally; email delivery has not been
 tested. Deployment remains a separate operator step.
+
+The contact form's visible name label and the name label in notification emails
+now say Your name; the submitted field remains `name`. The input uses its associated visible label
+for its accessible name and supports browser name autofill.
+
+Native contact CAPTCHA options are the `check_security` arithmetic check and
+Google reCAPTCHA v2, enabled through `__CA_GOOGLE_RECAPTCHA_KEY__` and
+`__CA_GOOGLE_RECAPTCHA_SECRET_KEY__` in private setup configuration. The
+`registration_security` setting applies to account registration, not Contact.
+The theme currently draws the arithmetic question unconditionally, so replacing
+it also requires updating the view, not just setting `check_security = 0`.
+Turnstile or hCaptcha would require a theme integration with server-side token
+verification. No CAPTCHA keys or provider changes are included in this label edit.
