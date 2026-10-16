@@ -615,7 +615,8 @@ below retain implementation details and historical verification evidence.
 - Object browse, regular search and advanced search offer **Date**, using the
   same `ca_objects.date.dates_value` field displayed on object details and native
   date-range sorting. Date defaults to ascending; the normal descending control
-  remains available. Existing default sort choices are unchanged.
+  remains available. New object keyword searches start with Relevance; object
+  browse entry links retain Identifier ascending.
 - Entity types distinguish people and organizations; places and events have
   explicit headings. The shared authority layout gives related objects priority
   and collapses long relationship groups instead of leaving tall empty columns.
@@ -1230,3 +1231,33 @@ and second tile pages, list view, media-only results and inline AJAX rendering.
 Those controller/render checks completed in approximately 0.4–0.9 seconds.
 This is a server-side CLI probe, not a deployed HTTP response or a browser timing;
 the live URLs still require post-deployment verification by the operator.
+
+### Consistent object keyword result sorting
+
+The header overview's object results use Relevance, while the old advanced
+object configuration defaulted to Entity. Verification with a single keyword
+confirmed identical complete object sets with different order, not a difference
+in matching records.
+
+Basic and advanced object result options now have identical labels, order,
+field mappings and default directions: Identifier, Title, Date, Relevance and
+Entity, all ascending. Title replaces advanced search's former Name label;
+Entity remains available on both paths. Native date-range and related-name
+sorting remain unchanged. The header preview still uses Relevance.
+
+New advanced object form submissions and the overview's View all Objects link
+explicitly pass `sort=Relevance` and `direction=asc`, overriding old saved sorts.
+Later result-page Options, paging and browser Back retain their native sort
+parameters/context. Non-object search routes retain their existing defaults,
+and object Browse entries still start with Identifier ascending. Queries,
+record access, media preferences and matching behavior are unchanged.
+
+`tests/ui_consistency_test.php` verifies the actual rendered form's defaults
+and matching sort configurations; `tests/media_preferences_test.php` verifies
+object View all parameters without changing the other overview categories.
+All 34 standalone suites and changed PHP lint passed. Native configuration
+parsing and an anonymous native controller/render probe using the proposed
+configuration only in process memory confirmed identical complete result sets
+and order for the same keyword, with Relevance ascending on both paths despite
+older saved sort settings. Installed files were not changed; deployment and
+post-deployment HTTP confirmation remain separate operator steps.

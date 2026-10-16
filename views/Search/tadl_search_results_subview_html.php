@@ -54,12 +54,17 @@
 		unset($va_item);
 	}
 
-	$vs_full_results_url = caNavUrl($this->request, '', 'Search', $vs_block, array(
+	$va_full_results_params = array(
 		'search' => $vs_search,
 		'source' => 'multisearch',
 		'clear' => 1,
 		'_advanced' => 0
-	), array('useQueryString' => true));
+	);
+	if ($vs_table === 'ca_objects') {
+		// Match a new advanced keyword search, regardless of saved result sorts.
+		$va_full_results_params += ['sort' => 'Relevance', 'direction' => 'asc'];
+	}
+	$vs_full_results_url = caNavUrl($this->request, '', 'Search', $vs_block, $va_full_results_params, array('useQueryString' => true));
 	$vs_display_name = (string)$va_block_info['displayName'];
 	$vb_media_cards = in_array($vs_table, array('ca_objects', 'ca_collections'), true);
 	$vs_list_class = ($vs_table === 'ca_collections') ? 'tadl-search-collection-grid' : ($vb_media_cards ? 'tadl-search-grid' : 'tadl-search-list');

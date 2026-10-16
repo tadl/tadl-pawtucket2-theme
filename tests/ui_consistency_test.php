@@ -55,12 +55,29 @@ foreach (glob(dirname(__DIR__).'/views/Search/*advanced_search*html.php') as $fi
 		uiCheck($control && in_array($control->tagName, ['input','select','textarea'], true), basename($file).': label does not identify its input');
 	}
 	if (str_contains($file, 'ca_objects_')) {
+		uiCheck($xpath->query('//form/input[@name="sort" and @value="Relevance"]')->length === 1 && $xpath->query('//form/input[@name="direction" and @value="asc"]')->length === 1, 'New object searches must explicitly start with Relevance ascending instead of a saved sort.');
 		foreach (['creator','publisher'] as $role) {
 			$control = $dom->getElementById('ca_entities_preferred_labels_displayname_'.$role);
 			uiCheck($control && $control->getAttribute('name') === 'ca_entities.preferred_labels.displayname/'.$role.'[]', 'ID normalization must preserve relationship-specific submitted field names.');
 		}
 	}
 }
+// Basic/advanced object results share their complete native sort definitions.
+$sortMaps = [];
+foreach (['browse'=>'browseTypes', 'search'=>'advancedSearchTypes'] as $file=>$group) {
+	$source = file_get_contents(dirname(__DIR__).'/conf/'.$file.'.conf');
+	uiCheck(preg_match('~^'.preg_quote($group, '~').' = \{\s*objects = \{(.*?)(?=^\t\},?$)~ms', $source, $section) === 1, 'Missing object result configuration.');
+	foreach (['sortBy','sortDirection'] as $map) {
+		uiCheck(preg_match('~\b'.$map.'\s*=\s*\{([^}]*)\}~s', $section[1], $matches) === 1, 'Missing object sort definitions.');
+		foreach (explode(',', $matches[1]) as $pair) {
+			[$name,$value] = array_map('trim', explode('=', trim($pair), 2));
+			$sortMaps[$file][$map][$name] = $value;
+		}
+	}
+}
+uiCheck($sortMaps['browse'] === $sortMaps['search'], 'Basic and advanced object result options must use the same labels, order, fields and directions.');
+uiCheck($sortMaps['search']['sortBy'] === ['Identifier'=>'ca_objects.idno','Title'=>'ca_object_labels.name','Date'=>'ca_objects.date.dates_value','Relevance'=>'_natural','Entity'=>'ca_entity_labels.surname;ca_entity_labels.forename'], 'Object results must preserve native date/entity sorting and use one Title label.');
+uiCheck(count(array_unique($sortMaps['search']['sortDirection'])) === 1 && $sortMaps['search']['sortDirection']['Relevance'] === 'asc', 'Object sort defaults must consistently use ascending direction.');
 // Change only the search form method, keeping hidden metadata and native scripts intact.
 $view = new UIFormView();
 uiCheck(tadlAdvancedSearchForm($view) === '{{{form}}}', 'Compilation must retain the native form-discovery tag.');

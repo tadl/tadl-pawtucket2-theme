@@ -17,6 +17,9 @@
 	<?php tadlAdvancedSearchHero($this->request, 'objects', _t('Objects Advanced Search'), _t('Use one field for a broad search, or combine several fields to narrow results across titles, identifiers, dates, collections, people, subjects, rights, and physical description.')); ?>
 
 	<?= tadlAdvancedSearchForm($this); ?>
+	<!-- New searches start with relevance; result-page controls retain later choices. -->
+	<input type="hidden" name="sort" value="Relevance">
+	<input type="hidden" name="direction" value="asc">
 
 	<div class="advancedContainer tadl-advanced-search-card">
 		<section class="tadl-advanced-section">

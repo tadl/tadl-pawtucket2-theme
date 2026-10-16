@@ -752,6 +752,11 @@ foreach ([
     testAssert(substr_count($html, '<li>') === min(6, $expectedCount), $block.': actual preview paged before filtering.');
     testAssert(strpos($html, 'media=') === false && strpos($html, '/media/') === false, $block.': search navigation leaked preference into URLs.');
     testAssert(strpos($html, '/Detail/'.substr($table, 3).'/'.$result->getPrimaryKeyValues()[0]) !== false, $block.': detail link missing.');
+    $document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+    $fullResults = (new DOMXPath($document))->query('//a[@class="tadl-search-view-all"]')->item(0)->getAttribute('href');
+    parse_str(parse_url($fullResults, PHP_URL_QUERY), $fullParams);
+    testAssert(($fullParams['search'] ?? null) === 'example <sample> & archive' && $fullParams['source'] === 'multisearch' && $fullParams['_advanced'] === '0', 'Full results must retain the exact query and basic-search context.');
+    testAssert($table === 'ca_objects' ? (($fullParams['sort'] ?? null) === 'Relevance' && ($fullParams['direction'] ?? null) === 'asc') : (!isset($fullParams['sort']) && !isset($fullParams['direction'])), 'Only object View all links must explicitly select the shared relevance default.');
     $counts[$block] = ['count' => $originalCount, 'ids' => $result->getPrimaryKeyValues(), 'table' => $table, 'displayName' => ucfirst($block), 'html' => $html];
 }
 $counts['_info_'] = ['totalCount' => 38];
