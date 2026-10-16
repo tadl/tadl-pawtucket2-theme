@@ -1,6 +1,9 @@
 <?php
 	$o_config = caGetContactConfig();
-	$va_errors = $this->getVar("errors");
+	$va_errors = $this->getVar("errors") ?: [];
+	$use_turnstile = (bool)$this->getVar('turnstile_active');
+	$show_math = !$use_turnstile && $o_config->get('check_security');
+	$field_columns = $show_math ? 'col-sm-4' : 'col-sm-6';
 	$vn_num1 = rand(1,10);
 	$vn_num2 = rand(1,10);
 	$vn_sum = $vn_num1 + $vn_num2;
@@ -24,7 +27,7 @@
 <div class="row"><div class="col-sm-12">
 	<H1><?= $vs_page_title; ?></H1>
 <?php
-	if(is_array($va_errors["display_errors"]) && sizeof($va_errors["display_errors"])){
+	if(!empty($va_errors["display_errors"])){
 		print "<div class='alert alert-danger'>".implode("<br/>", $va_errors["display_errors"])."</div>";
 	}
 ?>
@@ -53,20 +56,21 @@
 		<div class="row">
 			<div class="col-md-9">
 				<div class="row">
-					<div class="col-sm-4">
-						<div class="form-group<?= (($va_errors["name"]) ? " has-error" : ""); ?>">
+					<div class="<?= $field_columns; ?>">
+						<div class="form-group<?= (!empty($va_errors["name"]) ? " has-error" : ""); ?>">
 							<label for="name"><?= _t("Your name"); ?></label>
 							<input type="text" class="form-control input-sm" placeholder="Enter your name" autocomplete="name" name="name" value="{{{name}}}" id="name">
 						</div>
 					</div><!-- end col -->
-					<div class="col-sm-4">
-						<div class="form-group<?= (($va_errors["email"]) ? " has-error" : ""); ?>">
+					<div class="<?= $field_columns; ?>">
+						<div class="form-group<?= (!empty($va_errors["email"]) ? " has-error" : ""); ?>">
 							<label for="email"><?= _t("Email address"); ?></label>
 							<input type="text" class="form-control input-sm" id="email" placeholder="Enter email" name="email" value="{{{email}}}">
 						</div>
 					</div><!-- end col -->
+<?php if ($show_math) { ?>
 					<div class="col-sm-4">
-						<div class="form-group<?= (($va_errors["security"]) ? " has-error" : ""); ?>">
+						<div class="form-group<?= (!empty($va_errors["security"]) ? " has-error" : ""); ?>">
 							<label for="security"><?= _t("Security Question"); ?></label>
 							<div class='row'>
 								<div class='col-sm-6'>
@@ -78,19 +82,39 @@
 							</div><!--end row-->	
 						</div><!-- end form-group -->
 					</div><!-- end col -->
+<?php } ?>
 				</div><!-- end row -->
 			</div><!-- end col -->
 		</div><!-- end row -->
 		<div class="row">
 			<div class="col-md-9">
-				<div class="form-group<?= (($va_errors["message"]) ? " has-error" : ""); ?>">
+				<div class="form-group<?= (!empty($va_errors["message"]) ? " has-error" : ""); ?>">
 					<label for="message"><?= _t("Message"); ?></label>
 					<textarea class="form-control input-sm" id="message" name="message" rows="5">{{{message}}}</textarea>
 				</div>
 			</div><!-- end col -->
 		</div><!-- end row -->
 <?php
-	if(!$this->request->isLoggedIn() && defined("__CA_GOOGLE_RECAPTCHA_KEY__") && __CA_GOOGLE_RECAPTCHA_KEY__){
+	if ($use_turnstile && !$this->request->isLoggedIn()) {
+		$contact_addresses = (array)$o_config->get('contact_email');
+		$help_address = reset($contact_addresses);
+?>
+		<div class="row"><div class="col-md-9">
+			<div class="form-group<?= (!empty($va_errors['turnstile']) ? ' has-error' : ''); ?>">
+<?php if ($this->getVar('turnstile_ready')) { ?>
+				<div class="cf-turnstile" data-sitekey="<?= htmlspecialchars($this->getVar('turnstile_site_key'), ENT_QUOTES, 'UTF-8'); ?>" data-action="contact" data-theme="light" data-size="flexible"></div>
+				<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+				<noscript><p><?= _t('Please enable JavaScript to complete verification, or email us directly.'); ?></p></noscript>
+<?php } else { ?>
+				<p role="alert"><?= _t('Verification is temporarily unavailable. Please email us directly.'); ?></p>
+<?php }
+		if (is_string($help_address) && caCheckEmailAddress($help_address)) { ?>
+				<p><?= _t('Having trouble?'); ?> <a href="mailto:<?= htmlspecialchars($help_address, ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars($help_address, ENT_QUOTES, 'UTF-8'); ?></a></p>
+<?php } ?>
+			</div>
+		</div></div>
+<?php
+	} elseif(!$use_turnstile && !$this->request->isLoggedIn() && defined("__CA_GOOGLE_RECAPTCHA_KEY__") && __CA_GOOGLE_RECAPTCHA_KEY__){
 ?>
 		<script type="text/javascript">
 			var gCaptchaRender = function(){
@@ -100,7 +124,7 @@
 		<script src='https://www.google.com/recaptcha/api.js?onload=gCaptchaRender&render=explicit' async defer></script>
 			<div class="row">
 				<div class="col-sm-12 col-md-offset-1 col-md-10">
-					<div class='form-group<?= (($va_errors["recaptcha"]) ? " has-error" : ""); ?>'>
+					<div class='form-group<?= (!empty($va_errors["recaptcha"]) ? " has-error" : ""); ?>'>
 						<div id="regCaptcha" class="col-sm-8 col-sm-offset-4"></div>
 					</div>
 				</div>
@@ -111,7 +135,9 @@
 		<div class="form-group">
 			<button type="submit" class="btn btn-default"><?= _t("Send"); ?></button>
 		</div><!-- end form-group -->
+<?php if ($show_math) { ?>
 		<input type="hidden" name="sum" value="<?= $vn_sum; ?>">
+<?php } ?>
 	</form>
 	
 </div><!-- end col --></div><!-- end row -->

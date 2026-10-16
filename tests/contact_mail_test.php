@@ -14,11 +14,12 @@ function caGetHTMLPurifier() { return new class { function purify($value) { retu
 function caCheckEmailAddress($email) { return filter_var($email, FILTER_VALIDATE_EMAIL) !== false; }
 function caSetPageCSSClasses($classes) {}
 function caNavUrl($request, ...$args) { return '/synthetic/Contact/Form'; }
+function caGenerateCSRFToken($request) { return 'synthetic-token'; }
 function caVerifyCaptcha($token) { if (!$GLOBALS['captchaAccepted'] || $token !== 'synthetic-captcha') { throw new CaptchaException('Synthetic CAPTCHA failure'); } return true; }
 function caSendmail($to, $from, $subject, $text, $html, $cc, $bcc, $attachments, $options) {
 	$GLOBALS['sent'][] = compact('to','from','subject','text','html','options'); return $GLOBALS['mailSuccess'];
 }
-define('pString', 1); define('__NOTIFICATION_TYPE_ERROR__', 1);
+define('pString', 1); define('pInteger', 2); define('__NOTIFICATION_TYPE_ERROR__', 1);
 define('__CA_GOOGLE_RECAPTCHA_SECRET_KEY__', 'synthetic-not-a-real-key');
 class CaptchaException extends RuntimeException {}
 class MetaTagManager { static function setWindowTitle($title) {} }
@@ -61,16 +62,26 @@ file_put_contents($directory.'/ApplicationError.php','<?php');
 file_put_contents($directory.'/pawtucket/BasePawtucketController.php','<?php'); define('__CA_LIB_DIR__',$directory);
 register_shutdown_function(static function () use ($directory) { unlink($directory.'/ApplicationError.php'); unlink($directory.'/pawtucket/BasePawtucketController.php'); rmdir($directory.'/pawtucket'); rmdir($directory); });
 require dirname(__DIR__).'/controllers/ContactController.php';
+class ContactTurnstileFixture extends TadlContactTurnstile {
+	public int $calls = 0;
+	public ?array $response = ['status'=>200, 'body'=>'{"success":true,"hostname":"archive.example.org","action":"contact"}'];
+	protected function requestVerification(string $token): ?array { $this->calls++; return $this->response; }
+}
+class ContactControllerFixture extends ContactController {
+	function setTurnstile(TadlContactTurnstile $turnstile) { $this->turnstile = $turnstile; }
+}
 $fields = [
 	'email'=>['label'=>'Email address','email_address'=>1,'required'=>1,'use_as_from_address'=>1],
 	'name'=>['label'=>'Your name','required'=>1], 'message'=>['label'=>'Message','required'=>1],
 	'itemTitle'=>['label'=>'Item Title'], 'itemId'=>['label'=>'Item Identifier'], 'itemURL'=>['label'=>'Item URL']
 ];
 $contactConfig=new ContactConfig(['contact_email'=>['questions@example.org'],'check_security'=>1,'contact_form_elements'=>$fields]);
-function contactRun(array $overrides=[], $method='POST', $loggedIn=false) {
+function contactRun(array $overrides=[], $method='POST', $loggedIn=false, $turnstile=null) {
 	$GLOBALS['sent']=[]; $_REQUEST=['sum'=>'7'];
 	$request=new ContactRequest(array_replace(['csrfToken'=>'synthetic-token','security'=>'7','g-recaptcha-response'=>'synthetic-captcha','name'=>'Synthetic Visitor','email'=>'alice@example.org','message'=>'Synthetic question'], $overrides),$method,$loggedIn);
-	$response=new ContactResponse(); $controller=new ContactController($request,$response); $controller->Send();
+	$response=new ContactResponse(); $controller=new ContactControllerFixture($request,$response);
+	if ($turnstile) { $controller->setTurnstile($turnstile); }
+	$controller->Send();
 	return [$controller,$response,$GLOBALS['sent']];
 }
 foreach ([
@@ -114,4 +125,72 @@ contactCheck($messages[0]['from']==='configured-sender@example.org' && str_conta
 contactCheck(preg_match('/\[CF-[A-F0-9]{16}\]\z/', $messages[0]['subject'])===1 && !isset($subjects[$messages[0]['subject']]), 'Item inquiries must also have a distinct subject reference.');
 $mailSuccess=false; [$controller,$response,$messages]=contactRun();
 contactCheck(!empty($controller->view->vars['errors']['display_errors']['send_error']) && $controller->rendered===['Contact/form_html.php'], 'Mail delivery failures must retain the form and show an error.');
-echo "Contact mail passed: {$checks} assertions (actual controller/templates; synthetic mail/request boundaries; no mail sent).\n";
+
+// Real verifier/controller, with only the Cloudflare HTTP boundary replaced.
+$mailSuccess=true; $captchaAccepted=false;
+$turnstile=new ContactTurnstileFixture('synthetic-site-key','synthetic-secret-key',['archive.example.org','history.example.org']);
+[$controller,$response,$messages]=contactRun(['security'=>'incorrect','g-recaptcha-response'=>'','cf-turnstile-response'=>'synthetic-token'], 'POST', false, $turnstile);
+contactCheck(count($messages)===1 && $turnstile->calls===1, 'Turnstile must replace both legacy challenges and verify before sending.');
+contactCheck($messages[0]['options']['replyTo']===['alice@example.org'=>'Synthetic Visitor'], 'Turnstile must preserve named Reply-To behavior.');
+foreach ([
+	['status'=>200,'body'=>'{"success":false,"error-codes":["timeout-or-duplicate"]}'],
+	['status'=>200,'body'=>'{"success":true,"hostname":"other.example.org","action":"contact"}'],
+	['status'=>200,'body'=>'{"success":true,"hostname":"archive.example.org","action":"login"}'],
+	['status'=>200,'body'=>'{"success":true}'],
+	['status'=>200,'body'=>'{"success":"true","hostname":"archive.example.org","action":"contact"}'],
+	['status'=>200,'body'=>'not JSON'], ['status'=>200,'body'=>'null'],
+	['status'=>503,'body'=>'{"success":true,"hostname":"archive.example.org","action":"contact"}'], null
+] as $verification) {
+	$turnstile->response=$verification;
+	[$controller,$response,$messages]=contactRun(['cf-turnstile-response'=>'synthetic-token'], 'POST', false, $turnstile);
+	contactCheck(!$messages && !empty($controller->view->vars['errors']['turnstile']) && $controller->rendered===['Contact/form_html.php'], 'Rejected/expired/replayed, mismatched or unavailable verification must block mail and retain the form.');
+	contactCheck($controller->view->vars['message']==='Synthetic question', 'Verification failures must preserve the submitted message for retry.');
+}
+$turnstile->response=['status'=>200,'body'=>'{"success":true,"hostname":"ARCHIVE.EXAMPLE.ORG","action":"contact"}'];
+contactCheck($turnstile->verify('synthetic-token'), 'Hostname comparison must be case insensitive.');
+$turnstile->response=['status'=>200,'body'=>'{"success":true,"hostname":"history.example.org","action":"contact"}'];
+contactCheck($turnstile->verify('synthetic-token'), 'Both configured hostnames must use the same widget and verification rules.');
+foreach (['', ' ', str_repeat('x',2049), [], null] as $token) {
+	$before=$turnstile->calls;
+	contactCheck(!$turnstile->verify($token) && $turnstile->calls===$before, 'Missing or malformed tokens must be rejected without HTTP.');
+}
+[$controller,$response,$messages]=contactRun([], 'POST', false, $turnstile);
+contactCheck(!$messages && !empty($controller->view->vars['errors']['turnstile']), 'Omitting the hidden token must not bypass verification.');
+foreach ([['message'=>''],['csrfToken'=>'invalid']] as $overrides) {
+	$before=$turnstile->calls;
+	[$controller,$response,$messages]=contactRun($overrides+['cf-turnstile-response'=>'synthetic-token'], 'POST', false, $turnstile);
+	contactCheck(!$messages && $turnstile->calls===$before, 'Invalid form/CSRF must not spend a single-use verification token.');
+}
+$before=$turnstile->calls;
+[$controller,$response,$messages]=contactRun(['security'=>'incorrect'], 'POST', true, $turnstile);
+contactCheck(count($messages)===1 && $turnstile->calls===$before, 'Signed-in users must retain the CAPTCHA exemption with Turnstile.');
+foreach ([['synthetic-site-key','',[]],['','synthetic-secret-key',[]],['synthetic-site-key','synthetic-secret-key',[]],['synthetic-site-key','synthetic-secret-key',['https://archive.example.org']]] as $settings) {
+	$incomplete=new ContactTurnstileFixture(...$settings);
+	[$controller,$response,$messages]=contactRun(['cf-turnstile-response'=>'synthetic-token'], 'POST', false, $incomplete);
+	contactCheck($incomplete->enabled() && !$incomplete->ready() && !$messages && $incomplete->calls===0, 'Incomplete setup must fail closed rather than falling back to arithmetic.');
+}
+function contactFormHTML($turnstile, $loggedIn=false) {
+	$request=new ContactRequest([], 'GET', $loggedIn); $response=new ContactResponse();
+	$controller=new ContactControllerFixture($request,$response); $controller->setTurnstile($turnstile); $controller->Form();
+	$html=$controller->view->render('Contact/form_html.php');
+	contactCheck(!str_contains($html,'synthetic-secret-key') && !in_array('synthetic-secret-key',$controller->view->vars,true), 'The secret must never enter the view or rendered HTML.');
+	return $html;
+}
+$html=contactFormHTML($turnstile);
+contactCheck(str_contains($html,'https://challenges.cloudflare.com/turnstile/v0/api.js') && str_contains($html,'data-action="contact"') && str_contains($html,'data-size="flexible"'), 'The anonymous form must load the managed widget with the verified action and responsive size.');
+contactCheck(!str_contains($html,'name="security"') && !str_contains($html,'name="sum"') && !str_contains($html,'recaptcha/api.js'), 'Turnstile must replace both legacy CAPTCHA controls.');
+contactCheck(str_contains($html,'<noscript>') && str_contains($html,'mailto:questions@example.org'), 'Visitors unable to run the challenge must have an email alternative.');
+$html=contactFormHTML($turnstile,true);
+contactCheck(!str_contains($html,'challenges.cloudflare.com') && !str_contains($html,'name="security"'), 'Signed-in forms must not load a challenge.');
+$html=contactFormHTML(new ContactTurnstileFixture('synthetic-site-key'));
+contactCheck(str_contains($html,'temporarily unavailable') && !str_contains($html,'challenges.cloudflare.com'), 'Partial configuration must show an actionable alternative without a broken widget.');
+$html=contactFormHTML(new TadlContactTurnstile());
+contactCheck(str_contains($html,'name="security"') && str_contains($html,'name="sum"'), 'Absent Turnstile setup must preserve the existing arithmetic form.');
+$contactConfig->values['check_security']=0;
+contactCheck(!str_contains(contactFormHTML(new TadlContactTurnstile()),'name="security"'), 'The arithmetic view must honor its existing configuration.');
+define('__TADL_TURNSTILE_SITE_KEY__','synthetic-site-key');
+define('__TADL_TURNSTILE_SECRET_KEY__','synthetic-secret-key');
+define('__TADL_TURNSTILE_HOSTNAMES__',['archive.example.org','history.example.org']);
+$settings=TadlContactTurnstile::fromSetup();
+contactCheck($settings->enabled() && $settings->ready() && $settings->siteKey()==='synthetic-site-key', 'Private setup constants must enable the production verifier.');
+echo "Contact mail passed: {$checks} assertions (actual controller/templates/verifier; synthetic HTTP/mail boundaries; no mail sent).\n";

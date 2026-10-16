@@ -27,14 +27,17 @@
  */
 require_once(__CA_LIB_DIR__."/ApplicationError.php");
 require_once(__CA_LIB_DIR__.'/pawtucket/BasePawtucketController.php');
+require_once(__DIR__.'/../helpers/contact_turnstile.php');
 
 class ContactController extends BasePawtucketController {
 	// Based on Pawtucket's ContactController; keep native validation and templates.
 	protected $config;
+	protected $turnstile;
 	# -------------------------------------------------------
 	public function __construct(&$po_request, &$po_response, $view_paths=null) {
 		parent::__construct($po_request, $po_response, $view_paths);
 		$this->config = caGetContactConfig();
+		$this->turnstile = TadlContactTurnstile::fromSetup();
 		if(!$this->config->get("contact_email") && !$this->config->get("contact_form_elements")){
 			$this->notification->addNotification(_t("Contact form is not configured properly"), __NOTIFICATION_TYPE_ERROR__);
 			$this->response->setRedirect(caNavUrl($this->request, '', '', ''));
@@ -46,6 +49,9 @@ class ContactController extends BasePawtucketController {
 	public function Form() {
 		$fields = $this->config->get("contact_form_elements");
 		$this->view->setVar("contact_form_elements", $fields);
+		$this->view->setVar('turnstile_active', $this->turnstile->enabled());
+		$this->view->setVar('turnstile_ready', $this->turnstile->ready());
+		$this->view->setVar('turnstile_site_key', $this->turnstile->siteKey());
 		$this->render("Contact/form_html.php");
 	}
 	# ------------------------------------------------------
@@ -60,7 +66,7 @@ class ContactController extends BasePawtucketController {
 		$o_purifier = caGetHTMLPurifier();
 		# --- check for errors
 		$errors = [];
-		if($this->config->get("check_security")){
+		if(!$this->turnstile->enabled() && $this->config->get("check_security")){
 			$security = $this->request->getParameter("security", pString);
 			if ((!$security)) {
 				$errors["security"] = true;
@@ -73,7 +79,7 @@ class ContactController extends BasePawtucketController {
 				$errors["display_errors"]["security_error"] = _t("Please answer the security question");
 			}
 		}
-		if(!$this->request->isLoggedIn() && defined("__CA_GOOGLE_RECAPTCHA_SECRET_KEY__") && __CA_GOOGLE_RECAPTCHA_SECRET_KEY__){
+		if(!$this->turnstile->enabled() && !$this->request->isLoggedIn() && defined("__CA_GOOGLE_RECAPTCHA_SECRET_KEY__") && __CA_GOOGLE_RECAPTCHA_SECRET_KEY__){
 			try {
 				caVerifyCaptcha($this->request->getParameter("g-recaptcha-response", pString));
 			} catch(CaptchaException $e) {
@@ -108,6 +114,11 @@ class ContactController extends BasePawtucketController {
 				$values[$element_name] = $element_value;
 				$this->view->setVar($element_name, $element_value);
 			}
+		}
+		if (!$errors && $this->turnstile->enabled() && !$this->request->isLoggedIn()
+			&& !$this->turnstile->verify($this->request->getParameter('cf-turnstile-response', pString))) {
+			$errors['turnstile'] = true;
+			$errors['display_errors']['turnstile'] = _t('Verification could not be completed. Please try again, or email us using the link below.');
 		}
 		if(sizeof($errors) == 0){
 			// Give the mailer a separate address/name pair; it handles MIME quoting.

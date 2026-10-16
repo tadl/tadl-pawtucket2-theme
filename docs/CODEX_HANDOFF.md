@@ -946,7 +946,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/thumbnail_detector_test.php` | Actual CLI/SQL with synthetic catalogues, global keyset scans, public/shared/nonprimary selection, bounded runs, durable migration/purge survival, locks and retries |
 | `tests/faq_setup_test.php` | Read-only setup plans, targeted native template registration, additive editor placements, private pre-change backup, no-op reruns, preserving unrelated configuration and transactional rollback |
 | `tests/profile_save_test.php` | Own-email/staff-public login behavior, collisions, separate user staging, request-close persistence, validation/setter/model failures, native password delegation, POST/session/CSRF boundaries, public-use groups and direct/AJAX profile form error escaping |
-| `tests/contact_mail_test.php` | Actual contact controller/mail templates; named Reply-To, Unicode/quote/header-control normalization, unique subject references, valid/invalid emails, fixed sender/recipient, POST/CSRF, CAPTCHA, item inquiries and mail failures; captured mail only |
+| `tests/contact_mail_test.php` | Actual contact controller/form/mail templates and Turnstile verifier; named Reply-To, unique subjects, validation/POST/CSRF, legacy CAPTCHA, two-host Turnstile success/failures, partial setup and email fallback; synthetic HTTP and captured mail only |
 | `tests/user_features_test.php` | Anonymous/authenticated navigation and result actions, staff-only Providence shortcut in actual object detail HTML, valid object IDs/new-tab safety, native login POST/CSRF, registration policy, password-manager fields and cache separation |
 | `tests/home_faq_test.php` | Published/readable Site Pages, drafts, incomplete entries, locale, rank, escaped questions and purified answers; optional real HTMLPurifier |
 | `tests/finding_aid_test.php` | Selected collection export, full nested/empty/wide hierarchy, natural sibling order and duplicate-named branches, access/ACL/bundle restrictions, complete unique counts over native caps, overlapping memberships, no individual object metadata/entries, collection field mappings, escaped PDF text and safe failure; optional real Dompdf |
@@ -1309,7 +1309,26 @@ Native contact CAPTCHA options are the `check_security` arithmetic check and
 Google reCAPTCHA v2, enabled through `__CA_GOOGLE_RECAPTCHA_KEY__` and
 `__CA_GOOGLE_RECAPTCHA_SECRET_KEY__` in private setup configuration. The
 `registration_security` setting applies to account registration, not Contact.
-The theme currently draws the arithmetic question unconditionally, so replacing
-it also requires updating the view, not just setting `check_security = 0`.
-Turnstile or hCaptcha would require a theme integration with server-side token
-verification. No CAPTCHA keys or provider changes are included in this label edit.
+The arithmetic view now honors `check_security` and is omitted when Turnstile is
+enabled. `helpers/contact_turnstile.php` adds contact-only Cloudflare Turnstile
+support, enabled by server-local `__TADL_TURNSTILE_SITE_KEY__`,
+`__TADL_TURNSTILE_SECRET_KEY__` and `__TADL_TURNSTILE_HOSTNAMES__` constants in
+private `setup.php`. See [Contact form setup](CONTACT_FORM.md) for widget creation,
+two-host configuration, secret storage, rollback and operator checks. The intended
+production hostnames are `archives.tadl.org` and `localhistory.tadl.org`; the latter
+is a planned alias, not a verified current DNS destination.
+
+With keys present, Turnstile replaces math and contact reCAPTCHA, retains the
+signed-in exemption and verifies anonymous submissions after CSRF/field validation.
+Partial setup fails closed for anonymous send. Siteverify requires strict success,
+the `contact` action and an explicitly permitted hostname; fixed HTTPS, TLS checks,
+bounded timeouts and no redirects keep the secret at Cloudflare. No form fields or
+optional visitor IP are added to verification requests. Failures retain the form
+and show a direct email alternative. The secret never enters view variables/HTML.
+No changes to login/registration CAPTCHA, DNS or native core are included. Keys,
+deployment and live delivery remain operator steps; standalone checks replace the
+HTTP/mail boundaries and never transmit submissions.
+All 35 standalone suites and changed-file PHP lint passed. A local browser preview
+rendered Cloudflare's public test widget and checked phone widths without sending
+mail or using production keys. Live verification/delivery on either hostname has
+not been tested by Codex for this source change.

@@ -17,6 +17,7 @@ Feature guides:
 | [Document text](docs/DOCUMENT_TEXT.md) | PDF extraction, imported transcription fallbacks and plain-text display |
 | [Image downloads](docs/IMAGE_DOWNLOADS.md) | Full-resolution exports, private conversion cache, permissions and limits |
 | [Accounts and FAQ](docs/USER_FEATURES.md) | Bookmarked login, staff tools, lightboxes and content editing |
+| [Contact form](docs/CONTACT_FORM.md) | Named Reply-To, distinct mail subjects and optional Cloudflare Turnstile setup |
 | [FAQ activation](docs/FAQ_SETUP.md) | Repeatable Providence template/editor setup and upgrade preservation |
 | [Thumbnail focus](docs/THUMBNAIL_FOCUS.md) | Manual focal points and durable local face-detection suggestions |
 | [Crawler policy](docs/CRAWLER_POLICY.md) | Download/search directives and separate root robots installation |
