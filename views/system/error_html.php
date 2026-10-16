@@ -5,10 +5,6 @@ if (class_exists('AppController', false) && AppController::instanceExists()) {
 	$response->addHeader('Cache-Control', 'no-store');
 	$response->addHeader('X-Robots-Tag', 'noindex, nofollow');
 }
-$home = htmlspecialchars(caNavUrl($this->request, '', 'Front', 'Index'), ENT_QUOTES, 'UTF-8');
+require_once(__DIR__.'/../../helpers/public_errors.php');
 ?>
-<div class="alert alert-danger text-center" role="alert">
-	<h1><?= _t('Page not found') ?></h1>
-	<p><?= _t('Please check the address or return to the Local History Collection.') ?></p>
-	<p><a href="<?= $home ?>"><?= _t('Return to the Local History Collection') ?></a></p>
-</div>
+<?= tadlPublicErrorContent($this->request) ?>

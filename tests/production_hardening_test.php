@@ -13,9 +13,13 @@ function hardeningCheck($value, $message) {
 define('pInteger', 1);
 class HardeningConfig { function get($name) { return $GLOBALS['galleryType']; } }
 class HardeningRequest {
+	public bool $ajax = false, $download = false, $cleanURLs = false;
+	public string $base = '/catalog';
 	function __construct(public string $action, public array $params = [], public array $access = [1]) {}
 	function getAction() { return $this->action; }
 	function getParameter($name, $type) { hardeningCheck($type === pInteger, 'Set ID must use native parsing.'); return $this->params[$name] ?? 0; }
+	function isAjax() { return $this->ajax; }
+	function isDownload() { return $this->download; }
 }
 function caGetGalleryConfig() { return new HardeningConfig(); }
 function caGetUserAccessValues($request) { return $request->access; }
@@ -28,9 +32,26 @@ class ca_sets {
 }
 class AppController {
 	static $request;
+	static $response = null;
 	static function getInstance() { return new self(); }
-	static function instanceExists() { return false; }
+	static function instanceExists() { return self::$response !== null; }
 	function getRequest() { return self::$request; }
+	function getResponse() { return self::$response; }
+}
+class HardeningResponse {
+	public int $status = 404;
+	public bool $redirect = false;
+	public string $type = 'text/html';
+	public array $content = ['notifications' => 'Synthetic notice', 'default' => 'Page is not available'], $headers = [];
+	function getHTTPResponseCode() { return $this->status; }
+	function isRedirect() { return $this->redirect; }
+	function getContentType() { return $this->type; }
+	function setContent($html, $segment = 'default') { $this->content[$segment] = $html; }
+	function addHeader($name, $value) { $this->headers[$name] = $value; }
+}
+class AssetLoadManager {
+	static array $registered = [];
+	static function register($package, $library) { self::$registered[] = [$package, $library]; }
 }
 $root = dirname(__DIR__);
 $directory = sys_get_temp_dir().'/tadl-hardening-'.bin2hex(random_bytes(8));
@@ -86,8 +107,37 @@ try {
 		function render() { ob_start(); include dirname(__DIR__).'/views/system/error_html.php'; return ob_get_clean(); }
 	};
 	function _t($text) { return $text; }
-	function caNavUrl(...$arguments) { return '/Front/Index'; }
-	hardeningCheck(str_contains($view->render(), 'Return to the Local History Collection'), 'Ordinary native errors must provide recovery without rendering diagnostic values.');
+	function caNavUrl($request, $module, $controller, $action) { return $request->base.($request->cleanURLs ? '' : '/index.php').'/'.$controller.'/'.$action; }
+	hardeningCheck(str_contains($view->render(), 'Browse collections'), 'Ordinary native errors must provide recovery without rendering diagnostic values.');
+	foreach ([false, true] as $cleanURLs) {
+		$request = new HardeningRequest('unknown-synthetic-page'); $request->cleanURLs = $cleanURLs;
+		$response = AppController::$response = new HardeningResponse();
+		hardeningCheck(tadlPrepareNotFoundPage($request), 'Native fallback 404s must be decorated after dispatch.');
+		hardeningCheck($response->status === 404 && $response->content['notifications'] === 'Synthetic notice', 'Decorating errors must preserve status and other native response segments.');
+		hardeningCheck($response->headers === ['Cache-Control' => 'no-store', 'X-Robots-Tag' => 'noindex, nofollow'], 'Fallback 404s need no-store/noindex headers.');
+		$dom = new DOMDocument(); $dom->loadHTML($response->content['default'], LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+		$xpath = new DOMXPath($dom);
+		$prefix = '/catalog'.($cleanURLs ? '' : '/index.php');
+		$form = $xpath->query('//form[@role="search"]')->item(0);
+		hardeningCheck($form && $form->getAttribute('action') === $prefix.'/MultiSearch/Index' && $form->getAttribute('method') === 'get', 'Recovery search must use native GET multisearch URLs in both URL modes.');
+		hardeningCheck($xpath->query('//label[@for="tadl-error-search-input"]')->length === 1 && $xpath->query('//input[@name="search" and @id="tadl-error-search-input"]')->length === 1, 'Recovery search must have a unique associated label and native field name.');
+		hardeningCheck($xpath->query('//a[@href="'.$prefix.'/Collections/Index"]')->length === 1 && $xpath->query('//a[@href="'.$prefix.'/Search/advanced/objects"]')->length === 1 && $xpath->query('//a[@href="'.$prefix.'/Front/Index"]')->length === 1, 'All recovery destinations must use native subdirectory-safe links.');
+		hardeningCheck($xpath->query('//h1')->length === 1 && !str_contains($response->content['default'], 'Page is not available'), 'The plain fallback needs one useful page heading.');
+	}
+	foreach (['success', 'server-error', 'ajax', 'download', 'json', 'redirect'] as $case) {
+		$request = new HardeningRequest('Index'); $response = AppController::$response = new HardeningResponse();
+		if ($case === 'success') { $response->status = 200; }
+		if ($case === 'server-error') { $response->status = 503; }
+		if ($case === 'ajax') { $request->ajax = true; }
+		if ($case === 'download') { $request->download = true; }
+		if ($case === 'json') { $response->type = 'application/json'; }
+		if ($case === 'redirect') { $response->redirect = true; }
+		$assetsBefore = AssetLoadManager::$registered;
+		hardeningCheck(!tadlPrepareNotFoundPage($request) && $response->content['default'] === 'Page is not available' && !$response->headers && AssetLoadManager::$registered === $assetsBefore, $case.': preserve successful, non-404 and non-page responses without loading error CSS.');
+	}
+	hardeningCheck(AssetLoadManager::$registered === [['pawtucket', 'errorcss'], ['pawtucket', 'errorcss']], 'Only rendered 404s should register the scoped, versioned error stylesheet.');
+	AppController::$response = null;
+	hardeningCheck(str_contains(file_get_contents($root.'/views/pageFormat/pageHeader.php'), 'tadlPrepareNotFoundPage($this->request)'), 'The shared page header must decorate native fallback responses.');
 
 	// Exercise actual HTTP headers and the error view, independent of the normal header.
 	$router = '<?php require '.var_export($root.'/helpers/public_errors.php', true).';'
@@ -108,8 +158,9 @@ try {
 		$responseHeaders = function_exists('http_get_last_response_headers') ? http_get_last_response_headers() : (get_defined_vars()['http_response_header'] ?? []);
 		$headers = join('\n', $responseHeaders);
 		hardeningCheck(str_contains($responseHeaders[0], (string)$status), $case.': wrong HTTP status.');
-		hardeningCheck(str_contains($headers, 'Cache-Control: no-store') && str_contains($headers, 'X-Robots-Tag: noindex, nofollow') && str_contains($headers, "default-src 'none'"), $case.': error responses need safe headers without PageFormat.');
-		hardeningCheck(!str_contains($body, 'SYNTHETIC_SECRET') && !str_contains($body, 'Request parameters') && str_contains($body, 'Return to the Local History Collection'), $case.': public errors must omit all diagnostics and provide recovery.');
+		hardeningCheck(str_contains($headers, 'Cache-Control: no-store') && str_contains($headers, 'X-Robots-Tag: noindex, nofollow') && str_contains($headers, "default-src 'none'") && str_contains($headers, "form-action 'self'"), $case.': standalone error headers must permit only same-origin recovery forms.');
+		hardeningCheck(!str_contains($body, 'SYNTHETIC_SECRET') && !str_contains($body, 'Request parameters') && str_contains($body, 'tadl-error-content'), $case.': public errors must omit all diagnostics and provide recovery.');
+		hardeningCheck($status === 404 ? str_contains($body, '/index.php/MultiSearch/Index') && str_contains($body, 'Browse collections') : !str_contains($body, '<form'), $case.': standalone 404s need working fallback links/search, while server errors keep simple recovery.');
 	}
 	echo 'Production hardening passed: '.$assertions.' assertions (synthetic Gallery routing, HTTP errors and private diagnostics).'.PHP_EOL;
 } finally {

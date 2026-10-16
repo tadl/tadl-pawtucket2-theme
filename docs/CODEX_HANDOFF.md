@@ -1,6 +1,6 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-14. This document carries the recent coding context to another
+Updated: 2026-10-16. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
@@ -1110,3 +1110,31 @@ its public HTTP response matched the source policy including all four new conten
 route exclusions. No Apache reload, cache clear or theme deployment was performed
 for that root-file update. The authenticated pilot still requires designated
 disposable accounts; it has not been performed by the standalone suites.
+
+## 2026-10-16 404 recovery page
+
+The native `DefaultController` returns only "Page is not available" when an
+unknown URL has no Site Page or theme view. It bypasses `system/error_html.php`.
+The shared header now calls `tadlPrepareNotFoundPage()` after native dispatch,
+before PageFormat prepends the header: HTML status-404 responses have only their
+default body segment replaced, preserving status, notifications and the site shell.
+Successful pages, redirects, JSON, AJAX and downloads are untouched. No native
+controller or upstream patch is needed.
+
+`views/system/error_content_html.php` supplies one shared recovery component for
+those pages, the ordinary error view and standalone exception 404s. It offers a
+labeled native GET MultiSearch form, Collections index, Advanced Search and home.
+Native URL helpers preserve clean URLs and application subdirectories; standalone
+failures without a request use root-aware `index.php` URLs. No failed URL or user
+input is reflected. Server-error pages keep a simple home recovery link.
+
+The scoped `errorcss` asset is registered only for full-page 404s and receives the
+existing content version. Standalone errors load the same stylesheet directly.
+Their CSP permits same-origin forms while continuing to block scripts and framing.
+Page titles identify the 404, and no-store/noindex protections remain. The
+production-hardening suite covers fallback decoration, preserved response segments,
+non-page exclusions, URL modes, labels and standalone HTTP behavior. All 33 suites
+passed locally. Browser QA with the shared component and captured public shell
+verified phone/desktop layout, visible keyboard focus, no horizontal overflow and
+an actual synthetic search submit; this does not bootstrap a live application.
+Deployment remains a separate operator step with no cache purge or Apache reload.

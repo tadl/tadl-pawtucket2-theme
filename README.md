@@ -218,8 +218,10 @@ done
 
 Production hardening keeps exception details and request parameters out of public
 error pages, returns 404 for failed dispatch/missing records and 500 for unexpected
-failures, and retains native server-side exception logging. Gallery entrypoints
-use a theme controller shim to require published sets of the configured gallery
+failures, and retains native server-side exception logging. Full-page 404s include
+unknown-URL fallbacks, with a labeled search form and links to browse collections,
+advanced search and home. They retain the normal site navigation when available.
+Gallery entrypoints use a theme controller shim to require published sets of the configured gallery
 type before invoking the native controller; user lightboxes remain behind native
 ownership/sharing checks. Export failures log safe IDs, format and code location
 through PHP's server error log, without exception messages or request payloads.

@@ -29,6 +29,8 @@ require_once(__DIR__.'/media_preference_toggle.php');
 require_once(__DIR__.'/../../helpers/asset_versions.php');
 require_once(__DIR__.'/../../helpers/user_features.php');
 require_once(__DIR__.'/../../helpers/crawler_policy.php');
+require_once(__DIR__.'/../../helpers/public_errors.php');
+$tadlNotFoundPage = tadlPrepareNotFoundPage($this->request);
 
 if (!function_exists('tadlMetaClean')) {
 	function tadlMetaClean($value, $limit = 220) {
@@ -192,8 +194,12 @@ if (!function_exists('tadlNormalizeWindowTitle')) {
 
 $site_name = 'TADL Local History Collection';
 $default_description = 'Explore photographs, documents, and community memory preserved by Traverse Area District Library.';
-$meta_item = tadlMetaCurrentDetailItem($this->request, $this->getVar('item'));
-$meta_title = ($meta_item && method_exists($meta_item, 'getLabelForDisplay')) ? tadlMetaClean($meta_item->getLabelForDisplay(), 120) : tadlNormalizeWindowTitle($this->request, MetaTagManager::getWindowTitle(), $site_name);
+$meta_item = $tadlNotFoundPage ? null : tadlMetaCurrentDetailItem($this->request, $this->getVar('item'));
+$meta_title = $tadlNotFoundPage ? _t('Page not found') : (
+	($meta_item && method_exists($meta_item, 'getLabelForDisplay'))
+		? tadlMetaClean($meta_item->getLabelForDisplay(), 120)
+		: tadlNormalizeWindowTitle($this->request, MetaTagManager::getWindowTitle(), $site_name)
+);
 if (!$meta_title) { $meta_title = $site_name; }
 $meta_description = tadlMetaDescriptionForItem($this->request, $meta_item);
 if (!$meta_description) { $meta_description = $default_description; }
@@ -207,7 +213,7 @@ if (!$meta_image) {
 $meta_type = ($meta_item && method_exists($meta_item, 'tableName')) ? 'article' : 'website';
 
 MetaTagManager::addMeta('description', $meta_description);
-if ($crawler_directives = tadlCrawlerPageDirectives($this->request)) {
+if ($crawler_directives = ($tadlNotFoundPage ? 'noindex, nofollow' : tadlCrawlerPageDirectives($this->request))) {
 	MetaTagManager::addMeta('robots', $crawler_directives);
 }
 MetaTagManager::addMetaProperty('og:site_name', $site_name);
