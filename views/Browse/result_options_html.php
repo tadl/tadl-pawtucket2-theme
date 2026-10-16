@@ -38,8 +38,9 @@
 								$export_params['collection_view'] = $this->request->getParameter('collection_view', pString) === 'hierarchy' ? 'hierarchy' : 'flat';
 								unset($export_params['key']);
 							}
-							if ($this->request->getController() === 'FamilyContents') {
-								$export_params['entity_id'] = (int)$this->request->getParameter('entity_id', pInteger);
+							if (in_array($this->request->getController(), ['FamilyContents', 'PlaceContents'], true)) {
+								$key = $this->request->getController() === 'FamilyContents' ? 'entity_id' : 'place_id';
+								$export_params[$key] = (int)$this->request->getParameter($key, pInteger);
 								unset($export_params['key']);
 							}
 							print "<li class='".$va_export_format["code"]."' role='menuitem'>".caNavLink($this->request, $va_export_format["name"], "", "*", "*", "*", $export_params, array('rel' => 'nofollow'))."</li>";

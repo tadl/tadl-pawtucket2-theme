@@ -63,7 +63,7 @@
 	$vs_table 			= $this->getVar('table');
 	$t_instance			= $this->getVar('t_instance');
 	
-	$vb_is_search		= in_array($this->request->getController(), ['Search', 'CollectionContents', 'FamilyContents'], true);
+	$vb_is_search		= in_array($this->request->getController(), ['Search', 'CollectionContents', 'FamilyContents', 'PlaceContents'], true);
 	$vb_subject_browse = !$vb_is_search && ($this->getVar('browse_type') === 'subjects');
 
 	$va_options			= $this->getVar('options');
@@ -88,8 +88,8 @@
 	if ($o_browse = $this->getVar('browse')) { $va_all_facets = $o_browse->getInfoForFacets(); }
 	require_once(__DIR__.'/tadl_result_helpers.php');
 	require_once(__DIR__.'/tadl_result_context_helpers.php');
-	// Family results have a fixed relationship scope, with sort/view/paging controls.
-	$vs_refine_html = !$vb_ajax && $this->request->getController() !== 'FamilyContents'
+	// Family/place results have a fixed relationship scope, with sort/view/paging controls.
+	$vs_refine_html = !$vb_ajax && !in_array($this->request->getController(), ['FamilyContents', 'PlaceContents'], true)
 		? $this->render('Browse/browse_refine_subview_html.php') : '';
 	$vb_has_filters = trim($vs_refine_html) !== '';
 	$va_result_context = null;

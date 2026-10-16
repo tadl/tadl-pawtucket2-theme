@@ -49,7 +49,7 @@ function tadlMediaEligibleIDs($table, $ids, $access) {
 	return array_values(array_intersect($ids, $GLOBALS['authorityEligibleCollections']));
 }
 function caNavUrl($request, $module, $controller, $action, $params = [], $options = []) {
-	if ($controller === 'Search' && $GLOBALS['authorityUrlOverride'] !== null) { return $GLOBALS['authorityUrlOverride']; }
+	if (in_array($controller, ['Search', 'PlaceContents'], true) && $GLOBALS['authorityUrlOverride'] !== null) { return $GLOBALS['authorityUrlOverride']; }
 	return '/synthetic/'.$controller.'/'.$action.($params ? '?'.http_build_query($params) : '');
 }
 function caNavLink($request, $text, $class, $module, $controller, $action, $params = []) {
@@ -310,6 +310,7 @@ foreach (['ca_entities' => ['entity_id', 'Person'], 'ca_places' => ['place_id', 
 			checkAuthority(!str_contains($html, '<script>alert("name")'), 'Hostile authority title emitted a real script tag.');
 			checkAuthority(str_contains($html, '>'.$kind.'</div>'), 'Authority kind heading is incorrect for '.$table.'.');
 			$expectedUrl = '/synthetic/Search/objects?'.http_build_query(['search' => $key.':42', 'view' => 'images', 's' => 0, '_advanced' => 0, 'clear' => 1]);
+			if ($table === 'ca_places') { $expectedUrl = '/synthetic/PlaceContents/Objects?place_id=42&view=images'; }
 			$link = $xpath->query('//a[contains(@class,"tadl-authority-all-items")]')->item(0);
 			checkAuthority($link->getAttribute('href') === $expectedUrl, 'Authority fallback Search URL omitted query/view/reset options.');
 			checkAuthority($xpath->query('//noscript')->length === 1 && $xpath->query('//*[@id="browseResultsContainer"]')->item(0)->getAttribute('aria-busy') === 'true', 'Authority results need progressive fallback and a loading state.');

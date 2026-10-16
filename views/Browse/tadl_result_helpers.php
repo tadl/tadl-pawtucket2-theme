@@ -8,10 +8,11 @@ function tadlBrowseResultCollectionID($request) {
 }
 
 function tadlBrowseResultLink($request, $label, $class, $params) {
-	if ($request->getController() === 'FamilyContents') {
+	if (in_array($request->getController(), ['FamilyContents', 'PlaceContents'], true)) {
 		$params = array_intersect_key($params, array_flip(['view', 'sort', 'direction', 's']));
-		$params['entity_id'] = (int)$request->getParameter('entity_id', pInteger);
-		return caNavLink($request, $label, $class, '', 'FamilyContents', 'Objects', $params);
+		$key = $request->getController() === 'FamilyContents' ? 'entity_id' : 'place_id';
+		$params[$key] = (int)$request->getParameter($key, pInteger);
+		return caNavLink($request, $label, $class, '', $request->getController(), 'Objects', $params);
 	}
 	if ($id = tadlBrowseResultCollectionID($request)) {
 		$params = array_intersect_key($params, array_flip(['view', 'sort', 'direction', 's']));

@@ -1,6 +1,7 @@
 <?php
 require_once(__DIR__.'/record_access.php');
 require_once(__DIR__.'/family_contents.php');
+require_once(__DIR__.'/place_contents.php');
 
 /**
  * Return eligible public records in their existing result order. A representation
@@ -223,6 +224,18 @@ function tadlAuthorityMediaEligibleIDs($request, $table, array $candidateIDs) {
 	return array_values(array_filter($ids, static function ($id) use ($cache, $key) { return $cache[$key][$id]; }));
 }
 
+/** Place browsing follows the same readable descendant scope as its related items. */
+function tadlPlaceMediaEligibleIDs($request, array $candidateIDs) {
+	$scopes = tadlPlaceScopes($request, $candidateIDs);
+	if (!$scopes) { return []; }
+	$places = array_values(array_unique(array_merge(...array_values($scopes))));
+	$eligible = array_fill_keys(tadlAuthorityMediaEligibleIDs($request, 'ca_places', $places), true);
+	return array_values(array_filter($candidateIDs, static function ($id) use ($scopes, $eligible) {
+		foreach ($scopes[$id] ?? [] as $place) { if (isset($eligible[$place])) { return true; } }
+		return false;
+	}));
+}
+
 /** A family qualifies through its own objects or a directly related member. */
 function tadlFamilyMediaEligibleIDs($request, array $candidateIDs) {
 	$scopes = tadlFamilyEntityScopes($request, $candidateIDs);
@@ -248,7 +261,8 @@ function tadlFilterMediaResult($request, $result) {
 	if ($table === tadlMediaAuthorityBrowseTable($request)) {
 		$type = $request->getParameter('browseType', pString) ?: $request->getAction();
 		$ids = $type === 'families' ? tadlFamilyMediaEligibleIDs($request, $result->getPrimaryKeyValues())
-			: tadlAuthorityMediaEligibleIDs($request, $table, $result->getPrimaryKeyValues());
+			: ($type === 'places' ? tadlPlaceMediaEligibleIDs($request, $result->getPrimaryKeyValues())
+				: tadlAuthorityMediaEligibleIDs($request, $table, $result->getPrimaryKeyValues()));
 	} elseif (in_array($table, ['ca_objects', 'ca_collections'], true)) {
 		$ids = tadlMediaEligibleIDs($table, $result->getPrimaryKeyValues(), (array)caGetUserAccessValues($request), $request);
 	} else {

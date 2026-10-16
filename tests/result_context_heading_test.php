@@ -48,7 +48,7 @@ function caGetAddToSetInfo($request) { return []; }
 function caDisplayLightbox($request) { return false; }
 function caBusyIndicatorIcon($request) { return '<span class="synthetic-spinner"></span>'; }
 function caNavUrl($request, $module, $controller, $action, $params = []) {
-	if ($controller === 'FamilyContents') { return '/synthetic/FamilyContents/'.$action.'?'.http_build_query($params); }
+	if (in_array($controller, ['FamilyContents', 'PlaceContents'], true)) { return '/synthetic/'.$controller.'/'.$action.'?'.http_build_query($params); }
 	if ($controller === '*' && $request->getController() === 'CollectionContents') { return '/synthetic/CollectionContents/Objects?'.http_build_query($params); }
 	return '/synthetic/'.($controller === 'Detail' ? 'Detail/' : '').($action === '*' ? 'objects' : $action).'?'.http_build_query($params);
 }
@@ -180,6 +180,11 @@ $familyHtml = (new ContextView($familyRequest, [contextCriterion('_search', 'ent
 checkContext(contextHeading($familyHtml) === 'Items related to Synthetic Family' && !str_contains($familyHtml, 'Raw family query'), 'Combined family searches must retain a human-readable family heading.');
 checkContext(str_contains($familyHtml, '/FamilyContents/Objects?') && str_contains($familyHtml, 'entity_id=44'), 'Family pager and sort/view links must retain their family scope.');
 checkContext(!str_contains($familyHtml, 'id=\'bRefineButton\'') && !str_contains($familyHtml, 'id="bRefine"'), 'Fixed family results must not expose refinements that would discard or be ignored by their scope.');
+$placeRequest = new ContextRequest('PlaceContents', false, null, ['place_id' => 42]);
+$placeHtml = (new ContextView($placeRequest, [contextCriterion('_search', 'place_id:42 OR place_id:41', 'Raw place query')], 45, ['facets' => ['place_facet' => ['label' => 'Places']]]))->render('Browse/browse_results_html.php');
+checkContext(contextHeading($placeHtml) === 'Items related to Synthetic Harbor' && !str_contains($placeHtml, 'Raw place query'), 'Place descendant searches need the selected place heading.');
+checkContext(str_contains($placeHtml, '/PlaceContents/Objects?') && str_contains($placeHtml, 'place_id=42'), 'Place pager and sort/view links must retain the root place.');
+checkContext(!str_contains($placeHtml, 'id=\'bRefineButton\'') && !str_contains($placeHtml, 'id="bRefine"'), 'Fixed place scope must not offer ignored refinements.');
 foreach ([43, 44, 45, 46, 47, 48, 999] as $id) {
 	$readsBefore = count($GLOBALS['contextLabelReads']);
 	foreach (['place_facet', '_search'] as $facet) {

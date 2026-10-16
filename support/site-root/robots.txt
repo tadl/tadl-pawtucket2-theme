@@ -8,6 +8,8 @@ Disallow: /CollectionContents
 Disallow: /index.php/CollectionContents
 Disallow: /FamilyContents
 Disallow: /index.php/FamilyContents
+Disallow: /PlaceContents
+Disallow: /index.php/PlaceContents
 Disallow: /MultiSearch
 Disallow: /Browse
 Disallow: /index.php/Search

@@ -90,6 +90,10 @@ function tadlAuthorityDetailInfo($request, $item, $table) {
 		$info['items_url'] = caNavUrl($request, '', 'FamilyContents', 'Objects', ['entity_id' => (int)$item->get('entity_id'), 'view' => 'images']);
 		$info['items_note'] = _t('Includes items linked to this family and its directly related people and organizations.');
 	}
+	if ($table === 'ca_places') {
+		$info['items_url'] = caNavUrl($request, '', 'PlaceContents', 'Objects', ['place_id' => (int)$item->get('place_id'), 'view' => 'images']);
+		$info['items_note'] = _t('Includes items linked to this place and its descendant places.');
+	}
 	return $info;
 }
 

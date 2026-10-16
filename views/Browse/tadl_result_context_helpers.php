@@ -45,8 +45,9 @@ function tadlResultAuthorityLabel($request, array $reference) {
 function tadlResultDisplayCriteria($request, array $criteria, array $facetDefinitions) {
 	foreach ($criteria as &$criterion) {
 		$reference = tadlResultAuthorityReference($criterion, $facetDefinitions);
-		if ($request->getController() === 'FamilyContents' && ($criterion['facet_name'] ?? '') === '_search') {
-			$reference = ['table' => 'ca_entities', 'id' => (int)$request->getParameter('entity_id', pInteger)];
+		if (in_array($request->getController(), ['FamilyContents', 'PlaceContents'], true) && ($criterion['facet_name'] ?? '') === '_search') {
+			[$table, $key] = $request->getController() === 'FamilyContents' ? ['ca_entities', 'entity_id'] : ['ca_places', 'place_id'];
+			$reference = ['table' => $table, 'id' => (int)$request->getParameter($key, pInteger)];
 		}
 		if ($reference) {
 			$label = tadlResultAuthorityLabel($request, $reference);

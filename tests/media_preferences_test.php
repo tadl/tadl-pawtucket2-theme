@@ -243,7 +243,7 @@ Db::$pdo->exec('CREATE TABLE ca_entities (entity_id INTEGER PRIMARY KEY, access 
 Db::$pdo->exec('CREATE TABLE ca_entities_x_entities (entity_left_id INTEGER, entity_right_id INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_objects_x_entities (relation_id INTEGER PRIMARY KEY, object_id INTEGER, entity_id INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_entities_x_object_representations (relation_id INTEGER PRIMARY KEY, entity_id INTEGER, representation_id INTEGER)');
-Db::$pdo->exec('CREATE TABLE ca_places (place_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER)');
+Db::$pdo->exec('CREATE TABLE ca_places (place_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER, parent_id INTEGER DEFAULT 0, hierarchy_id INTEGER DEFAULT 0, hier_left INTEGER DEFAULT 0, hier_right INTEGER DEFAULT 0)');
 Db::$pdo->exec('CREATE TABLE ca_objects_x_places (relation_id INTEGER PRIMARY KEY, object_id INTEGER, place_id INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_occurrences (occurrence_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_objects_x_occurrences (relation_id INTEGER PRIMARY KEY, object_id INTEGER, occurrence_id INTEGER)');
@@ -770,5 +770,25 @@ testAssert(strpos($html, 'returned no results') !== false && strpos($html, '<sec
 $allSubview = new TestView(testMediaRequest('all', [], 'MultiSearch', 'Index'), ['result' => new SearchResult('ca_objects', range(1,13)), 'block' => 'objects', 'blockInfo' => ['table' => 'ca_objects', 'displayName' => 'Objects'], 'search' => 'synthetic', 'itemsPerPage' => 6]);
 $html = $allSubview->render(TEST_THEME.'/views/Search/tadl_search_results_subview_html.php');
 testAssert(strpos($html, '/Detail/objects/1') !== false && strpos($html, '/media/') === false && strpos($html, 'media=') === false, 'All-mode search links must stay clean.');
+
+// Parent place browse entries qualify through the same readable descendant scope.
+foreach ([[50000,0,10,1,8,1],[50001,50000,10,2,3,1],[50002,50000,10,4,7,0],[50003,50002,10,5,6,1],[50004,0,11,1,8,1]] as [$id,$parent,$hierarchy,$left,$right,$access]) {
+    testInsert('ca_places', ['place_id'=>$id,'parent_id'=>$parent,'hierarchy_id'=>$hierarchy,'hier_left'=>$left,'hier_right'=>$right,'access'=>$access,'deleted'=>0]);
+}
+testInsert('ca_objects_x_places', ['relation_id'=>50000,'object_id'=>1,'place_id'=>50001]);
+testInsert('ca_objects_x_places', ['relation_id'=>50001,'object_id'=>1,'place_id'=>50003]);
+$request = testMediaRequest('only', [], 'Browse', 'places'); $request->userID = 77;
+$result = new SearchResult('ca_places', [50004,50000,50001]);
+tadlFilterMediaResult($request, $result);
+testAssert($result->getPrimaryKeyValues() === [50000,50001], 'Parent places must qualify through descendant media without crossing hierarchy boundaries.');
+$GLOBALS['mediaACL'] = ['ca_places'=>true];
+$GLOBALS['mediaACLBlocked'][78] = ['ca_places'=>[50001]];
+$request->userID = 78;
+testAssert(tadlPlaceMediaEligibleIDs($request, [50000,50001]) === [], 'Denied place children and public descendants under private parents must not qualify their ancestors.');
+$GLOBALS['mediaACL'] = [];
+$request = testMediaRequest('all', [], 'Browse', 'places');
+$result = new SearchResult('ca_places', [50004,50000]); $before = count(Db::$queries);
+tadlFilterMediaResult($request, $result);
+testAssert($result->getPrimaryKeyValues() === [50004,50000] && count(Db::$queries) === $before, 'All-items place browsing must stay unfiltered and avoid eligibility queries.');
 
 echo json_encode(['status' => 'passed', 'assertions' => $GLOBALS['assertions'], 'sql_queries' => count(Db::$queries), 'database' => 'SQLite in memory with actual helper SQL', 'result_adapter' => 'synthetic SearchResult boundary', 'records' => 'synthetic only'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;

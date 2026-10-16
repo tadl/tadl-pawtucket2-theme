@@ -60,27 +60,30 @@ function tadlReadableMediaRows($request, array $rows, array $access) {
 }
 
 /** Scalar hierarchy metadata only; reject branches below unreadable ancestors. */
-function tadlReadableCollectionBranches($request, array $roots, array $access) {
-	$roots = tadlReadableIDs($request, 'ca_collections', $roots, $access, 'ca_objects');
+function tadlReadableHierarchyBranches($request, $table, array $roots, array $access) {
+	$fields = ['ca_collections' => ['collection_id', 'hier_collection_id'], 'ca_places' => ['place_id', 'hierarchy_id']][$table] ?? null;
+	if (!$fields) { return []; }
+	[$key, $hierarchy] = $fields;
+	$roots = tadlReadableIDs($request, $table, $roots, $access, 'ca_objects');
 	$branches = [];
 	if (!$roots) { return []; }
 	foreach ($roots as $id) { $branches[$id][$id] = true; }
-	if (caGetBundleAccessLevel('ca_collections', 'hierarchy') < __CA_BUNDLE_ACCESS_READONLY__) { return $branches; }
-	$db = Datamodel::getInstanceByTableName('ca_collections', false)->getDb();
+	if (caGetBundleAccessLevel($table, 'hierarchy') < __CA_BUNDLE_ACCESS_READONLY__) { return $branches; }
+	$db = Datamodel::getInstanceByTableName($table, false)->getDb();
 	foreach (array_chunk($roots, 500) as $chunk) {
-		$result = $db->query('SELECT DISTINCT p.collection_id root_id, c.collection_id, c.parent_id
-			FROM ca_collections p INNER JOIN ca_collections c ON c.collection_id = p.collection_id OR (
-				p.hier_collection_id > 0 AND c.hier_collection_id = p.hier_collection_id
+		$result = $db->query("SELECT DISTINCT p.{$key} root_id, c.{$key}, c.parent_id
+			FROM {$table} p INNER JOIN {$table} c ON c.{$key} = p.{$key} OR (
+				p.{$hierarchy} > 0 AND c.{$hierarchy} = p.{$hierarchy}
 				AND p.hier_left < p.hier_right AND c.hier_left < c.hier_right
 				AND c.hier_left >= p.hier_left AND c.hier_right <= p.hier_right)
-			WHERE p.collection_id IN (?)', [$chunk]);
-		if (!$result) { throw new RuntimeException('Unable to check collection branches.'); }
+			WHERE p.{$key} IN (?)", [$chunk]);
+		if (!$result) { throw new RuntimeException('Unable to check hierarchy branches.'); }
 		$trees = []; $ids = [];
 		while ($result->nextRow()) {
-			$id = (int)$result->get('collection_id'); $ids[$id] = $id;
+			$id = (int)$result->get($key); $ids[$id] = $id;
 			$trees[(int)$result->get('root_id')][$id] = (int)$result->get('parent_id');
 		}
-		$allowed = array_fill_keys(tadlReadableIDs($request, 'ca_collections', array_values($ids), $access), true);
+		$allowed = array_fill_keys(tadlReadableIDs($request, $table, array_values($ids), $access), true);
 		foreach ($trees as $root => $parents) {
 			foreach ($parents as $id => $parent) {
 				$path = []; $cursor = $id;
@@ -92,4 +95,8 @@ function tadlReadableCollectionBranches($request, array $roots, array $access) {
 		}
 	}
 	return $branches;
+}
+
+function tadlReadableCollectionBranches($request, array $roots, array $access) {
+	return tadlReadableHierarchyBranches($request, 'ca_collections', $roots, $access);
 }

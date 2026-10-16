@@ -444,7 +444,8 @@ dispatcher verification is documented in `docs/FINDING_AIDS.md`.
   Previous/Next result context. Native facet counts are suppressed on these browses
   in media-only mode. All items mode remains unfiltered.
   Families additionally use the permitted directly related people/organization
-  scope described above; other authority browse eligibility remains direct.
+  scope described above. Places qualify through readable descendants as well as
+  direct relationships; People, Organizations and Events remain direct.
 - Preserve native record access and ACL filtering. This preference is not
   authorization, and direct object/collection detail URLs remain accessible.
   Authority Search and MultiSearch routes retain native behavior; this
@@ -953,6 +954,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/media_preferences_test.php` | Eligibility SQL, lazy collection/authority descriptor fetching, related-object access/deletion/ACL/bundle checks, People/Organizations/Places/Events Tiles/List counts/paging/detail context, table cache isolation, route scope, invalid-media exhaustion, filtered result adapter and result rendering |
 | `tests/browse_navigation_test.php` | Configured logical browse defaults, actual single/multiple-target menu and detail Browse links, native Prev/Next preservation, Subjects entry reset, configurable directions and optional native configuration parsing |
 | `tests/family_contents_test.php` | Actual SQLite family/member scopes, bidirectional/subtype/deduplicated relationships, one-hop limits, root/member access/type/source/bundle/ACL checks, batched wide families, endpoint validation/current scope and native search delegation |
+| `tests/place_contents_test.php` | Actual SQLite descendant scopes, hierarchy isolation, private/deleted/ACL/type ancestor pruning, bounded queries, controller input/paging and native search delegation |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |
 | `tests/collection_detail_scripts_test.php` | Collection detail loader JavaScript, empty/populated field/relationship headings, long-field controls and narrative/facts column placement |
 | `tests/collection_contents_test.php` | Actual helper/controller, SQLite hierarchy/membership queries, deep/wide branches, unique descendant rollup counts, media preference, scope/access/deletion/ACL/bundle pruning, cycles, duplicate memberships, bounded queries and canonical native search delegation |
@@ -1143,3 +1145,25 @@ passed locally. Browser QA with the shared component and captured public shell
 verified phone/desktop layout, visible keyboard focus, no horizontal overflow and
 an actual synthetic search submit; this does not bootstrap a live application.
 Deployment remains a separate operator step with no cache purge or Apache reload.
+
+## 2026-10-16 archivist feedback: entity addresses and place descendants
+
+Entity addresses now use the structured field described above. Place details use
+`PlaceContents/Objects/place_id/ID` for both inline related items and the full
+results link. Each GET recomputes a numeric place search for the selected place
+and its complete readable branch, with native object sorting, deduplication,
+access, exports and media filtering retained. Paging/view/sort links retain the
+root place and headings name it rather than displaying the compound query.
+
+`tadlReadableHierarchyBranches()` shares the existing batched collection branch
+boundary with places, using the native hierarchy ID and nested-set bounds plus
+parent-chain validation. Unreadable/deleted/private ancestors prune their whole
+branch; a denied hierarchy bundle retains direct items only. Place media-only
+browsing uses these same scopes before counts, paging and detail navigation.
+No relationships, search indexes or production records are changed. Ordinary
+keyword search keeps the native index behavior. The root robots source adds
+`PlaceContents` exclusions; installing that root file remains a separate step.
+
+Live examples requested: an entity whose public address is missing and a gallery
+whose image link fails. The user will obtain both from the archivists. Keep this
+follow-up open for post-deployment confirmation even after synthetic checks pass.

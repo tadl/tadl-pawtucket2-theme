@@ -2,7 +2,7 @@
 /** Keep dynamic results and account pages out of search indexes, not public records. */
 function tadlCrawlerPageDirectives($request) {
 	$controller = strtolower((string)$request->getController());
-	if (in_array($controller, ['search', 'multisearch', 'browse', 'collectioncontents', 'familycontents'], true)) { return 'noindex, follow'; }
+	if (in_array($controller, ['search', 'multisearch', 'browse', 'collectioncontents', 'familycontents', 'placecontents'], true)) { return 'noindex, follow'; }
 	if (in_array($controller, ['loginreg', 'lightbox', 'accountprofile', 'mediapreference'], true)) { return 'noindex, nofollow'; }
 	return '';
 }

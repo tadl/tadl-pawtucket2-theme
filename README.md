@@ -4,7 +4,7 @@ Standalone source repository for the `tadl` Pawtucket2 theme used for TADL local
 
 For Codex or a new workstation, start with [AGENTS.md](AGENTS.md) and the
 [current handoff](docs/CODEX_HANDOFF.md). The handoff explains the source map,
-recent changes, design decisions and all thirty-three standalone regression suites.
+recent changes, design decisions and all thirty-four standalone regression suites.
 It uses relative paths and does not require an application database for those tests.
 
 Feature guides:
@@ -185,6 +185,9 @@ related people and organizations. Family details show that combined object list,
 deduplicated through native search. Family browsing defaults to Tiles and includes
 empty families in All items mode. Unknown entity types omit an invalid Browse
 destination rather than linking to `Browse/Index`.
+Place details include objects linked to the place or any readable descendant,
+without requiring duplicate catalogue relationships. Media-only place browsing
+uses the same descendant scope; private/deleted branches stay excluded.
 Filtering precedes counts, paging and detail navigation, preserves native sort
 order, and uses batched relationship
 queries with shared media decoding. Media attached directly to an authority
