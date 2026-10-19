@@ -21,6 +21,8 @@ the PDF lists directly linked counts for each node and includes records without 
   and readable. Missing fields and punctuation-only dates have no heading.
 - Complete readable collection hierarchy, with each subcollection indented under
   its parent and its name, readable identifier and directly linked object count.
+  Each series, subseries, box, folder or other descendant includes its populated,
+  readable description beneath that heading and count. Empty descriptions are omitted.
   Every descendant is listed, including empty subcollections. Siblings sort
   naturally by name (for example, Drawer 2 before Drawer 10); each whole branch
   stays together. Counts can overlap when an object belongs to multiple
@@ -42,6 +44,16 @@ mapping has a label and a list of candidate native bundles; the first populated,
 readable bundle wins. Missing elements are skipped without probing nonexistent
 metadata. Mappings allow field paths within the subject table, not arbitrary
 display templates or PHP.
+
+The `collection_fields.description.bundles` mapping also supplies descriptions
+for every readable descendant, regardless of its collection type or depth. The
+selected collection's description appears once in About this collection, including
+when downloading a finding aid from a series or folder. Descendant descriptions
+are plain text with paragraph/line breaks preserved, using the same HTML cleanup,
+escaping and bundle permissions as the main description. Restricted description
+bundles are not fetched. Removing the mapping omits descriptions at every level.
+Long descriptions flow across PDF pages, with the heading kept with the start of
+its description instead of forcing the entire entry onto one page.
 
 The 2026-10-08 change replaces the object inventory with counts. The former
 `inventory_fields` and `include_storage_locations` configuration entries are no
@@ -98,7 +110,10 @@ limit; infrastructure timeouts still apply.
 
 Run `php tests/finding_aid_test.php` for synthetic controller, access, hierarchy,
 duplicate-membership counts, collection fields, omission of individual object
-metadata/entries, escaping and renderer boundaries. It includes a 4,105-object
+metadata/entries, descendant descriptions, escaping and renderer boundaries.
+Description cases cover nested levels, empty/restricted fields, custom mappings,
+selected-subcollection exports and avoiding duplicate root descriptions.
+It includes a 4,105-object
 collection to catch default-cap regressions, plus empty and single-item totals,
 nested/empty/200-sibling hierarchies and distinct branches with identical names.
 
@@ -137,6 +152,13 @@ nodes through three descendant levels, long/non-ASCII names, 56 unique items,
 overlapping 55-item collection counts and no individual object entries.
 Production field applicability, data and performance
 remain deployment-time checks. Source commits do not deploy.
+
+The descendant-description revision passed the full standalone suite, changed PHP
+syntax checks and real Dompdf/native dispatcher checks. Its 11-page synthetic PDF
+contains 36 hierarchy nodes and a description with 65 paragraphs spanning several
+pages. Poppler rendering and text extraction confirmed readable layout, all full
+paragraphs and folder descriptions, unchanged counts, no duplicate root description
+and no restricted description text. The sample remains outside this repository.
 
 ## Questions for the archives team
 

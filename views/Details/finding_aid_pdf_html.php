@@ -15,8 +15,11 @@ p { margin: 0 0 8pt; }
 .note { color: #555; font-size: 8pt; }
 .field { margin-bottom: 8pt; }
 .label { font-weight: bold; }
-.collection { margin-bottom: 7pt; padding-left: 9pt; border-left: 1pt solid #ddd; word-wrap: break-word; page-break-inside: avoid; }
+.collection { margin-bottom: 10pt; padding-left: 9pt; border-left: 1pt solid #ddd; word-wrap: break-word; }
+.collection-heading { page-break-inside: avoid; }
+.collection-heading.with-description { page-break-after: avoid; }
 .collection-name { font-weight: bold; }
+.collection-description { margin: 4pt 0 0; orphans: 3; widows: 3; }
 </style></head><body>
 <p class="brand">Traverse Area District Library | Local History Collection</p>
 <p class="kicker">Finding aid</p>
@@ -32,8 +35,11 @@ p { margin: 0 0 8pt; }
 <h2>Collection organization</h2>
 <?php foreach ($aid['collections'] as $node) { ?>
 <div class="collection" style="margin-left: <?= (int)$node['depth'] * 14; ?>pt;">
+<div class="collection-heading<?= $node['description'] !== '' ? ' with-description' : ''; ?>">
 <span class="collection-name"><?= $escape($node['title']); ?></span><?php if ($node['identifier'] !== '') { ?> <span class="note">[<?= $escape($node['identifier']); ?>]</span><?php } ?>
 <br><span class="note"><?= (int)$node['count']; ?> directly linked <?= $node['count'] === 1 ? 'item' : 'items'; ?></span>
+</div>
+<?php if ($node['description'] !== '') { ?><p class="collection-description"><?= nl2br($escape($node['description'])); ?></p><?php } ?>
 </div>
 <?php } } ?>
 <h2>Collection contents</h2>

@@ -50,9 +50,10 @@ function tadlFindingAidData($request, $collection, $config) {
 	if (!tadlFindingAidReadable($request, $collection)) { return null; }
 	$root_id = (int)$collection->getPrimaryKey();
 	$title = tadlFindingAidValue($request, $collection, ['ca_collections.preferred_labels.name']) ?: _t('Collection');
+	$fields = $config->getAssoc('collection_fields');
 	$data = [
 		'title' => $title, 'identifier' => tadlFindingAidValue($request, $collection, ['ca_collections.idno']),
-		'fields' => tadlFindingAidFields($request, $collection, $config->getAssoc('collection_fields')),
+		'fields' => tadlFindingAidFields($request, $collection, $fields),
 		'collections' => [], 'object_count' => 0, 'generated' => gmdate('Y-m-d H:i').' UTC'
 	];
 	$pending = [[$root_id, null, 0]]; $visited = []; $memberships = []; $children = [];
@@ -65,6 +66,8 @@ function tadlFindingAidData($request, $collection, $config) {
 		$data['collections'][$id] = [
 			'title' => $id === $root_id ? $title : (tadlFindingAidValue($request, $node, ['ca_collections.preferred_labels.name']) ?: _t('Collection')),
 			'identifier' => $id === $root_id ? $data['identifier'] : tadlFindingAidValue($request, $node, ['ca_collections.idno']),
+			// The root description is already included in About this collection.
+			'description' => $id === $root_id ? '' : tadlFindingAidValue($request, $node, $fields['description']['bundles'] ?? []),
 			'parent_id' => $parent_id, 'depth' => $depth, 'count' => 0
 		];
 		if ($parent_id !== null) { $children[$parent_id][] = $id; }

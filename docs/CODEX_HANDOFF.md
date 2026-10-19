@@ -389,6 +389,15 @@ are omitted; object metadata/storage locations are no longer fetched or configur
 Shared objects count once in the overall total but in each directly linked
 collection's count. The organization section lists every readable descendant,
 including empty subcollections, with names/identifiers indented by hierarchy level.
+As of 2026-10-19, each descendant also includes its readable description from
+`collection_fields.description.bundles`. This covers every collection type/depth;
+empty or restricted descriptions are omitted without fetching restricted bundles.
+The selected root description remains in About this collection only. Description
+text uses existing HTML cleanup and escaping, preserving paragraph/line breaks.
+PDF entries can split across pages while keeping headings with their descriptions.
+The finding-aid suite covers nested descriptions, custom/absent mappings, access,
+escaping and selected subcollections; its optional real PDF sample includes a
+description longer than one page.
 Siblings sort naturally by name; each parent's complete branch stays together,
 including when two siblings have identical names. A selected subcollection starts
 at depth zero and includes its own descendants, not its parent or siblings.

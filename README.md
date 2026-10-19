@@ -15,7 +15,7 @@ This repository contains the complete `tadl` theme. Install it in an existing Pa
 | Search | Header, advanced, and query-builder searches use GET so links and browser Back work without a form-resubmission prompt. Detail Prev / Next follows the result order. |
 | Media and downloads | Native image, PDF, audio, and video viewers; original and generated image download choices; accessible secondary-image thumbnails when the primary representation is unavailable. Available formats depend on Pawtucket's media processing configuration. |
 | Document text | A copyable text section for accessible PDFs, using extracted text first and imported transcription fields as fallbacks. |
-| Finding aids | Download a collection PDF containing metadata, its complete readable hierarchy, and object counts. These are collection summaries, rather than item-by-item inventories. |
+| Finding aids | Download a collection PDF containing metadata, its complete readable hierarchy with descriptions at every level, and object counts. These are collection summaries, rather than item-by-item inventories. |
 | Researcher accounts | Native login, profiles, password reset, lightboxes, and sharing, plus a staff-only shortcut to the object in Providence. Anonymous visitors see no login link. |
 | Editable FAQ | Publish categorized questions and rich-text answers through Providence Site Pages, without redeploying the theme for content changes. |
 | Thumbnail focus | Filled image crops respect Providence's **Set center** setting. Optional local face detection supplies suggestions where staff have not chosen a center. |
@@ -116,7 +116,7 @@ For automatic suggestions, follow [thumbnail focus](docs/THUMBNAIL_FOCUS.md) to 
 
 Document text requires at least one accessible attached PDF. The theme prefers populated `ca_object_representations.media_content`, then `ca_objects.transcription`, then `ca_objects.pdf_text`. It displays existing text; it does not run OCR, import transcriptions, or configure your search index. A private paired PDF does not expose text on a TIFF-only public object. See [document text](docs/DOCUMENT_TEXT.md).
 
-Finding aids use Pawtucket's supplied Dompdf dependency and the mappings in `conf/finding_aid.conf`. They list the readable collection hierarchy and counts, including records without media, regardless of the visitor's media preference. See [finding aids](docs/FINDING_AIDS.md) for count semantics and export requirements.
+Finding aids use Pawtucket's supplied Dompdf dependency and the mappings in `conf/finding_aid.conf`. They list the readable collection hierarchy, each descendant's description, and counts, including records without media, regardless of the visitor's media preference. See [finding aids](docs/FINDING_AIDS.md) for count semantics and export requirements.
 
 ### Crawler policy
 

@@ -173,15 +173,15 @@ $GLOBALS['aidRows'] = [
 			'children' => [7, 8, 10, 11, 12], 'related' => ['ca_objects' => [101, 101, 102, 103, 104, 105, 106, 107, 108, 109]],
 			'values' => ['ca_collections.description' => '<p>A synthetic collection &amp; its history.</p>', 'ca_collections.date.dates_value' => '; ', 'ca_collections.extent' => 'Two boxes', 'ca_collections.rights.rightsText' => 'Synthetic rights statement']
 		]),
-		7 => aidRow(7, 'ca_collections', 'Series A', 'SYN.7', ['children' => [14, 13], 'related' => ['ca_objects' => [101, 103, 111]]]),
-		8 => aidRow(8, 'ca_collections', 'Private branch', '', ['access' => 0, 'children' => [9]]),
-		9 => aidRow(9, 'ca_collections', 'Behind private branch', '', ['related' => ['ca_objects' => [110]]]),
+		7 => aidRow(7, 'ca_collections', 'Series A', 'SYN.7', ['children' => [14, 13], 'related' => ['ca_objects' => [101, 103, 111]], 'values' => ['ca_collections.description' => '<p>Series correspondence &amp; diaries.</p><p>Includes synthetic administrative records.</p>']]),
+		8 => aidRow(8, 'ca_collections', 'Private branch', '', ['access' => 0, 'children' => [9], 'values' => ['ca_collections.description' => 'PRIVATE branch description']]),
+		9 => aidRow(9, 'ca_collections', 'Behind private branch', '', ['related' => ['ca_objects' => [110]], 'values' => ['ca_collections.description' => 'PRIVATE descendant description']]),
 		10 => aidRow(10, 'ca_collections', 'Denied branch', '', ['acl' => true, 'acl_level' => 0]),
 		11 => aidRow(11, 'ca_collections', 'Deleted branch', '', ['deleted' => 1]),
-		12 => aidRow(12, 'ca_collections', 'Empty series', '', ['children' => [42]]),
-		13 => aidRow(13, 'ca_collections', 'Drawer 2', 'SYN.D2', ['children' => [15]]),
-		14 => aidRow(14, 'ca_collections', 'Drawer 10', 'SYN.D10'),
-		15 => aidRow(15, 'ca_collections', 'Folder 1', 'SYN.F1')
+		12 => aidRow(12, 'ca_collections', 'Empty series', '', ['children' => [42], 'values' => ['ca_collections.description' => '<p>&nbsp;</p>']]),
+		13 => aidRow(13, 'ca_collections', 'Drawer 2', 'SYN.D2', ['children' => [15], 'values' => ['ca_collections.description' => 'Drawer records.']]),
+		14 => aidRow(14, 'ca_collections', 'Drawer 10', 'SYN.D10', ['denied' => ['description'], 'values' => ['ca_collections.description' => 'PRIVATE restricted description']]),
+		15 => aidRow(15, 'ca_collections', 'Folder 1', 'SYN.F1', ['values' => ['ca_collections.description' => '<p>Folder description with &lt;angle brackets&gt;.</p>']])
 	],
 	'ca_objects' => [
 		101 => aidRow(101, 'ca_objects', 'Český časopis, 1930', 'SYN.10', ['home_location_id' => 50, 'related' => ['ca_storage_locations' => [51]], 'values' => ['ca_objects.date.dates_value' => '1930', 'ca_objects.legacy_accession_number' => 'OLD.10']]),
@@ -206,6 +206,11 @@ aidCheck(array_keys($data['collections']) === [42, 12, 7, 13, 15, 14], 'All read
 aidCheck($data['collections'][42]['count'] === 4 && $data['collections'][7]['count'] === 3 && $data['collections'][12]['count'] === 0, 'Collection counts must count directly linked readable unique objects.');
 aidCheck(array_column($data['collections'], 'depth') === [0, 1, 1, 2, 3, 2], 'Hierarchy depth must preserve each generation, including empty subcollections.');
 aidCheck($data['collections'][15]['parent_id'] === 13 && $data['collections'][15]['identifier'] === 'SYN.F1', 'Nested collection parent and readable identifier must be retained.');
+aidCheck($data['collections'][7]['description'] === "Series correspondence & diaries.\nIncludes synthetic administrative records." && $data['collections'][13]['description'] === 'Drawer records.' && $data['collections'][15]['description'] === 'Folder description with <angle brackets>.', 'Descriptions must belong to the correct descendant at every hierarchy level, retaining paragraph breaks.');
+aidCheck($data['collections'][42]['description'] === '' && $data['fields']['description']['value'] === 'A synthetic collection & its history.', 'The selected root description belongs in About this collection, without duplication in the hierarchy.');
+aidCheck($data['collections'][12]['description'] === '' && $data['collections'][14]['description'] === '', 'Empty HTML and restricted description bundles must not produce descriptions.');
+aidCheck(!in_array(['ca_collections', 14, '^ca_collections.description'], $GLOBALS['aidReads'], true), 'Restricted description metadata must not be fetched.');
+aidCheck(!array_intersect([8, 9, 10, 11], array_column($GLOBALS['aidReads'], 1)), 'Unreadable branches must not supply description metadata.');
 $object_loads = array_column(array_filter($GLOBALS['aidLoads'], static fn($load) => $load[0] === 'ca_objects'), 1);
 aidCheck($object_loads === [] && count($GLOBALS['aidBatches']) === 1, 'Count-only exports must check object visibility in batches without loading object models.');
 aidCheck(array_unique(array_column($GLOBALS['aidReads'], 0)) === ['ca_collections'], 'Counts must not fetch per-object metadata.');
@@ -218,6 +223,8 @@ aidCheck(!str_contains($html, '>Dates:</span><br>') && str_contains($html, 'SYN.
 aidCheck(str_contains($html, '<h2>Collection contents</h2>') && str_contains($html, '<p>5 items.') && str_contains($html, '4 directly linked items') && str_contains($html, '3 directly linked items'), 'PDF must show unique total and directly linked collection counts.');
 aidCheck(str_contains($html, 'Directly linked counts above can overlap.'), 'PDF must distinguish the unique total from overlapping collection counts.');
 aidCheck(substr_count($html, 'class="collection"') === 6 && str_contains($html, 'margin-left: 42pt;') && str_contains($html, '[SYN.F1]'), 'PDF must list every descendant with nested indentation and collection identifiers.');
+aidCheck(substr_count($html, 'class="collection-description"') === 3 && str_contains($html, "Series correspondence &amp; diaries.<br />\nIncludes synthetic administrative records.") && str_contains($html, 'Folder description with &lt;angle brackets&gt;.'), 'PDF must render only populated readable descriptions as escaped text with line breaks.');
+aidCheck(!str_contains($html, 'PRIVATE') && substr_count($html, 'A synthetic collection &amp; its history.') === 1, 'Private descriptions and duplicate root descriptions must not appear in the PDF.');
 aidCheck(!str_contains($html, 'Synthetic Archives Collection &gt;'), 'PDF must show nested collection names rather than repeated flattened paths.');
 foreach (['Object inventory', 'class="entry"', 'Český časopis, 1930', 'Object without media', 'Child-only object', 'SYN.10', 'OLD.10', 'Recorded storage location'] as $entry) {
 	aidCheck(!str_contains($html, $entry), 'PDF must not contain individual object entries: '.$entry);
@@ -226,6 +233,7 @@ $unsafe = $data; $unsafe['title'] = '<img src="file:///private/example" onerror=
 $unsafe['fields']['unsafe'] = ['label' => '<script>bad</script>', 'value' => '<img src="https://example.com">'];
 $unsafe['collections'][15]['title'] = '<script>bad</script>';
 $unsafe['collections'][15]['identifier'] = '<img src="file:///private/example">';
+$unsafe['collections'][15]['description'] = '<img src="https://example.org/unsafe" onerror="bad"> & description';
 $view->setVar('finding_aid', $unsafe); $unsafe_html = $view->render('Details/finding_aid_pdf_html.php');
 aidCheck(!str_contains($unsafe_html, '<img') && !str_contains($unsafe_html, '<script>'), 'PDF must escape all catalog fields.');
 $empty = $data; $empty['object_count'] = 0; $empty['collections'] = [42 => array_replace($data['collections'][42], ['count' => 0])]; $empty['fields'] = [];
@@ -237,6 +245,17 @@ aidCheck(str_contains($view->render('Details/finding_aid_pdf_html.php'), '<p>1 i
 $series = new AidModel('ca_collections'); $series->load(7);
 $series_data = tadlFindingAidData($request, $series, $GLOBALS['aidConfig']);
 aidCheck($series_data['object_count'] === 3 && array_keys($series_data['collections']) === [7, 13, 15, 14] && $series_data['collections'][15]['depth'] === 2, 'Selected subcollection must export its descendants relative to itself, without its parent or siblings.');
+$view->setVar('finding_aid', $series_data);
+aidCheck($series_data['collections'][7]['description'] === '' && substr_count($view->render('Details/finding_aid_pdf_html.php'), 'Series correspondence &amp; diaries.') === 1, 'A selected series must show its own description once in About this collection.');
+$mapped_config = clone $GLOBALS['aidConfig'];
+$mapped_config->values['collection_fields']['description']['bundles'] = ['ca_collections.extent'];
+$GLOBALS['aidRows']['ca_collections'][7]['values']['ca_collections.extent'] = 'Remapped series summary';
+$mapped_data = tadlFindingAidData($request, $collection, $mapped_config);
+aidCheck($mapped_data['collections'][7]['description'] === 'Remapped series summary' && $mapped_data['fields']['description']['value'] === 'Two boxes', 'Descendant descriptions must reuse the configured root description mapping.');
+unset($GLOBALS['aidRows']['ca_collections'][7]['values']['ca_collections.extent']);
+unset($mapped_config->values['collection_fields']['description']);
+$unmapped_data = tadlFindingAidData($request, $collection, $mapped_config);
+aidCheck(array_unique(array_column($unmapped_data['collections'], 'description')) === [''], 'Removing the description mapping must omit descendant descriptions too.');
 // Equal sibling names must not cause their different descendants to interleave.
 $duplicates = clone $collection; $duplicates->row['children'] = [17, 16];
 $GLOBALS['aidRows']['ca_collections'][16] = aidRow(16, 'ca_collections', 'Same series', 'SYN.A', ['children' => [18]]);
@@ -328,6 +347,9 @@ if ($output = getenv('TADL_TEST_FINDING_AID_PDF')) {
 	for ($i = 1; $i <= 30; $i++) {
 		$id = 60000 + $i;
 		$GLOBALS['aidRows']['ca_collections'][$id] = aidRow($id, 'ca_collections', 'Folder '.$i.': Český correspondence, photographs and administrative records from the synthetic collection', 'SYN.F'.str_pad((string)$i, 2, '0', STR_PAD_LEFT));
+		$GLOBALS['aidRows']['ca_collections'][$id]['values']['ca_collections.description'] = $i === 1
+			? str_repeat('<p>Extended folder description: synthetic correspondence documents research, community events, preservation decisions and administrative work. This paragraph must wrap normally and continue across pages without clipping or losing text.</p>', 65).'<p>End of extended folder description.</p>'
+			: '<p>Synthetic folder '.$i.' contains correspondence and administrative records, with photographs documenting community activities.</p>';
 		$GLOBALS['aidRows']['ca_collections'][13]['children'][] = $id;
 	}
 	$sample_root = new AidModel('ca_collections'); $sample_root->load(42);
