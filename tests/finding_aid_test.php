@@ -209,7 +209,15 @@ aidCheck(!array_intersect(['ca_objects', 'ca_object_representations', 'ca_storag
 aidCheck(tadlFindingAidText('<script>secret</script><h3>Heading</h3><p>Safe &amp; readable</p>') === "Heading\nSafe & readable", 'HTML must become readable plain text.');
 aidCheck(tadlFindingAidValue($request, $collection, ['ca_objects.idno', 'ca_collections.missing', 'ca_collections.description<script>']) === '', 'Wrong-table, missing and unsafe field mappings must be rejected.');
 $view = new AidView(); $view->setVar('finding_aid', $data); $html = $view->render('Details/finding_aid_pdf_html.php');
-foreach (['PRIVATE', 'directly linked', 'object_count', 'No accessible object records', '0 items', '4105', 'Missing field:'] as $excluded) { aidCheck(!str_contains($html, $excluded), 'Unwanted finding-aid output: '.$excluded); }
+foreach (['PRIVATE', 'directly linked', 'object_count', 'No accessible object records', '0 items', '4105', 'Missing field:', 'Level of description:'] as $excluded) { aidCheck(!str_contains($html, $excluded), 'Unwanted finding-aid output: '.$excluded); }
+foreach (['Synthetic Archives Collection' => 'Collection', 'Series A' => 'Series', 'Drawer 2' => 'Container', 'Folder 1' => 'Folder'] as $title => $level) {
+	aidCheck(str_contains($html, $title.' <span class="collection-level">('.$level.')</span>'), 'Recorded level must follow its own unit title in parentheses.');
+}
+aidCheck(str_contains($html, '.collection-level { font-weight: normal; }') && str_contains($html, 'Uncatalogued series</h3>'), 'Level suffixes must use normal weight and missing levels must not produce empty parentheses.');
+$level_only = $data; $level_only['fields'] = ['level' => $data['fields']['level']];
+$level_only['collections'][15]['fields'] = ['level' => $data['collections'][15]['fields']['level']];
+$view->setVar('finding_aid', $level_only); $level_only_html = $view->render('Details/finding_aid_pdf_html.php');
+aidCheck(!str_contains($level_only_html, 'About this collection') && str_contains($level_only_html, 'Folder 1 <span class="collection-level">(Folder)</span>'), 'A unit with only a level must show its title suffix without an empty metadata section.');
 aidCheck(str_contains($html, '80 newspaper clippings in one folder, 20 x 30 cm') && str_contains($html, 'Clippings concerning a fictional community garden.') && str_contains($html, 'Synthetic folder use conditions'), 'All relevant folder fields must be rendered even with no linked objects.');
 foreach (['ca_collections.provenance' => 'Folder provenance.', 'ca_collections.rights.copyrightStatement' => 'Folder copyright.', 'ca_collections.external_link.url_line2.url_entry' => 'https://example.org/related-materials'] as $bundle => $value) {
 	$folder = new AidModel('ca_collections'); $folder->load(15); $folder->row['values'][$bundle] = $value;
@@ -220,9 +228,11 @@ aidCheck(substr_count($html, 'class="collection"') === 5 && str_contains($html, 
 aidCheck(substr_count($html, 'A synthetic collection &amp; its history.') === 1 && str_contains($html, 'Folder description with &lt;angle brackets&gt;.'), 'Metadata must be escaped and root prose must not be duplicated.');
 $unsafe = $data; $unsafe['title'] = '<img src="file:///private/example" onerror="bad"> & title';
 $unsafe['fields']['unsafe'] = ['label' => '<script>bad</script>', 'value' => '<img src="https://example.org">'];
+$unsafe['fields']['level']['value'] = '<img src="file:///private/example">';
 $unsafe['collections'][15]['title'] = '<script>bad</script>';
 $unsafe['collections'][15]['identifier'] = '<img src="file:///private/example">';
 $unsafe['collections'][15]['fields']['description']['value'] = '<img src="https://example.org/unsafe" onerror="bad">';
+$unsafe['collections'][15]['fields']['level']['value'] = '<script>bad</script>';
 $view->setVar('finding_aid', $unsafe); $unsafe_html = $view->render('Details/finding_aid_pdf_html.php');
 aidCheck(!str_contains($unsafe_html, '<img') && !str_contains($unsafe_html, '<script>'), 'Every metadata label, value, identifier and title must be escaped.');
 $single = clone $collection; $single->row['children'] = []; $single_data = tadlFindingAidData($request, $single, $GLOBALS['aidConfig']);

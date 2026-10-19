@@ -19,6 +19,10 @@ results and are separate from the finding aid.
 - Populated, readable metadata once in the opening summary.
 - Every readable descendant under its actual parent, with title, public
   identifier, recorded archival level and all configured populated fields.
+  The level follows the title in normal-weight parentheses, such as
+  **Box 1** (Container) and **Folder 1** (Folder), including for the selected root.
+  It is not repeated as a separate “Level of description” field. Missing or
+  restricted levels have no suffix.
 - Readable body text, paragraph and line breaks, and page numbers. Editor HTML
   becomes escaped plain text; scripts, styles and executable markup are excluded.
 - Recorded hierarchy rank first, natural title order for equal ranks, then ID

@@ -386,6 +386,9 @@ scope/content, language, provenance, rights and other configured public metadata
 Missing fields are omitted. A folder without individually catalogued objects can
 still describe its complete physical contents. Root metadata appears once in the
 overview; descendants retain their actual parent and relative depth.
+The recorded level follows each unit's title in normal-weight parentheses,
+including the selected root, rather than appearing as a separate metadata row.
+Missing/restricted levels have no suffix or empty parentheses.
 
 The export no longer counts or queries linked objects. Overall totals, directly
 linked item counts and empty-object messages are removed. Collection-page browser
