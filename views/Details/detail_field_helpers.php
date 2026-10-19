@@ -52,6 +52,7 @@ if (!function_exists('tadlDetailField')) {
 		if (!$item || !trim((string)$template)) { return ''; }
 
 		$template_options = ['convertCodesToDisplayText' => true];
+		if (isset($options['dontReturnDefault'])) { $template_options['dontReturnDefault'] = (bool)$options['dontReturnDefault']; }
 		if (!($options['skipAccessCheck'] ?? false)) {
 			$template_options['checkAccess'] = caGetUserAccessValues($request);
 		}

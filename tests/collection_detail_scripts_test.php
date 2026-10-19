@@ -49,9 +49,9 @@ class DetailScriptConfig {
 }
 class DetailScriptItem {
 	private array $values;
-	public function __construct($objectCount, private array $templates = [], private int $id = 42) {
+	public function __construct($objectCount, private array $templates = [], private int $id = 42, private string $type = 'collection') {
 		$this->values = array(
-			'collection_id' => $id, 'access' => 1, 'deleted' => 0,
+			'collection_id' => $id, 'type_id' => $type, 'access' => 1, 'deleted' => 0,
 			'entity_id' => 42,
 			'place_id' => 42,
 			'occurrence_id' => 42,
@@ -60,12 +60,22 @@ class DetailScriptItem {
 		);
 	}
 	public function getPrimaryKey() { return $this->id; }
+	public function hasElement($code) { return !in_array($code, $GLOBALS['detailScriptMissingElements'] ?? [], true); }
 	public function load($id) { $this->id = (int)$id; return true; }
-	public function isReadable($request, $bundle = null) { return true; }
+	public function isReadable($request, $bundle = null) { return !in_array($bundle, $GLOBALS['detailScriptDeniedBundles'] ?? [], true); }
+	public function getAttributeDisplayValues($code, $id, $options) {
+		checkDetailScripts($code === 'external_link' && $id === $this->id && $options === ['checkAccess' => [1], 'convertCodesToDisplayText' => true], 'External links must read only the current unit with native access options.');
+		$GLOBALS['detailScriptExternalReads'][] = $id;
+		return $GLOBALS['detailScriptExternalLinks'] ?? [];
+	}
 	// The legacy template passes this result to array_shift() by reference. Keep
 	// that unrelated PHP notice outside this emitted-JavaScript regression.
 	public function &get($name, $options = array()) { return $this->values[$name]; }
 	public function getWithTemplate($template, $options = array()) {
+		$GLOBALS['detailScriptMetadataReads'][] = $template;
+		if (preg_match('/^\^ca_collections\.(description|description_source|collection_scope_content|provenance|date|extent_text|extent|rights)\b/', $template)) {
+			checkDetailScripts(($options['checkAccess'] ?? null) === [1] && ($options['dontReturnDefault'] ?? null) === true, 'Selected-unit metadata must retain native access options and never invent default values.');
+		}
 		checkDetailScripts(($options['convertCodesToDisplayText'] ?? null) === true, 'Detail fields lost native display conversion.');
 		foreach ($this->templates as $code => $value) {
 			if (str_contains($template, $code)) { return $value; }
@@ -78,7 +88,7 @@ class Datamodel {
 }
 class Db {
 	function query($sql, $params) {
-		checkDetailScripts(str_contains($sql, 'parent_id IN (?) AND access IN (?) AND deleted = 0') && $params === [[42], [1]], 'Hierarchy switch must inspect only accessible, undeleted direct children.');
+		checkDetailScripts(str_contains($sql, 'parent_id IN (?) AND access IN (?) AND deleted = 0') && $params === [[$GLOBALS['detailScriptExpectedCollection'] ?? 42], [1]], 'Hierarchy switch must inspect only accessible, undeleted direct children of the selected unit.');
 		return new class {
 			private bool $read = false;
 			function nextRow() { if ($this->read || !$GLOBALS['detailScriptHasChildren']) { return false; } $this->read = true; return true; }
@@ -89,9 +99,10 @@ class Db {
 class DetailScriptView {
 	public $request;
 	private array $values;
-	public function __construct($objectCount, array $templates = [], array $params = []) {
+	public function __construct($objectCount, array $templates = [], array $params = [], $id = 42, $type = 'collection') {
+		$GLOBALS['detailScriptExpectedCollection'] = $id;
 		$this->request = new DetailScriptRequest($params);
-		$this->values = array('item' => new DetailScriptItem($objectCount, $templates), 'comments' => array(), 'pdfEnabled' => true,
+		$this->values = array('item' => new DetailScriptItem($objectCount, $templates, $id, $type), 'comments' => array(), 'pdfEnabled' => true,
 			'previousLink' => '<a href="/synthetic/Detail/collections/41">Prev</a>',
 			'nextLink' => '<a href="/synthetic/Detail/collections/43">Next</a>',
 			'resultsLink' => '<a href="/synthetic/results">Back</a>');
@@ -166,6 +177,30 @@ $column_labels = static fn($class) => array_map(static fn($node) => $node->textC
 checkDetailScripts($column_labels('tadl-collection-fields') === ['Description', 'Source of description', 'Scope and content'], 'Center column must group the narrative fields together.');
 checkDetailScripts($column_labels('tadl-collection-facts') === ['Creators', 'Dates', 'Extent', 'Language', 'Vocabulary terms', 'Library of Congress subject headings', 'Rights', 'Copyright statement', 'Related places'], 'Right column must group collection facts and relationships without losing fields.');
 checkDetailScripts($xpath->query('//div[@class="tadl-collection-facts"]//a[@href="/synthetic/creator"]')->length === 1, 'Moving creators must preserve their native links.');
+// An archival unit's metadata does not depend on its level, object count or media.
+foreach (['series', 'container', 'folder', 'sub_sub_series'] as $offset => $type) {
+	$id = 70 + $offset;
+	$GLOBALS['detailScriptExternalLinks'] = [29 => [901 => ['url_source' => 'Synthetic guide & index', 'url_entry' => 'https://example.org/guide?x=1&y=2'], 902 => ['url_source' => '<script>not markup</script>', 'url_entry' => 'javascript:alert(1)'], 903 => ['url_source' => 'No URL', 'url_entry' => '']]];
+	$values = ['ca_collections.description' => 'Own '.$type.' description.', 'ca_collections.collection_scope_content' => 'Own '.$type.' scope.', 'ca_collections.extent_text' => '80 synthetic clippings; 20 x 30 cm', 'ca_collections.date.dates_value' => '1900-1910', 'ca_collections.language' => 'English', 'ca_collections.provenance' => $long_description, 'ca_collections.rights.rightsText' => 'Synthetic use conditions', 'ca_collections.internal_notes' => 'PRIVATE staff notes', 'ca_collections.mdpn_identifiers' => 'PRIVATE preservation identifiers'];
+	$html = (new DetailScriptView(0, $values, [], $id, $type))->render('ca_collections');
+	checkDetailScripts(str_contains($html, 'Own '.$type.' description.') && str_contains($html, 'Own '.$type.' scope.') && str_contains($html, '80 synthetic clippings; 20 x 30 cm') && str_contains($html, '<label>Dates</label>1900-1910') && str_contains($html, 'Synthetic use conditions'), 'Every archival level needs its own descriptive metadata even without catalogued objects.');
+	checkDetailScripts(str_contains($html, '<label>Provenance</label>') && str_contains($html, '<div class="tadl-long-field-full">'.$long_description.'</div>'), 'Provenance must preserve rich text and long-field disclosures.');
+	$doc = new DOMDocument(); $doc->loadHTML('<meta charset="UTF-8">'.$html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $nodes = new DOMXPath($doc);
+	checkDetailScripts($nodes->query('//div[label="External links"]//a')->length === 1 && $nodes->query('//div[label="External links"]//a')->item(0)->getAttribute('href') === 'https://example.org/guide?x=1&y=2', 'External links must preserve their source/URL pairing and use safely escaped HTTP(S) URLs.');
+	checkDetailScripts($nodes->query('//div[label="External links"]//script')->length === 0 && !str_contains($html, 'PRIVATE') && !str_contains($html, 'No URL'), 'Links must escape labels, avoid executable URLs and omit blank links; staff fields stay excluded.');
+	checkDetailScripts(str_contains($html, '/collection_id/'.$id) && end($GLOBALS['detailScriptExternalReads']) === $id, 'Metadata and controls must use the selected archival unit rather than its parent or an object record.');
+}
+$GLOBALS['detailScriptDeniedBundles'] = ['description', 'description_source', 'collection_scope_content', 'provenance', 'date', 'extent_text', 'language', 'lcsh_terms', 'rights', 'external_link'];
+$GLOBALS['detailScriptMetadataReads'] = []; $GLOBALS['detailScriptExternalReads'] = [];
+$html = (new DetailScriptView(0, $values))->render('ca_collections');
+checkDetailScripts(!str_contains($html, 'Own sub_sub_series description.') && !str_contains($html, '80 synthetic clippings') && !str_contains($html, '<label>Provenance</label>') && !str_contains($html, 'Synthetic use conditions') && !str_contains($html, '<label>External links</label>') && !$GLOBALS['detailScriptExternalReads'], 'Unreadable descriptive bundles must be omitted before fetching values.');
+foreach ($GLOBALS['detailScriptMetadataReads'] as $template) {
+	checkDetailScripts(!preg_match('/\^ca_collections\.(?:description|date|extent_text|language|lcsh_terms|rights|provenance|collection_scope_content)(?:\b|\.)/', $template), 'Denied native metadata must not be read.');
+}
+$GLOBALS['detailScriptDeniedBundles'] = []; $GLOBALS['detailScriptMissingElements'] = ['provenance', 'external_link'];
+$html = (new DetailScriptView(0, $values))->render('ca_collections');
+checkDetailScripts(!str_contains($html, '<label>Provenance</label>') && !str_contains($html, '<label>External links</label>'), 'A profile without optional descriptive fields must not be queried or display placeholders.');
+$GLOBALS['detailScriptMissingElements'] = []; $GLOBALS['detailScriptExternalLinks'] = [];
 foreach ([['ca_collections.description' => 'Synthetic description'], ['ca_collections.extent_text' => 'Synthetic extent']] as $values) {
 	$html = (new DetailScriptView(0, $values))->render('ca_collections');
 	checkDetailScripts(substr_count($html, 'class="tadl-collection-fields"') + substr_count($html, 'class="tadl-collection-facts"') === 1, 'A single populated metadata column must not reserve an empty sibling.');

@@ -379,6 +379,17 @@ See `docs/USER_FEATURES.md` for limitations and live verification boundaries.
 
 ### Collection finding aids
 
+Collection detail metadata uses the same presentation at every archival level,
+including series, containers and folders without individual object records.
+`helpers/collection_metadata.php` checks each configured native attribute's
+existence/readability before fetching it, omits default values and adds public
+provenance and source-labelled external links. It never inherits a parent's
+description/extent, enumerates staff-only fields or depends on media presence.
+Native rich text and long-field disclosures remain intact. External link values
+use the native locale-aware attribute API; labels/URLs are escaped and only
+HTTP(S) URLs become clickable. The selected-unit regressions live in
+`tests/collection_detail_scripts_test.php`.
+
 The **Finding aid** line offers **Download** (PDF attachment) and **View** (native
 PDF.js document viewer in the existing accessible media overlay). View is a
 text link with dialog semantics; ordinary activation uses `caMediaPanel`, while

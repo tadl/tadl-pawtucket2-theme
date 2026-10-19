@@ -9,10 +9,11 @@ its ancestors, siblings or unrelated collections.
 ## Flat and hierarchy views
 
 When readable children exist and the browser is enabled in configuration,
-**View collection hierarchy** appears beneath **Download finding aid**. It opens
+**View collection hierarchy** appears beneath the **Finding aid** actions. It opens
 the hierarchy browser and restores directly attached items on the collection page.
 **View all collection items** returns to the flat list. Leaf collections omit the switch.
-Both view-switch links have an eye icon; the finding-aid download keeps its document icon.
+Both view-switch links have an eye icon; the Finding aid line has a document icon
+and separate **Download** and **View** text links.
 
 | Behavior | Flat view | Hierarchy view |
 | --- | --- | --- |
@@ -27,11 +28,20 @@ their whole branch. Distinct objects are not merged because their names or
 identifiers happen to match. The switch retains sort/display state and resets
 paging to the first page of the new scope.
 
-The overview groups description/source and scope/content separately from creators,
-dates, extent, language, subjects, rights and related records. Empty metadata
+The overview groups description/source, scope/content and provenance separately
+from creators, dates, extent, language, subjects, rights, external links and related
+records. The same fields apply to every collection level, including series,
+containers and folders, independently of linked-object counts or media.
+Description, extent and other facts come from the selected unit, not its parent.
+Only existing readable bundles are fetched; metadata defaults, private notes and
+preservation-system identifiers are not used to fill gaps. A unit with no
+descriptive metadata remains sparse until staff catalogue it in Providence.
+External links retain their source labels. HTTP(S) URLs become links; other
+recorded URI text remains escaped plain text. Empty metadata
 columns and fields are omitted; long text uses **Read more / Read less**. Columns
-stack on phones. **Download finding aid** uses sentence case, ordinary detail-link
-styling and a hover underline; the file icon and `rel="nofollow"` remain.
+stack on phones. Finding-aid actions use sentence case, ordinary detail-link
+styling and a hover underline; `rel="nofollow"` remains. View opens the existing
+document viewer, with a direct PDF fallback.
 The title header has a right-aligned **Prev / Next / Browse collections** toolbar.
 Prev/Next use the visitor's native result context; absent neighbors are omitted.
 There is no Back button or reserved side column. Controls wrap below the title
