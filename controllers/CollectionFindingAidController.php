@@ -15,7 +15,8 @@ class CollectionFindingAidController extends BasePawtucketController {
 	}
 
 	public function Viewer() {
-		if (!$collection = $this->readableCollection()) { return; }
+		// Native caMediaPanel.showPanel() loads read-only overlay markup by POST.
+		if (!$collection = $this->readableCollection(['GET', 'POST'])) { return; }
 		$this->response->addHeader('Cache-Control', 'private, no-store');
 		$this->response->addHeader('X-Robots-Tag', 'noindex, nofollow');
 		$id = (int)$collection->getPrimaryKey();
@@ -39,9 +40,9 @@ class CollectionFindingAidController extends BasePawtucketController {
 		}
 	}
 
-	private function readableCollection() {
-		if ($this->request->getRequestMethod() !== 'GET') {
-			$this->response->addHeader('Allow', 'GET');
+	private function readableCollection($methods = ['GET']) {
+		if (!in_array($this->request->getRequestMethod(), $methods, true)) {
+			$this->response->addHeader('Allow', implode(', ', $methods));
 			$this->response->setHTTPResponseCode(405, 'Method Not Allowed'); return;
 		}
 		if ($this->request->config->get('pawtucket_requires_login') && !$this->request->isLoggedIn()) {

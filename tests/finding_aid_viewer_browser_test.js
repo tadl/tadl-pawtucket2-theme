@@ -20,6 +20,7 @@ const aid = fixture('finding_aid_test.php', '--viewer-fixture');
 const pdf = Buffer.from(aid.pdf, 'base64');
 assert(pdf.subarray(0, 5).equals(Buffer.from('%PDF-')));
 let pdfRequests = 0;
+const viewerMethods = [];
 const server = http.createServer((request, response) => {
     const url = new URL(request.url, 'http://localhost');
     if (url.pathname === '/') {
@@ -29,8 +30,11 @@ const server = http.createServer((request, response) => {
         return;
     }
     if (url.pathname === '/synthetic/CollectionFindingAid/Viewer/collection_id/42') {
+        viewerMethods.push(request.method);
+        const viewer = aid.viewers[request.method];
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
-        response.end(aid.viewer);
+        response.writeHead(viewer ? viewer.status : 405, viewer ? viewer.headers : {Allow:'GET, POST'});
+        response.end(viewer ? viewer.body : 'Method Not Allowed');
         return;
     }
     if (/^\/synthetic\/CollectionFindingAid\/(?:View|Download)\/collection_id\/42$/.test(url.pathname)) {
@@ -71,7 +75,9 @@ let browser;
     for (const width of [1280, 390]) {
         await page.setViewportSize({width, height:900});
         await page.goto(origin);
+        const viewerResponse = page.waitForResponse(response => response.url() === origin + '/synthetic/CollectionFindingAid/Viewer/collection_id/42');
         await page.getByRole('link', {name:'View finding aid (PDF)', exact:true}).click();
+        assert.equal((await viewerResponse).status(), 200, 'Native media-panel POST must pass the actual controller method guard.');
         await page.locator('#viewer .page canvas').first().waitFor({state:'visible'});
         assert.equal(page.url(), origin + '/');
         assert.equal(await page.locator('#caMediaPanel').getAttribute('aria-hidden'), 'false');
@@ -101,6 +107,7 @@ let browser;
         await page.waitForFunction(() => document.querySelector('#caMediaPanel').getAttribute('aria-hidden') === 'true');
     }
     assert.deepEqual(errors, [], 'Native document viewer JavaScript errors.');
+    assert.deepEqual(viewerMethods, ['POST', 'POST', 'POST', 'POST'], 'Exercise the native media-panel transport on every opening.');
     assert.equal(pdfRequests, 4, 'Each opening should request the PDF once without pre-generating or caching it.');
     console.log('Finding-aid browser passed: native PDF.js rendering, paging, text search, download, close/reopen and focus restoration at 1280/390px.');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
