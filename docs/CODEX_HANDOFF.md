@@ -380,8 +380,8 @@ See `docs/USER_FEATURES.md` for limitations and live verification boundaries.
 ### Collection finding aids
 
 The **Finding aid** line offers **Download** (PDF attachment) and **View** (native
-PDF.js document viewer in the existing accessible media overlay). View has an
-eye icon and dialog semantics; ordinary activation uses `caMediaPanel`, while
+PDF.js document viewer in the existing accessible media overlay). View is a
+text link with dialog semantics; ordinary activation uses `caMediaPanel`, while
 modified clicks or a missing panel follow a direct inline-PDF link. Both links
 use `nofollow`; PDF and viewer responses retain private/no-store and noindex
 headers. The viewer validates root access, then PDF.js requests the checked PDF

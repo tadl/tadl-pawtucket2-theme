@@ -111,7 +111,7 @@ checks access again. Opening the overlay does not generate a second PDF.
 `FindingAid` is reserved by Pawtucket's bundled plugin during native URL parsing;
 the old `/FindingAid/Download/` URL is not this theme endpoint. Both collection
 links use sentence case, ordinary detail-link styling and `rel="nofollow"`.
-View has an eye icon and `aria-haspopup="dialog"`, and invokes the existing
+View is a text link with `aria-haspopup="dialog"`, and invokes the existing
 `caMediaPanel` only on an ordinary unmodified activation. Its direct PDF `href`
 remains usable without JavaScript, through context menus and with modifier keys.
 
