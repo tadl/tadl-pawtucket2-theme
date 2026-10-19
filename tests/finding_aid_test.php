@@ -15,28 +15,38 @@ function aidCheck($condition, $message) {
 	if (!$condition) { throw new RuntimeException($message); }
 }
 function _t($text) { return $text; }
-function caSourceAccessControlIsEnabled($model) { return false; }
-function caGetTypeRestrictionsForUser($table) { return null; }
-function caGetSourceRestrictionsForUser($table) { return null; }
 function caGetUserAccessValues($request) { return $request->access; }
 function caACLIsEnabled($record, $options) {
 	aidCheck($options === ['forPawtucket' => true], 'ACL must use Pawtucket context.');
-	return is_object($record) && $record->table === 'ca_objects' ? true : ($record->row['acl'] ?? false);
+	return $record->row['acl'] ?? false;
+}
+function caMakeRelationshipTypeIDList($table, $types) {
+	aidCheck($table === 'ca_entities_x_collections', 'Creator roles must use the native collection/entity relationship type list.');
+	return $types === ['creator'] ? [21] : [];
 }
 class AidConfig {
 	public array $values = [
-		'enabled' => 1,
+		'enabled' => 1, 'hierarchy_sort' => 'rank',
 		'collection_fields' => [
-			'description' => ['label' => 'Description', 'bundles' => ['ca_collections.description']],
+			'level' => ['label' => 'Level of description', 'bundles' => ['ca_collections.type_id']],
+			'creators' => ['label' => 'Creators', 'related_table' => 'ca_entities', 'relationship_types' => ['creator'], 'bundles' => ['ca_entities.preferred_labels.displayname']],
 			'dates' => ['label' => 'Dates', 'bundles' => ['ca_collections.date.dates_value']],
 			'extent' => ['label' => 'Extent', 'bundles' => ['ca_collections.extent_text', 'ca_collections.extent']],
-			'rights' => ['label' => 'Rights', 'bundles' => ['ca_collections.rights.rightsText']]
+			'language' => ['label' => 'Language', 'display_language_labels' => 1, 'bundles' => ['ca_collections.language']],
+			'description' => ['label' => 'Description', 'bundles' => ['ca_collections.description']],
+			'scope' => ['label' => 'Scope and content', 'bundles' => ['ca_collections.collection_scope_content']],
+			'provenance' => ['label' => 'Provenance', 'bundles' => ['ca_collections.provenance']],
+			'rights' => ['label' => 'Rights', 'bundles' => ['ca_collections.rights.rightsText']],
+			'copyright' => ['label' => 'Copyright statement', 'bundles' => ['ca_collections.rights.copyrightStatement']],
+			'related_links' => ['label' => 'Related links', 'bundles' => ['ca_collections.external_link.url_line2.url_entry']],
+			'optional' => ['label' => 'Missing field', 'bundles' => ['ca_collections.missing']]
 		]
 	];
 	function get($key) { return $this->values[$key] ?? null; }
 	function getAssoc($key) { return $this->get($key); }
 }
 class Configuration { static function load($path) { aidCheck(str_ends_with($path, '/conf/finding_aid.conf'), 'Unexpected config path.'); return $GLOBALS['aidConfig']; } }
+class ca_metadata_elements { static function getElementDatatype($root) { return $GLOBALS['aidDatatypes'][$root] ?? 3; } }
 class AidRequest {
 	public $config;
 	public $user;
@@ -54,19 +64,19 @@ class AidModel {
 	function __construct(public string $table) {}
 	function load($id) { $GLOBALS['aidLoads'][] = [$this->table, $id]; $this->row = $GLOBALS['aidRows'][$this->table][$id] ?? []; return (bool)$this->row; }
 	function tableName() { return $this->table; }
-	function getAppConfig() { return new AidConfig(); }
-	function getDb() { return new AidDb(); }
-	function tableNum() { return 57; }
 	function getPrimaryKey() { return $this->row['id'] ?? null; }
 	function get($key) { return $this->row[$key] ?? null; }
-	function hasField($key) { return in_array($key, ['idno', 'home_location_id'], true); }
-	function hasElement($key) { return in_array($key, $this->row['elements'] ?? ['description', 'date', 'extent', 'rights', 'legacy_accession_number'], true); }
+	function hasField($key) { return in_array($key, ['idno', 'type_id', 'rank'], true); }
+	function hasElement($key) { return in_array($key, $this->row['elements'] ?? ['description', 'date', 'extent_text', 'extent', 'language', 'collection_scope_content', 'provenance', 'rights', 'external_link'], true); }
 	function isReadable($request, $bundle = null) { return ($this->row['readable'] ?? true) && !in_array($bundle, $this->row['denied'] ?? [], true); }
 	function checkACLAccessForUser($user) { aidCheck($user instanceof stdClass, 'Native ACL must receive current user.'); return $this->row['acl_level'] ?? 1; }
+	function getDb() { throw new RuntimeException('Finding aids must not query object counts or inventory.'); }
 	function getWithTemplate($template, $options) {
-		aidCheck($this->table === 'ca_collections', 'Count-only finding aids must not fetch object or storage metadata.');
-		aidCheck(($options['checkAccess'] ?? null) === [1] && ($options['makeLink'] ?? null) === false, 'Metadata must preserve access and plain text options.');
+		aidCheck(in_array($this->table, ['ca_collections', 'ca_entities'], true), 'Only descriptive units and checked creator names may be read.');
+		$language = $template === '^ca_collections.language' && ($GLOBALS['aidDatatypes']['language'] ?? 3) === 3;
+		aidCheck((($options['checkAccess'] ?? null) === [1] || ($language && $options['checkAccess'] === [])) && ($options['makeLink'] ?? null) === false && ($options['dontReturnDefault'] ?? null) === true, 'Only selected language List labels may omit term access filtering; all metadata needs plain text and no-default options.');
 		$GLOBALS['aidReads'][] = [$this->table, $this->getPrimaryKey(), $template];
+		if ($language && $options['checkAccess'] === [1]) { return ''; } // Synthetic default-private language term.
 		return $this->row['values'][substr($template, 1)] ?? '';
 	}
 	function getHierarchyChildren($id, $options) {
@@ -74,37 +84,15 @@ class AidModel {
 		return $this->row['children'] ?? [];
 	}
 	function getRelatedItems($table, $options) {
-		aidCheck($options === ['idsOnly' => true, 'checkAccess' => [1], 'limit' => PHP_INT_MAX], 'Counts must remove native relationship limits and preserve access.');
+		aidCheck($table === 'ca_entities', 'Finding aids must not query linked objects or storage locations, even for counts.');
+		aidCheck($options === ['idsOnly' => true, 'checkAccess' => [1], 'user_id' => 7, 'restrictToRelationshipTypes' => [21], 'limit' => PHP_INT_MAX], 'Creator lookup must restrict roles, retain access/user context and remove native caps.');
+		$GLOBALS['aidRelations'][] = $this->getPrimaryKey();
 		return $this->row['related'][$table] ?? [];
 	}
 }
-class AidDb {
- function query($sql, $params) {
-  aidCheck(count($params[0]) <= 500, 'Finding aid visibility queries must be bounded.');
-  $GLOBALS['aidBatches'][] = $params[0];
-  return new AidRows(array_values(array_filter($params[0], static function ($id) use ($params) {
-   $row = $GLOBALS['aidRows']['ca_objects'][$id] ?? [];
-   return $row && !$row['deleted'] && in_array($row['access'], $params[1], true) && ($row['readable'] ?? true);
-  })));
- }
-}
-class AidRows {
- private int $position = -1;
- function __construct(private array $ids) {}
- function nextRow() { return ++$this->position < count($this->ids); }
- function get($field) { return $this->ids[$this->position]; }
-}
-function caGetBrowseInstance($table) { return new AidBrowse(); }
-class AidBrowse {
- function filterHitsByACL($ids, $table, $user) {
-  return array_values(array_filter($ids, static fn($id) => !($GLOBALS['aidRows']['ca_objects'][$id]['acl'] ?? false) || ($GLOBALS['aidRows']['ca_objects'][$id]['acl_level'] ?? 1) >= 1));
- }
-}
 class Datamodel {
- static function getInstanceByTableName($table, $cached) { return new AidModel($table); }
-
-	static function getInstance($table, $unused) {
-		aidCheck(in_array($table, ['ca_collections', 'ca_objects'], true), 'Count-only finding aids must not load storage records.');
+	static function getInstance($table, $cached) {
+		aidCheck(in_array($table, ['ca_collections', 'ca_entities'], true), 'Finding aids must never load object, representation, or storage models.');
 		return new AidModel($table);
 	}
 }
@@ -141,7 +129,7 @@ register_shutdown_function(function () use ($directory) {
 if ($autoload = getenv('TADL_TEST_COMPOSER_AUTOLOAD')) {
 	require $autoload;
 } else {
-	file_put_contents($directory.'/pdf_stub.php', <<<'PHP'
+	file_put_contents($directory.'/pdf_stub.php', <<<'STUB'
 <?php
 namespace Dompdf;
 class Options { function __construct($options) { $GLOBALS['aidPDFOptions'] = $options; } }
@@ -156,159 +144,151 @@ class Dompdf {
  function page_text($x, $y, $text, $font, $size, $color) { $GLOBALS['aidPDFFooter'] = $text; }
  function output() { return '%PDF-1.4'.str_repeat('synthetic renderer boundary ', 50).'%%EOF'; }
 }
-PHP);
+STUB);
 	require $directory.'/pdf_stub.php';
 }
 require dirname(__DIR__).'/controllers/CollectionFindingAidController.php';
 $GLOBALS['aidConfig'] = new AidConfig();
-if ($dispatcher_path = getenv('TADL_TEST_REQUEST_DISPATCHER')) {
-	require __DIR__.'/support/finding_aid_routing.php';
-}
+if ($dispatcher_path = getenv('TADL_TEST_REQUEST_DISPATCHER')) { require __DIR__.'/support/finding_aid_routing.php'; }
 function aidRow($id, $table, $title, $identifier = '', $extra = []) {
-	return array_replace_recursive(['id' => $id, 'access' => 1, 'deleted' => 0, 'values' => [$table.'.preferred_labels.name' => $title, $table.'.idno' => $identifier]], $extra);
+	$label = $table === 'ca_entities' ? 'displayname' : 'name';
+	return array_replace_recursive(['id' => $id, 'access' => 1, 'deleted' => 0, 'values' => [$table.'.preferred_labels.'.$label => $title, $table.'.idno' => $identifier]], $extra);
 }
 $GLOBALS['aidRows'] = [
 	'ca_collections' => [
 		42 => aidRow(42, 'ca_collections', 'Synthetic Archives Collection', 'SYN.42', [
-			'children' => [7, 8, 10, 11, 12], 'related' => ['ca_objects' => [101, 101, 102, 103, 104, 105, 106, 107, 108, 109]],
-			'values' => ['ca_collections.description' => '<p>A synthetic collection &amp; its history.</p>', 'ca_collections.date.dates_value' => '; ', 'ca_collections.extent' => 'Two boxes', 'ca_collections.rights.rightsText' => 'Synthetic rights statement']
+			'children' => [7, 8, 10, 11, 12], 'related' => ['ca_objects' => range(1000, 5104), 'ca_entities' => [201, 201, 202, 203, 204, 205, 206]],
+			'values' => ['ca_collections.type_id' => 'Collection', 'ca_collections.description' => '<p>A synthetic collection &amp; its history.</p>', 'ca_collections.date.dates_value' => '; ', 'ca_collections.extent' => 'Two boxes', 'ca_collections.provenance' => 'Transferred from a fictional community organization.', 'ca_collections.rights.rightsText' => 'Synthetic rights statement', 'ca_collections.rights.copyrightStatement' => 'Synthetic copyright statement', 'ca_collections.internal_notes' => 'PRIVATE staff note']
 		]),
-		7 => aidRow(7, 'ca_collections', 'Series A', 'SYN.7', ['children' => [14, 13], 'related' => ['ca_objects' => [101, 103, 111]], 'values' => ['ca_collections.description' => '<p>Series correspondence &amp; diaries.</p><p>Includes synthetic administrative records.</p>']]),
+		7 => aidRow(7, 'ca_collections', 'Series A', 'SYN.7', ['children' => [14, 13], 'values' => ['ca_collections.type_id' => 'Series', 'ca_collections.description' => '<p>Series correspondence &amp; diaries.</p><p>Includes synthetic administrative records.</p>', 'ca_collections.date.dates_value' => '1920-1930', 'ca_collections.extent_text' => 'One box', 'ca_collections.language' => 'English', 'ca_collections.collection_scope_content' => 'Correspondence concerning community activities.']]),
 		8 => aidRow(8, 'ca_collections', 'Private branch', '', ['access' => 0, 'children' => [9], 'values' => ['ca_collections.description' => 'PRIVATE branch description']]),
-		9 => aidRow(9, 'ca_collections', 'Behind private branch', '', ['related' => ['ca_objects' => [110]], 'values' => ['ca_collections.description' => 'PRIVATE descendant description']]),
+		9 => aidRow(9, 'ca_collections', 'Behind private branch', '', ['values' => ['ca_collections.extent_text' => 'PRIVATE descendant extent']]),
 		10 => aidRow(10, 'ca_collections', 'Denied branch', '', ['acl' => true, 'acl_level' => 0]),
 		11 => aidRow(11, 'ca_collections', 'Deleted branch', '', ['deleted' => 1]),
-		12 => aidRow(12, 'ca_collections', 'Empty series', '', ['children' => [42], 'values' => ['ca_collections.description' => '<p>&nbsp;</p>']]),
-		13 => aidRow(13, 'ca_collections', 'Drawer 2', 'SYN.D2', ['children' => [15], 'values' => ['ca_collections.description' => 'Drawer records.']]),
-		14 => aidRow(14, 'ca_collections', 'Drawer 10', 'SYN.D10', ['denied' => ['description'], 'values' => ['ca_collections.description' => 'PRIVATE restricted description']]),
-		15 => aidRow(15, 'ca_collections', 'Folder 1', 'SYN.F1', ['values' => ['ca_collections.description' => '<p>Folder description with &lt;angle brackets&gt;.</p>']])
+		12 => aidRow(12, 'ca_collections', 'Uncatalogued series', '', ['children' => [42], 'values' => ['ca_collections.description' => '<p>&nbsp;</p>']]),
+		13 => aidRow(13, 'ca_collections', 'Drawer 2', 'SYN.D2', ['children' => [15], 'values' => ['ca_collections.type_id' => 'Container', 'ca_collections.description' => 'Drawer records.', 'ca_collections.extent_text' => 'Three folders']]),
+		14 => aidRow(14, 'ca_collections', 'Drawer 10', 'SYN.D10', ['denied' => ['description', 'extent_text'], 'values' => ['ca_collections.description' => 'PRIVATE restricted description', 'ca_collections.extent_text' => 'PRIVATE restricted extent']]),
+		15 => aidRow(15, 'ca_collections', 'Folder 1', 'SYN.F1', ['values' => ['ca_collections.type_id' => 'Folder', 'ca_collections.description' => '<p>Folder description with &lt;angle brackets&gt;.</p>', 'ca_collections.extent_text' => '80 newspaper clippings in one folder, 20 x 30 cm', 'ca_collections.collection_scope_content' => 'Clippings concerning a fictional community garden.', 'ca_collections.rights.rightsText' => 'Synthetic folder use conditions']])
 	],
-	'ca_objects' => [
-		101 => aidRow(101, 'ca_objects', 'Český časopis, 1930', 'SYN.10', ['home_location_id' => 50, 'related' => ['ca_storage_locations' => [51]], 'values' => ['ca_objects.date.dates_value' => '1930', 'ca_objects.legacy_accession_number' => 'OLD.10']]),
-		102 => aidRow(102, 'ca_objects', 'Object without media', 'SYN.2', ['related' => ['ca_storage_locations' => [50, 51, 52, 53, 54]]]),
-		103 => aidRow(103, 'ca_objects', 'Different object with the same identifier', 'SYN.10', ['denied' => ['ca_storage_locations']]),
-		104 => aidRow(104, 'ca_objects', 'Private object', 'SECRET.4', ['access' => 0]),
-		105 => aidRow(105, 'ca_objects', 'Deleted object', 'SECRET.5', ['deleted' => 1]),
-		106 => aidRow(106, 'ca_objects', 'Unreadable object', 'SECRET.6', ['readable' => false]),
-		107 => aidRow(107, 'ca_objects', 'ACL denied object', 'SECRET.7', ['acl' => true, 'acl_level' => 0]),
-		109 => aidRow(109, 'ca_objects', 'Hidden name', 'HIDDEN', ['denied' => ['preferred_labels', 'idno', 'legacy_accession_number', 'date', 'ca_storage_locations']]),
-		110 => aidRow(110, 'ca_objects', 'Hidden branch object', 'SECRET.10'),
-		111 => aidRow(111, 'ca_objects', 'Child-only object', 'SYN.11')
+	'ca_entities' => [
+		201 => aidRow(201, 'ca_entities', 'Example Community Organization'),
+		202 => aidRow(202, 'ca_entities', 'PRIVATE creator', '', ['access' => 0]),
+		203 => aidRow(203, 'ca_entities', 'PRIVATE deleted creator', '', ['deleted' => 1]),
+		204 => aidRow(204, 'ca_entities', 'PRIVATE unreadable creator', '', ['readable' => false]),
+		205 => aidRow(205, 'ca_entities', 'PRIVATE ACL creator', '', ['acl' => true, 'acl_level' => 0]),
+		206 => aidRow(206, 'ca_entities', 'PRIVATE label creator', '', ['denied' => ['preferred_labels']])
 	]
 ];
 $request = new AidRequest();
 $collection = new AidModel('ca_collections'); $collection->load(42);
-$GLOBALS['aidLoads'] = []; $GLOBALS['aidReads'] = [];
+$GLOBALS['aidLoads'] = []; $GLOBALS['aidReads'] = []; $GLOBALS['aidRelations'] = [];
 $data = tadlFindingAidData($request, $collection, $GLOBALS['aidConfig']);
-aidCheck($data['object_count'] === 5, 'Readable objects must be counted once by ID, including child-only records and those without media.');
-aidCheck(!array_key_exists('objects', $data), 'Finding-aid data must contain counts rather than an object inventory.');
-aidCheck(array_keys($data['collections']) === [42, 12, 7, 13, 15, 14], 'All readable descendants must appear in branch order with natural sibling sorting; unreadable/deleted branches and cycles must be excluded.');
-aidCheck($data['collections'][42]['count'] === 4 && $data['collections'][7]['count'] === 3 && $data['collections'][12]['count'] === 0, 'Collection counts must count directly linked readable unique objects.');
-aidCheck(array_column($data['collections'], 'depth') === [0, 1, 1, 2, 3, 2], 'Hierarchy depth must preserve each generation, including empty subcollections.');
-aidCheck($data['collections'][15]['parent_id'] === 13 && $data['collections'][15]['identifier'] === 'SYN.F1', 'Nested collection parent and readable identifier must be retained.');
-aidCheck($data['collections'][7]['description'] === "Series correspondence & diaries.\nIncludes synthetic administrative records." && $data['collections'][13]['description'] === 'Drawer records.' && $data['collections'][15]['description'] === 'Folder description with <angle brackets>.', 'Descriptions must belong to the correct descendant at every hierarchy level, retaining paragraph breaks.');
-aidCheck($data['collections'][42]['description'] === '' && $data['fields']['description']['value'] === 'A synthetic collection & its history.', 'The selected root description belongs in About this collection, without duplication in the hierarchy.');
-aidCheck($data['collections'][12]['description'] === '' && $data['collections'][14]['description'] === '', 'Empty HTML and restricted description bundles must not produce descriptions.');
-aidCheck(!in_array(['ca_collections', 14, '^ca_collections.description'], $GLOBALS['aidReads'], true), 'Restricted description metadata must not be fetched.');
-aidCheck(!array_intersect([8, 9, 10, 11], array_column($GLOBALS['aidReads'], 1)), 'Unreadable branches must not supply description metadata.');
-$object_loads = array_column(array_filter($GLOBALS['aidLoads'], static fn($load) => $load[0] === 'ca_objects'), 1);
-aidCheck($object_loads === [] && count($GLOBALS['aidBatches']) === 1, 'Count-only exports must check object visibility in batches without loading object models.');
-aidCheck(array_unique(array_column($GLOBALS['aidReads'], 0)) === ['ca_collections'], 'Counts must not fetch per-object metadata.');
-aidCheck(!isset($data['fields']['dates']) && $data['fields']['extent']['value'] === 'Two boxes', 'Empty punctuation-only dates must disappear; extent must fall back.');
-aidCheck(tadlFindingAidText('<script>secret</script><p>Safe &amp; readable</p>') === 'Safe & readable', 'Text must remove scripts and decode entities.');
-aidCheck(tadlFindingAidValue($request, $collection, ['ca_objects.idno', 'ca_collections.missing', 'ca_collections.description<script>']) === '', 'Field mapping must reject wrong table/missing/unsafe fields.');
+aidCheck(!isset($data['object_count']) && !isset($data['objects']), 'Finding aids must describe archival units without object counts or inventory.');
+aidCheck(array_keys($data['collections']) === [42, 7, 13, 15, 14, 12], 'Every readable descendant must appear in natural sibling order, with whole branches and no cycles.');
+aidCheck(array_column($data['collections'], 'depth') === [0, 1, 2, 3, 2, 1], 'Hierarchy depth must retain every generation.');
+aidCheck($data['collections'][15]['parent_id'] === 13 && $data['collections'][15]['identifier'] === 'SYN.F1', 'Nested parent and identifier must be retained.');
+aidCheck($data['collections'][15]['fields']['extent']['value'] === '80 newspaper clippings in one folder, 20 x 30 cm', 'A folder without object records must retain its own descriptive extent and dimensions.');
+foreach (['level', 'description', 'dates', 'extent', 'language', 'scope'] as $field) { aidCheck(isset($data['collections'][7]['fields'][$field]), 'Series metadata missing: '.$field); }
+$strict_language = clone $GLOBALS['aidConfig']; $strict_language->values['collection_fields']['language']['display_language_labels'] = 0;
+aidCheck(!isset(tadlFindingAidData($request, $collection, $strict_language)['collections'][7]['fields']['language']), 'Sites may retain language-term access filtering.');
+$language_denied = new AidModel('ca_collections'); $language_denied->load(7); $language_denied->row['denied'] = ['language'];
+$before = count($GLOBALS['aidReads']);
+aidCheck(tadlFindingAidValue($request, $language_denied, ['ca_collections.language'], true) === '' && count($GLOBALS['aidReads']) === $before, 'A denied language bundle must never be fetched, even for label display.');
+$GLOBALS['aidDatatypes']['language'] = 22;
+$language_reference = new AidModel('ca_collections'); $language_reference->load(7);
+aidCheck(tadlFindingAidValue($request, $language_reference, ['ca_collections.language'], true) === 'English', 'A language reference of another datatype must retain the normal access options.');
+unset($GLOBALS['aidDatatypes']['language']);
+aidCheck(tadlFindingAidValue($request, $collection, ['ca_collections.description'], true) === 'A synthetic collection & its history.', 'The language-label option must not bypass access filtering on other bundles.');
+aidCheck($data['fields']['creators']['value'] === 'Example Community Organization', 'Creator names must be deduplicated by record ID and filtered by record/label permissions.');
+aidCheck(!isset($data['fields']['dates'], $data['fields']['optional']) && $data['fields']['extent']['value'] === 'Two boxes', 'Missing fields and punctuation-only dates must disappear; extent must fall back.');
+aidCheck($data['collections'][42]['fields'] === [] && $data['fields']['description']['value'] === 'A synthetic collection & its history.', 'Root metadata must appear only in the overview.');
+aidCheck(!isset($data['collections'][12]['fields']['description'], $data['collections'][14]['fields']['description'], $data['collections'][14]['fields']['extent']), 'Blank and restricted metadata must be omitted without removing the unit.');
+foreach ([['ca_collections', 14, '^ca_collections.description'], ['ca_collections', 14, '^ca_collections.extent_text'], ['ca_entities', 206, '^ca_entities.preferred_labels.displayname']] as $read) { aidCheck(!in_array($read, $GLOBALS['aidReads'], true), 'Restricted metadata must not be fetched.'); }
+aidCheck(!array_intersect([8, 9, 10, 11], array_column($GLOBALS['aidReads'], 1)), 'Unreadable branches must not supply metadata.');
+aidCheck(!array_intersect(['ca_objects', 'ca_object_representations', 'ca_storage_locations'], array_column($GLOBALS['aidLoads'], 0)), 'No object, representation or storage models may be loaded.');
+aidCheck(tadlFindingAidText('<script>secret</script><h3>Heading</h3><p>Safe &amp; readable</p>') === "Heading\nSafe & readable", 'HTML must become readable plain text.');
+aidCheck(tadlFindingAidValue($request, $collection, ['ca_objects.idno', 'ca_collections.missing', 'ca_collections.description<script>']) === '', 'Wrong-table, missing and unsafe field mappings must be rejected.');
 $view = new AidView(); $view->setVar('finding_aid', $data); $html = $view->render('Details/finding_aid_pdf_html.php');
-aidCheck(!str_contains($html, 'SECRET') && !str_contains($html, 'Hidden name') && !str_contains($html, 'Private branch'), 'PDF contains unreadable information.');
-aidCheck(!str_contains($html, '>Dates:</span><br>') && str_contains($html, 'SYN.42') && str_contains($html, 'records with and without media'), 'PDF lost collection identifier/media scope or restored empty dates.');
-aidCheck(str_contains($html, '<h2>Collection contents</h2>') && str_contains($html, '<p>5 items.') && str_contains($html, '4 directly linked items') && str_contains($html, '3 directly linked items'), 'PDF must show unique total and directly linked collection counts.');
-aidCheck(str_contains($html, 'Directly linked counts above can overlap.'), 'PDF must distinguish the unique total from overlapping collection counts.');
-aidCheck(substr_count($html, 'class="collection"') === 6 && str_contains($html, 'margin-left: 42pt;') && str_contains($html, '[SYN.F1]'), 'PDF must list every descendant with nested indentation and collection identifiers.');
-aidCheck(substr_count($html, 'class="collection-description"') === 3 && str_contains($html, "Series correspondence &amp; diaries.<br />\nIncludes synthetic administrative records.") && str_contains($html, 'Folder description with &lt;angle brackets&gt;.'), 'PDF must render only populated readable descriptions as escaped text with line breaks.');
-aidCheck(!str_contains($html, 'PRIVATE') && substr_count($html, 'A synthetic collection &amp; its history.') === 1, 'Private descriptions and duplicate root descriptions must not appear in the PDF.');
-aidCheck(!str_contains($html, 'Synthetic Archives Collection &gt;'), 'PDF must show nested collection names rather than repeated flattened paths.');
-foreach (['Object inventory', 'class="entry"', 'Český časopis, 1930', 'Object without media', 'Child-only object', 'SYN.10', 'OLD.10', 'Recorded storage location'] as $entry) {
-	aidCheck(!str_contains($html, $entry), 'PDF must not contain individual object entries: '.$entry);
+foreach (['PRIVATE', 'directly linked', 'object_count', 'No accessible object records', '0 items', '4105', 'Missing field:'] as $excluded) { aidCheck(!str_contains($html, $excluded), 'Unwanted finding-aid output: '.$excluded); }
+aidCheck(str_contains($html, '80 newspaper clippings in one folder, 20 x 30 cm') && str_contains($html, 'Clippings concerning a fictional community garden.') && str_contains($html, 'Synthetic folder use conditions'), 'All relevant folder fields must be rendered even with no linked objects.');
+foreach (['ca_collections.provenance' => 'Folder provenance.', 'ca_collections.rights.copyrightStatement' => 'Folder copyright.', 'ca_collections.external_link.url_line2.url_entry' => 'https://example.org/related-materials'] as $bundle => $value) {
+	$folder = new AidModel('ca_collections'); $folder->load(15); $folder->row['values'][$bundle] = $value;
+	aidCheck(in_array($value, array_column(tadlFindingAidFields($request, $folder, $GLOBALS['aidConfig']->values['collection_fields']), 'value'), true), 'Every configured administrative/supporting field must work at folder level.');
 }
+aidCheck(str_contains($html, 'Example Community Organization') && str_contains($html, 'Transferred from a fictional community organization.') && str_contains($html, 'Synthetic copyright statement'), 'Collection context and approved administrative fields must appear.');
+aidCheck(substr_count($html, 'class="collection"') === 5 && str_contains($html, 'margin-left: 24pt;') && str_contains($html, 'SYN.F1'), 'Every descendant must retain its indentation and identifier without repeating the root.');
+aidCheck(substr_count($html, 'A synthetic collection &amp; its history.') === 1 && str_contains($html, 'Folder description with &lt;angle brackets&gt;.'), 'Metadata must be escaped and root prose must not be duplicated.');
 $unsafe = $data; $unsafe['title'] = '<img src="file:///private/example" onerror="bad"> & title';
-$unsafe['fields']['unsafe'] = ['label' => '<script>bad</script>', 'value' => '<img src="https://example.com">'];
+$unsafe['fields']['unsafe'] = ['label' => '<script>bad</script>', 'value' => '<img src="https://example.org">'];
 $unsafe['collections'][15]['title'] = '<script>bad</script>';
 $unsafe['collections'][15]['identifier'] = '<img src="file:///private/example">';
-$unsafe['collections'][15]['description'] = '<img src="https://example.org/unsafe" onerror="bad"> & description';
+$unsafe['collections'][15]['fields']['description']['value'] = '<img src="https://example.org/unsafe" onerror="bad">';
 $view->setVar('finding_aid', $unsafe); $unsafe_html = $view->render('Details/finding_aid_pdf_html.php');
-aidCheck(!str_contains($unsafe_html, '<img') && !str_contains($unsafe_html, '<script>'), 'PDF must escape all catalog fields.');
-$empty = $data; $empty['object_count'] = 0; $empty['collections'] = [42 => array_replace($data['collections'][42], ['count' => 0])]; $empty['fields'] = [];
-$view->setVar('finding_aid', $empty); $empty_html = $view->render('Details/finding_aid_pdf_html.php');
-aidCheck(str_contains($empty_html, '<p>0 items.') && str_contains($empty_html, 'No accessible object records') && !str_contains($empty_html, 'About this collection') && !str_contains($empty_html, 'Collection organization'), 'Empty contents must have a useful state without empty headings.');
-$single = clone $collection; $single->row['children'] = []; $single->row['related']['ca_objects'] = [102];
-$view->setVar('finding_aid', tadlFindingAidData($request, $single, $GLOBALS['aidConfig']));
-aidCheck(str_contains($view->render('Details/finding_aid_pdf_html.php'), '<p>1 item.'), 'Single-object total must use singular wording.');
-$series = new AidModel('ca_collections'); $series->load(7);
-$series_data = tadlFindingAidData($request, $series, $GLOBALS['aidConfig']);
-aidCheck($series_data['object_count'] === 3 && array_keys($series_data['collections']) === [7, 13, 15, 14] && $series_data['collections'][15]['depth'] === 2, 'Selected subcollection must export its descendants relative to itself, without its parent or siblings.');
+aidCheck(!str_contains($unsafe_html, '<img') && !str_contains($unsafe_html, '<script>'), 'Every metadata label, value, identifier and title must be escaped.');
+$single = clone $collection; $single->row['children'] = []; $single_data = tadlFindingAidData($request, $single, $GLOBALS['aidConfig']);
+$view->setVar('finding_aid', $single_data); $single_html = $view->render('Details/finding_aid_pdf_html.php');
+aidCheck(!str_contains($single_html, 'Arrangement and contents') && str_contains($single_html, 'Two boxes') && !str_contains($single_html, 'items.'), 'A leaf collection needs descriptive metadata without object totals or an empty hierarchy section.');
+$bare = clone $single; $bare->row['values'] = []; $bare->row['related'] = [];
+$view->setVar('finding_aid', tadlFindingAidData($request, $bare, $GLOBALS['aidConfig']));
+$bare_html = $view->render('Details/finding_aid_pdf_html.php');
+aidCheck(!str_contains($bare_html, 'About this collection') && !str_contains($bare_html, 'No accessible object'), 'Missing metadata must not generate empty sections or claim that the holdings are empty.');
+$series = new AidModel('ca_collections'); $series->load(7); $series_data = tadlFindingAidData($request, $series, $GLOBALS['aidConfig']);
+aidCheck(array_keys($series_data['collections']) === [7, 13, 15, 14] && $series_data['collections'][15]['depth'] === 2, 'A selected series must include its descendants, without its parent or siblings.');
 $view->setVar('finding_aid', $series_data);
-aidCheck($series_data['collections'][7]['description'] === '' && substr_count($view->render('Details/finding_aid_pdf_html.php'), 'Series correspondence &amp; diaries.') === 1, 'A selected series must show its own description once in About this collection.');
-$mapped_config = clone $GLOBALS['aidConfig'];
-$mapped_config->values['collection_fields']['description']['bundles'] = ['ca_collections.extent'];
-$GLOBALS['aidRows']['ca_collections'][7]['values']['ca_collections.extent'] = 'Remapped series summary';
-$mapped_data = tadlFindingAidData($request, $collection, $mapped_config);
-aidCheck($mapped_data['collections'][7]['description'] === 'Remapped series summary' && $mapped_data['fields']['description']['value'] === 'Two boxes', 'Descendant descriptions must reuse the configured root description mapping.');
-unset($GLOBALS['aidRows']['ca_collections'][7]['values']['ca_collections.extent']);
-unset($mapped_config->values['collection_fields']['description']);
-$unmapped_data = tadlFindingAidData($request, $collection, $mapped_config);
-aidCheck(array_unique(array_column($unmapped_data['collections'], 'description')) === [''], 'Removing the description mapping must omit descendant descriptions too.');
-// Equal sibling names must not cause their different descendants to interleave.
+aidCheck(substr_count($view->render('Details/finding_aid_pdf_html.php'), 'Series correspondence &amp; diaries.') === 1, 'Selected-unit descriptions must appear once.');
+$mapped = clone $GLOBALS['aidConfig']; $mapped->values['collection_fields']['description']['bundles'] = ['ca_collections.extent_text', 'ca_collections.extent'];
+$mapped_data = tadlFindingAidData($request, $collection, $mapped);
+aidCheck($mapped_data['fields']['description']['value'] === 'Two boxes' && $mapped_data['collections'][7]['fields']['description']['value'] === 'One box', 'The same configurable field mappings must apply to root and descendants.');
+unset($mapped->values['collection_fields']['description']);
+$mapped_data = tadlFindingAidData($request, $collection, $mapped);
+foreach ($mapped_data['collections'] as $node) { aidCheck(!isset($node['fields']['description']), 'Removing a mapping must remove it at every level.'); }
+$mapped->values['collection_fields']['creators']['relationship_types'] = ['unknown'];
+$before = count($GLOBALS['aidRelations']); $mapped_data = tadlFindingAidData($request, $collection, $mapped);
+aidCheck(!isset($mapped_data['fields']['creators']) && count($GLOBALS['aidRelations']) === $before, 'Invalid relationship types must not broaden the creator lookup.');
+$mapped->values['collection_fields']['creators']['related_table'] = 'ca_objects';
+$before = count($GLOBALS['aidRelations']); tadlFindingAidData($request, $collection, $mapped);
+aidCheck(count($GLOBALS['aidRelations']) === $before, 'Unsupported related tables must fail closed without reading object data.');
+$denied = clone $collection; $denied->row['denied'] = ['ca_entities'];
+$before = count($GLOBALS['aidRelations']); $denied_data = tadlFindingAidData($request, $denied, $GLOBALS['aidConfig']);
+aidCheck(!isset($denied_data['fields']['creators']) && !in_array(42, array_slice($GLOBALS['aidRelations'], $before), true), 'A denied creator relationship bundle must not be queried.');
+$ranked = clone $collection; $GLOBALS['aidRows']['ca_collections'][7]['rank'] = 10; $GLOBALS['aidRows']['ca_collections'][12]['rank'] = 1;
+aidCheck(array_keys(tadlFindingAidData($request, $ranked, $GLOBALS['aidConfig'])['collections']) === [42, 12, 7, 13, 15, 14], 'Recorded hierarchy rank must take precedence over alphabetical order.');
+$by_name = clone $GLOBALS['aidConfig']; $by_name->values['hierarchy_sort'] = 'name';
+aidCheck(array_keys(tadlFindingAidData($request, $ranked, $by_name)['collections']) === [42, 7, 13, 15, 14, 12], 'Sites may explicitly retain natural-name order.');
+unset($GLOBALS['aidRows']['ca_collections'][7]['rank'], $GLOBALS['aidRows']['ca_collections'][12]['rank']);
 $duplicates = clone $collection; $duplicates->row['children'] = [17, 16];
 $GLOBALS['aidRows']['ca_collections'][16] = aidRow(16, 'ca_collections', 'Same series', 'SYN.A', ['children' => [18]]);
 $GLOBALS['aidRows']['ca_collections'][17] = aidRow(17, 'ca_collections', 'Same series', 'SYN.B', ['children' => [19]]);
 $GLOBALS['aidRows']['ca_collections'][18] = aidRow(18, 'ca_collections', 'Z child', 'SYN.Z');
 $GLOBALS['aidRows']['ca_collections'][19] = aidRow(19, 'ca_collections', 'A child', 'SYN.ACHILD');
-aidCheck(array_keys(tadlFindingAidData($request, $duplicates, $GLOBALS['aidConfig'])['collections']) === [42, 16, 18, 17, 19], 'Each identically named branch must remain together.');
+aidCheck(array_keys(tadlFindingAidData($request, $duplicates, $GLOBALS['aidConfig'])['collections']) === [42, 16, 18, 17, 19], 'Identically named branches must not interleave.');
 foreach ([16, 17, 18, 19] as $id) { unset($GLOBALS['aidRows']['ca_collections'][$id]); }
-// Empty nested branches still belong in the hierarchy; object presence and
-// media preference must never determine which readable collections are listed.
-$empty_tree = clone $collection; $empty_tree->row['related'] = [];
-$GLOBALS['aidRows']['ca_collections'][7]['related'] = [];
-$empty_tree_data = tadlFindingAidData($request, $empty_tree, $GLOBALS['aidConfig']);
-$view->setVar('finding_aid', $empty_tree_data);
-aidCheck($empty_tree_data['object_count'] === 0 && count($empty_tree_data['collections']) === 6 && substr_count($view->render('Details/finding_aid_pdf_html.php'), '0 directly linked items') === 6, 'Entire empty hierarchy must remain listed with zero counts.');
-$GLOBALS['aidRows']['ca_collections'][7]['related'] = ['ca_objects' => [101, 103, 111]];
 $GLOBALS['aidRows']['ca_collections'][13]['denied'] = ['idno', 'hierarchy'];
-$restricted_tree = tadlFindingAidData($request, $collection, $GLOBALS['aidConfig']);
-aidCheck(!isset($restricted_tree['collections'][15]) && $restricted_tree['collections'][13]['identifier'] === '', 'Collection identifier and hierarchy bundle restrictions must remain enforced.');
+$restricted = tadlFindingAidData($request, $collection, $GLOBALS['aidConfig']);
+aidCheck(!isset($restricted['collections'][15]) && $restricted['collections'][13]['identifier'] === '', 'Identifier and hierarchy bundle restrictions must remain enforced.');
 unset($GLOBALS['aidRows']['ca_collections'][13]['denied']);
-// Hierarchy traversal has no first-page or object-presence cutoff either.
-$wide = clone $collection; $wide->row['children'] = range(2000, 2199); $wide->row['related'] = [];
-foreach ($wide->row['children'] as $id) { $GLOBALS['aidRows']['ca_collections'][$id] = aidRow($id, 'ca_collections', 'Series '.($id - 1999)); }
+$wide = clone $collection; $wide->row['children'] = range(2000, 2199);
+foreach ($wide->row['children'] as $id) { $GLOBALS['aidRows']['ca_collections'][$id] = aidRow($id, 'ca_collections', 'Series '.($id-1999)); }
 $wide_data = tadlFindingAidData($request, $wide, $GLOBALS['aidConfig']);
-aidCheck(count($wide_data['collections']) === 201 && array_key_last($wide_data['collections']) === 2199 && $wide_data['object_count'] === 0, 'All readable subcollections must be listed even in a wide, empty hierarchy.');
+aidCheck(count($wide_data['collections']) === 201 && array_key_last($wide_data['collections']) === 2199, 'Every uncatalogued public component must be included, without a first-page cutoff.');
 foreach ($wide->row['children'] as $id) { unset($GLOBALS['aidRows']['ca_collections'][$id]); }
 foreach (['access' => 0, 'deleted' => 1, 'readable' => false, 'acl_level' => 0] as $key => $value) {
 	$changed = clone $collection; $changed->row[$key] = $value; if ($key === 'acl_level') { $changed->row['acl'] = true; }
 	aidCheck(tadlFindingAidData($request, $changed, $GLOBALS['aidConfig']) === null, 'Unreadable root collection must be rejected.');
 }
-$denied = clone $collection; $denied->row['denied'] = ['ca_objects', 'hierarchy'];
-aidCheck(tadlFindingAidData($request, $denied, $GLOBALS['aidConfig'])['object_count'] === 0, 'Denied relationship/hierarchy bundles must be honored.');
-$denied->row['denied'] = ['ca_objects'];
-$denied_data = tadlFindingAidData($request, $denied, $GLOBALS['aidConfig']);
-aidCheck($denied_data['object_count'] === 3 && $denied_data['collections'][42]['count'] === 0, 'Unreadable root relationships must not prevent readable descendant counts or disclose root objects.');
-// A new export reflects updates immediately; no shared or on-disk export cache.
-$GLOBALS['aidRows']['ca_objects'][101]['access'] = 0;
-$updated = tadlFindingAidData($request, $collection, $GLOBALS['aidConfig']);
-aidCheck($updated['object_count'] === 4 && $updated['collections'][42]['count'] === 3 && $updated['collections'][7]['count'] === 2, 'Counts must reflect current record access on each export.');
-$GLOBALS['aidRows']['ca_objects'][101]['access'] = 1;
-// More than both known native default relationship caps (1000 / 4000).
-$large = clone $collection; $large->row['children'] = []; $large->row['related']['ca_objects'] = range(1000, 5104);
-foreach ($large->row['related']['ca_objects'] as $id) { $GLOBALS['aidRows']['ca_objects'][$id] = aidRow($id, 'ca_objects', 'Synthetic inventory entry '.$id, 'SYN.'.$id); }
-$large_data = tadlFindingAidData($request, $large, $GLOBALS['aidConfig']);
-aidCheck($large_data['object_count'] === 4105 && $large_data['collections'][42]['count'] === 4105, 'Large collection counts were silently capped.');
-foreach ($large->row['related']['ca_objects'] as $id) { unset($GLOBALS['aidRows']['ca_objects'][$id]); }
+$denied = clone $collection; $denied->row['denied'] = ['ca_objects'];
+aidCheck(count(tadlFindingAidData($request, $denied, $GLOBALS['aidConfig'])['collections']) === 6, 'Object relationship permissions must not affect an archival metadata-only export.');
+$denied->row['denied'] = ['hierarchy'];
+aidCheck(count(tadlFindingAidData($request, $denied, $GLOBALS['aidConfig'])['collections']) === 1, 'A denied hierarchy bundle must not be traversed.');
+$GLOBALS['aidRows']['ca_collections'][15]['values']['ca_collections.extent_text'] = 'Updated folder extent';
+aidCheck(tadlFindingAidData($request, $collection, $GLOBALS['aidConfig'])['collections'][15]['fields']['extent']['value'] === 'Updated folder extent', 'Each export must reflect current metadata without a shared PDF cache.');
+$GLOBALS['aidRows']['ca_collections'][15]['values']['ca_collections.extent_text'] = '80 newspaper clippings in one folder, 20 x 30 cm';
 foreach ([
 	[new AidRequest([], 'POST'), 405], [new AidRequest([]), 400], [new AidRequest(['collection_id' => -1]), 400],
-	[new AidRequest(['collection_id' => 999]), 404], [new AidRequest(['collection_id' => 8]), 404],
-	[new AidRequest(['collection_id' => 10]), 404]
+	[new AidRequest(['collection_id' => 999]), 404], [new AidRequest(['collection_id' => 8]), 404], [new AidRequest(['collection_id' => 10]), 404]
 ] as [$case, $expected]) {
 	$response = new AidResponse(); $controller = new CollectionFindingAidController($case, $response); $controller->Download();
-	aidCheck($response->status === $expected && !$controller->rendered, 'Invalid/missing/unreadable request must not export.');
+	aidCheck($response->status === $expected && !$controller->rendered, 'Invalid/missing/unreadable requests must not export.');
 }
 $case = new AidRequest(); $case->config->values['pawtucket_requires_login'] = 1;
 $response = new AidResponse(); (new CollectionFindingAidController($case, $response))->Download(); aidCheck($response->status === 403, 'Required login must be enforced.');
@@ -316,52 +296,38 @@ $GLOBALS['aidConfig']->values['enabled'] = 0;
 $response = new AidResponse(); (new CollectionFindingAidController(new AidRequest(), $response))->Download(); aidCheck($response->status === 404, 'Disabled finding aids must be rejected.');
 $GLOBALS['aidConfig']->values['enabled'] = 1;
 $response = new AidResponse(); $controller = new CollectionFindingAidController(new AidRequest(), $response); $controller->Download();
-aidCheck($response->status === 200 && $controller->rendered && $response->headers['Cache-Control'] === 'private, no-store', 'Valid download must produce an uncached PDF attachment.');
-aidCheck($controller->view->getVar('finding_aid_name') === 'SYN-42-finding-aid.pdf', 'Filename must be safe and identify the collection.');
+aidCheck($response->status === 200 && $controller->rendered && $response->headers['Cache-Control'] === 'private, no-store', 'Valid downloads must produce an uncached PDF attachment.');
+aidCheck($controller->view->getVar('finding_aid_name') === 'SYN-42-finding-aid.pdf', 'Filename must safely identify the collection.');
 aidCheck(str_starts_with($controller->view->getVar('finding_aid_bytes'), '%PDF-'), 'Download bytes must be PDF.');
 if (!$autoload) {
 	aidCheck($GLOBALS['aidPDFOptions'] === ['isRemoteEnabled' => false, 'isPhpEnabled' => false, 'isJavascriptEnabled' => false], 'Unsafe PDF features must remain disabled.');
-	aidCheck($GLOBALS['aidPDFFooter'] === '{PAGE_NUM} / {PAGE_COUNT}', 'Page numbering must be present.');
+	aidCheck($GLOBALS['aidPDFFooter'] === '{PAGE_NUM} / {PAGE_COUNT}', 'Page numbers must be present.');
 	$GLOBALS['aidPDFFail'] = true; $response = new AidResponse(); $failed = new CollectionFindingAidController(new AidRequest(), $response); $failed->Download();
-	aidCheck($response->status === 503 && !$failed->rendered && !str_contains($response->body, 'Synthetic renderer failure'), 'Renderer failure must be safe and actionable.');
+	aidCheck($response->status === 503 && !$failed->rendered && !str_contains($response->body, 'Synthetic renderer failure'), 'Renderer failures must stay safe and actionable.');
 }
 if ($output = getenv('TADL_TEST_FINDING_AID_PDF')) {
-	aidCheck((bool)$autoload, 'Real PDF sample requires Composer autoload.');
-	// Build the sample through the actual exporter so shared/unique counts match
-	// the production document rather than patched data. Long object titles must
-	// not make the count-only PDF grow into an inventory.
-	$GLOBALS['aidRows']['ca_collections'][42]['related']['ca_objects'] = array_values(array_diff($GLOBALS['aidRows']['ca_collections'][42]['related']['ca_objects'], [109]));
-	$GLOBALS['aidRows']['ca_objects'][102]['values']['ca_objects.idno'] = 'SYN.002';
-	foreach ([101, 103] as $id) { $GLOBALS['aidRows']['ca_objects'][$id]['values']['ca_objects.idno'] = 'SYN.010'; }
-	for ($i = 5; $i <= 56; $i++) {
-		$id = 50000 + $i;
-		$row = $GLOBALS['aidRows']['ca_objects'][101]; $row['id'] = $id;
-		$row['values']['ca_objects.preferred_labels.name'] = 'Synthetic item '.$i.': '.($i === 8 ? str_repeat('A long archival title with useful historical context and descriptive details. ', 25) : 'Correspondence and photographs from the synthetic collection.');
-		$row['values']['ca_objects.idno'] = 'SYN.'.str_pad((string)$i, 3, '0', STR_PAD_LEFT);
-		$GLOBALS['aidRows']['ca_objects'][$id] = $row;
-		$GLOBALS['aidRows']['ca_collections'][42]['related']['ca_objects'][] = $id;
-		$GLOBALS['aidRows']['ca_collections'][7]['related']['ca_objects'][] = $id;
-	}
-	// Exercise nested organization across page boundaries with long labels,
-	// empty folders and non-ASCII collection names, without listing any objects.
-	for ($i = 1; $i <= 30; $i++) {
+	aidCheck((bool)$autoload, 'A PDF sample requires real Composer dependencies.');
+	for ($i = 1;$i <= 12;$i++) {
 		$id = 60000 + $i;
-		$GLOBALS['aidRows']['ca_collections'][$id] = aidRow($id, 'ca_collections', 'Folder '.$i.': Český correspondence, photographs and administrative records from the synthetic collection', 'SYN.F'.str_pad((string)$i, 2, '0', STR_PAD_LEFT));
-		$GLOBALS['aidRows']['ca_collections'][$id]['values']['ca_collections.description'] = $i === 1
-			? str_repeat('<p>Extended folder description: synthetic correspondence documents research, community events, preservation decisions and administrative work. This paragraph must wrap normally and continue across pages without clipping or losing text.</p>', 65).'<p>End of extended folder description.</p>'
-			: '<p>Synthetic folder '.$i.' contains correspondence and administrative records, with photographs documenting community activities.</p>';
+		$GLOBALS['aidRows']['ca_collections'][$id] = aidRow($id, 'ca_collections', 'Folder '.$i.': Český correspondence and administrative records', 'SYN.F'.str_pad((string)$i, 2, '0', STR_PAD_LEFT), [
+			'values' => [
+				'ca_collections.type_id' => 'Folder', 'ca_collections.date.dates_value' => (string)(1920 + $i),
+				'ca_collections.extent_text' => 'One folder; approximately '.($i*10).' clippings and letters, 20 x 30 cm',
+				'ca_collections.description' => $i === 1 ? str_repeat('<p>Extended folder description: synthetic correspondence documents research, community events, preservation decisions and administrative work. This paragraph must wrap normally and continue across pages without clipping or losing text.</p>', 30).'<p>End of extended folder description.</p>' : '<p>Materials concerning a fictional community organization and its public activities.</p>',
+				'ca_collections.collection_scope_content' => 'Records describe the contents of this folder without requiring separate object records.'
+			]
+		]);
 		$GLOBALS['aidRows']['ca_collections'][13]['children'][] = $id;
 	}
 	$sample_root = new AidModel('ca_collections'); $sample_root->load(42);
 	$sample = tadlFindingAidData($request, $sample_root, $GLOBALS['aidConfig']);
-	aidCheck($sample['object_count'] === 56 && $sample['collections'][42]['count'] === 55 && $sample['collections'][7]['count'] === 55, 'Sample counts must reflect shared and child-only records.');
-	aidCheck(count($sample['collections']) === 36 && $sample['collections'][60030]['depth'] === 3, 'PDF sample must include every nested subcollection.');
+	aidCheck(count($sample['collections']) === 18 && $sample['collections'][60012]['depth'] === 3, 'PDF sample must include every nested descriptive unit.');
 	$view->setVar('finding_aid', $sample);
 	file_put_contents($output, tadlFindingAidPDF($view->render('Details/finding_aid_pdf_html.php')));
 }
 if (!$autoload) {
 	$diagnostics = file_get_contents($directory.'/diagnostics.log');
-	aidCheck(str_contains($diagnostics, '"operation":"finding_aid"') && str_contains($diagnostics, '"collection_id":42'), 'Actual failed finding-aid requests must record safe operator diagnostics.');
-	aidCheck(!str_contains($diagnostics, 'Synthetic renderer failure') && !str_contains($diagnostics, $directory), 'Finding-aid diagnostics must not log exception messages or full paths.');
+	aidCheck(str_contains($diagnostics, '"operation":"finding_aid"') && str_contains($diagnostics, '"collection_id":42'), 'Failed exports must record safe operator diagnostics.');
+	aidCheck(!str_contains($diagnostics, 'Synthetic renderer failure') && !str_contains($diagnostics, $directory), 'Diagnostics must omit exception messages and paths.');
 }
-echo "Finding aid passed: {$GLOBALS['assertions']} assertions (".($autoload ? 'real Dompdf' : 'synthetic renderer').").\n";
+echo "Finding aid passed: {$GLOBALS['assertions']} assertions (".($autoload?'real Dompdf':'synthetic renderer').").\n";

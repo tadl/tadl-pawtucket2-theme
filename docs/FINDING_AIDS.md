@@ -1,173 +1,166 @@
 # Collection finding aids
 
-The initial **Download finding aid** action replaces the generic collection
-summary PDF link. It generates a letter-size PDF for the collection being viewed,
-including readable descendant collections and counts of their accessible cataloged
-objects. It does not redirect the export to the hierarchy's
-top-level collection.
+**Download finding aid** generates a descriptive PDF for the selected archival
+unit and its complete readable hierarchy. Series, subseries, boxes, folders,
+volumes and other components use their own recorded metadata. A folder can
+correctly describe 80 clippings without having 80 individual object records.
 
-The link uses sentence case and ordinary detail-link color/size, with an underline
-on hover. Its PDF attachment URL and `rel="nofollow"` behavior are unchanged.
+The PDF contains no catalogue-object totals, “directly linked items” counts,
+object inventories or messages implying that a component without linked objects
+is physically empty. Extent and scope come from staff descriptions in Providence.
+The export does not query objects, representations or storage locations.
+Browser counts remain available on collection pages; they describe catalogue
+results and are separate from the finding aid.
 
-The collection page's flat/hierarchy switch does not change the PDF's scope.
-See [Collections](COLLECTIONS.md) for browser navigation and inline counts: browser
-counts include each entire readable branch and apply the media preference, while
-the PDF lists directly linked counts for each node and includes records without media.
+## Document contents
 
-## Initial document
+- Selected unit's title, public identifier, library identification and generation
+  timestamp. The timestamp is not represented as a description revision date.
+- Populated, readable metadata once in the opening summary.
+- Every readable descendant under its actual parent, with title, public
+  identifier, recorded archival level and all configured populated fields.
+- Readable body text, paragraph and line breaks, and page numbers. Editor HTML
+  becomes escaped plain text; scripts, styles and executable markup are excluded.
+- Recorded hierarchy rank first, natural title order for equal ranks, then ID
+  for deterministic ties. Complete branches stay together. Set
+  `hierarchy_sort = name` to explicitly use natural title order instead.
 
-- Collection name and identifier, library identification and generation timestamp.
-- Description, dates, extent, scope/content, language and rights when populated
-  and readable. Missing fields and punctuation-only dates have no heading.
-- Complete readable collection hierarchy, with each subcollection indented under
-  its parent and its name, readable identifier and directly linked object count.
-  Each series, subseries, box, folder or other descendant includes its populated,
-  readable description beneath that heading and count. Empty descriptions are omitted.
-  Every descendant is listed, including empty subcollections. Siblings sort
-  naturally by name (for example, Drawer 2 before Drawer 10); each whole branch
-  stays together. Counts can overlap when an object belongs to multiple
-  collections; the overall total counts each object only once by its internal ID.
-- Collection contents total, including objects in readable descendant collections.
-  Objects with matching titles/identifiers remain distinct records in the count.
-- Page numbers and wrapping text. Individual object titles, accession numbers,
-  dates, memberships and storage locations are omitted.
+Missing or restricted metadata is omitted without an empty heading or an invented
+statement. Extent, dates and other values are not copied down from a parent or
+inferred from database record counts. Components without separately catalogued
+objects or media still appear.
 
-These are counts of current catalog records, not a claim that every physical
-item has already been cataloged. The document intentionally counts records
-without representations, regardless of the **Only items with media** preference.
-That preference controls display, not access permissions.
+The selected unit is the export root, including when it is a series or folder.
+Its metadata appears once in **About this collection**; descendants follow under
+**Arrangement and contents**. The collection page's flat/hierarchy mode, browser
+display depth, pagination and media preference do not limit the PDF.
 
-## Collection field mappings
+## Field mappings
 
-`conf/finding_aid.conf` defines collection metadata fields. Each
-mapping has a label and a list of candidate native bundles; the first populated,
-readable bundle wins. Missing elements are skipped without probing nonexistent
-metadata. Mappings allow field paths within the subject table, not arbitrary
-display templates or PHP.
+Adapt `conf/finding_aid.conf` to your Providence installation profile. The same
+`collection_fields` mapping applies independently to the root and every descendant.
+Mappings are ordered; each contains a label and candidate native bundle paths.
+The first existing, populated, readable candidate supplies the field. Removing a
+mapping removes that field at every level. Paths stay within the record's table;
+arbitrary display templates and PHP are not accepted.
 
-The `collection_fields.description.bundles` mapping also supplies descriptions
-for every readable descendant, regardless of its collection type or depth. The
-selected collection's description appears once in About this collection, including
-when downloading a finding aid from a series or folder. Descendant descriptions
-are plain text with paragraph/line breaks preserved, using the same HTML cleanup,
-escaping and bundle permissions as the main description. Restricted description
-bundles are not fetched. Removing the mapping omits descriptions at every level.
-Long descriptions flow across PDF pages, with the heading kept with the start of
-its description instead of forcing the entire entry onto one page.
+The supplied mappings cover:
 
-The 2026-10-08 change replaces the object inventory with counts. The former
-`inventory_fields` and `include_storage_locations` configuration entries are no
-longer used. Object metadata and storage records are not loaded for this summary.
+| Information | Native bundle or mapping |
+| --- | --- |
+| Repository and level | `ca_collections.repository`, `ca_collections.type_id` |
+| Creators | `ca_entities` relationships restricted to the `creator` role |
+| Dates | `ca_collections.date.dates_value`, then supported `unitdate` value paths |
+| Extent | `ca_collections.extent_text`, then `ca_collections.extent` |
+| Languages | `ca_collections.language`, then `ca_collections.langmaterial` |
+| Abstract and description | `ca_collections.abstract`, `ca_collections.description` |
+| Source of description | `ca_collections.description_source` |
+| History, scope and arrangement | `adminbiohist`, `collection_scope_content` / `scopecontent`, `arrangement` |
+| Provenance and acquisition | `provenance` / `custodhist` / `custohist`, `acqinfo`, `accruals` |
+| Access conditions | `accessrestrict`, `physaccessrestrict`, `techaccessrestrict` |
+| Rights and use | `rights.rightsText`, `rights.copyrightStatement`, `reproduction` |
+| Subjects | `lcsh_terms` |
+| Related resources | `originalsloc`, `altformavail`, `relatedmaterial`, `external_link.url_line2.url_entry`, `otherfindingaid` |
+| Preparation and citation | `processInfo` / `processinfo`, `preferCite` |
+
+All shortened paths in the table have the `ca_collections.` prefix in the actual
+configuration. The local profile provides description, source, dates, extent,
+language, provenance, scope/content, subjects, rights and related links. Other
+mappings support common DACS/ISAD profiles but do not create absent fields.
+Dates use recorded date values; typed inclusive/bulk-date labels need a
+profile-specific extension if your installation stores them separately.
+
+Creator relationships use the native `ca_entities_x_collections` relationship
+types. Only configured valid roles are queried; unknown types fail closed. Names
+are deduplicated by entity ID and independently checked for record, type, source,
+label and Pawtucket ACL access. A general related entity is not assumed to be a
+creator, donor or repository. Reference-valued attributes such as rights-holder
+entity records are not automatically added as unchecked names.
+
+For `ca_collections.language`, `display_language_labels = 1` matches the existing
+collection detail behavior: selected language terms are descriptive labels, even
+when those vocabulary terms have default private access. This exception applies
+only to that exact attribute when its native datatype is List. The collection
+and language bundle still require their normal permissions; unrelated fields,
+related entities and other datatypes retain access filtering. Set the option to
+`0` to require language-term access as well.
+
+Never enumerate every metadata element automatically. Internal notes,
+preservation-system identifiers, private donor details and staff-only storage
+instructions do not belong in a public finding aid. Any newly mapped acquisition,
+processing or access note must be appropriate for the public bundle permissions.
 
 ## Implementation and access
 
-The theme download URL is `/CollectionFindingAid/Download/collection_id/<id>`.
-Do not use `FindingAid` as the controller name: Pawtucket's native dispatcher
-treats that prefix as its bundled plugin, even when the plugin is disabled, and
-looks for a plugin `DownloadController` instead of the theme controller. Deploy
-the renamed controller and updated collection detail view together; then reload
-the collection page and use its updated link. The original `/FindingAid/Download/`
-URL is not the theme endpoint.
+The theme endpoint is `/CollectionFindingAid/Download/collection_id/<id>`.
+`FindingAid` is reserved by Pawtucket's bundled plugin during native URL parsing;
+the old `/FindingAid/Download/` URL is not this theme endpoint. The collection link
+uses sentence case, ordinary detail-link styling and `rel="nofollow"`.
 
-- `controllers/CollectionFindingAidController.php`: GET-only download, selected collection
-  validation, login requirements, configuration, generation and safe filename.
-- `helpers/finding_aid.php`: native model traversal, record/type/source/bundle/ACL
-  checks, accessible collection metadata, unique object counts and Dompdf rendering.
-- `views/Details/finding_aid_pdf_html.php`: escaped text and PDF styling.
-- `views/Details/finding_aid_binary.php`: PDF attachment with `private, no-store`
-  and `nosniff` headers.
-- `views/Details/ca_collections_default_html.php`: selected collection's link.
+- `controllers/CollectionFindingAidController.php`: GET-only endpoint, selected
+  unit validation, configured login requirements, safe filename and diagnostics.
+- `helpers/finding_aid.php`: checked native hierarchy traversal, descriptive
+  metadata and creator lookup, ordering and Dompdf rendering.
+- `views/Details/finding_aid_pdf_html.php`: escaped text and print layout.
+- `views/Details/finding_aid_binary.php`: attachment with `private, no-store`,
+  indexing directives and `nosniff` headers.
+- `views/Details/ca_collections_default_html.php`: selected unit's download link.
 
-Private, deleted or unreadable collections and objects are
-excluded. Unreadable collection branches are not traversed, and relationship and
-hierarchy bundle restrictions are honored. No private-record placeholders or
-counts are included.
+Private, deleted or unreadable units are excluded. Unreadable branches are not
+traversed. Record/type/source access, bundle readability and Pawtucket ACLs apply
+to every included unit. Hierarchy and creator-relationship restrictions are
+honored. There are no hidden-record placeholders or counts. Independent models,
+parent IDs, relative depths and cycle protection preserve the tree without
+interleaving identically named branches or imposing a first-page cutoff.
 
-Hierarchy traversal visits every readable descendant without a paging or
-media-presence filter. Parent IDs and relative depths preserve the actual tree;
-sibling sorting cannot interleave distinct branches with identical names. Cycle
-protection lists each collection once. A selected subcollection is the root of
-its own finding aid, with all of its readable descendants.
+The export uses the Dompdf supplied by Pawtucket. Remote resources, embedded PHP
+and JavaScript are disabled. Generated PDFs are not stored in a shared export
+cache. An unavailable renderer or generation failure returns a readable HTTP 503.
+PHP execution limits are raised to at least 180 seconds where configured;
+infrastructure timeouts still apply. Very large descriptive hierarchies may
+ultimately need background exports, but no work scales with linked-object counts.
 
-Object IDs are deduplicated before checking access, preserving all readable
-memberships for the collection counts. Related-item queries explicitly remove the native default cap
-(1000/4000 in reference APIs), so the export is not a first-page preview. Object
-visibility is checked in batches of 500 scalar IDs through the native
-type/source restriction and Pawtucket ACL APIs. No object model is loaded for
-counting; individual metadata and storage queries, object sorting and per-object
-PDF rendering are skipped. Retained collection nodes use independent model instances.
-Very large collections may need a later background-export
-workflow; there is currently no silent truncation or shared PDF cache.
+The layout uses US Letter portrait, 0.75-inch margins and 10.5-point body text.
+Long fields flow across pages, with a heading kept with the start of its fields.
+Indentation is capped to preserve readable line widths in very deep trees.
 
-The export uses Dompdf already supplied by Pawtucket, with remote resources,
-embedded PHP and JavaScript disabled. It never reuses the native generic summary
-PDF cache in `export/`, avoiding stale or access-context-independent documents.
-An unavailable renderer or generation failure returns HTTP 503 with a readable
-message. Requests have at least 180 seconds when PHP has a configured execution
-limit; infrastructure timeouts still apply.
+## Verification
 
-## Verification and deployment
+Run `php tests/finding_aid_test.php` for synthetic controller, metadata, creator
+privacy, field/bundle restrictions, ordering and hierarchy regressions. Fixtures
+cover a folder with a physical extent and no object records, all descriptive
+levels, missing/custom mappings, private branches, denied language labels,
+selected-subunit exports, identical branch names, cycles and 200 siblings.
+Object queries and models throw in the fixture, including for a root seeded with
+4,105 linked IDs: those IDs must have no effect on the document.
 
-Run `php tests/finding_aid_test.php` for synthetic controller, access, hierarchy,
-duplicate-membership counts, collection fields, omission of individual object
-metadata/entries, descendant descriptions, escaping and renderer boundaries.
-Description cases cover nested levels, empty/restricted fields, custom mappings,
-selected-subcollection exports and avoiding duplicate root descriptions.
-It includes a 4,105-object
-collection to catch default-cap regressions, plus empty and single-item totals,
-nested/empty/200-sibling hierarchies and distinct branches with identical names.
-
-Optionally verify URL parsing through the actual Pawtucket dispatcher:
+Optionally exercise native URL parsing and real rendering against an available
+reference installation:
 
 ```sh
-TADL_TEST_REQUEST_DISPATCHER=/path/to/pawtucket/app/lib/Controller/RequestDispatcher.php \
+TADL_TEST_REQUEST_DISPATCHER=/path/to/pawtucket2/app/lib/Controller/RequestDispatcher.php \
+TADL_TEST_COMPOSER_AUTOLOAD=/path/to/pawtucket2/vendor/autoload.php \
 php tests/finding_aid_test.php
 ```
 
-This uses synthetic controller/plugin directories, reproduces the bundled
-`FindingAid` collision and verifies that the new route resolves to the existing
-theme controller/action with the selected collection ID. It does not bootstrap
-the application, invoke the plugin or connect to a database.
+Also set `TADL_TEST_FINDING_AID_PDF` to an absolute disposable output path outside
+this repository to generate a synthetic sample. Render every page with Poppler
+and inspect layout and extracted text, including full long descriptions and
+metadata at every level. Do not commit samples or catalogue exports. Standalone
+checks do not bootstrap the catalogue or connect to its database.
 
-To verify with an available reference Composer runtime:
+After an authorized deployment, compare a populated collection, a nested folder,
+a metadata-only component and a restricted unit against their Providence fields.
+Check ordering, language labels and creator roles for your profile. Deploy the
+configuration, helper and views together. No new dependency, schema change,
+cache purge or service restart is required. A source push does not deploy.
 
-```sh
-TADL_TEST_COMPOSER_AUTOLOAD=/absolute/path/to/pawtucket2/vendor/autoload.php \
-  php tests/finding_aid_test.php
-```
+## Remaining design work
 
-For a disposable synthetic sample, also set `TADL_TEST_FINDING_AID_PDF` to an
-absolute path outside this repository. Never commit samples, real inventories,
-private catalog exports or generated PDFs. Render sample pages with Poppler and
-inspect layout and extracted text. Standalone tests do not bootstrap the catalog
-or connect to its database.
-
-The initial inventory implementation passed synthetic/native-parser and real
-Dompdf checks. The count-only revision retains those access and rendering
-boundaries and uses a synthetic sample with overlapping collection memberships
-and child-only objects. All twenty-four standalone suites and changed PHP lint
-passed. Real Dompdf generation/native dispatcher checks passed; Poppler text and
-visual inspection confirmed the updated four-page sample with all 36 collection
-nodes through three descendant levels, long/non-ASCII names, 56 unique items,
-overlapping 55-item collection counts and no individual object entries.
-Production field applicability, data and performance
-remain deployment-time checks. Source commits do not deploy.
-
-The descendant-description revision passed the full standalone suite, changed PHP
-syntax checks and real Dompdf/native dispatcher checks. Its 11-page synthetic PDF
-contains 36 hierarchy nodes and a description with 65 paragraphs spanning several
-pages. Poppler rendering and text extraction confirmed readable layout, all full
-paragraphs and folder descriptions, unchanged counts, no duplicate root description
-and no restricted description text. The sample remains outside this repository.
-
-## Questions for the archives team
-
-- Define collection organization and ordering: series,
-  subseries, box/folder, dates or a manual archival arrangement.
-- Specify narrative sections such as administrative/biographical history,
-  provenance, processing notes, access/use restrictions and preferred citation.
-- Decide whether the finding aid should describe only cataloged objects or also
-  uncataloged physical holdings, and whether a separate detailed staff inventory
-  export is needed.
-- Supply an approved example and decide whether later HTML, CSV, EAD/XML or
-  archival-standard output is wanted alongside PDF.
+This implements the descriptive-metadata portion of the review specification,
+not full archival-standard or PDF accessibility conformance. The supplied
+Dompdf export is not tagged. A linked contents list, PDF bookmarks, running
+collection headers, accessible-PDF structure, approved repository/contact
+mappings and public parent-collection context for subunit exports remain further
+work. No curated item-level inventory is appended automatically. Archives staff
+still need to review the actual descriptions and approve public access/use notes.

@@ -5,45 +5,43 @@ $escape = static function ($value) { return htmlspecialchars((string)$value, ENT
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title><?= $escape($aid['title']); ?> - Finding aid</title>
 <style>
-@page { margin: 42pt 42pt 54pt; }
-body { font-family: "DejaVu Sans", sans-serif; font-size: 9pt; line-height: 1.45; color: #111; }
+@page { margin: 54pt 54pt 54pt; }
+body { font-family: "DejaVu Sans", sans-serif; font-size: 10.5pt; line-height: 1.4; color: #111; }
 .brand { font-size: 9pt; color: #444; margin: 0 0 20pt; }
 .kicker { font-size: 10pt; text-transform: uppercase; letter-spacing: 1pt; margin: 0 0 5pt; }
 h1 { font-size: 21pt; line-height: 1.25; margin: 0 0 8pt; }
-h2 { font-size: 13pt; margin: 22pt 0 9pt; border-bottom: 1pt solid #bbb; padding-bottom: 5pt; }
+h2 { font-size: 13pt; margin: 22pt 0 9pt; border-bottom: 1pt solid #bbb; padding-bottom: 5pt; page-break-after: avoid; page-break-inside: avoid; }
+h3 { font-size: 11pt; line-height: 1.35; margin: 0 0 6pt; }
 p { margin: 0 0 8pt; }
 .note { color: #555; font-size: 8pt; }
-.field { margin-bottom: 8pt; }
+.field { margin-bottom: 9pt; word-wrap: break-word; orphans: 3; widows: 3; }
 .label { font-weight: bold; }
 .collection { margin-bottom: 10pt; padding-left: 9pt; border-left: 1pt solid #ddd; word-wrap: break-word; }
 .collection-heading { page-break-inside: avoid; }
-.collection-heading.with-description { page-break-after: avoid; }
+.collection-heading.with-fields { page-break-after: avoid; }
 .collection-name { font-weight: bold; }
-.collection-description { margin: 4pt 0 0; orphans: 3; widows: 3; }
 </style></head><body>
 <p class="brand">Traverse Area District Library | Local History Collection</p>
 <p class="kicker">Finding aid</p>
 <h1><?= $escape($aid['title']); ?></h1>
 <?php if ($aid['identifier'] !== '') { ?><p><span class="label">Collection identifier:</span> <?= $escape($aid['identifier']); ?></p><?php } ?>
-<p class="note">Generated <?= $escape($aid['generated']); ?> from current catalog records.</p>
+<p class="note">Generated <?= $escape($aid['generated']); ?> from recorded archival descriptions. This is the document generation date, not a description revision date.</p>
 <?php if ($aid['fields']) { ?>
 <h2>About this collection</h2>
 <?php foreach ($aid['fields'] as $field) { ?>
 <div class="field"><span class="label"><?= $escape($field['label']); ?>:</span><br><?= nl2br($escape($field['value'])); ?></div>
 <?php } } ?>
 <?php if (count($aid['collections']) > 1) { ?>
-<h2>Collection organization</h2>
+<h2>Arrangement and contents</h2>
 <?php foreach ($aid['collections'] as $node) { ?>
-<div class="collection" style="margin-left: <?= (int)$node['depth'] * 14; ?>pt;">
-<div class="collection-heading<?= $node['description'] !== '' ? ' with-description' : ''; ?>">
-<span class="collection-name"><?= $escape($node['title']); ?></span><?php if ($node['identifier'] !== '') { ?> <span class="note">[<?= $escape($node['identifier']); ?>]</span><?php } ?>
-<br><span class="note"><?= (int)$node['count']; ?> directly linked <?= $node['count'] === 1 ? 'item' : 'items'; ?></span>
+<?php if ($node['parent_id'] === null) { continue; } ?>
+<div class="collection" style="margin-left: <?= min(8, max(0, (int)$node['depth'] - 1)) * 12; ?>pt;">
+<div class="collection-heading<?= $node['fields'] ? ' with-fields' : ''; ?>">
+<h3 class="collection-name"><?= $escape($node['title']); ?></h3><?php if ($node['identifier'] !== '') { ?><p class="note"><?= $escape($node['identifier']); ?></p><?php } ?>
 </div>
-<?php if ($node['description'] !== '') { ?><p class="collection-description"><?= nl2br($escape($node['description'])); ?></p><?php } ?>
+<?php foreach ($node['fields'] as $field) { ?>
+<div class="field"><span class="label"><?= $escape($field['label']); ?>:</span><br><?= nl2br($escape($field['value'])); ?></div>
+<?php } ?>
 </div>
 <?php } } ?>
-<h2>Collection contents</h2>
-<p><?= (int)$aid['object_count']; ?> <?= $aid['object_count'] === 1 ? 'item' : 'items'; ?>. Includes records with and without media in this collection and its readable subcollections.</p>
-<?php if (count($aid['collections']) > 1) { ?><p class="note">Objects linked to multiple collections count once in this total. Directly linked counts above can overlap.</p><?php } ?>
-<?php if (!$aid['object_count']) { ?><p>No accessible object records are currently linked to this collection.</p><?php } ?>
 </body></html>

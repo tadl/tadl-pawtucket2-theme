@@ -79,18 +79,18 @@ branch, even below the right panel's configured display depth. Visible empty
 branches show **(0)**. Shared objects count once in each ancestor total; sibling
 totals can overlap and should not be summed to infer the parent total.
 
-Browser counts and PDF finding-aid counts serve different purposes:
+Browser counts describe visible catalogue objects:
 
 | Count | Includes descendants? | Uses the media preference? |
 | --- | --- | --- |
 | Flat result total | Yes, deduplicated across the selected branch | Yes |
 | Hierarchy page's item total | No, directly attached objects | Yes |
 | Inline hierarchy title count | Yes, deduplicated within that title's branch | Yes |
-| Finding-aid overall total | Yes, deduplicated across the selected branch | No |
-| Finding-aid count beside each node | No, directly linked objects | No |
 
-All counts still respect access permissions. The finding aid lists every readable
-descendant, including empty subcollections, and omits individual object entries.
+All browser counts respect access permissions. PDF finding aids have no object
+counts. They describe every readable archival unit using its recorded extent,
+description, dates and other public metadata, including units with no separately
+catalogued objects. They do not infer physical contents from browser totals.
 See [Finding aids](FINDING_AIDS.md) for field mappings and export details.
 
 ## Configuration and implementation
@@ -160,7 +160,8 @@ Reload picks up changed CSS/JS through the existing content versions.
 After an authorized deployment, check a flat collection, a deeply nested branch,
 an overlapping-membership example and an empty branch. In both media preferences,
 verify counts, access restrictions, paging, sorting, Tiles/List, Back and the two
-mode-switch links. Compare the finding aid using its distinct count semantics.
+mode-switch links. Check that the finding aid retains each unit's recorded extent
+and description without adding catalogue-object counts.
 Check a series with directly attached items and empty boxes/folders underneath it:
 only the series should count those items; empty descendants must stay at **(0)**.
 Check normal/hover link styling and narrow-screen layouts. Keep native collection

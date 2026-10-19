@@ -186,7 +186,7 @@ deployment, live catalog permissions or full-page performance.
 | Home-page writing | `views/Front/front_page_html.php`, `assets/pawtucket/js/recent-writing.js`; companion TADLFeeds `/local_history_posts.json` |
 | Object media | `helpers/object_detail_media.php`, `views/bundles/representation_viewer_html.php` |
 | Image downloads | `helpers/image_downloads.php`, `helpers/image_download_cache.php`, `controllers/ImageDownloadController.php`, `views/Details/image_download_binary.php`, `views/mediaViewers/viewerWrapper.php`, `assets/pawtucket/js/image-downloads.js`; `docs/IMAGE_DOWNLOADS.md` |
-| Bulk record visibility | `helpers/record_access.php`; native restriction/ACL adapters shared by eligibility, thumbnails and finding-aid counts |
+| Bulk record visibility | `helpers/record_access.php`; native restriction/ACL adapters shared by eligibility and thumbnails; finding aids no longer query objects |
 | Crawler policy | `helpers/crawler_policy.php`, shared header and download views; `support/site-root/robots.txt`, `docs/CRAWLER_POLICY.md` (root file installed separately) |
 | Enlarged viewer help | `views/Details/viewer_help_html.php` |
 | Detail metadata and long-field disclosures | `views/Details/detail_field_helpers.php`, shared detail templates and scoped theme CSS |
@@ -379,36 +379,44 @@ See `docs/USER_FEATURES.md` for limitations and live verification boundaries.
 
 ### Collection finding aids
 
-Collection details now offer **Download finding aid** for the selected collection.
-The link uses sentence case and the normal detail-link color, size and hover underline.
-The PDF includes populated collection metadata, a unique accessible-object total and directly
-linked object counts for each readable collection/descendant. Counts include
-objects without media, independent of the header preference, and preserve all
-record, bundle and Pawtucket ACL checks. As of 2026-10-08, individual object entries
-are omitted; object metadata/storage locations are no longer fetched or configured.
-Shared objects count once in the overall total but in each directly linked
-collection's count. The organization section lists every readable descendant,
-including empty subcollections, with names/identifiers indented by hierarchy level.
-As of 2026-10-19, each descendant also includes its readable description from
-`collection_fields.description.bundles`. This covers every collection type/depth;
-empty or restricted descriptions are omitted without fetching restricted bundles.
-The selected root description remains in About this collection only. Description
-text uses existing HTML cleanup and escaping, preserving paragraph/line breaks.
-PDF entries can split across pages while keeping headings with their descriptions.
-The finding-aid suite covers nested descriptions, custom/absent mappings, access,
-escaping and selected subcollections; its optional real PDF sample includes a
-description longer than one page.
-Siblings sort naturally by name; each parent's complete branch stays together,
-including when two siblings have identical names. A selected subcollection starts
-at depth zero and includes its own descendants, not its parent or siblings.
-There is no native relationship cap or shared PDF cache.
-The PDF uses the existing Dompdf dependency with
-remote resources/PHP/JS disabled. See `docs/FINDING_AIDS.md` for field mappings,
-source boundaries, real-render verification and pending archives-team decisions.
-The theme endpoint is `/CollectionFindingAid/Download/collection_id/<id>`;
-`FindingAid` is a reserved bundled-plugin prefix in native URL parsing. The renamed
-controller and collection link must be deployed together. Optional native
-dispatcher verification is documented in `docs/FINDING_AIDS.md`.
+**Download finding aid** exports the selected unit and all readable descendants
+as a descriptive PDF. As of 2026-10-19, every hierarchy level uses the same
+`collection_fields` mapping: extent, description, dates, creator relationships,
+scope/content, language, provenance, rights and other configured public metadata.
+Missing fields are omitted. A folder without individually catalogued objects can
+still describe its complete physical contents. Root metadata appears once in the
+overview; descendants retain their actual parent and relative depth.
+
+The export no longer counts or queries linked objects. Overall totals, directly
+linked item counts and empty-object messages are removed. Collection-page browser
+counts are unchanged. The PDF remains independent of media preference, browser
+mode, pagination and configured browser display depth.
+
+Record/type/source access, bundle permissions and Pawtucket ACLs apply at every
+level. Creator names have independent entity and label checks and use only the
+configured creator role; arbitrary relations are not treated as creators.
+Language List labels match collection-detail behavior through the narrowly scoped
+`display_language_labels` option; record/bundle restrictions still apply.
+
+Recorded rank determines sibling order, with natural names/IDs as tie-breakers;
+`hierarchy_sort = name` explicitly restores natural title order. Complete branches
+stay together, including identically named siblings. There is no shared PDF cache
+or object-count query dependency. Long metadata flows across PDF pages with
+headings kept with the beginning of their fields. Body text is 10.5pt.
+
+See `docs/FINDING_AIDS.md` for mappings, privacy boundaries, checks and remaining
+review-spec work (including tagged PDFs, bookmarks and parent context). The
+endpoint remains `/CollectionFindingAid/Download/collection_id/<id>`; `FindingAid`
+is a native bundled-plugin prefix. Configuration, helper and views deploy as one
+revision, using existing Dompdf with remote resources/PHP/JS disabled. No schema
+change, dependency installation, cache purge or service restart is needed.
+
+Verification: all 36 standalone suites, changed PHP lint and diff checks passed.
+The native configuration parser accepted all 29 mappings and options. Real
+Dompdf/native dispatcher checks passed; Poppler rendering and extracted text
+verified an 11-page synthetic PDF with 18 descriptive units, metadata-only folders
+and all 30 paragraphs of a long description. No catalogue counts or restricted
+text appeared. Production output remains a deployment-time check.
 
 ### Asset cache versions
 
@@ -591,7 +599,7 @@ below retain implementation details and historical verification evidence.
   each object up its ancestor chain once, so overlapping memberships do not inflate
   parent counts. No per-object model loads or per-title searches are needed.
   Rendering also prunes titles outside that readable branch. Counts are request-local;
-  finding-aid counts remain independent of the media preference. Deploy the helper,
+  PDF finding aids now use descriptive metadata without object counts. Deploy the helper,
   both hierarchy views and CSS together. No schema change is required.
   The 2026-10-08 count change passed all 27 standalone suites, changed-file PHP
   lint and synthetic desktop/phone browser checks of both columns, long titles,
@@ -999,7 +1007,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/contact_mail_test.php` | Actual contact controller/form/mail templates and Turnstile verifier; named Reply-To, unique subjects, validation/POST/CSRF, legacy CAPTCHA, two-host Turnstile success/failures, partial setup, retry guidance and CSP override; optional native header merge check; synthetic HTTP and captured mail only |
 | `tests/user_features_test.php` | Anonymous/authenticated navigation and result actions, staff-only Providence shortcut in actual object detail HTML, valid object IDs/new-tab safety, native login POST/CSRF, registration policy, password-manager fields and cache separation |
 | `tests/home_faq_test.php` | Published/readable Site Pages, drafts, incomplete entries, locale, rank, escaped questions and purified answers; optional real HTMLPurifier |
-| `tests/finding_aid_test.php` | Selected collection export, full nested/empty/wide hierarchy, natural sibling order and duplicate-named branches, access/ACL/bundle restrictions, complete unique counts over native caps, overlapping memberships, no individual object metadata/entries, collection field mappings, escaped PDF text and safe failure; optional real Dompdf |
+| `tests/finding_aid_test.php` | Selected-unit export; full nested/uncatalogued/wide hierarchy; rank/name ordering and duplicate-named branches; access/ACL/bundle and creator privacy; language labels; configurable metadata at every level; no object models, queries, counts or entries; escaped text and safe PDF failures; optional real Dompdf/native dispatcher |
 | `tests/asset_versions_test.php` | Stable/changed CSS and JS URLs, preserved timestamps, native loader options, subdirectory/absolute theme URLs, escaping, inline-code preservation and path boundaries |
 | `tests/theme_deploy_test.php` | Actual deployment shell with synthetic SSH/rsync boundaries, source paths with spaces, cache preservation, transfer failure handling and no remote shell/service operations |
 | `tests/production_hardening_test.php` | Native Gallery guard shim, public/missing/private/user set boundaries, real HTTP error headers/statuses and safe export diagnostics |
