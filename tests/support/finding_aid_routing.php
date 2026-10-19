@@ -40,9 +40,11 @@ $dispatcher = (new ReflectionClass(RequestDispatcher::class))->newInstanceWithou
 $routing_request->path = '/FindingAid/Download/collection_id/42';
 $dispatcher->setRequest($routing_request);
 aidCheck($routing_request->route['module'] === 'FindingAid/controllers' && $routing_request->route['controller'] === 'Download', 'Old route must reproduce the native plugin collision.');
-$routing_request->route = []; $routing_request->params = [];
-$routing_request->path = '/CollectionFindingAid/Download/collection_id/42';
-$dispatcher->setRequest($routing_request);
-aidCheck($routing_request->route['module'] === '' && $routing_request->route['controller'] === 'CollectionFindingAid' && $routing_request->route['action'] === 'Download', 'Finding aid must resolve to the theme controller, outside the bundled plugin.');
-aidCheck($routing_request->params === ['collection_id' => '42'], 'Native path parsing must preserve the selected collection.');
-aidCheck(is_file(__CA_THEME_DIR__.'/controllers/'.$routing_request->route['controller'].'Controller.php') && method_exists($routing_request->route['controller'].'Controller', $routing_request->route['action']), 'Native resolution must identify an existing theme controller and action.');
+foreach (['Download', 'View', 'Viewer'] as $action) {
+	$routing_request->route = []; $routing_request->params = [];
+	$routing_request->path = '/CollectionFindingAid/'.$action.'/collection_id/42';
+	$dispatcher->setRequest($routing_request);
+	aidCheck($routing_request->route['module'] === '' && $routing_request->route['controller'] === 'CollectionFindingAid' && $routing_request->route['action'] === $action, 'Finding-aid actions must resolve to the theme controller, outside the bundled plugin.');
+	aidCheck($routing_request->params === ['collection_id' => '42'], 'Native path parsing must preserve the selected collection.');
+	aidCheck(is_file(__CA_THEME_DIR__.'/controllers/'.$routing_request->route['controller'].'Controller.php') && method_exists($routing_request->route['controller'].'Controller', $routing_request->route['action']), 'Native resolution must identify an existing theme controller and action.');
+}

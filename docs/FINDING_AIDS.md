@@ -1,7 +1,14 @@
 # Collection finding aids
 
-**Download finding aid** generates a descriptive PDF for the selected archival
-unit and its complete readable hierarchy. Series, subseries, boxes, folders,
+The **Finding aid** line offers **Download** and **View** for a descriptive PDF
+of the selected archival unit and its complete readable hierarchy. Download sends
+an attachment; View opens Pawtucket's existing PDF.js document viewer in the media
+overlay, with paging, zoom, text search and download controls. The existing dialog
+handles keyboard focus and returns focus to View when closed. Modified clicks
+and browsers without the panel follow a direct inline-PDF link instead; browser
+PDF settings can override inline viewing. Both options use the same access-checked
+document. No Providence representation or stored export is created.
+Series, subseries, boxes, folders,
 volumes and other components use their own recorded metadata. A folder can
 correctly describe 80 clippings without having 80 individual object records.
 
@@ -96,19 +103,28 @@ processing or access note must be appropriate for the public bundle permissions.
 
 ## Implementation and access
 
-The theme endpoint is `/CollectionFindingAid/Download/collection_id/<id>`.
+The theme endpoints are `/CollectionFindingAid/Download/collection_id/<id>` for
+attachments and `/CollectionFindingAid/View/collection_id/<id>` for inline PDFs.
+`/CollectionFindingAid/Viewer/collection_id/<id>` provides the native PDF.js
+overlay markup. It checks access before rendering; the PDF request independently
+checks access again. Opening the overlay does not generate a second PDF.
 `FindingAid` is reserved by Pawtucket's bundled plugin during native URL parsing;
-the old `/FindingAid/Download/` URL is not this theme endpoint. The collection link
-uses sentence case, ordinary detail-link styling and `rel="nofollow"`.
+the old `/FindingAid/Download/` URL is not this theme endpoint. Both collection
+links use sentence case, ordinary detail-link styling and `rel="nofollow"`.
+View has an eye icon and `aria-haspopup="dialog"`, and invokes the existing
+`caMediaPanel` only on an ordinary unmodified activation. Its direct PDF `href`
+remains usable without JavaScript, through context menus and with modifier keys.
 
-- `controllers/CollectionFindingAidController.php`: GET-only endpoint, selected
+- `controllers/CollectionFindingAidController.php`: GET-only actions sharing selected
   unit validation, configured login requirements, safe filename and diagnostics.
 - `helpers/finding_aid.php`: checked native hierarchy traversal, descriptive
   metadata and creator lookup, ordering and Dompdf rendering.
 - `views/Details/finding_aid_pdf_html.php`: escaped text and print layout.
-- `views/Details/finding_aid_binary.php`: attachment with `private, no-store`,
+- `views/Details/finding_aid_binary.php`: inline or attachment PDF with `private, no-store`,
   indexing directives and `nosniff` headers.
-- `views/Details/ca_collections_default_html.php`: selected unit's download link.
+- `views/Details/ca_collections_default_html.php`: selected unit's Download/View links.
+- `views/mediaViewers/pdfjs.php` and `viewerWrapper.php`: existing document viewer
+  and close/download controls, reused without a second viewer implementation.
 
 Private, deleted or unreadable units are excluded. Unreadable branches are not
 traversed. Record/type/source access, bundle readability and Pawtucket ACLs apply
@@ -147,6 +163,20 @@ TADL_TEST_COMPOSER_AUTOLOAD=/path/to/pawtucket2/vendor/autoload.php \
 php tests/finding_aid_test.php
 ```
 
+To check the actual PDF.js browser integration, install the same development
+Playwright tools used by the accessibility suite and run:
+
+```sh
+TADL_TEST_COMPOSER_AUTOLOAD=/path/to/pawtucket2/vendor/autoload.php \
+node tests/finding_aid_viewer_browser_test.js
+```
+
+Set `TADL_REFERENCE_ROOT` if the reference Pawtucket assets are elsewhere, and
+`TADL_BROWSER_CHANNEL=chrome` to use an installed Chrome instead of Playwright's
+Chromium. The optional check renders real synthetic PDF bytes locally and covers
+paging, text search, download, closing/reopening, focus restoration and desktop/
+phone widths. It never bootstraps the catalogue or contacts a production site.
+
 Also set `TADL_TEST_FINDING_AID_PDF` to an absolute disposable output path outside
 this repository to generate a synthetic sample. Render every page with Poppler
 and inspect layout and extracted text, including full long descriptions and
@@ -155,7 +185,7 @@ checks do not bootstrap the catalogue or connect to its database.
 
 After an authorized deployment, compare a populated collection, a nested folder,
 a metadata-only component and a restricted unit against their Providence fields.
-Check ordering, language labels and creator roles for your profile. Deploy the
+Check ordering, language labels, creator roles and both Download/View for your profile. Deploy the
 configuration, helper and views together. No new dependency, schema change,
 cache purge or service restart is required. A source push does not deploy.
 

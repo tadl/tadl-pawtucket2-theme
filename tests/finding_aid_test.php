@@ -15,6 +15,12 @@ function aidCheck($condition, $message) {
 	if (!$condition) { throw new RuntimeException($message); }
 }
 function _t($text) { return $text; }
+function caNavUrl($request, $module, $controller, $action, $params = []) {
+	$url = '/synthetic/'.$controller.'/'.$action;
+	foreach ($params as $key => $value) { $url .= '/'.$key.'/'.rawurlencode((string)$value); }
+	return $url;
+}
+function caParseElementDimension($value, $options) { return $value ?: $options['default']; }
 function caGetUserAccessValues($request) { return $request->access; }
 function caACLIsEnabled($record, $options) {
 	aidCheck($options === ['forPawtucket' => true], 'ACL must use Pawtucket context.');
@@ -58,6 +64,8 @@ class AidRequest {
 	function getRequestMethod() { return $this->method; }
 	function getParameter($key, $type) { aidCheck($type === pInteger, 'Collection ID must use native integer parsing.'); return $this->params[$key] ?? null; }
 	function isLoggedIn() { return $this->loggedIn; }
+	function getBaseUrlPath() { return '/synthetic'; }
+	function getViewsDirectoryPath() { return dirname(__DIR__).'/views'; }
 }
 class AidModel {
 	public array $row = [];
@@ -101,6 +109,17 @@ class AidView {
 	function setVar($key, $value) { $this->vars[$key] = $value; }
 	function getVar($key) { return $this->vars[$key] ?? null; }
 	function render($path) { ob_start(); include dirname(__DIR__).'/views/'.$path; return ob_get_clean(); }
+}
+class View extends AidView {
+	public $request;
+	function __construct($request, $path) {
+		aidCheck($path === dirname(__DIR__).'/views/mediaViewers', 'Finding aid must use the native media-viewer template path.');
+		$this->request = $request;
+	}
+	function render($path) {
+		if ($GLOBALS['aidViewerFail'] ?? false) { throw new RuntimeException('Synthetic viewer failure'); }
+		return parent::render('mediaViewers/'.$path);
+	}
 }
 class AidResponse {
 	public int $status = 200;
@@ -297,23 +316,45 @@ foreach ([
 	[new AidRequest([], 'POST'), 405], [new AidRequest([]), 400], [new AidRequest(['collection_id' => -1]), 400],
 	[new AidRequest(['collection_id' => 999]), 404], [new AidRequest(['collection_id' => 8]), 404], [new AidRequest(['collection_id' => 10]), 404]
 ] as [$case, $expected]) {
-	$response = new AidResponse(); $controller = new CollectionFindingAidController($case, $response); $controller->Download();
-	aidCheck($response->status === $expected && !$controller->rendered, 'Invalid/missing/unreadable requests must not export.');
+	foreach (['Download', 'View', 'Viewer'] as $action) {
+		$response = new AidResponse(); $controller = new CollectionFindingAidController($case, $response); $controller->$action();
+		aidCheck($response->status === $expected && !$controller->rendered, 'Invalid/missing/unreadable requests must not export or view.');
+	}
 }
 $case = new AidRequest(); $case->config->values['pawtucket_requires_login'] = 1;
-$response = new AidResponse(); (new CollectionFindingAidController($case, $response))->Download(); aidCheck($response->status === 403, 'Required login must be enforced.');
+foreach (['Download', 'View', 'Viewer'] as $action) {
+	$response = new AidResponse(); (new CollectionFindingAidController($case, $response))->$action(); aidCheck($response->status === 403, 'Required login must be enforced for either PDF action.');
+}
 $GLOBALS['aidConfig']->values['enabled'] = 0;
-$response = new AidResponse(); (new CollectionFindingAidController(new AidRequest(), $response))->Download(); aidCheck($response->status === 404, 'Disabled finding aids must be rejected.');
+foreach (['Download', 'View', 'Viewer'] as $action) {
+	$response = new AidResponse(); (new CollectionFindingAidController(new AidRequest(), $response))->$action(); aidCheck($response->status === 404, 'Disabled finding aids must be rejected for either PDF action.');
+}
 $GLOBALS['aidConfig']->values['enabled'] = 1;
 $response = new AidResponse(); $controller = new CollectionFindingAidController(new AidRequest(), $response); $controller->Download();
 aidCheck($response->status === 200 && $controller->rendered && $response->headers['Cache-Control'] === 'private, no-store', 'Valid downloads must produce an uncached PDF attachment.');
 aidCheck($controller->view->getVar('finding_aid_name') === 'SYN-42-finding-aid.pdf', 'Filename must safely identify the collection.');
 aidCheck(str_starts_with($controller->view->getVar('finding_aid_bytes'), '%PDF-'), 'Download bytes must be PDF.');
+aidCheck($controller->view->getVar('finding_aid_inline') === false, 'Download must retain attachment behavior.');
+$response = new AidResponse(); $inline_controller = new CollectionFindingAidController(new AidRequest(), $response); $inline_controller->View();
+aidCheck($response->status === 200 && $inline_controller->rendered && $inline_controller->view->getVar('finding_aid_inline') === true && $response->headers['Cache-Control'] === 'private, no-store', 'View must use the checked PDF export with inline display and private caching.');
+aidCheck($inline_controller->view->getVar('finding_aid_name') === 'SYN-42-finding-aid.pdf' && str_starts_with($inline_controller->view->getVar('finding_aid_bytes'), '%PDF-'), 'Viewed PDF must retain its download filename and real PDF bytes.');
+$before = count($GLOBALS['aidLoads']);
+$response = new AidResponse(); $viewer_controller = new CollectionFindingAidController(new AidRequest(), $response); $viewer_controller->Viewer();
+aidCheck($response->status === 200 && str_contains($response->body, 'id="caMediaOverlayContent"') && str_contains($response->body, 'id="viewerContainer"'), 'Finding aid must reuse the actual PDF.js document viewer and native media overlay.');
+aidCheck(str_contains($response->body, "window.pdfjsContentURL = '/synthetic/CollectionFindingAid/View/collection_id/42'") && str_contains($response->body, '/assets/pdfjs/viewer/viewer.js'), 'Native PDF.js must load the access-checked generated PDF endpoint.');
+aidCheck(str_contains($response->body, '/CollectionFindingAid/Download/collection_id/42') && str_contains($response->body, 'Close media viewer') && $response->headers['Cache-Control'] === 'private, no-store' && $response->headers['X-Robots-Tag'] === 'noindex, nofollow', 'Viewer must retain download/close controls and privacy/crawler headers.');
+aidCheck(array_slice($GLOBALS['aidLoads'], $before) === [['ca_collections', 42]], 'Opening the viewer must validate only the root; PDF generation happens once when PDF.js requests it.');
+$GLOBALS['aidViewerFail'] = true;
+$response = new AidResponse(); (new CollectionFindingAidController(new AidRequest(), $response))->Viewer();
+aidCheck($response->status === 503 && str_contains($response->body, 'Please use Download instead.') && !str_contains($response->body, 'Synthetic viewer failure'), 'Viewer errors must provide a safe download fallback.');
+$GLOBALS['aidViewerFail'] = false;
 if (!$autoload) {
 	aidCheck($GLOBALS['aidPDFOptions'] === ['isRemoteEnabled' => false, 'isPhpEnabled' => false, 'isJavascriptEnabled' => false], 'Unsafe PDF features must remain disabled.');
 	aidCheck($GLOBALS['aidPDFFooter'] === '{PAGE_NUM} / {PAGE_COUNT}', 'Page numbers must be present.');
 	$GLOBALS['aidPDFFail'] = true; $response = new AidResponse(); $failed = new CollectionFindingAidController(new AidRequest(), $response); $failed->Download();
 	aidCheck($response->status === 503 && !$failed->rendered && !str_contains($response->body, 'Synthetic renderer failure'), 'Renderer failures must stay safe and actionable.');
+	$response = new AidResponse(); $failed = new CollectionFindingAidController(new AidRequest(), $response); $failed->View();
+	aidCheck($response->status === 503 && !$failed->rendered, 'Inline viewing must fail safely when PDF rendering fails.');
 }
 if ($output = getenv('TADL_TEST_FINDING_AID_PDF')) {
 	aidCheck((bool)$autoload, 'A PDF sample requires real Composer dependencies.');
@@ -340,4 +381,10 @@ if (!$autoload) {
 	aidCheck(str_contains($diagnostics, '"operation":"finding_aid"') && str_contains($diagnostics, '"collection_id":42'), 'Failed exports must record safe operator diagnostics.');
 	aidCheck(!str_contains($diagnostics, 'Synthetic renderer failure') && !str_contains($diagnostics, $directory), 'Diagnostics must omit exception messages and paths.');
 }
-echo "Finding aid passed: {$GLOBALS['assertions']} assertions (".($autoload?'real Dompdf':'synthetic renderer').").\n";
+if (($argv[1] ?? '') === '--viewer-fixture') {
+	aidCheck((bool)$autoload, 'Browser fixture requires real Composer dependencies.');
+	$response = new AidResponse(); (new CollectionFindingAidController(new AidRequest(), $response))->Viewer();
+	print json_encode(['viewer' => $response->body, 'pdf' => base64_encode($inline_controller->view->getVar('finding_aid_bytes'))], JSON_THROW_ON_ERROR);
+} else {
+	echo "Finding aid passed: {$GLOBALS['assertions']} assertions (".($autoload?'real Dompdf':'synthetic renderer').").\n";
+}

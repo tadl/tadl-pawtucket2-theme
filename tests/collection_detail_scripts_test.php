@@ -116,7 +116,19 @@ foreach ([[], ['ca_collections.description' => '<p>&nbsp;</p>', 'ca_collections.
 	checkDetailScripts(!preg_match('~<label>(Description|Dates|Related collections|Related people|Related events|Related places)</label>~', $html), 'Empty collection fields or relationships emitted headings.');
 }
 $html = (new DetailScriptView(0, ['ca_collections.description' => 'Synthetic description', 'ca_collections.date.dates_value' => '1930', 'relativeTo="ca_places"' => '<a href="/synthetic/place">Synthetic place</a>']))->render('ca_collections');
-checkDetailScripts(str_contains($html, 'Download finding aid') && str_contains($html, '/synthetic/CollectionFindingAid/Download/collection_id/42'), 'Finding aid must download the selected collection.');
+$finding_document = new DOMDocument(); $finding_document->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_NONET);
+$finding_xpath = new DOMXPath($finding_document);
+$finding_download = $finding_xpath->query('//div[@class="exportCollection"]/a[contains(@href,"/CollectionFindingAid/Download/")]')->item(0);
+$finding_view = $finding_xpath->query('//div[@class="exportCollection"]/a[contains(@href,"/CollectionFindingAid/View/")]')->item(0);
+checkDetailScripts($finding_download && str_contains($finding_download->getAttribute('href'), '/collection_id/42') && !$finding_download->hasAttribute('target') && trim($finding_download->textContent) === 'Download finding aid (PDF)', 'Finding aid Download must preserve the selected collection, descriptive name and current-tab attachment behavior.');
+checkDetailScripts($finding_view && str_contains($finding_view->getAttribute('href'), '/collection_id/42') && !$finding_view->hasAttribute('target') && $finding_view->getAttribute('aria-haspopup') === 'dialog' && $finding_view->getAttribute('aria-controls') === 'caMediaPanel', 'View must open the existing document dialog and retain a direct PDF fallback.');
+checkDetailScripts($finding_view->getAttribute('rel') === 'nofollow' && $finding_download->getAttribute('rel') === 'nofollow' && $finding_xpath->query('.//span[contains(@class,"glyphicon-eye-open") and @aria-hidden="true"]', $finding_view)->length === 1, 'View needs an eye icon, descriptive link text and crawler directives.');
+checkDetailScripts($finding_view->getAttribute('data-finding-aid-viewer') === '/synthetic/CollectionFindingAid/Viewer/collection_id/42' && str_contains($finding_view->getAttribute('onclick'), 'caMediaPanel.showPanel('), 'The viewer dialog must use the selected finding-aid endpoint.');
+$finding_callback = $finding_view->getAttribute('onclick');
+$finding_js = 'const assert = require("node:assert/strict"); const events = []; const link = {getAttribute: () => "/synthetic/CollectionFindingAid/Viewer/collection_id/42"}; const callback = new Function("event", "window", "caMediaPanel", '.json_encode($finding_callback).'); const panel = {showPanel: url => events.push(url)}; assert.equal(callback.call(link, {}, {caMediaPanel:panel}, panel), false); assert.deepEqual(events, [link.getAttribute()]); for (const modifier of ["ctrlKey","metaKey","shiftKey","altKey"]) {assert.equal(callback.call(link, {[modifier]:true}, {caMediaPanel:panel}, panel), undefined);} assert.equal(events.length,1); assert.equal(callback.call(link, {}, {}, undefined), undefined);';
+$finding_process = proc_open(['node', '-e', $finding_js], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $finding_pipes);
+fclose($finding_pipes[0]); $finding_output = stream_get_contents($finding_pipes[1]).stream_get_contents($finding_pipes[2]); fclose($finding_pipes[1]); fclose($finding_pipes[2]);
+checkDetailScripts(proc_close($finding_process) === 0, 'Finding-aid viewer callback must retain modified-click and missing-viewer fallbacks: '.$finding_output);
 checkDetailScripts(!str_contains($html, 'Download as PDF') && !str_contains($html, '_pdf_ca_collections_summary'), 'Collection still links to the generic summary export.');
 checkDetailScripts(str_contains($html, '<label>Description</label>Synthetic description') && str_contains($html, '<label>Dates</label>1930') && str_contains($html, '<label>Related places</label><a href="/synthetic/place">Synthetic place</a>'), 'Populated collection fields lost headings or native links.');
 $long_description = '<p>'.str_repeat('Synthetic collection description. ', 30).'</p>';
@@ -159,7 +171,7 @@ foreach ([['ca_collections.description' => 'Synthetic description'], ['ca_collec
 	checkDetailScripts(substr_count($html, 'class="tadl-collection-fields"') + substr_count($html, 'class="tadl-collection-facts"') === 1, 'A single populated metadata column must not reserve an empty sibling.');
 }
 $html = (new DetailScriptView(0))->render('ca_collections');
-checkDetailScripts(strpos($html, 'Download finding aid') < strpos($html, 'View collection hierarchy') && str_contains($html, '/Detail/collections/42/collection_view/hierarchy/view/images/sort/Identifier/direction/asc/s/0'), 'Flat view needs an ordinary hierarchy link beneath the finding aid.');
+checkDetailScripts(strpos($html, 'exportCollection') < strpos($html, 'View collection hierarchy') && str_contains($html, '/Detail/collections/42/collection_view/hierarchy/view/images/sort/Identifier/direction/asc/s/0'), 'Flat view needs an ordinary hierarchy link beneath the finding aid.');
 $html = (new DetailScriptView(2, [], ['collection_view' => 'hierarchy', 'view' => 'list', 'sort' => 'Title', 'direction' => 'desc', 's' => 24]))->render('ca_collections');
 checkDetailScripts(str_contains($html, 'View all collection items') && str_contains($html, '/Detail/collections/42/collection_view/flat/view/list/sort/Title/direction/desc/s/0'), 'Return link must retain view/sort but reset paging for the larger scope.');
 $GLOBALS['detailScriptHasChildren'] = false;
@@ -251,4 +263,8 @@ fclose($pipes[2]);
 $status = proc_close($process);
 checkDetailScripts($status === 0, "Rendered detail JavaScript failed in Node.js:\n".$stderr);
 $nodeResult = json_decode($stdout, true, 512, JSON_THROW_ON_ERROR);
-echo json_encode(array('status' => 'passed', 'assertions' => $GLOBALS['detailScriptAssertions'] + $nodeResult['assertions'], 'templates' => 'actual collection detail; authority pages have authority_detail_test.php', 'dependencies' => 'synthetic view/model/config/jQuery boundaries; Node.js syntax and execution'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;
+if (($argv[1] ?? '') === '--finding-aid-fixture') {
+	print json_encode(['links' => $finding_document->saveHTML($finding_download->parentNode)], JSON_THROW_ON_ERROR);
+} else {
+	echo json_encode(array('status' => 'passed', 'assertions' => $GLOBALS['detailScriptAssertions'] + $nodeResult['assertions'], 'templates' => 'actual collection detail; authority pages have authority_detail_test.php', 'dependencies' => 'synthetic view/model/config/jQuery boundaries; Node.js syntax and execution'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;
+}

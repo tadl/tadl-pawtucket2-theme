@@ -379,7 +379,14 @@ See `docs/USER_FEATURES.md` for limitations and live verification boundaries.
 
 ### Collection finding aids
 
-**Download finding aid** exports the selected unit and all readable descendants
+The **Finding aid** line offers **Download** (PDF attachment) and **View** (native
+PDF.js document viewer in the existing accessible media overlay). View has an
+eye icon and dialog semantics; ordinary activation uses `caMediaPanel`, while
+modified clicks or a missing panel follow a direct inline-PDF link. Both links
+use `nofollow`; PDF and viewer responses retain private/no-store and noindex
+headers. The viewer validates root access, then PDF.js requests the checked PDF
+endpoint once; it does not create a representation or save a shared export.
+Both actions share the same export of the selected unit and all readable descendants
 as a descriptive PDF. As of 2026-10-19, every hierarchy level uses the same
 `collection_fields` mapping: extent, description, dates, creator relationships,
 scope/content, language, provenance, rights and other configured public metadata.
@@ -409,7 +416,9 @@ headings kept with the beginning of their fields. Body text is 10.5pt.
 
 See `docs/FINDING_AIDS.md` for mappings, privacy boundaries, checks and remaining
 review-spec work (including tagged PDFs, bookmarks and parent context). The
-endpoint remains `/CollectionFindingAid/Download/collection_id/<id>`; `FindingAid`
+endpoints are `/CollectionFindingAid/Download/collection_id/<id>` and
+`/CollectionFindingAid/View/collection_id/<id>`; the overlay uses
+`/CollectionFindingAid/Viewer/collection_id/<id>`. `FindingAid`
 is a native bundled-plugin prefix. Configuration, helper and views deploy as one
 revision, using existing Dompdf with remote resources/PHP/JS disabled. No schema
 change, dependency installation, cache purge or service restart is needed.
@@ -417,9 +426,17 @@ change, dependency installation, cache purge or service restart is needed.
 Verification: all 36 standalone suites, changed PHP lint and diff checks passed.
 The native configuration parser accepted all 29 mappings and options. Real
 Dompdf/native dispatcher checks passed; Poppler rendering and extracted text
-verified an 11-page synthetic PDF with 18 descriptive units, metadata-only folders
-and all 30 paragraphs of a long description. No catalogue counts or restricted
-text appeared. Production output remains a deployment-time check.
+verified a 10-page synthetic PDF with 18 descriptive units, metadata-only folders,
+normal-weight level suffixes and all 30 paragraphs of a long description. No
+catalogue counts or restricted text appeared. Production output remains a
+deployment-time check.
+The optional `tests/finding_aid_viewer_browser_test.js` uses real Dompdf bytes and
+native PDF.js assets with synthetic fixtures to check the viewer's rendering,
+paging, text search, download, closing/reopening and focus restoration at desktop
+and phone widths. See `docs/FINDING_AIDS.md` for its dependencies and invocation.
+This passed at 1280/390px with the actual PDF.js viewer. Finding-aid titlebar
+controls reuse the image-viewer flex layout so long titles cannot cover the
+document toolbar on phones. No native viewer source or dependency was replaced.
 
 ### Asset cache versions
 

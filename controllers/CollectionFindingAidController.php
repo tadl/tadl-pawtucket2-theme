@@ -2,10 +2,44 @@
 require_once(__CA_LIB_DIR__.'/pawtucket/BasePawtucketController.php');
 require_once(__DIR__.'/../helpers/finding_aid.php');
 require_once(__DIR__.'/../helpers/export_diagnostics.php');
+require_once(__DIR__.'/../helpers/crawler_policy.php');
 
 // "FindingAid" is reserved by Pawtucket's bundled plugin during URL parsing.
 class CollectionFindingAidController extends BasePawtucketController {
 	public function Download() {
+		$this->renderFindingAid(false);
+	}
+
+	public function View() {
+		$this->renderFindingAid(true);
+	}
+
+	public function Viewer() {
+		if (!$collection = $this->readableCollection()) { return; }
+		$this->response->addHeader('Cache-Control', 'private, no-store');
+		$this->response->addHeader('X-Robots-Tag', 'noindex, nofollow');
+		$id = (int)$collection->getPrimaryKey();
+		$pdf_url = caNavUrl($this->request, '', 'CollectionFindingAid', 'View', ['collection_id' => $id]);
+		$download_url = caNavUrl($this->request, '', 'CollectionFindingAid', 'Download', ['collection_id' => $id]);
+		$title = tadlFindingAidValue($this->request, $collection, ['ca_collections.preferred_labels.name']) ?: _t('Finding aid');
+		try {
+			$viewer = new View($this->request, $this->request->getViewsDirectoryPath().'/mediaViewers');
+			foreach (['viewer' => 'pdfjs', 'finding_aid_viewer' => true, 'context' => 'collections', 'search' => '', 'scroll_mode' => 0,
+				'display_media_url' => $pdf_url, 'original_media_url' => $pdf_url, 'media_url' => $pdf_url] as $key => $value) {
+				$viewer->setVar($key, $value);
+			}
+			$heading = htmlspecialchars(_t('Finding aid').': '.$title, ENT_QUOTES, 'UTF-8');
+			$viewer->setVar('controls', '<div class="objectInfo" title="'.$heading.'"><span class="tadl-viewer-object-title">'.$heading.'</span></div>'
+				.'<div class="download"><a href="'.htmlspecialchars($download_url, ENT_QUOTES, 'UTF-8').'" rel="nofollow">'.htmlspecialchars(_t('Download PDF'), ENT_QUOTES, 'UTF-8').'</a></div>');
+			$this->response->addContent($viewer->render('viewerWrapper.php'));
+		} catch (Throwable $error) {
+			tadlLogExportFailure('finding_aid', ['collection_id' => $id, 'format' => 'viewer'], $error);
+			$this->response->setHTTPResponseCode(503, 'Service Unavailable');
+			$this->response->addContent(_t('The finding aid viewer could not be loaded. Please use Download instead.'));
+		}
+	}
+
+	private function readableCollection() {
 		if ($this->request->getRequestMethod() !== 'GET') {
 			$this->response->addHeader('Allow', 'GET');
 			$this->response->setHTTPResponseCode(405, 'Method Not Allowed'); return;
@@ -21,6 +55,13 @@ class CollectionFindingAidController extends BasePawtucketController {
 		if (!$collection || !$collection->load($id) || !tadlFindingAidReadable($this->request, $collection)) {
 			$this->response->setHTTPResponseCode(404, 'Not Found'); return;
 		}
+		return $collection;
+	}
+
+	private function renderFindingAid($inline) {
+		if (!$collection = $this->readableCollection()) { return; }
+		$config = Configuration::load(__DIR__.'/../conf/finding_aid.conf');
+		$id = (int)$collection->getPrimaryKey();
 		$this->response->addHeader('Cache-Control', 'private, no-store');
 		$time_limit = (int)ini_get('max_execution_time');
 		if ($time_limit > 0) { set_time_limit(max($time_limit, 180)); }
@@ -38,6 +79,7 @@ class CollectionFindingAidController extends BasePawtucketController {
 		$name = trim(preg_replace('/[^A-Za-z0-9_-]+/', '-', $data['identifier'] ?: $data['title']), '-');
 		$this->view->setVar('finding_aid_name', substr($name ?: 'collection-'.$id, 0, 120).'-finding-aid.pdf');
 		$this->view->setVar('finding_aid_bytes', $bytes);
+		$this->view->setVar('finding_aid_inline', $inline);
 		$this->render('Details/finding_aid_binary.php', true);
 	}
 }

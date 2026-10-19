@@ -58,7 +58,7 @@ if ($this->getVar('viewer') === 'TileViewer' && in_array($this->getVar('context'
 	<div class="close"><button type="button" class="tadl-dialog-close" aria-label="<?= _t('Close media viewer'); ?>" onclick="caMediaPanel.hidePanel(); return false;"><i class="fa fa-times" aria-hidden="true"></i></button></div>
 </div>
 <?php } else { ?>
-<div class="caMediaOverlayControls<?= $viewer_object_heading !== '' ? ' tadl-image-viewer-controls' : ''; ?>">
+<div class="caMediaOverlayControls<?= $viewer_object_heading !== '' ? ' tadl-image-viewer-controls' : ''; ?><?= $this->getVar('finding_aid_viewer') ? ' tadl-finding-aid-controls' : ''; ?>">
 	<div class="close"><button type="button" class="tadl-dialog-close" aria-label="<?= _t('Close media viewer'); ?>" onclick="caMediaPanel.hidePanel(); return false;"><i class="fa fa-times" aria-hidden="true"></i></button></div>
 	<?php print $download_controls; ?>
 </div>

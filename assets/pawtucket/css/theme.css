@@ -1536,14 +1536,16 @@ h6 {
     z-index: 300;
 }
 
-div.caMediaOverlayControls.tadl-image-viewer-controls {
+div.caMediaOverlayControls.tadl-image-viewer-controls,
+div.caMediaOverlayControls.tadl-finding-aid-controls {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 0 10px;
 }
 
-div.tadl-image-viewer-controls .objectInfo {
+div.tadl-image-viewer-controls .objectInfo,
+div.tadl-finding-aid-controls .objectInfo {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -1568,7 +1570,9 @@ div.tadl-image-viewer-controls .objectInfo {
 
 div.tadl-image-viewer-controls .repNav,
 div.tadl-image-viewer-controls .nextPreviousLinks,
-div.tadl-image-viewer-controls .close {
+div.tadl-image-viewer-controls .close,
+div.tadl-finding-aid-controls .close,
+div.tadl-finding-aid-controls .download {
     flex: 0 0 auto;
     width: auto;
     margin: 0;
@@ -1577,7 +1581,8 @@ div.tadl-image-viewer-controls .close {
     white-space: nowrap;
 }
 
-div.tadl-image-viewer-controls .close {
+div.tadl-image-viewer-controls .close,
+div.tadl-finding-aid-controls .close {
     order: 1;
 }
 

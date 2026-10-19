@@ -80,7 +80,8 @@ foreach (['', '/index.php'] as $prefix) {
 		'/PlaceContents/Objects/place_id/42',
 		'/Browse/people', '/Browse/places/facet/place_facet/id/42', '/Browse/objects/view/pdf/download/1',
 		'/ImageDownload/Download/object_id/42/representation_id/101/format/jpg',
-		'/CollectionFindingAid/Download/collection_id/42', '/FindingAid/Download/collection_id/42',
+		'/CollectionFindingAid/Download/collection_id/42', '/CollectionFindingAid/View/collection_id/42', '/FindingAid/Download/collection_id/42',
+		'/CollectionFindingAid/Viewer/collection_id/42',
 		'/Detail/DownloadRepresentation/object_id/42', '/Detail/DownloadMedia/object_id/42',
 		'/Detail/DownloadAttributeFile/value_id/42', '/Detail/DownloadAttributeMedia/value_id/42',
 		'/Detail/objects/DownloadRepresentation/id/42', '/Detail/collections/downloadSummary/collection_id/42',
@@ -116,7 +117,7 @@ set_error_handler(static function ($severity, $message, $file, $line) { throw ne
 function _t($text) { return $text; }
 class ApplicationException extends Exception {}
 $views = [
- 'image' => 'Details/image_download_binary.php', 'finding' => 'Details/finding_aid_binary.php',
+ 'image' => 'Details/image_download_binary.php', 'finding' => 'Details/finding_aid_binary.php', 'finding-view' => 'Details/finding_aid_binary.php',
  'representation' => 'Details/object_representation_download_binary.php',
  'archive' => 'Details/download_file_binary.php', 'attribute' => 'bundles/download_file_binary.php'
 ];
@@ -129,6 +130,7 @@ $view = new class {
    'image_download' => ['path' => $path, 'mime' => 'image/jpeg'],
    'image_download_name' => 'synthetic.jpg', 'finding_aid_bytes' => file_get_contents($path),
    'finding_aid_name' => 'synthetic.pdf', 'version' => 'original', 'version_path', 'archive_path' => $path,
+   'finding_aid_inline' => $GLOBALS['route'] === 'finding-view',
    'version_download_name', 'archive_name' => 'synthetic.bin',
    'zip_stream' => isset($_GET['zip']) ? new class { function stream() { print file_get_contents(__DIR__.'/fixture.bin'); } } : null,
    default => null
@@ -156,7 +158,7 @@ try {
 		usleep(50000);
 	}
 	crawlerCheck($ready, 'Local HTTP server did not become ready.');
-	foreach (['image', 'finding', 'representation', 'archive', 'attribute', 'archive?zip=1', 'attribute?zip=1'] as $route) {
+	foreach (['image', 'finding', 'finding-view', 'representation', 'archive', 'attribute', 'archive?zip=1', 'attribute?zip=1'] as $route) {
 		$connection = stream_socket_client('tcp://'.$address, $errorCode, $errorMessage, 3);
 		stream_set_timeout($connection, 3);
 		fwrite($connection, "GET /".$route." HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n");
@@ -164,7 +166,8 @@ try {
 		[$headers, $body] = explode("\r\n\r\n", $response, 2);
 		crawlerCheck(str_starts_with($headers, 'HTTP/1.0 200'), $route.': response failed: '.$response);
 		crawlerCheck(str_contains($headers, 'X-Robots-Tag: noindex, nofollow'), $route.': noindex response header is missing.');
-		crawlerCheck(str_contains($headers, 'Content-Disposition: attachment; filename='), $route.': existing attachment header was lost.');
+		$disposition = $route === 'finding-view' ? 'inline' : 'attachment';
+		crawlerCheck(str_contains($headers, 'Content-Disposition: '.$disposition.'; filename='), $route.': expected PDF/display disposition was lost.');
 		crawlerCheck(stripos($headers, 'Cache-Control:') !== false, $route.': existing cache policy was lost.');
 		crawlerCheck($body === $bytes, $route.': download bytes were altered.');
 	}
