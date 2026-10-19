@@ -106,8 +106,10 @@ processing or access note must be appropriate for the public bundle permissions.
 The theme endpoints are `/CollectionFindingAid/Download/collection_id/<id>` for
 attachments and `/CollectionFindingAid/View/collection_id/<id>` for inline PDFs.
 `/CollectionFindingAid/Viewer/collection_id/<id>` provides the native PDF.js
-overlay markup. It checks access before rendering; the PDF request independently
-checks access again. Opening the overlay does not generate a second PDF.
+overlay markup. It accepts GET and the native media panel's POST; both perform
+the same access checks before rendering. View and Download remain GET-only.
+The PDF request independently checks access again. Opening the overlay does not
+generate a second PDF.
 `FindingAid` is reserved by Pawtucket's bundled plugin during native URL parsing;
 the old `/FindingAid/Download/` URL is not this theme endpoint. Both collection
 links use sentence case, ordinary detail-link styling and `rel="nofollow"`.
@@ -115,8 +117,9 @@ View is a text link with `aria-haspopup="dialog"`, and invokes the existing
 `caMediaPanel` only on an ordinary unmodified activation. Its direct PDF `href`
 remains usable without JavaScript, through context menus and with modifier keys.
 
-- `controllers/CollectionFindingAidController.php`: GET-only actions sharing selected
-  unit validation, configured login requirements, safe filename and diagnostics.
+- `controllers/CollectionFindingAidController.php`: PDF actions and viewer markup
+  sharing selected unit validation, configured login requirements, safe filename
+  and diagnostics, with action-specific HTTP method checks.
 - `helpers/finding_aid.php`: checked native hierarchy traversal, descriptive
   metadata and creator lookup, ordering and Dompdf rendering.
 - `views/Details/finding_aid_pdf_html.php`: escaped text and print layout.
@@ -175,7 +178,9 @@ Set `TADL_REFERENCE_ROOT` if the reference Pawtucket assets are elsewhere, and
 `TADL_BROWSER_CHANNEL=chrome` to use an installed Chrome instead of Playwright's
 Chromium. The optional check renders real synthetic PDF bytes locally and covers
 paging, text search, download, closing/reopening, focus restoration and desktop/
-phone widths. It never bootstraps the catalogue or contacts a production site.
+phone widths. Viewer responses use the actual controller's status, headers and
+markup for each request method, including the native panel's POST. It never
+bootstraps the catalogue or contacts a production site.
 
 Also set `TADL_TEST_FINDING_AID_PDF` to an absolute disposable output path outside
 this repository to generate a synthetic sample. Render every page with Poppler

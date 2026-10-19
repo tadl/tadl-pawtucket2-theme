@@ -386,6 +386,12 @@ modified clicks or a missing panel follow a direct inline-PDF link. Both links
 use `nofollow`; PDF and viewer responses retain private/no-store and noindex
 headers. The viewer validates root access, then PDF.js requests the checked PDF
 endpoint once; it does not create a representation or save a shared export.
+The viewer markup accepts GET and POST because native `caMediaPanel.showPanel()`
+uses jQuery `.load()` with an object payload, which sends POST. Both methods
+share the same root/login/access checks; View and Download remain GET-only.
+Unsupported methods return 405 with the action's allowed methods. The optional
+browser fixture uses actual controller responses by method so it detects this
+transport mismatch instead of returning successful markup for every request.
 Both actions share the same export of the selected unit and all readable descendants
 as a descriptive PDF. As of 2026-10-19, every hierarchy level uses the same
 `collection_fields` mapping: extent, description, dates, creator relationships,
