@@ -1,8 +1,9 @@
 # Contact form and Turnstile
 
 The Contact form and object Item Inquiry use the same theme controller. Mail goes
-to `contact_email` in `conf/contact.conf`. The site-configured sender remains From;
-the validated visitor email and normalized name become Reply-To. Every submission
+to `contact_email` in `conf/contact.conf`, which ships with `ask@tadl.org`.
+The site-configured sender remains From; the validated visitor email and normalized
+name become Reply-To. Every submission
 has a unique `CF-` subject reference to separate unrelated mail conversations.
 
 ## Create a Cloudflare widget

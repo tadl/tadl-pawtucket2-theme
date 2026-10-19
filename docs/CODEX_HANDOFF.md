@@ -1,6 +1,6 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-16. This document carries the recent coding context to another
+Updated: 2026-10-19. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
@@ -1307,7 +1307,7 @@ post-deployment HTTP confirmation remain separate operator steps.
 ### Contact form recipient
 
 `conf/contact.conf` routes the Contact form and object Item Inquiry submissions
-to `localhistory@tadl.org`. Native `ContactController` reads `contact_email`
+to `ask@tadl.org`. Native `ContactController` reads `contact_email`
 through `caGetContactConfig()`. The placeholder recipient has been removed.
 The homepage's Ask a Question action links to the native `Contact/Form` page,
 using the same route as the navigation/footer Contact links.
