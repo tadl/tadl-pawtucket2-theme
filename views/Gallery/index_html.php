@@ -10,15 +10,13 @@
 	$vn_first_set_id = (int)key($va_sets);
 	$va_other_sets = $va_sets;
 	unset($va_other_sets[$vn_first_set_id]);
-	$vs_featured_link = caNavLink($this->request, _t('View gallery'), 'btn btn-primary tadl-gallery-cta', '', 'Gallery', $vn_first_set_id);
-	$vs_error_html = '<p class="tadl-gallery-message">'.htmlspecialchars(_t('The gallery preview could not be loaded.'), ENT_QUOTES, 'UTF-8').'</p>'.$vs_featured_link;
+
 ?>
 	<div class="tadl-gallery-layout<?= $va_other_sets ? '' : ' tadl-gallery-layout--single'; ?>">
 		<section class="tadl-gallery-featured" aria-label="<?= htmlspecialchars(_t('Featured gallery'), ENT_QUOTES, 'UTF-8'); ?>">
 			<p class="tadl-gallery-eyebrow"><?= _t('Featured gallery'); ?></p>
-			<div id="gallerySetInfo" aria-busy="true" aria-live="polite">
-				<p class="tadl-gallery-message"><?= _t('Loading featured gallery…'); ?></p>
-				<?= $vs_featured_link; ?>
+			<div id="gallerySetInfo">
+				<?php $this->setVar('featured_set_id', $vn_first_set_id); print $this->render('Gallery/featured_html.php'); ?>
 			</div>
 		</section>
 		<?php if ($va_other_sets): ?>
@@ -48,17 +46,6 @@
 		</aside>
 		<?php endif; ?>
 	</div>
-	<script>
-	jQuery(document).ready(function () {
-		var preview = jQuery('#gallerySetInfo');
-		preview.load(<?= json_encode(caNavUrl($this->request, '', 'Gallery', 'getSetInfo', ['set_id' => $vn_first_set_id]), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, function (response, status) {
-			preview.attr('aria-busy', 'false');
-			if (status === 'error') {
-				preview.html(<?= json_encode($vs_error_html, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>);
-			}
-		});
-	});
-	</script>
 <?php else: ?>
 	<p class="tadl-gallery-message"><?= _t('No galleries are currently available.'); ?></p>
 <?php endif; ?>

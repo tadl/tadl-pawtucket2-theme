@@ -2,9 +2,7 @@
 $authority_groups = tadlAuthorityRelatedGroups($this->request, $t_item, $authority_table);
 $authority_fields = trim($authority_fields);
 $has_sidebar = (bool)($authority_fields || $authority_groups);
-$loading_html = '<p class="tadl-authority-loading">'.caBusyIndicatorIcon($this->request).' '.tadlAuthorityEscape(_t('Loading related items...')).'</p>';
-$empty_html = '<p class="tadl-authority-empty">'.tadlAuthorityEscape(tadlMediaPreference($this->request) === 'only' ? _t('No related items with digital media are currently available.') : _t('No related items are currently available.')).'</p>';
-$error_html = '<p class="tadl-authority-error">'.tadlAuthorityEscape(_t('Related items could not be loaded. Use “View all related items” to open the results page.')).'</p>';
+$this->setVar('tadl_related_scope', ['table'=>$authority_table, 'id'=>(int)$t_item->get($authority['key']), 'family'=>$authority['browse'] === 'families']);
 ?>
 <article class="tadl-authority-detail">
 	<header class="tadl-authority-header tadl-record-header">
@@ -27,8 +25,7 @@ $error_html = '<p class="tadl-authority-error">'.tadlAuthorityEscape(_t('Related
 				<a class="tadl-authority-all-items" href="<?= tadlAuthorityEscape($authority['items_url']); ?>"><?= tadlAuthorityEscape(_t('View all related items')); ?></a>
 			</div>
 			<?php if ($authority['items_note'] ?? ''): ?><p><?= tadlAuthorityEscape($authority['items_note']); ?></p><?php endif; ?>
-			<div id="browseResultsContainer" class="row" aria-busy="true" aria-live="polite"><?= $loading_html; ?></div>
-			<noscript><p><?= tadlAuthorityEscape(_t('Open “View all related items” to explore this record’s items.')); ?></p></noscript>
+			<div id="browseResultsContainer" class="row"><?= $this->render('Details/related_items_html.php'); ?></div>
 		</section>
 		<?php if ($has_sidebar): ?>
 		<aside class="tadl-authority-sidebar tadl-detail-metadata" aria-label="<?= tadlAuthorityEscape(_t('Record information')); ?>">
@@ -61,18 +58,3 @@ $error_html = '<p class="tadl-authority-error">'.tadlAuthorityEscape(_t('Related
 	</div>
 	<?php endif; ?>
 </article>
-<script>
-jQuery(document).ready(function () {
-	var container = jQuery('#browseResultsContainer');
-	container.load(<?= json_encode($authority['items_url'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, function (response, status) {
-		container.attr('aria-busy', 'false');
-		if (status === 'error') {
-			container.html(<?= json_encode($error_html, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>);
-			return;
-		}
-		if (container.find('[data-tadl-result-count="0"]').length) {
-			container.html(<?= json_encode($empty_html, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>);
-		}
-	});
-});
-</script>

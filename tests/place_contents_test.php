@@ -131,6 +131,8 @@ try {
     $GLOBALS['searchBase']=['ca_objects'=>['configured_facet'=>['base']]];
     $configured=tadlPlaceContentsResult(new PlaceRequest(['place_id'=>1]),['sortBy'=>['Identifier'=>'ca_objects.idno'],'restrictToTypes'=>['image'],'dontExpandTypesHierarchically'=>true,'dontShowChildren'=>true,'omitChildRecords'=>true,'baseCriteria'=>['another_facet'=>['value']]]);
     placeCheck($configured->browse->criteria===['_search'=>['*'],'configured_facet'=>['base'],'another_facet'=>['value']] && $configured->browse->types===[['image'],['dontExpandHierarchically'=>true]] && end($configured->browse->filters)===['ca_objects.parent_id','is','null'] && end(PlaceBrowse::$executed)[1]['rootRecordsOnly'], 'Configured native type/base criteria/child restrictions must be retained.'); $GLOBALS['searchBase']=[];
+    $related=tadlScopedObjectContentsResult(new PlaceRequest(['sort'=>'Title','direction'=>'desc']), ['sortBy'=>['Title'=>'ca_object_labels.name']], null, 'tadl_related:synthetic', 'entity_id:42');
+    placeCheck($related->browse->criteria === ['_search'=>['entity_id:42']] && !$related->browse->filters && $related->sort === ['sort'=>'ca_object_labels.name','sort_direction'=>'desc'], 'Server authority queries must use the fixed relationship expression and native sort without an empty ID filter.');
     $plugin=new tadlPlaceContentsPlugin(); $unchanged=(object)['sentinel'=>true];
     foreach ([null,new PlaceRequest(['controller'=>'Search']),new PlaceRequest(['action'=>'other'])] as $unrelated) {
         $GLOBALS['pluginRequest']=$unrelated; $params=['search'=>'objects','browseInfo'=>['table'=>'ca_objects'],'result'=>&$unchanged];

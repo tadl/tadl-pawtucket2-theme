@@ -22,6 +22,8 @@ This repository contains the complete `tadl` theme. Install it in an existing Pa
 | Thumbnail focus | Filled image crops respect Providence's **Set center** setting. Optional local face detection supplies suggestions where staff have not chosen a center. |
 | Contact and recovery | A contact form with named Reply-To addresses and distinct subject references, optional Cloudflare Turnstile, and helpful error pages with search and browse links. |
 
+Catalogue result lists are rendered in the initial HTML. Search, browse, collection contents, related-item previews and gallery previews do not need a second request to load their cards. Paging uses ordinary links, including in lightboxes and the collection hierarchy browser. Tiles/List, collection view and page-size preferences persist between views; basic result navigation also works without JavaScript. Media viewers and account/editing dialogs still use the native interactive features.
+
 The shared interface includes keyboard navigation, visible focus, reduced-motion support, responsive reflow, and accessible alternatives to dragging lightbox items. See the [accessibility guide](docs/ACCESSIBILITY.md) for coverage and remaining manual checks; installing the theme does not establish whole-site WCAG conformance.
 
 ## Before you install

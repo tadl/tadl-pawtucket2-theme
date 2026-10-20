@@ -135,7 +135,12 @@ class AuthorityItem {
 class AuthorityView {
 	function __construct(public AuthorityRequest $request, private AuthorityItem $item, private array $extra = []) {}
 	function getVar($name) { return $name === 'item' ? $this->item : ($this->extra[$name] ?? null); }
-	function render() {
+	function setVar($name, $value) { $this->extra[$name] = $value; }
+	function render($file = null) {
+		if ($file === 'Details/related_items_html.php') {
+			checkAuthority($this->getVar('tadl_related_scope') === ['table'=>$this->item->table, 'id'=>42, 'family'=>in_array($this->item->typeID, [30,31], true)], 'Related fragment must receive the selected authority scope.');
+			return '<p data-server-related="true">Synthetic server results</p>';
+		}
 		ob_start();
 		try {
 			include dirname(__DIR__).'/views/Details/'.$this->item->table.'_default_html.php';
@@ -279,12 +284,6 @@ function authorityDocument($html) {
 	$document->loadHTML('<?xml encoding="UTF-8">'.$html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 	return new DOMXPath($document);
 }
-function authorityScripts($html) {
-	preg_match_all('~<script\b[^>]*>(.*?)</script\s*>~is', $html, $matches);
-	checkAuthority(count($matches[1]) === 1, 'Authority page should have one shared loader script.');
-	checkAuthority(!str_contains($matches[1][0], '</script>'), 'Data terminated the authority loader script.');
-	return $matches[1];
-}
 
 $item = new AuthorityItem();
 foreach ([7 => 'Golf', 3 => 'charlie', 6 => 'Foxtrot', 1 => 'Alpha', 5 => 'Echo', 2 => 'bravo', 4 => 'Delta'] as $id => $label) {
@@ -300,7 +299,6 @@ checkAuthority($xpath->query('//details[contains(@class,"tadl-authority-more")]/
 checkAuthority($xpath->query('//aside[contains(@class,"tadl-detail-metadata")]//h2[contains(@class,"tadl-metadata-heading")]')->length === 1, 'Relationship headings must use shared Detail metadata styling.');
 checkAuthority(!str_contains($html, 'tadl-authority-about'), 'Empty metadata should not create an empty About section.');
 
-$nodeFixtures = [];
 foreach (['ca_entities' => ['entity_id', 'Person'], 'ca_places' => ['place_id', 'Place'], 'ca_occurrences' => ['occurrence_id', 'Event']] as $table => [$key, $kind]) {
 	foreach (['only', 'all'] as $mode) {
 		foreach ([0, 1, 20] as $count) {
@@ -317,13 +315,10 @@ foreach (['ca_entities' => ['entity_id', 'Person'], 'ca_places' => ['place_id', 
 			if ($table === 'ca_places') { $expectedUrl = '/synthetic/PlaceContents/Objects?place_id=42&view=images'; }
 			$link = $xpath->query('//a[contains(@class,"tadl-authority-all-items")]')->item(0);
 			checkAuthority($link->getAttribute('href') === $expectedUrl, 'Authority fallback Search URL omitted query/view/reset options.');
-			checkAuthority($xpath->query('//noscript')->length === 1 && $xpath->query('//*[@id="browseResultsContainer"]')->item(0)->getAttribute('aria-busy') === 'true', 'Authority results need progressive fallback and a loading state.');
+			checkAuthority($xpath->query('//*[@id="browseResultsContainer"]//*[@data-server-related]')->length === 1 && !str_contains($html, 'aria-busy') && !str_contains($html, '.load('), 'Authority results must be present without an AJAX loader.');
 			checkAuthority(!in_array('ca_objects.object_id', $item->intrinsicReads, true), 'Authority layout should not switch on an unfiltered native object count.');
 			checkAuthority($xpath->query('//div[contains(@class,"tadl-authority-layout--items-only")]')->length === 1, 'Empty sidebar should allow the results to use the full layout.');
-			$scripts = authorityScripts($html);
-			foreach (['success', 'notmodified', 'error'] as $status) {
-				$nodeFixtures[] = ['name' => $table.' '.$mode.' '.$count.' '.$status, 'scripts' => $scripts, 'url' => $expectedUrl, 'count' => $count, 'status' => $status, 'empty' => $mode === 'only' ? 'No related items with digital media are currently available.' : 'No related items are currently available.'];
-			}
+
 		}
 	}
 }
@@ -400,70 +395,6 @@ checkAuthority(!str_contains($html, '<h3>Occupation</h3>') && !in_array('ca_enti
 
 $GLOBALS['authorityUrlOverride'] = "/synthetic/Search/objects?search=place_id:42&note=collector's \"quoted\" \\ </script> <>& \u{2028}\u{2029}";
 $html = (new AuthorityView(new AuthorityRequest(), new AuthorityItem('ca_places')))->render();
-$scripts = authorityScripts($html);
+checkAuthority(!str_contains($html, '<script>'), 'Hostile links must remain escaped HTML without a loader script.');
 checkAuthority(authorityDocument($html)->query('//a[contains(@class,"tadl-authority-all-items")]')->item(0)->getAttribute('href') === $GLOBALS['authorityUrlOverride'], 'Fallback URL changed while escaping HTML attributes.');
-checkAuthority(str_contains($html, htmlspecialchars($GLOBALS['authorityLoadingText'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')), 'Loading translation was not escaped in the HTML state.');
-$nodeFixtures[] = ['name' => 'hostile URL remains a single JavaScript string', 'scripts' => $scripts, 'url' => $GLOBALS['authorityUrlOverride'], 'count' => 1, 'status' => 'success', 'empty' => 'No related items with digital media are currently available.'];
-
-$nodeCode = <<<'JS'
-const fs = require('node:fs');
-const vm = require('node:vm');
-const assert = require('node:assert/strict');
-const fixtures = JSON.parse(fs.readFileSync(0, 'utf8'));
-let assertions = 0;
-for (const fixture of fixtures) {
-    const attributes = { 'aria-busy': 'true' };
-    const loads = [];
-    const replacements = [];
-    const markerChecks = [];
-    const container = {
-        load(url, callback) { loads.push(url); callback.call(container, `<p data-tadl-result-count="${fixture.count}">${fixture.count} items</p>`, fixture.status); return container; },
-        attr(name, value) { attributes[name] = value; return container; },
-        find(selector) { markerChecks.push(selector); assert.equal(selector, '[data-tadl-result-count="0"]'); return { length: fixture.count === 0 ? 1 : 0 }; },
-        html(value) { replacements.push(value); return container; }
-    };
-    const jquery = selector => {
-        if (typeof selector !== 'string') return { ready(callback) { callback(); } };
-        assert.equal(selector, '#browseResultsContainer');
-        return container;
-    };
-    const context = vm.createContext({ document: {}, jQuery: jquery });
-    for (const script of fixture.scripts) new vm.Script(script, { filename: fixture.name }).runInContext(context, { timeout: 1000 });
-    assert.deepEqual(loads, [fixture.url], fixture.name + ': related results URL changed');
-    assert.equal(attributes['aria-busy'], 'false', fixture.name + ': loading state did not clear');
-    assertions += 2;
-    if (fixture.status === 'error') {
-        assert.equal(replacements.length, 1);
-        assert.match(replacements[0], /tadl-authority-error/);
-        assert.match(replacements[0], /Related items could not be loaded/);
-        assert.match(replacements[0], /View all related items/);
-        assert.deepEqual(markerChecks, [], fixture.name + ': failed response should not be interpreted as an empty result');
-        assertions += 5;
-    } else {
-        assert.deepEqual(markerChecks, ['[data-tadl-result-count="0"]']);
-        assertions++;
-        if (fixture.count === 0) {
-            assert.equal(replacements.length, 1);
-            assert.match(replacements[0], /tadl-authority-empty/);
-            assert.ok(replacements[0].includes(fixture.empty), fixture.name + ': wrong preference-specific empty text');
-            assertions += 3;
-        } else {
-            assert.deepEqual(replacements, [], fixture.name + ': successful nonempty results were replaced');
-            assertions++;
-        }
-    }
-}
-process.stdout.write(JSON.stringify({ assertions }));
-JS;
-$process = proc_open([getenv('TADL_TEST_NODE') ?: 'node', '-e', $nodeCode], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
-if (!is_resource($process)) { throw new RuntimeException('Node.js is required for emitted authority loader regressions.'); }
-fwrite($pipes[0], json_encode($nodeFixtures, JSON_THROW_ON_ERROR));
-fclose($pipes[0]);
-$stdout = stream_get_contents($pipes[1]);
-$stderr = stream_get_contents($pipes[2]);
-fclose($pipes[1]);
-fclose($pipes[2]);
-$status = proc_close($process);
-checkAuthority($status === 0, "Authority loader failed in Node.js:\n".$stderr);
-$nodeResult = json_decode($stdout, true, 512, JSON_THROW_ON_ERROR);
-echo json_encode(['status' => 'passed', 'assertions' => $GLOBALS['authorityAssertions'] + $nodeResult['assertions'], 'loaderCases' => count($nodeFixtures), 'templates' => 'actual entity/place/occurrence details and shared helpers', 'boundaries' => 'synthetic native record/access/bundle/media/URL/view APIs; Node.js loader execution'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;
+echo json_encode(['status'=>'passed', 'assertions'=>$GLOBALS['authorityAssertions'], 'templates'=>'actual authority layouts; independent server-result integration covers result fragments'], JSON_PRETTY_PRINT).PHP_EOL;

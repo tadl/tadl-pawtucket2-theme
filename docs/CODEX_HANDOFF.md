@@ -20,6 +20,57 @@ Changes belong here rather than in upstream CollectiveAccess. The surrounding
 workspace has reference checkouts of Pawtucket and Providence at local tag
 `2.0.10`; that is a local source fact, not a verified current production version.
 
+## 2026-10-20: Server-rendered catalogue results
+
+This supersedes earlier references below to initial result AJAX loaders, hierarchy
+pane AJAX and lightbox infinite scrolling. All catalogue result lists now appear
+in the original document. Search/Browse full-result pages and the current
+MultiSearch overview were already server-rendered; copied legacy overview
+subviews now delegate to the same bounded preview. Media viewers, gallery media
+selection, facet dialogs, document-text disclosure and account/editing mutations
+retain their separate native interactive behavior.
+
+- `helpers/server_results.php` composes collection and authority previews using a
+  cloned native request and a separate `View`, then renders the shared Browse
+  cards. It does not dispatch nested controllers or make internal HTTP requests.
+  Scope is fixed by the enclosing readable record; stale search/key/facet input
+  is cleared. View/sort/direction are validated before querying. Collection/place
+  scopes retain their indexed scalar relationship helpers; authority scopes use
+  native Browse/search with configured criteria/types/access/ACLs. Media filtering
+  runs once before counts, page slicing and native result-context storage. The
+  containing response uses `Cache-Control: private, no-store`, while detail pages
+  retain their normal indexing policy.
+- Collection toolbar/options, exports, format tags, sticky preferences and both
+  ordinary pagers remain shared. Later pages omit the descriptive metadata and
+  link back to the overview. Embedded contexts explicitly activate the filtered
+  search/objects result list so object Previous/Next follows the displayed scope.
+  Authority preview pager links carry their fixed query, not only session state.
+- The hierarchy's right pane is rendered immediately. `collection_branch=<id>`
+  selects a validated direct branch with children, defaulting to the first such
+  branch. Branch links reload the collection detail with hierarchy/view/size/sort
+  state and `#collectionHierarchy`; browser Back/Forward is native. Legacy
+  `#collection-<id>` bookmarks use a small compatibility redirect to a validated
+  branch link (ordinary page navigation); fragments are not sent to the server. Shared presence/count maps avoid repeating the root traversal
+  for the selected pane. Access pruning and bold media indicators are unchanged.
+- The Gallery index renders its featured preview with native access-filtered
+  media and count methods. Lightbox sets use ordinary Previous/Next pagers above
+  and below the sortable items instead of fetching/appending items while scrolling.
+  Set, view, key, size, primary/secondary sort and direction remain in those URLs.
+  Native reorder, write-access gates, comments and media dialogs remain intact.
+- `tests/media_preferences_test.php` includes
+  `tests/support/server_results_checks.php`: actual composition, shared cards,
+  bounded pages, scope isolation, filtered contexts, authority/place/family
+  membership and complete lightbox-page rendering over synthetic native boundaries.
+  Layout suites assert immediate fragments instead of executing obsolete loaders.
+  `tests/server_results_browser_test.js` checks original response HTML, paging,
+  Back, view/size controls and responsive layout with JavaScript enabled/disabled,
+  and asserts no result XHR/fetch. It runs in CI alongside the existing browser suites.
+  Gallery index fixtures also run through the automated accessibility browser pass.
+
+Deploy the helpers and views together through the normal theme deployment. No
+cache clearing, service restart, schema change or index rebuild is needed for
+this change. Source verification does not establish production integration.
+
 ## 2026-10-16: WCAG 2.2 AA theme pass
 
 The shared desktop/mobile primary menu order is About, Browse, Collections,
@@ -310,13 +361,13 @@ metadata column above the title, leaving the photo at the top of the body region
 Its tooltips and ARIA labels identify the previous/next object. Direct object
 visits without result context omit the empty toolbar. Other detail types retain
 their Browse destination.
-AJAX result loads explicitly activate their filtered native context before saving
-it: upstream Search skips `setAsLastFind()` on AJAX. Without
-this, clicking a collection tile could leave object Prev/Next absent or following
-an earlier unrelated result set. The theme activates the same type/subtype it
-saves without adopting the AJAX endpoint's action. Native Browse action tracking
-and explicit `dontSetFind`/facet suppression remain intact. Copying IDs to a
-multisearch context does not replace the active full-results context.
+Embedded server-rendered result fragments explicitly activate their filtered
+native context before saving it; their helper bypasses the native SearchController
+initialization. Legacy AJAX callers retain the same activation because upstream
+Search skips `setAsLastFind()` on AJAX. The saved type/subtype is activated without
+adopting the contents endpoint's action. Native Browse action tracking and explicit
+`dontSetFind`/facet suppression remain intact. Copying IDs to a multisearch context
+does not replace the active full-results context.
 
 Verification: portable navigation/menu/default-map checks plus the actual native
 configuration parser; media eligibility/context, authority, document-text,
@@ -1248,16 +1299,17 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/asset_versions_test.php` | Stable/changed CSS and JS URLs, preserved timestamps, native loader options, subdirectory/absolute theme URLs, escaping, inline-code preservation and path boundaries |
 | `tests/theme_deploy_test.php` | Actual deployment shell with synthetic SSH/rsync boundaries, source paths with spaces, cache preservation, transfer failure handling and no remote shell/service operations |
 | `tests/production_hardening_test.php` | Native Gallery guard shim, public/missing/private/user set boundaries, real HTTP error headers/statuses and safe export diagnostics |
-| `tests/media_preferences_test.php` | Eligibility SQL, lazy collection/authority descriptor fetching, related-object access/deletion/ACL/bundle checks, People/Organizations/Places/Events Tiles/List counts/paging/detail context, table cache isolation, route scope, invalid-media exhaustion, filtered result adapter and result rendering |
+| `tests/media_preferences_test.php` | Eligibility SQL, lazy collection/authority descriptor fetching, related-object access/deletion/ACL/bundle checks, People/Organizations/Places/Events Tiles/List counts/paging/detail context, table cache isolation, route scope, invalid-media exhaustion, filtered result adapter, server-composed collection/authority fragments and complete lightbox paging |
 | `tests/browse_navigation_test.php` | Configured logical browse defaults, actual single/multiple-target menu and detail Browse links, native Prev/Next preservation, Subjects entry reset, configurable directions and optional native configuration parsing |
 | `tests/family_contents_test.php` | Actual SQLite family/member scopes, bidirectional/subtype/deduplicated relationships, one-hop limits, root/member access/type/source/bundle/ACL checks, batched wide families, endpoint validation/current scope and native search delegation |
 | `tests/place_contents_test.php` | Actual SQLite descendant scopes and object relationships, private/deleted/ACL/type branch pruning, a 6,000-descendant branch, bounded queries, native search replacement and controller scope/paging |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |
-| `tests/collection_detail_scripts_test.php` | Collection detail loader JavaScript, empty/populated field/relationship headings, long-field controls and narrative/facts column placement |
+| `tests/server_results_browser_test.js` | Actual server-composed result HTML, no-script/enabled-script paging, Back, view/page-size controls, hierarchy branch links and no result XHR/fetch |
+| `tests/collection_detail_scripts_test.php` | Collection detail immediate server-fragment wiring, scope/display state, metadata omission on later pages, empty/populated field/relationship headings, long-field controls and narrative/facts column placement |
 | `tests/collection_contents_test.php` | Actual helper/controller, SQLite hierarchy/membership queries, deep/wide branches, media-presence rollups independent of preference without count searches, optional unique descendant counts, scope/access/deletion/ACL/bundle pruning, cycles, duplicate memberships, bounded queries and canonical native search delegation |
 | `tests/object_detail_media_test.php` | Media selection, viewer controls and callbacks |
 | `tests/object_detail_video_poster_test.php` | Covers, playback, player fallback and access |
-| `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |
+| `tests/authority_detail_test.php` | Authority types/layout, related groups, access and server-fragment scope wiring |
 | `tests/result_context_heading_test.php` | Results context, headings, removable criteria, empty flat/deferred/media-filtered facets, hierarchy-response fallback and Subjects browse/refine rendering |
 | `tests/representation_formats_test.php` | Scalar original-format inventory, private pairs, native object/representation visibility, MIME/filename bundle permissions, bounded batches, normalization/escaping, page/Back scope, actual object Tiles/List metadata, six-item search previews and lightbox captions |
 | `tests/object_detail_metadata_test.php` | Empty/populated rich-text fields and fallback values; structured TGM pairing, safe links, escaping and permissions |

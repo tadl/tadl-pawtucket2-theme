@@ -59,6 +59,13 @@ function tadlMediaResultContext($view, $result, $findType, $block = null) {
 	if (!$result || (!in_array($result->tableName(), array('ca_objects', 'ca_collections'), true)
 		&& $result->tableName() !== tadlMediaAuthorityBrowseTable($view->request, $block))) { return; }
 	$context = new ResultContext($view->request, $result->tableName(), $findType, $block);
+	if ($view->getVar('tadl_embedded_results')) {
+		// setResultList() updates native search history, so set its expression first.
+		$context->setSearchExpression($view->getVar('tadl_search_expression'));
+		$context->setParameter('key', null);
+		$context->setCurrentSort($view->getVar('sort'));
+		$context->setCurrentSortDirection($view->getVar('sort_direction'));
+	}
 	$limit = (int)$view->request->config->get('maximum_find_result_list_values');
 	if ($limit < 10) { $limit = 1000; }
 	$result->seek(max(0, (int)$view->getVar('start') - (int)floor($limit / 2)));
@@ -73,9 +80,9 @@ function tadlMediaResultContext($view, $result, $findType, $block = null) {
 	if (in_array($view->getVar('view'), ['images', 'list', 'tiles'], true) && method_exists($context, 'setCurrentView')) {
 		$context->setCurrentView($view->getVar('view'));
 	}
-	// Native Search skips this for AJAX. Detail navigation must use the
-	// filtered results just displayed, including collection/authority previews.
-	if ($view->request->isAjax() && in_array($findType, ['search', 'search_advanced'], true)
+	// Native Search does not initialize contexts for embedded server fragments
+	// (or legacy AJAX callers). Activate the filtered IDs for detail navigation.
+	if (($view->getVar('tadl_embedded_results') || $view->request->isAjax()) && in_array($findType, ['search', 'search_advanced'], true)
 		&& !$view->request->getParameter('dontSetFind', pInteger) && !$view->request->getParameter('getFacet', pInteger)) {
 		$context->setAsLastFind(false);
 	}

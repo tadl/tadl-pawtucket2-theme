@@ -69,6 +69,7 @@ class A11yRequest {
 class A11yView {
 	function __construct(public array $vars = [], public A11yRequest $request = new A11yRequest()) {}
 	function getVar($key) { return $this->vars[$key] ?? null; }
+	function setVar($key,$value) { $this->vars[$key]=$value; }
 	function render($path) {
 		$file = dirname(__DIR__).'/views/'.$path;
 		if (!is_file($file) && basename($path) === $path) { $file = dirname(__DIR__).'/views/mediaViewers/'.$path; }
@@ -80,7 +81,17 @@ class CookieOptionsManager {
 	static function cookieManagerEnabled() { return false; }
 	static function showBanner() { return false; }
 }
-class ca_sets { function getSetsForUser($options) { return []; } }
+function caGetUserAccessValues($request) { return [1]; }
+function caGetGalleryConfig() { return new A11yConfig(['gallery_set_description_element_code'=>'description']); }
+class ca_sets {
+ function getSetsForUser($options) { return []; }
+ function load($id) { return $id === 7; }
+ function get($key, $options = []) { return match($key) { 'access'=>1, 'deleted'=>0, default=>'<p>Synthetic gallery description with a <a href="/synthetic">link</a>.</p>' }; }
+ function isReadable($request) { return !($GLOBALS['galleryDenied'] ?? false); }
+ function getLabelForDisplay() { return 'Synthetic featured gallery'; }
+ function getItemCount($options) { a11yCheck($options === ['checkAccess'=>[1]], 'Featured gallery count must use native visibility.'); return 3; }
+ function getPrimaryItemsFromSets($ids,$options) { a11yCheck($ids === [7] && $options === ['version'=>'large','checkAccess'=>[1]], 'Gallery preview must retain access-filtered native media.'); return [7=>[['representation_tag'=>'<img src="/synthetic.svg" alt="Synthetic featured image">','set_item_label'=>'Synthetic caption']]]; }
+}
 class ca_set_items { function __construct($id) {} function get(...$args) { return '<img src="/synthetic.svg" alt="Synthetic gallery item">'; } }
 class ca_objects {
 	function getPrimaryMediaForIDs($ids, ...$args) { return array_fill_keys($ids, ['tags' => ['mediumlarge' => '<img src="/synthetic.svg" alt="Synthetic featured item">']]); }
@@ -193,6 +204,12 @@ $GLOBALS['a11yFront'] = false;
 $GLOBALS['a11yGallery'] = true;
 $fixtures['gallery-header'] = (new A11yView([], new A11yRequest(false, 'Gallery')))->render('pageFormat/pageHeader.php');
 $GLOBALS['a11yGallery'] = false;
+$gallery_view = new A11yView(['section_name'=>'Galleries', 'sets'=>[7=>['name'=>'Synthetic gallery','item_count'=>3]], 'first_items_from_sets'=>[]]);
+$fixtures['gallery-index'] = $gallery_view->render('Gallery/index_html.php');
+a11yCheck(str_contains($fixtures['gallery-index'],'Synthetic featured gallery') && str_contains($fixtures['gallery-index'],'Synthetic gallery description') && !str_contains($fixtures['gallery-index'],'Loading') && !str_contains($fixtures['gallery-index'],'.load('), 'Featured galleries must be rendered in the original HTML without a loading placeholder.');
+$GLOBALS['galleryDenied'] = true;
+a11yCheck(!str_contains($gallery_view->render('Gallery/index_html.php'),'Synthetic gallery description'), 'Gallery server previews must respect current readability.');
+$GLOBALS['galleryDenied'] = false;
 $order_buttons = (new A11yView())->render('Lightbox/order_buttons_html.php');
 $fixtures['lightbox-order'] = '<h1>Synthetic lightbox</h1><p id="tadl-lightbox-order-status" role="status"></p><div id="lbSetResultLoadContainer" data-order-url="/Lightbox/AjaxReorderItems/csrfToken/synthetic-token" data-order-success="Item order saved." data-order-error="Could not save item order. The previous order has been restored." data-order-boundary="The item is already at this end of the list.">';
 foreach ([1, 2, 3] as $id) { $fixtures['lightbox-order'] .= '<div id="row-'.$id.'"><h2>Synthetic item '.$id.'</h2>'.$order_buttons.'</div>'; }

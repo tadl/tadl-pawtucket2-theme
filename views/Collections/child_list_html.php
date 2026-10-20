@@ -10,6 +10,7 @@
 	$va_collection_type_icons = $this->getVar("collection_type_icons");
 	$vb_collapse_levels = $o_collections_config->get("collapse_levels");
 	
+if (!function_exists('printLevel')) {
 function printLevel($po_request, $va_collection_ids, $o_config, $vn_level, $va_options = array()) {
 	if($o_config->get("max_levels") && ($vn_level > $o_config->get("max_levels"))){
 		return;
@@ -118,8 +119,10 @@ function printLevel($po_request, $va_collection_ids, $o_config, $vn_level, $va_o
 	return $vs_output;
 }
 
+}
+
 if ($vn_collection_id) {
-	print printLevel($this->request, array($vn_collection_id), $o_collections_config, 1, array("exclude_collection_type_ids" => $va_exclude_collection_type_ids, "non_linkable_collection_type_ids" => $va_non_linkable_collection_type_ids, "collection_type_icons" => $va_collection_type_icons, "collapse_levels" => $vb_collapse_levels));
+	print printLevel($this->request, array($vn_collection_id), $o_collections_config, 1, array("exclude_collection_type_ids" => $va_exclude_collection_type_ids, "non_linkable_collection_type_ids" => $va_non_linkable_collection_type_ids, "collection_type_icons" => $va_collection_type_icons, "collapse_levels" => $vb_collapse_levels, "collection_media" => $this->getVar("collection_media"), "collection_counts" => $this->getVar("collection_counts")));
 }
 
 

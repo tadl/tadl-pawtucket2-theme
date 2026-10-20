@@ -68,7 +68,7 @@
 
 	$va_options			= $this->getVar('options');
 	$vs_extended_info_template = caGetOption('extendedInformationTemplate', $va_options, null);
-	$vb_ajax			= (bool)$this->request->isAjax();
+	$vb_fragment			= (bool)$this->getVar('tadl_embedded_results') || (bool)$this->request->isAjax();
 	$va_browse_info = $this->getVar("browseInfo");
 	if (
 		!$this->request->getParameter('view', pString, ['forcePurify' => true])
@@ -78,6 +78,11 @@
 		$vs_current_view = $vs_default_view;
 	}
 	$vn_result_size 	= (int)$qr_res->numHits();
+	if ($this->getVar('tadl_embedded_results') === 'authority' && !$vn_result_size) {
+		$message = $vs_media_preference === 'only' ? _t('No related items with digital media are currently available.') : _t('No related items are currently available.');
+		print '<p class="tadl-authority-empty">'.htmlspecialchars($message, ENT_QUOTES, 'UTF-8').'</p>';
+		return;
+	}
 	$vs_sort_control_type = caGetOption('sortControlType', $va_browse_info, 'dropdown');
 	$o_config = $this->getVar("config");
 	$vs_result_col_class = $o_config->get('result_col_class');
@@ -92,23 +97,23 @@
 	if (in_array($preferred_view, ['images', 'list'], true) && isset($va_views[$preferred_view])) { $vs_current_view = $preferred_view; }
 	$this->setVar('view', $vs_current_view);
 	// Family/place results have a fixed relationship scope, with sort/view/paging controls.
-	$vs_refine_html = !$vb_ajax && !in_array($this->request->getController(), ['FamilyContents', 'PlaceContents'], true)
+	$vs_refine_html = !$vb_fragment && !in_array($this->request->getController(), ['FamilyContents', 'PlaceContents'], true)
 		? $this->render('Browse/browse_refine_subview_html.php') : '';
 	$vb_has_filters = trim($vs_refine_html) !== '';
 	$va_result_context = null;
 	$vs_facet_description = null;
 	$va_sorts = [];
-	if (!$vb_ajax) {
+	if (!$vb_fragment) {
 		$va_criteria = tadlResultDisplayCriteria($this->request, $va_criteria, $va_all_facets);
 		$va_result_context = tadlResultContext($vs_table, $va_criteria);
 	}
-	$vb_collection_controls = $vb_ajax && $vb_is_search && $vs_table === 'ca_objects'
+	$vb_collection_controls = $vb_fragment && $vb_is_search && $vs_table === 'ca_objects'
 		&& $this->request->getParameter('tadl_collection_controls', pInteger) === 1;
 	if ($vb_collection_controls) { $vs_sort_control_type = 'dropdown'; }
 	ob_start();
 	include __DIR__.'/result_options_html.php';
 	$vs_tadl_result_options = ob_get_clean();
-	if ($vb_ajax && $vb_is_search && !$vb_collection_controls) {
+	if ($vb_fragment && $vb_is_search && !$vb_collection_controls) {
 		// This summary is outside the cached cards and reflects the media-filtered result.
 		print '<p class="tadl-related-results-summary" data-tadl-result-count="'.(int)$vn_result_size.'">'.htmlspecialchars(tadlResultItemCount($vn_result_size), ENT_QUOTES, 'UTF-8').'</p>';
 	}
@@ -138,7 +143,7 @@
 	}
 
 	
-if (!$vb_ajax) {	// !ajax
+if (!$vb_fragment) {	// full page
 ?>
 <?php if ($vb_subject_browse) { ?>
 <p><?php print caNavLink($this->request, _t('Browse all subjects'), '', '', 'Browse', 'subjects', ['clear' => 1]); ?></p>
@@ -242,12 +247,12 @@ if (!$vb_ajax) {	// !ajax
 		<div class="row">
 			<div id="browseResultsContainer">
 <?php
-} // !ajax
+} // full page
 
 // Render current permissions and preference on every request; never persist private HTML.
 print $this->render('Browse/browse_results_'.$vs_current_view.'_html.php');
 
-if (!$vb_ajax) {	// !ajax
+if (!$vb_fragment) {	// full page
 ?>
 			</div><!-- end browseResultsContainer -->
 		</div><!-- end row -->
@@ -279,5 +284,5 @@ if (!$vb_ajax) {	// !ajax
 </script>
 <?php
 		print $this->render('Browse/browse_panel_subview_html.php');
-} //!ajax
+} // full page
 ?>

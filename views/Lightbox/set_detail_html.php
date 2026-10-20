@@ -57,6 +57,16 @@
 	$vn_start		 	            = (int)$this->getVar('start');			// offset to seek to before outputting results
 	$vb_ajax			            = (bool)$this->request->isAjax();
 
+	$pager = '';
+	if (in_array($vs_current_view, ['list', 'thumbnail'], true) && $vn_hits_per_block > 0 && $qr_set_items->numHits() > $vn_hits_per_block) {
+		$total = $qr_set_items->numHits();
+		$params = ['set_id'=>$vn_set_id, 'n'=>$vn_hits_per_block, 'key'=>$vs_browse_key, 'view'=>$vs_current_view, 'sort'=>$vs_current_sort, 'secondary_sort'=>$vs_current_secondary_sort, 'direction'=>$vs_sort_dir];
+		$pager = '<nav class="tadl-lightbox-pagination" aria-label="'.htmlspecialchars(_t('Lightbox result pages'), ENT_QUOTES, 'UTF-8').'">';
+		if ($vn_start > 0) { $pager .= caNavLink($this->request, _t('Previous'), 'btn btn-default', '', 'Lightbox', 'setDetail', $params + ['s'=>max(0, $vn_start-$vn_hits_per_block)]); }
+		$pager .= '<span>'.htmlspecialchars(_t('Page %1 of %2', (int)floor($vn_start/$vn_hits_per_block)+1, (int)ceil($total/$vn_hits_per_block)), ENT_QUOTES, 'UTF-8').'</span>';
+		if ($vn_start+$vn_hits_per_block < $total) { $pager .= caNavLink($this->request, _t('Next'), 'btn btn-default', '', 'Lightbox', 'setDetail', $params + ['s'=>$vn_start+$vn_hits_per_block]); }
+		$pager .= '</nav>';
+	}
 	$t_object 						= new ca_objects();		// ca_objects instance we need to pull representations
 	$vs_caption_template = 			$o_lightbox_config->get("caption_template");
 
@@ -203,13 +213,14 @@ if (!$vb_ajax) {	// !ajax
 	</div><!-- end row -->
 	<div class="row">
 		<div class="<?php print ($vs_left_col_class = $o_lightbox_config->get("setDetailLeftColClass")) ? $vs_left_col_class : "col-sm-9 col-md-9 col-lg-8"; ?>">
+			<?= $pager; ?>
 			<p id="tadl-lightbox-order-status" role="status"></p>
 			<div id="lbSetResultLoadContainer" data-order-url="<?= $vb_write_access ? htmlspecialchars(caNavUrl($this->request, '', 'Lightbox', 'AjaxReorderItems', ['csrfToken' => caGenerateCSRFToken($this->request)]), ENT_QUOTES, 'UTF-8') : ''; ?>" data-order-success="<?= htmlspecialchars(_t('Item order saved.'), ENT_QUOTES, 'UTF-8'); ?>" data-order-error="<?= htmlspecialchars(_t('Could not save item order. The previous order has been restored.'), ENT_QUOTES, 'UTF-8'); ?>" data-order-boundary="<?= htmlspecialchars(_t('The item is already at this end of the list.'), ENT_QUOTES, 'UTF-8'); ?>">
 <?php
 } // !ajax
 
 		$va_view_info = $va_views[$vs_current_view];
-		if ($va_view_info['data'] && !$qr_set_items->hasData($va_view_info['data'])) {
+		if (!empty($va_view_info['data']) && !$qr_set_items->hasData($va_view_info['data'])) {
 			$vs_current_view = 'thumbnail';
 			print "<div class='warning'>" . _t("Displaying %1 view because required data is not available to generate a %1 view", $va_views[$vs_current_view]['name'], $va_view_info['name']) . "</div>";
 		}
@@ -221,7 +232,7 @@ if (!$vb_ajax) {	// !ajax
 				print $this->render("Lightbox/set_detail_timeline_html.php");
 				break;
 			default:
-				// First load is rendered in-template; subsequent loads are via Ajax/continuous scroll
+				// Every page is rendered in the document; navigation uses ordinary links.
 				$t =new Timer();
 				$this->setVar('set_id', $vn_set_id);
 				if($vn_num_hits = $qr_set_items->numHits()){
@@ -290,9 +301,6 @@ if (!$vb_ajax) {	// !ajax
 							}
 						}
 
-						if ($vn_num_hits > $vn_start + $vn_hits_per_block) {
-							print caNavLink($this->request, _t('Next %1', $vn_hits_per_block), 'jscroll-next', '*', '*', '*', array('s' => $vn_start + $vn_hits_per_block, 'key' => $vs_browse_key, 'view' => $vs_current_view));
-						}
 					}
 				}else{
 					if($vb_write_access){
@@ -307,6 +315,7 @@ if (!$vb_ajax) {    // !ajax
 ?>
             </div>
             <!-- end lbSetResultLoadContainer -->
+            <?= $pager; ?>
         </div>
         <!-- end col -->
         <div
@@ -363,44 +372,6 @@ if (!$vb_ajax) {    // !ajax
 <?php
 	if (in_array($vs_current_view, array('list', 'thumbnail'))) {
 ?>
-    var pageLoadList = [];
-    var dataLoading = false;
-    jQuery(window).on("scroll", function(e) {
-        var $e = jQuery("#lbSetResultLoadContainer");
-        var _$scroll = jQuery(window),
-            borderTopWidth = parseInt($e.css('borderTopWidth')),
-            borderTopWidthInt = isNaN(borderTopWidth) ? 0 : borderTopWidth,
-            iContainerTop = parseInt($e.css('paddingTop')) + borderTopWidthInt,
-            iTopHeight = _$scroll.scrollTop(),
-            innerTop = $e.length ? $e.offset().top : 0,
-            iTotalHeight = Math.ceil(iTopHeight - innerTop + _$scroll.height() + iContainerTop);
-
-        var docHeight = jQuery(document).height();
-        docHeightOffset = docHeight/2;
-
-        jQuery("#lbSetResultLoadContainer .jscroll-next").html("Loading...");
-        if ((jQuery(window).scrollTop() + $(window).height() >= docHeightOffset) && !dataLoading) {
-            var href = jQuery("#lbSetResultLoadContainer .jscroll-next").attr('href');
-
-            if (href && (pageLoadList.indexOf(href) == -1)) {
-                dataLoading = true;
-                jQuery("#lbSetResultLoadContainer .jscroll-next").remove();
-                jQuery("#lbSetResultLoadContainer").append('<div id="resultLoadTmp" />');
-
-                jQuery("#lbSetResultLoadContainer #resultLoadTmp").load(href, function(e) {
-                    pageLoadList.push(href);
-
-                    jQuery("#resultLoadTmp").children().appendTo("#lbSetResultLoadContainer");
-                    jQuery("#resultLoadTmp .jscroll-next").appendTo("#lbSetResultLoadContainer");
-                    jQuery("#resultLoadTmp").remove();
-
-                    jQuery(".sortable").sortable('refresh').sortable('refreshPositions');
-                    dataLoading = false;
-                });
-            }
-        }
-    });
-
     jQuery(document).ready(function() {
         <?php if ($vb_write_access): ?>
         $("#lbSetResultLoadContainer").sortable({

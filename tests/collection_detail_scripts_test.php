@@ -128,7 +128,12 @@ class DetailScriptView {
 			'resultsLink' => '<a href="/synthetic/results">Back</a>');
 	}
 	public function getVar($name) { return $this->values[$name] ?? null; }
+	public function setVar($name, $value) { $this->values[$name] = $value; }
 	public function render($table) {
+		if ($table === 'Details/collection_items_html.php') {
+			return '<div data-server-collection="'.htmlspecialchars(json_encode($this->getVar('collection_result_params')), ENT_QUOTES).'">Synthetic server-rendered items</div>';
+		}
+		if ($table === 'Details/collection_browser_html.php') { return '<div data-server-hierarchy="true">Synthetic server-rendered hierarchy</div>'; }
 		ob_start();
 		try {
 			include dirname(__DIR__).'/views/Details/'.$table.'_default_html.php';
@@ -161,7 +166,9 @@ checkDetailScripts(str_contains($first_page, 'First page description') && !str_c
 $sticky_view = new DetailScriptView(2);
 $sticky_view->request->cookies['tadlDisplayPreferences'] = json_encode(['view'=>'list', 'list_per_page'=>'50', 'collection_view'=>'hierarchy']);
 $sticky_html = str_replace('\\/', '/', $sticky_view->render('ca_collections'));
-checkDetailScripts(str_contains($sticky_html, '/collection_view/hierarchy/view/list/sort/Identifier/direction/asc/s/0/n/50/per_page/50') && str_contains($sticky_html, 'data-tadl-collection-view="flat"'), 'Collection details must apply remembered mode, view and size to the actual result loader and switch.');
+$sticky_document = new DOMDocument(); $sticky_document->loadHTML($sticky_html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+$sticky_params = json_decode((new DOMXPath($sticky_document))->query('//*[@data-server-collection]')->item(0)->getAttribute('data-server-collection'), true);
+checkDetailScripts($sticky_params['collection_view'] === 'hierarchy' && $sticky_params['view'] === 'list' && $sticky_params['n'] === 50 && $sticky_params['per_page'] === '50' && str_contains($sticky_html, 'data-tadl-collection-view="flat"'), 'Collection details must apply remembered mode, view and size to server results and the switch.');
 $finding_document = new DOMDocument(); $finding_document->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_NONET);
 $finding_xpath = new DOMXPath($finding_document);
 $finding_view = $finding_xpath->query('//div[@class="exportCollection"]/a[contains(@href,"/CollectionFindingAid/View/")]')->item(0);
@@ -180,7 +187,7 @@ $subunit_document = new DOMDocument(); $subunit_document->loadHTML($subunit_html
 $subunit_xpath = new DOMXPath($subunit_document);
 $subunit_view = $subunit_xpath->query('//div[@class="exportCollection"]/a')->item(0);
 checkDetailScripts($subunit_view && $subunit_view->getAttribute('href') === '/synthetic/CollectionFindingAid/View/collection_id/42' && $subunit_view->getAttribute('data-finding-aid-viewer') === '/synthetic/CollectionFindingAid/Viewer/collection_id/42', 'Folder links and their direct-PDF fallbacks must open the whole hierarchy root finding aid.');
-checkDetailScripts(str_contains($subunit_html, 'Selected folder description') && str_contains(str_replace('\\/', '/', $subunit_html), '/CollectionContents/Objects/collection_id/73/'), 'Resolving the aid root must not change the selected folder metadata or item scope.');
+checkDetailScripts(str_contains($subunit_html, 'Selected folder description') && str_contains($subunit_html, 'data-server-collection=') && str_contains($subunit_html, '&quot;collection_id&quot;:73'), 'Resolving the aid root must not change the selected folder metadata or item scope.');
 $GLOBALS['detailScriptUnavailableCollections'] = [71];
 checkDetailScripts(!str_contains((new DetailScriptView(0, [], [], 73, 'folder'))->render('ca_collections'), 'exportCollection'), 'An unavailable ancestor must suppress the root finding-aid link instead of falling back to a partial aid.');
 $GLOBALS['detailScriptUnavailableCollections'] = []; $GLOBALS['detailScriptParents'] = [];
@@ -213,7 +220,10 @@ foreach ([
     [['view' => 'unknown', 'sort' => 'unknown', 'direction' => 'unknown', 's' => -9], '/view/images/sort/Identifier/direction/asc/s/0/n/18']
 ] as [$params, $suffix]) {
     $html = (new DetailScriptView(2, [], $params))->render('ca_collections');
-    checkDetailScripts(str_contains(str_replace('\\/', '/', $html), '/CollectionContents/Objects/collection_id/42/collection_view/flat'.$suffix), 'Collection loader failed to validate/forward its own result state.');
+    $doc = new DOMDocument(); $doc->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+    $forwarded = json_decode((new DOMXPath($doc))->query('//*[@data-server-collection]')->item(0)->getAttribute('data-server-collection'), true);
+    $actual = ''; foreach (['view','sort','direction','s','n'] as $key) { $actual .= '/'.$key.'/'.$forwarded[$key]; }
+    checkDetailScripts($actual === $suffix && $forwarded['collection_id'] === 42 && $forwarded['collection_view'] === 'flat', 'Server collection results failed to validate/forward their state.');
     checkDetailScripts(!str_contains($html, 'unrelated'), 'Caller search/key must not replace this collection.');
 }
 $html = (new DetailScriptView(2))->render('ca_collections');
@@ -299,7 +309,6 @@ foreach ([42 => 'collection', 73 => 'folder'] as $id => $type) {
 	}
 }
 
-$cases = array();
 foreach (array(
 	array('name' => 'multiple objects and hierarchy', 'table' => 'ca_collections', 'objects' => 2, 'hierarchy' => true, 'mode' => 'only', 'collectionView' => 'hierarchy'),
 	array('name' => 'all items and hierarchy', 'table' => 'ca_collections', 'objects' => 2, 'hierarchy' => true, 'mode' => 'all', 'collectionView' => 'hierarchy'),
@@ -329,91 +338,21 @@ foreach (array(
 	}
 	checkDetailScripts(str_contains($html, '<div class="row tadl-collection-detail">') && str_contains($html, "<div class='col-xs-12'>"), $case['name'].': collection content lost its full-width layout.');
 	preg_match_all('~<script\b[^>]*>(.*?)</script\s*>~is', $html, $scripts);
-	$expectedScriptCount = ($case['hierarchy'] ? 1 : 0) + ($hasGrid ? 1 : 0);
+	$expectedScriptCount = 0;
 	checkDetailScripts(count($scripts[1]) === $expectedScriptCount, $case['name'].': unexpected inline script count.');
 	checkDetailScripts((strpos($html, 'id="collectionHierarchy"') !== false) === $case['hierarchy'], $case['name'].': hierarchy rendering changed.');
 	checkDetailScripts((strpos($html, 'id="browseResultsContainer"') !== false) === $hasGrid, $case['name'].': object contents rendering changed.');
-	$cases[] = array(
-		'name' => $case['name'],
-		'scripts' => $scripts[1],
-		'hierarchyUrl' => $case['hierarchy'] ? '/synthetic/Collections/collectionHierarchy/collection_id/42' : null,
-		'objectsUrl' => $hasGrid ? '/synthetic/CollectionContents/Objects/collection_id/42/collection_view/'.$contentsMode.'/view/images/sort/Identifier/direction/asc/s/0/n/18/per_page/18' : null,
-		'loadingHtml' => $GLOBALS['detailScriptIcon'].' '.$GLOBALS['detailScriptLoading']
-	);
+	checkDetailScripts(str_contains($html, 'data-server-collection=') === $hasGrid && str_contains($html, 'data-server-hierarchy=') === $case['hierarchy'], $case['name'].': content must be rendered in the response.');
+	checkDetailScripts(!str_contains($html, 'aria-busy') && !str_contains($html, 'Loading') && !str_contains($html, '.load(') && !str_contains($html, '.jscroll('), $case['name'].': result lists must not use placeholders or background requests.');
 }
 
-// Parsing alone catches the original caIcon syntax error. Running the scripts
-// against a small jQuery boundary also proves both loads and jscroll initialize.
-$nodeCode = <<<'JS'
-const fs = require('node:fs');
-const vm = require('node:vm');
-const assert = require('node:assert/strict');
-const cases = JSON.parse(fs.readFileSync(0, 'utf8'));
-let assertions = 0;
-for (const fixture of cases) {
-    const loads = [];
-    const scrollers = [];
-    const jquery = selector => ({
-        ready(callback) { callback(); },
-        attr() { return this; },
-        html() { return this; },
-        load(url, callback) { loads.push({ selector, url }); if (callback) callback(); },
-        jscroll(options) { scrollers.push({ selector, options }); },
-        readmore() {}
-    });
-    const context = vm.createContext({ document: {}, jQuery: jquery, $: jquery });
-    for (const [index, script] of fixture.scripts.entries()) {
-        new vm.Script(script, { filename: `${fixture.name} inline script ${index + 1}` }).runInContext(context, { timeout: 1000 });
-    }
-    if (fixture.objectsUrl || fixture.hierarchyUrl) {
-        const failures = [];
-        const failedJQuery = selector => ({
-            ready(callback) { callback(); }, attr() { return this; },
-            load(url, callback) { if (callback) callback.call(selector, '', 'error'); },
-            html(html) { failures.push(html); },
-            jscroll() { assert.fail('Failed contents must not initialize scrolling.'); }
-        });
-        const failedContext = vm.createContext({document:{}, jQuery:failedJQuery, $:failedJQuery});
-        for (const script of fixture.scripts) { new vm.Script(script).runInContext(failedContext); }
-        assert.equal(failures.length, Number(!!fixture.objectsUrl) + Number(!!fixture.hierarchyUrl));
-        if (fixture.objectsUrl) { assert(failures.some(html => html.includes('href=') && html.includes('role="status"'))); }
-    }
-    const expectedLoads = [];
-    if (fixture.hierarchyUrl) expectedLoads.push({ selector: '#collectionHierarchy', url: fixture.hierarchyUrl });
-    if (fixture.objectsUrl) expectedLoads.push({ selector: '#browseResultsContainer', url: fixture.objectsUrl });
-    assert.deepEqual(loads, expectedLoads, `${fixture.name}: hierarchy or contents did not load`);
-    assertions++;
-    assert.equal(scrollers.length, fixture.objectsUrl ? 1 : 0, `${fixture.name}: wrong jscroll initialization count`);
-    assertions++;
-    if (fixture.objectsUrl) {
-        assert.equal(scrollers[0].selector, '#browseResultsContainer');
-        assert.equal(scrollers[0].options.loadingHtml, fixture.loadingHtml, `${fixture.name}: loading markup or translation changed`);
-        assert.equal(scrollers[0].options.autoTrigger, true);
-        assert.equal(scrollers[0].options.padding, 20);
-        assert.equal(scrollers[0].options.nextSelector, 'a.jscroll-next');
-        assertions += 5;
-    }
-}
-process.stdout.write(JSON.stringify({ assertions }));
-JS;
-$process = proc_open(array(getenv('TADL_TEST_NODE') ?: 'node', '-e', $nodeCode), array(0 => array('pipe', 'r'), 1 => array('pipe', 'w'), 2 => array('pipe', 'w')), $pipes);
-if (!is_resource($process)) { throw new RuntimeException('Node.js is required to parse emitted inline JavaScript.'); }
-fwrite($pipes[0], json_encode($cases, JSON_THROW_ON_ERROR));
-fclose($pipes[0]);
-$stdout = stream_get_contents($pipes[1]);
-$stderr = stream_get_contents($pipes[2]);
-fclose($pipes[1]);
-fclose($pipes[2]);
-$status = proc_close($process);
-checkDetailScripts($status === 0, "Rendered detail JavaScript failed in Node.js:\n".$stderr);
-$nodeResult = json_decode($stdout, true, 512, JSON_THROW_ON_ERROR);
 if (($argv[1] ?? '') === '--finding-aid-fixture') {
 	print json_encode(['links' => $subunit_document->saveHTML($subunit_view->parentNode)], JSON_THROW_ON_ERROR);
 } elseif (($argv[1] ?? '') === '--staff-shortcut-fixtures') {
 	print json_encode($staff_shortcut_fixtures, JSON_THROW_ON_ERROR);
 } else {
-	echo json_encode(array('status' => 'passed', 'assertions' => $GLOBALS['detailScriptAssertions'] + $nodeResult['assertions'], 'templates' => 'actual collection detail; authority pages have authority_detail_test.php', 'dependencies' => 'synthetic view/model/config/jQuery boundaries; Node.js syntax and execution'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;
+	echo json_encode(array('status' => 'passed', 'assertions' => $GLOBALS['detailScriptAssertions'], 'templates' => 'actual collection detail; authority pages have authority_detail_test.php', 'dependencies' => 'synthetic view/model/config boundaries; server fragments verified separately; finding-aid callback execution'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;
 }
 
 $collection_source = file_get_contents(dirname(__DIR__).'/views/Details/ca_collections_default_html.php');
-checkDetailScripts(substr_count($collection_source, "status === 'error'") === 2 && str_contains($collection_source, '<noscript>'), 'Both collection loaders need failure feedback and contents need an ordinary no-script link.');
+checkDetailScripts(!str_contains($collection_source, '.load(') && !str_contains($collection_source, 'Loading...'), 'Collection results and hierarchy must be server rendered.');

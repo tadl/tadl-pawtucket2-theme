@@ -52,3 +52,5 @@ jobs:
         run: node tests/thumbnail_grid_browser_test.js
       - name: Display preference browser regressions
         run: node tests/display_preferences_browser_test.js
+      - name: Server result browser regressions
+        run: node tests/server_results_browser_test.js

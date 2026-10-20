@@ -40,6 +40,27 @@ function caACLIsEnabled($table, $options = []) {
 }
 function caGetBrowseInstance($table) { return new TestMediaBrowse($table); }
 class TestMediaBrowse {
+    private array $criteria = [], $filters = []; private $request;
+    function setContext($context) {}
+    function addCriteria($facet, $values) { $this->criteria[$facet] = $values; return true; }
+    function addResultFilter($field, $operator, $value) { $this->filters[$field] = array_map('intval', explode(',', $value)); return true; }
+    function setTypeRestrictions($types, $options) {}
+    function execute($options) { testAssert($options['noCache'] && $options['checkAccess'] === [1], 'Embedded scopes must use fresh native visibility.'); $this->request = $options['request']; return true; }
+    function getResults($options) {
+        $ids = $this->filters['ca_objects.object_id'] ?? null;
+        if ($ids === null) {
+            $ids = [];
+            preg_match_all('/(entity|occurrence)_id:(\d+)/', $this->criteria['_search'][0], $matches, PREG_SET_ORDER);
+            foreach ($matches as $match) {
+                $table = $match[1] === 'entity' ? 'entities' : 'occurrences';
+                $query = Db::$pdo->prepare('SELECT object_id FROM ca_objects_x_'.$table.' WHERE '.$match[1].'_id=?'); $query->execute([(int)$match[2]]);
+                $ids = array_merge($ids, $query->fetchAll(PDO::FETCH_COLUMN));
+            }
+        }
+        $ids = tadlReadableIDs($this->request, 'ca_objects', array_map('intval', array_unique($ids)), [1]);
+        sort($ids); if ($options['sort_direction'] === 'desc') { $ids = array_reverse($ids); }
+        return new SearchResult('ca_objects', $ids);
+    }
     function __construct(private string $table) {}
     function filterHitsByACL($ids, $tableNum, $userID) {
         testAssert($tableNum === Datamodel::getInstanceByTableName($this->table)->tableNum(), 'Related media ACL check used the wrong table.');
@@ -86,6 +107,9 @@ class TestRequest {
         else { $this->params[$name] = $value; }
     }
     function getController() { return $this->controller; }
+    function setController($value) { $this->controller = $value; }
+    function setAction($value) { $this->action = $value; }
+    function setActionExtra($value) {}
     function getUserID() { return $this->userID; }
     function getAction() { return $this->action; }
     function getModulePath() { return ''; }
@@ -119,7 +143,7 @@ function tadlGetCollectionImages($ids, $options = []) { return []; }
 function caGetDisplayImagesForAuthorityItems($table, $ids, $options = []) { return []; }
 class ca_objects {
     function getPrimaryMediaForIDs($ids, $versions, $options = []) {
-        return array_fill_keys($ids, ['urls' => ['medium' => 'https://example.org/synthetic-preview.jpg']]);
+        return array_fill_keys($ids, ['urls' => ['medium' => 'https://example.org/synthetic-preview.jpg'], 'tags'=>['small'=>'<img src="/synthetic-preview.jpg" alt="">','medium'=>'<img src="/synthetic-preview.jpg" alt="">'], 'representation_id'=>1]);
     }
 }
 class TestMediaUrl {
@@ -132,12 +156,18 @@ class ResultContext {
     private array $values = [];
     function __construct($request, private string $table, private string $type, private ?string $block = null) {}
     function setResultList($ids) { $this->values['ids'] = $ids; $this->setSearchHistory(count($ids)); }
-    function setSearchHistory($count) { $this->values['count'] = $count; }
+    function setSearchHistory($count) { $this->values['count'] = $count; $this->values['history_search'] = $this->values['search'] ?? null; }
     function setParameter($key, $value) { $this->values[$key] = $value; }
     function setItemsPerPage($count) { $this->values['per_page'] = $count; }
     function setCurrentView($view) { $this->values['view'] = $view; }
+    function setSearchExpression($value) { $this->values['search'] = $value; }
+    function setCurrentSort($value) { $this->values['sort'] = $value; }
+    function setCurrentSortDirection($value) { $this->values['direction'] = $value; }
     function setAsLastFind($setAction = true) { self::$lastFind[$this->table] = [$this->type, $this->block, $setAction]; }
     function saveContext() { self::$saved[$this->table.':'.$this->type.':'.$this->block] = $this->values; }
+}
+class View extends TestView {
+    function __construct($request, $paths) { parent::__construct($request, []); }
 }
 class TestConfig {
     function __construct(private array $values) {}
@@ -148,6 +178,7 @@ class TestView {
     function __construct(public TestRequest $request, private array $values) {}
     function getVar($key) { return $this->values[$key] ?? null; }
     function setVar($key, $value) { $this->values[$key] = $value; }
+    function getViewPaths() { return [TEST_THEME.'/views']; }
     function render($file) {
         ob_start();
         try { include str_starts_with($file, '/') ? $file : TEST_THEME.'/views/'.$file; return ob_get_clean(); } catch (Throwable $error) { ob_end_clean(); throw $error; }
@@ -195,6 +226,14 @@ class Db {
     }
 }
 class TestModel {
+    private array $row = [];
+    function load($id) {
+        $query = Db::$pdo->prepare('SELECT * FROM '.$this->table.' WHERE '.$this->primaryKey().'=?');
+        $query->execute([$id]); $this->row = $query->fetch(PDO::FETCH_ASSOC) ?: []; return (bool)$this->row;
+    }
+    function getPrimaryKey() { return $this->row[$this->primaryKey()] ?? null; }
+    function get($field) { return $this->row[$field] ?? null; }
+    function isReadable($request, $bundle = null) { return true; }
     function __construct(private string $table) {}
     function getAppConfig() { return new TestConfig([]); }
     function getDb() { return new Db(); }
@@ -204,6 +243,7 @@ class TestModel {
     function primaryKey() { return ['ca_objects' => 'object_id', 'ca_collections' => 'collection_id', 'ca_entities' => 'entity_id', 'ca_places' => 'place_id', 'ca_occurrences' => 'occurrence_id'][$this->table]; }
 }
 class Datamodel {
+    static function getInstance($table, $cached = null) { return new TestModel($table); }
     static function getInstanceByTableName($table, $cached = null) { return new TestModel($table); }
     static function getInstanceByTableNum($number, $cached = null) { return new TestModel([57 => 'ca_objects', 67 => 'ca_collections', 20 => 'ca_entities', 72 => 'ca_places', 68 => 'ca_occurrences'][$number]); }
 }
@@ -236,6 +276,7 @@ class SearchResult {
         if (strpos($field, 'preferred_labels') !== false) { return 'Synthetic item '.$this->getPrimaryKey().' <sample> & archive'; }
         return $this->getPrimaryKey();
     }
+    function getMediaTag($field, $version, $options = []) { return '<img src="/synthetic-preview.jpg" alt="">'; }
     function getWithTemplate($template, $options = []) { return ''; }
 }
 Db::$pdo = class_exists('Pdo\Sqlite') ? new Pdo\Sqlite('sqlite::memory:') : new PDO('sqlite::memory:');
@@ -848,7 +889,7 @@ $result = new SearchResult('ca_places', [50004,50000]); $before = count(Db::$que
 tadlFilterMediaResult($request, $result);
 testAssert($result->getPrimaryKeyValues() === [50004,50000] && count(Db::$queries) === $before, 'All-items place browsing must stay unfiltered and avoid eligibility queries.');
 
-echo json_encode(['status' => 'passed', 'assertions' => $GLOBALS['assertions'], 'sql_queries' => count(Db::$queries), 'database' => 'SQLite in memory with actual helper SQL', 'result_adapter' => 'synthetic SearchResult boundary', 'records' => 'synthetic only'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;
+
 
 // A new candidate pass reuses descriptor validity while still reading current scalar identity.
 testRepresentation(990000);
@@ -861,3 +902,11 @@ testAssert($known[990000] && Db::$mediaRows === $before, 'Warm usability must av
 $replace = Db::$pdo->prepare('UPDATE ca_object_representations SET media = ? WHERE representation_id = 990000'); $replace->execute([caSerializeForDatabase([])]);
 $known = []; tadlReadMediaUsability(new Db(), [990000], [1], $known);
 testAssert(!$known[990000] && Db::$mediaRows === $before + 1, 'A descriptor change must immediately invalidate usability.');
+
+require __DIR__.'/support/server_results_checks.php';
+if (($argv[1] ?? '') === '--server-render') {
+    $input = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
+    print testServerCollectionHTML($input['params'] ?? [], $input['cookies'] ?? []);
+} else {
+echo json_encode(['status' => 'passed', 'assertions' => $GLOBALS['assertions'], 'sql_queries' => count(Db::$queries), 'database' => 'SQLite in memory with actual helper SQL', 'result_adapter' => 'synthetic SearchResult boundary', 'records' => 'synthetic only'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;
+}

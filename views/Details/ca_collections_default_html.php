@@ -171,15 +171,7 @@
 <?php
 			if ($vb_show_hierarchy_viewer) {
 ?>
-				<div id="collectionHierarchy" aria-busy="true"><?php print caBusyIndicatorIcon($this->request).' '.addslashes(_t('Loading...')); ?></div>
-				<script>
-					$(document).ready(function(){
-						$('#collectionHierarchy').load(<?php print json_encode(caNavUrl($this->request, '', 'Collections', 'collectionHierarchy', array('collection_id' => $t_item->get('collection_id')))); ?>, function(response, status) {
-							jQuery(this).attr('aria-busy', 'false');
-							if (status === 'error') { jQuery(this).html(<?= json_encode('<p role="status">'.htmlspecialchars(_t('The hierarchy could not be loaded. Please try again.'), ENT_QUOTES, 'UTF-8').'</p>'); ?>); }
-						});
-					})
-				</script>
+				<div id="collectionHierarchy"><?= $this->render('Details/collection_browser_html.php'); ?></div>
 <?php
 			}
 ?>
@@ -188,30 +180,10 @@
 
 <?php if ($collection_mode === 'flat' || sizeof($va_related_object_ids) >= 1) { ?>
 			<div class="row">
-				<div id="browseResultsContainer" aria-busy="true">
-					<?php print caBusyIndicatorIcon($this->request).' '.addslashes(_t('Loading...')); ?>
-				</div><!-- end browseResultsContainer -->
-				<noscript><p><a href="<?= htmlspecialchars(caNavUrl($this->request, '', 'CollectionContents', 'Objects', $collection_result_params), ENT_QUOTES, 'UTF-8'); ?>"><?= _t('Open collection items'); ?></a></p></noscript>
-			</div><!-- end row -->
-			<script type="text/javascript">
-				jQuery(document).ready(function() {
-					jQuery("#browseResultsContainer").load(<?php print json_encode(caNavUrl($this->request, '', 'CollectionContents', 'Objects', $collection_result_params)); ?>, function(response, status) {
-						jQuery(this).attr('aria-busy', 'false');
-						if (status === 'error') {
-							jQuery(this).html(<?= json_encode('<p role="status">'.htmlspecialchars(_t('Collection items could not be loaded.'), ENT_QUOTES, 'UTF-8').' <a href="'.htmlspecialchars(caNavUrl($this->request, '', 'CollectionContents', 'Objects', $collection_result_params), ENT_QUOTES, 'UTF-8').'">'.htmlspecialchars(_t('Open collection items'), ENT_QUOTES, 'UTF-8').'</a></p>', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>);
-							return;
-						}
-						jQuery('#browseResultsContainer').jscroll({
-							autoTrigger: true,
-							loadingHtml: <?php print json_encode(caBusyIndicatorIcon($this->request).' '._t('Loading...'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-							padding: 20,
-							nextSelector: 'a.jscroll-next'
-						});
-					});
-
-
-				});
-			</script>
+				<div id="browseResultsContainer">
+					<?php $this->setVar('collection_result_params', $collection_result_params); print $this->render('Details/collection_items_html.php'); ?>
+				</div>
+			</div>
 <?php } ?>
 		</div><!-- end container -->
 	</div><!-- end col -->

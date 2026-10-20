@@ -87,7 +87,7 @@ let browser;
     const reports = [];
     for (const width of [1280, 320]) {
         await page.setViewportSize({width, height:900});
-        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'lightbox-order', 'lightbox-menu', 'document-text', 'featured', 'notifications', 'collection-staff']) {
+        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'featured', 'notifications', 'collection-staff']) {
             await page.goto(origin + '/' + name);
             if (name === 'gallery') { await page.locator('.galleryDetailNext').waitFor(); }
             await page.evaluate(axeSource);

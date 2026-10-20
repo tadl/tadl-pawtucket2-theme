@@ -7,10 +7,11 @@ set_error_handler(function ($severity,$message,$file,$line) {
 });
 $assertions=0;
 define('__CA_ACL_READONLY_ACCESS__', 1);
+define('pString', 1); define('pInteger', 2);
 function hierarchyCheck($condition,$message) { global $assertions; $assertions++; if (!$condition) { throw new RuntimeException($message); } }
 $GLOBALS['hierarchyMode']='only';
 $GLOBALS['hierarchyRecords']=[
- 1=>['name'=>'Synthetic collection','children'=>[30,20,10,40,45,50]],
+ 1=>['name'=>'Synthetic collection','children'=>[30,20,10,40,45,50,60]],
  10=>['name'=>'alpha','children'=>[]],
  20=>['name'=>'Series 2','children'=>[24,23,22,21,25,26,27]],
  30=>['name'=>'Series 10','children'=>[]],
@@ -18,6 +19,8 @@ $GLOBALS['hierarchyRecords']=[
  45=>['name'=>'Restricted series','children'=>[451],'readable'=>false],
  451=>['name'=>'Restricted descendant','children'=>[]],
  50=>['name'=>'Empty series','children'=>[],'media'=>false],
+ 60=>['name'=>'Series 20','children'=>[61]],
+ 61=>['name'=>'Synthetic second branch folder','children'=>[]],
  21=>['name'=>'Drawer 1','children'=>[213,212,211]],
  22=>['name'=>'drawer 2','children'=>[]],
  23=>['name'=>'Drawer 4','children'=>[]],
@@ -29,7 +32,7 @@ $GLOBALS['hierarchyRecords']=[
  212=>['name'=>'Volume 2','children'=>[]],
  213=>['name'=>'Volume 10','children'=>[]]
 ];
-$GLOBALS['hierarchyObjects'] = [10=>[101], 211=>[201,202], 212=>[202,203], 213=>[204], 23=>[205], 24=>[206], 26=>[207], 30=>[301], 40=>[401]];
+$GLOBALS['hierarchyObjects'] = [10=>[101], 211=>[201,202], 212=>[202,203], 213=>[204], 23=>[205], 24=>[206], 26=>[207], 30=>[301], 40=>[401], 61=>[701]];
 $GLOBALS['hierarchyWithoutMedia'] = [101,203,207];
 $GLOBALS['hierarchyBrowseCalls'] = 0;
 class HierarchyConfig {
@@ -129,17 +132,24 @@ function tadlMediaEligibleIDs($table,$ids,$access,$request=null) {
 }
 function caDetailUrl($request,$table,$id) { return '/Detail/collections/'.$id; }
 function caDetailLink($request,$label,$class,$table,$id) { return '<a href="'.caDetailUrl($request,$table,$id).'">'.$label.'</a>'; }
-function caNavUrl($request,$module,$controller,$action,$options) { return '/Collections/'.$action.'/collection_id/'.$options['collection_id']; }
+function caNavUrl($request,$module,$controller,$action,$options) { return '/'.$controller.'/'.$action.'?'.http_build_query($options); }
 function caBusyIndicatorIcon($request) { return '<span>Loading</span>'; }
 function _t($text) { return $text; }
+class HierarchyRequest {
+ function __construct(public $branch = 0) {}
+ function getParameter($name,$type) { return $name === 'collection_branch' ? $this->branch : null; }
+}
 class HierarchyView {
  public $request;
  private HierarchyCollection $item;
+ private array $vars = [];
  function __construct(private $sort=null) {
-  $this->request=new stdClass();
+  $this->request=new HierarchyRequest();
   $this->item=Datamodel::getInstance('ca_collections',true); $this->item->load(1);
  }
+ function setVar($field,$value) { $this->vars[$field]=$value; }
  function getVar($field) {
+  if (array_key_exists($field,$this->vars)) { return $this->vars[$field]; }
   return match($field) {
    'access_values'=>[1], 'collections_config'=>new HierarchyConfig($this->sort), 'item'=>$this->item,
    'collection_id'=>20, 'exclude_collection_type_ids','non_linkable_collection_type_ids'=>[],
@@ -147,7 +157,7 @@ class HierarchyView {
   };
  }
  function render($file) {
-  ob_start(); include dirname(__DIR__).'/views/Collections/'.$file; return ob_get_clean();
+  ob_start(); include dirname(__DIR__).'/views/'.(str_contains($file,'/') ? $file : 'Collections/'.$file); return ob_get_clean();
  }
 }
 function hierarchyOrder($html,$labels) {
@@ -200,11 +210,17 @@ foreach([null,'ca_collections.preferred_labels.name'] as $sort) {
  hierarchyCheck($view->getVar('item')->getPrimaryKey()===1,'Rendering the browser must preserve the native cached page collection');
  hierarchyOrder($html,['Series 2','Series 10']);
  hierarchyCheck(!str_contains($html,'Private series') && !str_contains($html,'Empty series') && !str_contains($html,'Restricted series'), 'Root browser displayed filtered collections');
- hierarchyCheck(str_contains($html,'data-child-list-url="/Collections/childList/collection_id/20"') && str_contains($html,'href="/Detail/collections/20"'), 'AJAX route/direct-link fallback changed');
- hierarchyCheck(str_contains($html,"window.history.pushState") && str_contains($html,"popstate"), 'Browser history support disappeared');
+ hierarchyCheck(str_contains($html,'/Detail/collections/1?collection_view=hierarchy&amp;collection_branch=20') && str_contains($html,'Volume 1'), 'Branch link must preserve root scope and include the selected pane in the response');
+ hierarchyCheck(!str_contains($html,".load(") && !str_contains($html,"pushState") && str_contains($html,'aria-current="true"'), 'Hierarchy must use ordinary navigation and mark its selected branch');
  hierarchyCheck($GLOBALS['hierarchyBrowseCalls']===$before,'Media indicators must not perform an object-count search');
- hierarchyCheck(hierarchyMediaTitles($html)===['Series 2','Series 10'],'Left-column branches with digitized descendants must be bold');
+ hierarchyCheck(array_slice(hierarchyMediaTitles($html),0,2)===['Series 2','Series 10'],'Left-column branches with digitized descendants must be bold');
  hierarchyCheck(!str_contains($html,'alpha'),'Media-only mode must omit branches containing metadata-only objects');
+}
+foreach ([60=>60,45=>20,211=>20,999999=>20] as $requested=>$expected) {
+ $view = new HierarchyView(); $view->request->branch = $requested;
+ $html = $view->render('collection_hierarchy_html.php');
+ hierarchyCheck($view->getVar('collection_id') === $expected, 'Selected branches must be current readable direct branches, with a safe default for invalid/private/descendant IDs.');
+ hierarchyCheck($expected === 60 ? str_contains($html,'Synthetic second branch folder') : str_contains($html,'Volume 1'), 'The selected right pane must be rendered in the original response.');
 }
 // Include the recursive template once (it defines native printLevel), then exercise both preference modes.
 $html=(new HierarchyView())->render('child_list_html.php');
@@ -216,7 +232,7 @@ $GLOBALS['hierarchyMode']='all';
 $before=$GLOBALS['hierarchyBrowseCalls'];
 $html=(new HierarchyView())->render('collection_hierarchy_html.php');
 hierarchyOrder($html,['alpha','Empty series','Series 2','Series 10']);
-hierarchyCheck(hierarchyMediaTitles($html)===['Series 2','Series 10'] && $GLOBALS['hierarchyBrowseCalls']===$before,'All-items mode must retain plain metadata-only titles in the left pane without changing media emphasis');
+hierarchyCheck(array_slice(hierarchyMediaTitles($html),0,2)===['Series 2','Series 10'] && $GLOBALS['hierarchyBrowseCalls']===$before,'All-items mode must retain plain metadata-only titles in the left pane without changing media emphasis');
 $html=printLevel(new stdClass(),[20],new HierarchyConfig(),1,['exclude_collection_type_ids'=>[],'non_linkable_collection_type_ids'=>[],'collection_type_icons'=>['box'=>''],'collapse_levels'=>false]);
 hierarchyCheck(str_contains($html,'Empty drawer') && !str_contains($html,'Private drawer'), 'All-items mode bypassed access or retained media filtering');
 hierarchyOrder($html,['Drawer 1','drawer 2','Drawer 4','Drawer 10','Empty drawer']);
@@ -244,6 +260,10 @@ if (in_array('--fixtures',$argv??[],true)) {
   $view=new HierarchyView();
   $options=['exclude_collection_type_ids'=>[],'non_linkable_collection_type_ids'=>[],'collection_type_icons'=>['box'=>''],'collapse_levels'=>false];
   $fixtures[$mode]=['browser'=>$view->render('collection_hierarchy_html.php'),'children'=>printLevel($view->request,[20],new HierarchyConfig(),1,$options),'empty_children'=>printLevel($view->request,[50],new HierarchyConfig(),1,$options)];
+ }
+ foreach ([20,60] as $branch) {
+  $view = new HierarchyView(); $view->request->branch = $branch;
+  $fixtures['branches'][$branch] = $view->render('collection_hierarchy_html.php');
  }
  echo json_encode($fixtures,JSON_THROW_ON_ERROR);
 } else {

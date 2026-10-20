@@ -40,6 +40,9 @@
 		}
 		$qr_collection_children->seek(0);
 	}
+	$branches = array_keys(array_filter($va_grandchildren_by_collection));
+	$selected = (int)$this->request->getParameter('collection_branch', pInteger);
+	if (!in_array($selected, $branches, true)) { $selected = $branches[0] ?? 0; }
 	if($vb_has_children){
 ?>					
 			<div class="text-right"><button type="button" class="btn btn-default showHide" aria-controls="collectionsWrapper" aria-expanded="<?= $o_collections_config->get('browser_closed') ? 'false' : 'true'; ?>" onclick="var panel = jQuery('#collectionsWrapper'); panel.toggle(); jQuery(this).attr('aria-expanded', panel.is(':visible') ? 'true' : 'false');"><?= _t('Show/Hide Collection Browser'); ?></button></div>
@@ -68,10 +71,12 @@
 							$vn_rel_object_count = $va_collection_counts[$vn_child_collection_id] ?? 0;
 							$vs_title = tadlCollectionHierarchyTitle($qr_collection_children->get('ca_collections.preferred_labels'), $va_collection_media[$vn_child_collection_id] ?? false);
 							if(sizeof($va_grand_child_ids)){
-								# Keep a real detail URL as the non-JavaScript and modified-click fallback.
-								$vs_detail_url = caDetailUrl($this->request, 'ca_collections', $vn_child_collection_id);
-								$vs_child_list_url = caNavUrl($this->request, '', 'Collections', 'childList', array('collection_id' => $vn_child_collection_id));
-								print "<a href=\"".htmlspecialchars($vs_detail_url, ENT_QUOTES, 'UTF-8')."\" class=\"openCollection openCollection{$vn_child_collection_id}\" data-collection-id=\"{$vn_child_collection_id}\" data-child-list-url=\"".htmlspecialchars($vs_child_list_url, ENT_QUOTES, 'UTF-8')."\" aria-controls=\"collectionLoad\" aria-expanded=\"false\">".$vs_icon." ".$vs_title."</a>";
+								$branch_url = caNavUrl($this->request, '', 'Detail', 'collections/'.(int)$t_item->getPrimaryKey(), [
+									'collection_view'=>'hierarchy', 'collection_branch'=>$vn_child_collection_id,
+									'view'=>tadlDisplayView($this->request), 'per_page'=>tadlResultPageChoice($this->request),
+									'sort'=>$this->request->getParameter('sort', pString) ?: 'Identifier', 'direction'=>$this->request->getParameter('direction', pString) === 'desc' ? 'desc' : 'asc', 's'=>0
+								]).'#collectionHierarchy';
+								print '<a href="'.htmlspecialchars($branch_url, ENT_QUOTES, 'UTF-8').'" data-collection-branch="'.$vn_child_collection_id.'" class="openCollection'.($selected === $vn_child_collection_id ? ' active' : '').'"'.($selected === $vn_child_collection_id ? ' aria-current="true"' : '').'>'.$vs_icon.' '.$vs_title.'</a>';
 							}else{
 								$vb_link_to_detail = true;
 								if(is_array($va_non_linkable_collection_type_ids) && (in_array($qr_collection_children->get("ca_collections.type_id"), $va_non_linkable_collection_type_ids))){
@@ -95,92 +100,15 @@
 							</div><!-- end col -->
 <?php
 					if($vb_has_grandchildren){
-						$vs_loading_html = caBusyIndicatorIcon($this->request).' '._t('Loading...');
 ?>
-							<div id='collectionLoad' class='col-xs-12 col-sm-8 col-md-8 col-lg-8' role='region' aria-label='<?= _t('Selected collection contents'); ?>' aria-live='polite' aria-busy='false'>
-								<i class='fa fa-arrow-left' aria-hidden='true'></i> Click a <?php print ucFirst($t_item->get("ca_collections.type_id", array('convertCodesToDisplayText' => true))); ?> container to the left to see its contents.
+							<div id="collectionLoad" class="col-xs-12 col-sm-8 col-md-8 col-lg-8" role="region" aria-label="<?= _t('Selected collection contents'); ?>">
+								<?php
+								$this->setVar('collection_id', $selected);
+								$this->setVar('collection_media', $va_collection_media);
+								$this->setVar('collection_counts', $va_collection_counts);
+								print $this->render('Collections/child_list_html.php');
+								?>
 							</div>
-							<script>
-								jQuery(function($) {
-									var $panel = $('#collectionLoad');
-									var $links = $('#collectionsWrapper .openCollection');
-									var initialPanelHtml = $panel.html();
-									var baseUrl = window.location.pathname + window.location.search;
-									var loadingHtml = <?php print json_encode($vs_loading_html); ?>;
-
-									function collectionIdFromHash() {
-										var match = window.location.hash.match(/^#collection-(\d+)$/);
-										return match ? match[1] : null;
-									}
-
-									function linkForCollection(collectionId) {
-										return $links.filter(function() {
-											return String($(this).data('collection-id')) === String(collectionId);
-										}).first();
-									}
-
-									function resetPanel() {
-										$links.removeClass('active').attr('aria-expanded', 'false');
-										$panel.attr('aria-busy', 'false').html(initialPanelHtml);
-									}
-
-									function loadCollection($link, addHistory) {
-										if (!$link.length) {
-											resetPanel();
-											return;
-										}
-
-										var collectionId = String($link.data('collection-id'));
-										var childListUrl = $link.data('child-list-url');
-										if (addHistory && collectionIdFromHash() === collectionId && $link.hasClass('active')) {
-											return;
-										}
-
-										$links.removeClass('active').attr('aria-expanded', 'false');
-										$link.addClass('active').attr('aria-expanded', 'true');
-										$panel.attr('aria-busy', 'true').html(loadingHtml).load(childListUrl, function(responseText, status) {
-											$panel.attr('aria-busy', 'false');
-											if (status === 'error') {
-												if (addHistory) {
-													window.location.assign($link.attr('href'));
-												}else{
-													resetPanel();
-												}
-											}
-										});
-
-										if (addHistory && window.history && window.history.pushState) {
-											window.history.pushState(
-												{ collectionHierarchyId: collectionId },
-												'',
-												baseUrl + '#collection-' + collectionId
-											);
-										}
-									}
-
-									$links.on('click', function(event) {
-										if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || (event.which && event.which !== 1)) {
-											return;
-										}
-										event.preventDefault();
-										loadCollection($(this), true);
-									});
-
-									window.addEventListener('popstate', function() {
-										var collectionId = collectionIdFromHash();
-										if (collectionId) {
-											loadCollection(linkForCollection(collectionId), false);
-										}else{
-											resetPanel();
-										}
-									});
-
-									var initialCollectionId = collectionIdFromHash();
-									if (initialCollectionId) {
-										loadCollection(linkForCollection(initialCollectionId), false);
-									}
-								});
-							</script>
 <?php
 					}
 ?>
@@ -194,3 +122,18 @@
 <?php
 	}
 ?>
+
+<?php if ($vb_has_children && $vb_has_grandchildren): ?>
+<script>
+(function () {
+    function restoreLegacyBranch() {
+        var legacy = /^#collection-(\d+)$/.exec(window.location.hash);
+        if (!legacy) { return; }
+        var link = document.querySelector('#collectionHierarchy a[data-collection-branch="' + legacy[1] + '"]');
+        if (link) { window.location.replace(link.href); }
+    }
+    window.addEventListener('hashchange', restoreLegacyBranch);
+    restoreLegacyBranch();
+}());
+</script>
+<?php endif; ?>

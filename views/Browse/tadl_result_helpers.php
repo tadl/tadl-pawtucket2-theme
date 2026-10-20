@@ -3,7 +3,7 @@ require_once(__DIR__.'/../../helpers/display_preferences.php');
 /** Collection contents use ordinary detail URLs; other results retain native routes. */
 function tadlBrowseResultCollectionID($request) {
 	if (!method_exists($request, 'getParameter') || !method_exists($request, 'getController')
-		|| !$request->isAjax() || !in_array($request->getController(), ['Search', 'CollectionContents'], true)
+		|| !in_array($request->getController(), ['Search', 'CollectionContents'], true)
 		|| $request->getParameter('tadl_collection_controls', pInteger) !== 1) { return 0; }
 	return max(0, (int)$request->getParameter('tadl_collection_id', pInteger));
 }
@@ -32,6 +32,12 @@ function tadlBrowseResultRoute($request, $params) {
 		$params = array_intersect_key($params, array_flip(['view', 'sort', 'direction', 's', 'n', 'per_page']));
 		$params['collection_view'] = $request->getParameter('collection_view', pString) === 'hierarchy' ? 'hierarchy' : 'flat';
 		return ['', 'Detail', 'collections/'.$id, $params];
+	}
+	// Embedded authority previews have no native browse cache key. Carry their
+	// fixed query into ordinary links rather than depending on session history.
+	if ($request->getController() === 'Search' && empty($params['key']) && ($search = $request->getParameter('search', pString))) {
+		$params['search'] = $search;
+		$params['_advanced'] = 0;
 	}
 	return ['*', '*', '*', $params];
 }
