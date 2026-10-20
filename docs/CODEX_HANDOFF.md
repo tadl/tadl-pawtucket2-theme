@@ -742,7 +742,7 @@ below retain implementation details and historical verification evidence.
   columns in the narrower authority layout at 992–1199px.
   Shared tile image boxes now keep a 3:2 aspect ratio as cards widen, replacing
   the fixed 210px height that made full-width grids much wider than sidebar
-  previews. The image area cannot shrink to accommodate long titles; hover and
+  previews. The image area cannot shrink to accommodate long titles; collapsed cards and
   placeholders retain its proportions. List thumbnail dimensions are unchanged.
   Native `object-fit: cover`, representation selection and focal metadata remain
   intact. Normalized manual points/face boxes and the existing ResizeObserver
@@ -753,6 +753,23 @@ below retain implementation details and historical verification evidence.
   full-width/sidebar/List layouts at 320, 390, 768, 1024, 1280 and 1600px, including
   hover, placeholders, equal row heights, manual/group focus and resize/AJAX updates.
   No production deployment or detection run was performed.
+- Grid cards now have a downward full-image preview on mouse hover and visible
+  keyboard focus. `thumbnail-preview.js` keeps the original slot height while
+  floating the actual card, animates image height and restores inline dimensions
+  on leave/blur. Escape dismisses the preview while the trigger remains active.
+  A decorative clone of the already selected derivative fades over the cover crop
+  using `contain`; normal focal-point cover behavior resumes on contraction.
+  Very tall previews are capped at 75vh. Placeholder/List cards and direct touch
+  links retain their usual behavior, and reduced motion disables the animation.
+  Width/viewport resize, rapid re-entry, AJAX insertion and detached-card cleanup
+  are handled. Deploy the new asset, `conf/assets.conf` and CSS together; no face
+  cache rebuild is required. `tests/thumbnail_preview_browser_test.js` exercises
+  actual grid markup, portrait/landscape/tall/placeholder media, stable following
+  rows, animation, keyboard/Escape, resize/AJAX and touch behavior using only local
+  synthetic assets. CI runs it alongside the accessibility browser suite.
+  All 36 portable suites and the dedicated browser checks passed, with changed-file
+  PHP/JavaScript syntax and whitespace checks. No production deployment or face
+  detection run was performed.
 - Object, collection, person, organization, place and event Detail pages use
   `tadlDetailNavigation()` beside their headings: native context **Prev / Next**
   links plus the corresponding Browse action, with no Back button. Object details

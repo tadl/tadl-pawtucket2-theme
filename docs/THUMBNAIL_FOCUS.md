@@ -8,9 +8,41 @@ object results use the same shared result views. Detail and gallery viewers are
 unchanged.
 
 Shared Tiles results use a consistent **3:2 thumbnail box**, with or without a
-sidebar. The box scales with card width instead of staying 210px tall; hover and
-placeholder cards retain the same proportions. List thumbnails keep their existing
+sidebar. The box scales with card width instead of staying 210px tall; placeholder
+cards use the same proportions. List thumbnails keep their existing
 dimensions. Images continue to fill their boxes with `object-fit: cover`.
+
+## Grid hover previews
+
+On a mouse with hover support, a grid card expands downward to show the complete
+selected thumbnail image. The card floats above following rows, retaining its
+original grid space; leaving animates it back to the normal crop. Keyboard focus
+also opens the preview, moving focus outside closes it, and Escape dismisses it
+without requiring the pointer or focus to move. The expanded preview remains
+hoverable. Touch users follow the existing object link with one tap.
+
+The full-image layer uses `contain` only while previewing. Landscape images may
+fit inside the existing height; very tall images fit within a box capped at 75%
+of the viewport height. The normal thumbnail keeps its 3:2 cover crop and saved
+focal point. Placeholders and List view do not expand. Reduced-motion preferences
+disable the animation. Resizing, AJAX-added cards and removed result pages are
+handled without retaining expanded state or observers on detached cards.
+
+`assets/pawtucket/js/thumbnail-preview.js` is registered alongside the focal-point
+asset in `conf/assets.conf`. It uses the image URL already selected by the native
+result view, never an original download or another representation. The additional
+image layer is hidden from assistive technology and has no duplicate controls;
+the native record links remain intact. No detector or face-cache changes are needed.
+
+For a synthetic browser check with the development Playwright tools and reference
+Pawtucket assets available:
+
+```sh
+TADL_REFERENCE_ROOT=/path/to/pawtucket2 node tests/thumbnail_preview_browser_test.js
+```
+
+Set `TADL_BROWSER_CHANNEL=chrome` to use installed Chrome. The optional
+`TADL_A11Y_ARTIFACT_DIR` saves synthetic preview screenshots outside this repository.
 
 ## Share with another Pawtucket site
 

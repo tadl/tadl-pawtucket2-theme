@@ -122,4 +122,30 @@ foreach (['Browse/browse_results_images_html.php' => 'medium', 'Browse/browse_re
 	checkObjectThumbnail(str_contains($html, '11-'.$version.'.jpg') && !str_contains($html, '10-'.$version.'.jpg'), $view.': private primary prevented safe fallback.');
 	checkObjectThumbnail(str_contains($html, 'Synthetic &amp; image'), $view.': native escaped tag was changed.');
 }
-echo 'Object thumbnails passed: '.$assertions.' assertions (primary preference, access-aware fallback, deterministic selection and actual Tiles/List/search views).'.PHP_EOL;
+if (($argv[1] ?? '') === '--grid-fixtures') {
+	class GridThumbnailResult extends ObjectThumbnailResult {
+		private int $position = -1;
+		function numHits() { return 9; }
+		function seek($start) { $this->position = $start - 1; }
+		function nextHit() { return ++$this->position < 9; }
+		function getMediaTag($field, $version, $options) { return $this->get('ca_object_representations.media.'.$version); }
+		function get($key, $options = []) {
+			if (str_contains($key, '.media.')) {
+				if ($this->position % 4 === 2) { return '<div class="bResultItemImgPlaceholder"><i class="fa fa-image fa-2x" aria-label="No digital image"></i></div>'; }
+				$focus = $this->position % 4 === 0 ? ['point' => ['x' => 0.45, 'y' => 0.22], 'source' => 'manual'] : ['faces' => [[0.1,0.08,0.2,0.12],[0.65,0.09,0.2,0.12]], 'source' => 'faces'];
+				$source = $this->position === 4 ? '/tall.svg' : ($this->position % 4 === 3 ? '/landscape.svg' : '/portrait.svg');
+				return '<img src="'.$source.'" alt="Synthetic photograph" data-tadl-focus="'.htmlspecialchars(json_encode($focus), ENT_QUOTES, 'UTF-8').'">';
+			}
+			if (str_contains($key, 'preferred_labels')) { return 'Synthetic photograph '.($this->position + 1).($this->position % 3 === 0 ? ': a longer title describing archival material' : ''); }
+			if (str_contains($key, '.idno')) { return 'SYN.THUMB.'.($this->position + 1); }
+			return 100 + $this->position;
+		}
+	}
+	class GridThumbnailView extends ObjectThumbnailView {
+		function getVar($key) { return $key === 'result' ? new GridThumbnailResult() : parent::getVar($key); }
+	}
+	$view = new GridThumbnailView();
+	echo json_encode(['tiles' => $view->render('Browse/browse_results_images_html.php'), 'list' => $view->render('Browse/browse_results_list_html.php')], JSON_THROW_ON_ERROR);
+} else {
+	echo 'Object thumbnails passed: '.$assertions.' assertions (primary preference, access-aware fallback, deterministic selection and actual Tiles/List/search views).'.PHP_EOL;
+}
