@@ -26,7 +26,8 @@ const server = http.createServer((request, response) => {
     if (url.pathname === '/') {
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         const header = pageParts.header.replace('</head>', '<link rel="stylesheet" href="/native/pdfjs/viewer/viewer.css"><script src="/native/pdfjs/pdf.js"></script></head>');
-        response.end(header + '<h1>Synthetic collection</h1>' + links + pageParts.footer);
+        // A long collection page must not keep its own scrollbar behind the PDF.
+        response.end(header + '<h1>Synthetic collection</h1><div style="height:70vh" aria-hidden="true"></div>' + links + '<div style="height:160vh" aria-hidden="true"></div>' + pageParts.footer);
         return;
     }
     if (url.pathname === '/synthetic/CollectionFindingAid/Viewer/collection_id/42') {
@@ -71,6 +72,7 @@ async function viewerLayout(page) {
         };
         return {
             title: rect('.tadl-finding-aid-controls'), toolbar: rect('#toolbarContainer'),
+            page: {overflow: getComputedStyle(document.documentElement).overflowY, scroll: scrollY, width: document.documentElement.clientWidth, viewport: innerWidth},
             containers: ['caMediaPanel', 'caMediaPanelContentArea', 'caMediaOverlayContent'].map(id => {
                 const node = document.getElementById(id);
                 return {id, height: node.clientHeight, content: node.scrollHeight, scroll: node.scrollTop};
@@ -81,6 +83,8 @@ async function viewerLayout(page) {
 function checkViewerLayout(layout, phase) {
     assert(layout.toolbar.top >= layout.title.bottom - 1, `${phase}: PDF controls overlap the title bar: ${JSON.stringify(layout)}`);
     assert(layout.containers.every(node => node.content <= node.height + 1 && node.scroll === 0), `${phase}: outer viewer containers must not have a second scrollbar: ${JSON.stringify(layout)}`);
+    assert.equal(layout.page.overflow, 'hidden', `${phase}: the background page must not retain a second scrollbar.`);
+    assert.equal(layout.page.width, layout.page.viewport, `${phase}: the background scrollbar must not reserve a gutter beside the modal.`);
 }
 (async () => {
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -94,6 +98,10 @@ function checkViewerLayout(layout, phase) {
     for (const width of [1280, 390]) {
         await page.setViewportSize({width, height:900});
         await page.goto(origin);
+        const originalOverflow = await page.evaluate(() => getComputedStyle(document.documentElement).overflowY);
+        await page.getByRole('link', {name:'View finding aid (PDF)', exact:true}).evaluate(node => node.scrollIntoView({block:'center'}));
+        const originalScroll = await page.evaluate(() => scrollY);
+        assert(originalScroll > 0, 'Exercise a collection page that was already scrolled before opening the viewer.');
         let allowPDF;
         const pdfReady = new Promise(resolve => { allowPDF = resolve; });
         await page.route('**/CollectionFindingAid/View/collection_id/42', async route => { await pdfReady; await route.continue(); });
@@ -107,6 +115,10 @@ function checkViewerLayout(layout, phase) {
         await page.locator('#viewer .page canvas').first().waitFor({state:'visible'});
         checkViewerLayout(await viewerLayout(page), `${width}px rendered`);
         checkViewerLayout(loadingLayout, `${width}px loading`);
+        await page.locator('.tadl-finding-aid-controls').hover();
+        await page.mouse.wheel(0, 600);
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        assert.equal(await page.evaluate(() => scrollY), originalScroll, 'Scrolling the viewer toolbar must not scroll the background collection.');
         assert(await page.locator('#viewerContainer').evaluate(node => node.scrollHeight > node.clientHeight), 'Multi-page documents must scroll within PDF.js.');
         assert.equal(await page.locator('.tadl-finding-aid-controls .objectInfo').textContent(), 'Finding aid: Synthetic Archives Collection (SYN.42)');
         assert.equal(page.url(), origin + '/');
@@ -135,17 +147,20 @@ function checkViewerLayout(layout, phase) {
         await page.getByRole('button', {name:'Close media viewer', exact:true}).click();
         await page.waitForFunction(() => document.querySelector('#caMediaPanel').getAttribute('aria-hidden') === 'true');
         await page.waitForFunction(() => getComputedStyle(document.getElementById('caMediaPanelContentArea')).marginTop === '40px');
+        assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).overflowY), originalOverflow, 'Closing the viewer must restore normal page scrolling.');
+        assert.equal(await page.evaluate(() => scrollY), originalScroll, 'Closing must preserve the original collection scroll position.');
         await page.unroute('**/CollectionFindingAid/View/collection_id/42');
         assert.equal(await page.evaluate(() => document.activeElement.textContent.replace(/\s+/g, ' ').trim()), 'View finding aid (PDF)');
         await page.getByRole('link', {name:'View finding aid (PDF)', exact:true}).click();
         await page.locator('#viewer .page canvas').first().waitFor({state:'visible'});
         await page.getByRole('button', {name:'Close media viewer', exact:true}).click();
         await page.waitForFunction(() => document.querySelector('#caMediaPanel').getAttribute('aria-hidden') === 'true');
+        assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).overflowY), originalOverflow, 'Repeated viewer openings must not leave the page locked.');
     }
     assert.deepEqual(errors, [], 'Native document viewer JavaScript errors.');
     assert.deepEqual(viewerMethods, ['POST', 'POST', 'POST', 'POST'], 'Exercise the native media-panel transport on every opening.');
     assert.equal(pdfRequests, 4, 'Each opening should request the PDF once without pre-generating or caching it.');
-    console.log('Finding-aid browser passed: loading/rendered/zoomed layout, single document scroller, title/identifier, native PDF.js paging/search/download, close/reopen and focus restoration at 1280/390px.');
+    console.log('Finding-aid browser passed: loading/rendered/zoomed layout, single document scroller, background scroll lock/restoration, title/identifier, native PDF.js paging/search/download, close/reopen and focus restoration at 1280/390px.');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
     if (browser) { await browser.close(); }
     server.close();

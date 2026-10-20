@@ -23,6 +23,9 @@ body :is(a, button, input, textarea, select, summary, [tabindex]):focus-visible 
 html { scroll-padding-block: 12px; }
 :is(a, button, input, textarea, select, summary, [tabindex]) { scroll-margin-block: 12px; }
 
+/* The open native dialog owns scrolling; preserve the catalogue's position underneath. */
+html:has(#caMediaPanel[aria-hidden="false"]) { overflow: hidden; }
+
 /* A border identifies editable fields on white and pale surfaces. */
 .form-control:not(:disabled) { border-color: #758597; }
 .form-control::placeholder { color: #666; opacity: 1; }

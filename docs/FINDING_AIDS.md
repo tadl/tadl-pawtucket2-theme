@@ -10,8 +10,10 @@ the same access-checked document as an attachment. No Providence representation
 or stored export is created.
 The title bar includes the public collection identifier in parentheses after the
 title when present and readable. It occupies its own row above PDF.js controls;
-the document scrolls inside the remaining viewer space. Other media overlays keep
-their existing layout.
+the document scrolls inside the remaining viewer space. While the native dialog
+is open, the underlying catalogue page cannot scroll or show a second scrollbar.
+Closing the dialog restores page scrolling at the original position. Other media
+overlays keep their existing layout.
 Series, subseries, boxes, folders,
 volumes and other components use their own recorded metadata. A folder can
 correctly describe 80 clippings without having 80 individual object records.
@@ -195,7 +197,9 @@ Chromium. The optional check renders real synthetic PDF bytes locally and covers
 paging, text search, download, closing/reopening, focus restoration and desktop/
 phone widths. It holds the PDF response to check the loading state, then checks
 rendered/zoomed geometry for overlapping bars and extra outer scrollbars, plus
-title/identifier display and layout cleanup on close. Viewer responses use the
+title/identifier display and layout cleanup on close. A long, already-scrolled
+collection fixture checks background scroll locking, scrollbar-gutter removal,
+wheel handling and scroll-position restoration. Viewer responses use the
 actual controller's status, headers and markup for each request method, including
 the native panel's POST. It never
 bootstraps the catalogue or contacts a production site.

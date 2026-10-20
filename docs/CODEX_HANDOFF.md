@@ -477,6 +477,17 @@ PDF viewer script is removed. Browser regressions hold the PDF response to check
 loading geometry, then verify rendered/zoomed controls and a single document
 scroller, title/identifier, download and close cleanup. No native viewer source
 or dependency was replaced.
+The 2026-10-20 double-scrollbar follow-up found that a long catalogue page could
+still scroll behind the correctly sized PDF overlay. `accessibility.css` now locks
+root overflow while the native media panel has `aria-hidden="false"`; closing
+releases the lock without changing the page position or inline styles.
+This follows the existing panel lifecycle for finding aids and other native
+dialogs. The PDF.js regression now includes a long, already-scrolled collection
+page, checks the root scrollbar/gutter and wheel handling during opening/rendering/
+zooming, and verifies restoration after close/reopen. The accessibility browser
+suite also checks lock/release for login and other media dialogs, including Escape.
+Both browser suites passed, along with the focused accessibility, user-feature
+and asset-version PHP checks. No production deployment was performed.
 
 ### Asset cache versions
 
