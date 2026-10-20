@@ -69,9 +69,9 @@ function tadlObjectRepresentationFormats($request, array $objectIDs, array $acce
 	return $formats;
 }
 
-function tadlRepresentationFormatTags(array $formats) {
+function tadlRepresentationFormatTags(array $formats, $id = null) {
 	if (!$formats) { return ''; }
-	$html = '<ul class="tadl-representation-formats" role="list" aria-label="'.htmlspecialchars(_t('File formats'), ENT_QUOTES, 'UTF-8').'">';
+	$html = '<ul'.($id !== null ? ' id="'.htmlspecialchars((string)$id, ENT_QUOTES, 'UTF-8').'"' : '').' class="tadl-representation-formats" role="list" aria-label="'.htmlspecialchars(_t('File formats'), ENT_QUOTES, 'UTF-8').'">';
 	foreach ($formats as $format) {
 		$html .= '<li class="tadl-representation-format">'.htmlspecialchars($format, ENT_QUOTES, 'UTF-8').'</li>';
 	}

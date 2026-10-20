@@ -246,3 +246,8 @@ formatCheck($xpath->query('//a[@href="/Detail/objects/1"]')->length >= 2 && !str
 $fixtures['lightbox'] = $lightbox;
 if (($argv[1] ?? '') === '--fixtures') { echo json_encode($fixtures, JSON_THROW_ON_ERROR); }
 else { echo "Representation formats passed: {$checks} assertions (batched original formats, permissions, paging, Tiles/List, overview and lightbox views).\n"; }
+
+$described = tadlRepresentationFormatTags(['JPEG', 'TIFF'], 'synthetic-formats');
+if (!str_contains($described, 'id="synthetic-formats"') || !str_contains($described, '>JPEG<') || !str_contains($described, '>TIFF<')) { throw new RuntimeException('Format descriptions must retain every visible format.'); }
+$preview_source = file_get_contents(dirname(__DIR__).'/views/Search/tadl_search_results_subview_html.php');
+if (!str_contains($preview_source, 'aria-describedby=') || !str_contains($preview_source, 'aria-label="<?= $vs_item_label; ?>"')) { throw new RuntimeException('Preview links need the object title as name and formats as a separate description.'); }

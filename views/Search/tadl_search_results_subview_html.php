@@ -90,12 +90,13 @@
 	foreach ($va_preview_items as $va_item) {
 		$vs_item_url = htmlspecialchars($va_item['url'], ENT_QUOTES, 'UTF-8');
 		$vs_item_label = htmlspecialchars($va_item['label'], ENT_QUOTES, 'UTF-8');
+		$format_description_id = !empty($va_formats[$va_item['id']]) ? $vs_block.'-formats-'.(int)$va_item['id'] : null;
 ?>
 	<li>
 <?php
 		if ($vb_media_cards) {
 ?>
-		<a class="tadl-search-card<?php print ($vs_table === 'ca_collections') ? ' tadl-search-card--collection' : ''; ?>" href="<?php print $vs_item_url; ?>">
+		<a class="tadl-search-card<?php print ($vs_table === 'ca_collections') ? ' tadl-search-card--collection' : ''; ?>" href="<?php print $vs_item_url; ?>" aria-label="<?= $vs_item_label; ?>"<?= $format_description_id ? ' aria-describedby="'.htmlspecialchars($format_description_id, ENT_QUOTES, 'UTF-8').'"' : ''; ?>>
 			<span class="tadl-search-card-media" aria-hidden="true">
 <?php
 			if ($va_item['image']) {
@@ -110,7 +111,7 @@
 			<?php if ($vs_table === 'ca_objects'): ?>
 			<div class="tadl-search-card-caption<?= !empty($va_formats[$va_item['id']]) ? ' tadl-result-with-formats' : ''; ?>">
 				<span class="tadl-search-card-title"><?= $vs_item_label; ?></span>
-				<?= tadlRepresentationFormatTags($va_formats[$va_item['id']] ?? []); ?>
+				<?= tadlRepresentationFormatTags($va_formats[$va_item['id']] ?? [], $format_description_id); ?>
 			</div>
 			<?php else: ?>
 			<span class="tadl-search-card-title"><?= $vs_item_label; ?></span>
