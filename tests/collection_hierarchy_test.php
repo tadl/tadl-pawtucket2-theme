@@ -246,3 +246,7 @@ if (in_array('--fixtures',$argv??[],true)) {
 } else {
  echo 'Collection hierarchy passed: '.$assertions.' assertions (rendered siblings, recursive natural ordering, access/media filters and history links).'.PHP_EOL;
 }
+
+$child_view_source = file_get_contents(dirname(__DIR__).'/views/Collections/child_list_html.php');
+hierarchyCheck(!str_contains($child_view_source, '$o_config->get("link_out_icon")'), 'Redundant icon-only links must not be emitted.');
+hierarchyCheck(str_contains($child_view_source, "_t('View details: %1'"), 'Collapsed branches need a named separate detail link.');

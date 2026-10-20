@@ -83,7 +83,10 @@ function printLevel($po_request, $va_collection_ids, $o_config, $vn_level, $va_o
 				}else{
 					$vs_output .= caDetailLink($po_request, $vs_title.$vs_date, '', 'ca_collections',  $qr_collections->get("ca_collections.collection_id"));
 				}
-				$vs_output .= " ".caDetailLink($po_request, (($o_config->get("link_out_icon")) ? $o_config->get("link_out_icon") : ""), '', 'ca_collections',  $qr_collections->get("ca_collections.collection_id"));
+                // An ordinary title link already opens details. Collapse controls need a separate named link.
+                if ($vb_collapse_link) {
+                    $vs_output .= ' '.caDetailLink($po_request, htmlspecialchars(_t('View details: %1', strip_tags($vs_title)), ENT_QUOTES, 'UTF-8'), '', 'ca_collections', $qr_collections->get('ca_collections.collection_id'));
+                }
 			}else{
 				$vs_output .= "<span class='nonLinkedCollection'>".$vs_icon." ";
 				if($vb_collapse_link){
