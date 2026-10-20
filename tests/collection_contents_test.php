@@ -13,7 +13,7 @@ function contentsCheck($condition, $message) {
 	$GLOBALS['assertions']++;
 	if (!$condition) { throw new RuntimeException($message); }
 }
-function caGetUserAccessValues($request) { return $request->access; }
+function caGetUserAccessValues($request) { $GLOBALS['bulkCollectionRequest'] = $request; return $request->access; }
 function caACLIsEnabled($record, $options) {
 	contentsCheck($options === ['forPawtucket' => true], 'Collection ACL must use the Pawtucket configuration.');
 	return $record->get('acl');
@@ -45,7 +45,9 @@ class ContentsResponse {
 	function addHeader($key, $value) { $this->headers[$key] = $value; }
 	function setHTTPResponseCode($code, $message) { $this->code = $code; }
 }
+require_once(__DIR__.'/support/collection_bulk_boundary.php');
 class Datamodel {
+ static function getInstanceByTableName($table, $cached) { return new BulkCollectionBoundary(); }
 	private static array $instances = [];
 	static function getInstance($table, $useCache = false) {
 		contentsCheck($table === 'ca_collections', 'Traversal must load collection models, never object records.');
@@ -72,7 +74,7 @@ class Db {
 	static array $queries = [];
 	function query($sql, $params) {
 		$membership = $sql === 'SELECT DISTINCT object_id, collection_id FROM ca_objects_x_collections WHERE collection_id IN (?)';
-		contentsCheck($membership || $sql === 'SELECT collection_id FROM ca_collections WHERE parent_id IN (?) AND access IN (?) AND deleted = 0', 'Traversal/membership query must stay scoped.');
+		contentsCheck($membership || in_array($sql, ['SELECT collection_id FROM ca_collections WHERE parent_id IN (?) AND access IN (?) AND deleted = 0', 'SELECT collection_id, parent_id FROM ca_collections WHERE parent_id IN (?) AND access IN (?) AND deleted = 0'], true), 'Traversal/membership query must stay scoped.');
 		contentsCheck(count($params) === ($membership ? 1 : 2) && count($params[0]) > 0 && count($params[0]) <= 500 && ($membership || $params[1]), 'Traversal/membership query must be bounded and fail closed.');
 		self::$queries[] = $params;
 		$index = 0;

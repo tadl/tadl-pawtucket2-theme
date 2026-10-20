@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__.'/record_access.php');
 
 function tadlCollectionContentsMode($request) {
 	return $request->getParameter('collection_view', pString) === 'hierarchy' ? 'hierarchy' : 'flat';
@@ -54,11 +55,40 @@ function tadlCollectionContentsChildren($request, array $parents, array $access)
 	return $children;
 }
 
+/** Scalar child metadata and bulk native visibility; never load a model for every child. */
+function tadlCollectionContentsChildRows($request, array $parents, array $access) {
+    $rows = []; $db = new Db();
+    foreach (array_chunk($parents, 500) as $chunk) {
+        $result = $db->query('SELECT collection_id, parent_id FROM ca_collections WHERE parent_id IN (?) AND access IN (?) AND deleted = 0', [$chunk, $access]);
+        if (!$result) { throw new RuntimeException('Unable to load collection hierarchy.'); }
+        $batch = [];
+        while ($result->nextRow()) { $batch[(int)$result->get('collection_id')] = (int)$result->get('parent_id'); }
+        $allowed = array_fill_keys(tadlReadableIDs($request, 'ca_collections', array_keys($batch), $access), true);
+        $rows += array_intersect_key($batch, $allowed);
+    }
+    return $rows;
+}
+
 function tadlCollectionHasHierarchy($request, $collection) {
-	$access = array_map('intval', (array)caGetUserAccessValues($request));
-	return $access && tadlCollectionContentsReadable($request, $collection, $access)
-		&& $collection->isReadable($request, 'hierarchy')
-		&& (bool)tadlCollectionContentsChildren($request, [(int)$collection->getPrimaryKey()], $access);
+    $access = array_map('intval', (array)caGetUserAccessValues($request));
+    return $access && tadlCollectionContentsReadable($request, $collection, $access)
+        && $collection->isReadable($request, 'hierarchy')
+        && (bool)tadlCollectionContentsChildRows($request, [(int)$collection->getPrimaryKey()], $access);
+}
+
+/** Cycle-safe breadth-first scalar traversal, pruning inaccessible intermediate records. */
+function tadlCollectionContentsRows($request, $collection, $descendants = true) {
+    $access = array_map('intval', (array)caGetUserAccessValues($request));
+    if (!$access || !tadlCollectionContentsReadable($request, $collection, $access)) { return []; }
+    $level = [(int)$collection->getPrimaryKey() => (int)$collection->get('parent_id')]; $nodes = [];
+    while ($level) {
+        $level = array_diff_key($level, $nodes);
+        if (!$level) { break; }
+        $nodes += $level;
+        $parents = $descendants ? tadlReadableIDs($request, 'ca_collections', array_keys($level), $access, 'hierarchy') : [];
+        $level = $parents ? tadlCollectionContentsChildRows($request, $parents, $access) : [];
+    }
+    return $nodes;
 }
 
 /** Traverse the selected branch only, pruning inaccessible/deleted ancestors. */
@@ -80,11 +110,8 @@ function tadlCollectionContentsCollections($request, $collection, $includeDescen
 }
 
 function tadlCollectionContentsIDs($request, $collection, $includeDescendants = true) {
-	$ids = [];
-	foreach (tadlCollectionContentsCollections($request, $collection, $includeDescendants) as $id => $node) {
-		if ($node->isReadable($request, 'ca_objects')) { $ids[] = $id; }
-	}
-	return $ids;
+    return tadlReadableIDs($request, 'ca_collections', array_keys(tadlCollectionContentsRows($request, $collection, $includeDescendants)),
+        array_map('intval', (array)caGetUserAccessValues($request)), 'ca_objects');
 }
 
 /** Numeric collection terms keep the native search responsible for object visibility. */
@@ -95,12 +122,9 @@ function tadlCollectionContentsSearch(array $ids) {
 
 /** Digitized-media presence throughout each readable branch, independent of display preference. */
 function tadlCollectionContentsMediaPresence($request, $collection) {
-	$nodes = tadlCollectionContentsCollections($request, $collection);
+	$nodes = tadlCollectionContentsRows($request, $collection);
 	$presence = array_fill_keys(array_keys($nodes), false);
-	$scope = [];
-	foreach ($nodes as $id => $node) {
-		if ($node->isReadable($request, 'ca_objects')) { $scope[] = $id; }
-	}
+	$scope = tadlReadableIDs($request, 'ca_collections', array_keys($nodes), (array)caGetUserAccessValues($request), 'ca_objects');
 	if (!$scope) { return $presence; }
 	$db = new Db();
 	$memberships = []; $objects = [];
@@ -119,7 +143,7 @@ function tadlCollectionContentsMediaPresence($request, $collection) {
 		// An earlier positive result already marked this node and all its ancestors.
 		while (isset($nodes[$id]) && !$presence[$id]) {
 			$presence[$id] = true;
-			$id = (int)$nodes[$id]->get('parent_id');
+			$id = (int)$nodes[$id];
 		}
 	}
 	return $presence;
@@ -127,12 +151,9 @@ function tadlCollectionContentsMediaPresence($request, $collection) {
 
 /** Unique visible objects, retained for the optional object-dependent link policy. */
 function tadlCollectionContentsCounts($request, $collection) {
-	$nodes = tadlCollectionContentsCollections($request, $collection);
+	$nodes = tadlCollectionContentsRows($request, $collection);
 	$counts = array_fill_keys(array_keys($nodes), 0);
-	$scope = [];
-	foreach ($nodes as $id => $node) {
-		if ($node->isReadable($request, 'ca_objects')) { $scope[] = $id; }
-	}
+	$scope = tadlReadableIDs($request, 'ca_collections', array_keys($nodes), (array)caGetUserAccessValues($request), 'ca_objects');
 	if (!$scope) { return $counts; }
 	$browse = caGetBrowseInstance('ca_objects');
 	if (!$browse) { throw new RuntimeException('Unable to count collection contents.'); }
@@ -162,7 +183,7 @@ function tadlCollectionContentsCounts($request, $collection) {
 			while (isset($nodes[$id]) && !isset($seen[$id])) {
 				$seen[$id] = true;
 				$counts[$id]++;
-				$id = (int)$nodes[$id]->get('parent_id');
+				$id = (int)$nodes[$id];
 			}
 		}
 	}

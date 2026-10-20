@@ -24,7 +24,7 @@ function checkDetailScripts($condition, $message) {
 	if (!$condition) { throw new RuntimeException($message); }
 }
 function _t($text) { return $text === 'Loading...' ? $GLOBALS['detailScriptLoading'] : $text; }
-function caGetUserAccessValues($request) { return array(1); }
+function caGetUserAccessValues($request) { $GLOBALS['bulkCollectionRequest'] = $request; return array(1); }
 function caACLIsEnabled($record, $options = []) { return false; }
 function tadlMediaPreference($request) { return $GLOBALS['detailScriptMode']; }
 function tadlMediaEligibleIDs($table, $ids, $access) { return $ids; }
@@ -99,7 +99,9 @@ class DetailScriptItem {
 		return '';
 	}
 }
+require_once(__DIR__.'/support/collection_bulk_boundary.php');
 class Datamodel {
+ static function getInstanceByTableName($table, $cached) { return new BulkCollectionBoundary(); }
 	static function getInstance($table, $initialize) { return new DetailScriptItem(0); }
 }
 class Db {

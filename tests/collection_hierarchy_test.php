@@ -68,7 +68,9 @@ class HierarchyCollection extends HierarchyResult {
  function getPrimaryKey() { return $this->get('ca_collections.collection_id'); }
  function isReadable($request,$bundle=null) { return $GLOBALS['hierarchyRecords'][$this->getPrimaryKey()]['readable']??true; }
 }
+require_once(__DIR__.'/support/collection_bulk_boundary.php');
 class Datamodel {
+ static function getInstanceByTableName($table, $cached) { return new BulkCollectionBoundary(); }
  private static array $instances=[];
  static function getInstance($table,$useCache=false) {
   // Match native mutable instance caching rather than returning a fresh model unconditionally.
@@ -82,7 +84,7 @@ class Db {
   if (str_starts_with($sql,'SELECT collection_id')) {
    foreach ($params[0] as $parent) {
     foreach ($GLOBALS['hierarchyRecords'][$parent]['children'] as $id) {
-     if (in_array($GLOBALS['hierarchyRecords'][$id]['access']??1,$params[1],true)) { $rows[]=['collection_id'=>$id]; }
+     if (in_array($GLOBALS['hierarchyRecords'][$id]['access']??1,$params[1],true)) { $rows[]=['collection_id'=>$id,'parent_id'=>$parent]; }
     }
    }
   } else {
@@ -119,7 +121,7 @@ function tadlFilterMediaResult($request,$result) {
 }
 function caMakeSearchResult($table,$ids) { hierarchyCheck($table==='ca_collections','Wrong hierarchy table'); return new HierarchyResult($ids); }
 function tadlMediaPreference($request) { return $GLOBALS['hierarchyMode']; }
-function caGetUserAccessValues($request) { return [1]; }
+function caGetUserAccessValues($request) { $GLOBALS['bulkCollectionRequest'] = $request; return [1]; }
 function tadlMediaEligibleIDs($table,$ids,$access,$request=null) {
  hierarchyCheck($access===[1],'Media filtering lost native access context');
  return $table==='ca_collections' ? array_values(array_filter($ids,fn($id)=>$GLOBALS['hierarchyRecords'][$id]['media']??true)) : array_values(array_diff($ids,$GLOBALS['hierarchyWithoutMedia']));
