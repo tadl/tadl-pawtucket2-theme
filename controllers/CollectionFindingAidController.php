@@ -23,6 +23,7 @@ class CollectionFindingAidController extends BasePawtucketController {
 		$pdf_url = caNavUrl($this->request, '', 'CollectionFindingAid', 'View', ['collection_id' => $id]);
 		$download_url = caNavUrl($this->request, '', 'CollectionFindingAid', 'Download', ['collection_id' => $id]);
 		$title = tadlFindingAidValue($this->request, $collection, ['ca_collections.preferred_labels.name']) ?: _t('Finding aid');
+		$identifier = tadlFindingAidValue($this->request, $collection, ['ca_collections.idno']);
 		try {
 			$viewer = new View($this->request, $this->request->getViewsDirectoryPath().'/mediaViewers');
 			foreach (['viewer' => 'pdfjs', 'finding_aid_viewer' => true, 'context' => 'collections', 'search' => '', 'scroll_mode' => 0,
@@ -30,7 +31,9 @@ class CollectionFindingAidController extends BasePawtucketController {
 				$viewer->setVar($key, $value);
 			}
 			$heading = htmlspecialchars(_t('Finding aid').': '.$title, ENT_QUOTES, 'UTF-8');
-			$viewer->setVar('controls', '<div class="objectInfo" title="'.$heading.'"><span class="tadl-viewer-object-title">'.$heading.'</span></div>'
+			$identifier_text = $identifier !== '' ? htmlspecialchars(' ('.$identifier.')', ENT_QUOTES, 'UTF-8') : '';
+			$viewer->setVar('controls', '<div class="objectInfo" title="'.$heading.$identifier_text.'"><span class="tadl-viewer-object-title">'.$heading.'</span>'
+				.($identifier_text !== '' ? '<span class="tadl-viewer-object-identifier">'.$identifier_text.'</span>' : '').'</div>'
 				.'<div class="download"><a href="'.htmlspecialchars($download_url, ENT_QUOTES, 'UTF-8').'" rel="nofollow">'.htmlspecialchars(_t('Download PDF'), ENT_QUOTES, 'UTF-8').'</a></div>');
 			$this->response->addContent($viewer->render('viewerWrapper.php'));
 		} catch (Throwable $error) {

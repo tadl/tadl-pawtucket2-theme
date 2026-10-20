@@ -372,8 +372,19 @@ foreach (['GET', 'POST'] as $method) {
 	aidCheck($response->status === 200 && str_contains($response->body, 'id="caMediaOverlayContent"') && str_contains($response->body, 'id="viewerContainer"'), 'Finding aid must reuse the actual PDF.js document viewer and native media overlay.');
 	aidCheck(str_contains($response->body, "window.pdfjsContentURL = '/synthetic/CollectionFindingAid/View/collection_id/42'") && str_contains($response->body, '/assets/pdfjs/viewer/viewer.js'), 'Native PDF.js must load the access-checked generated PDF endpoint.');
 	aidCheck(str_contains($response->body, '/CollectionFindingAid/Download/collection_id/42') && str_contains($response->body, 'Close media viewer') && $response->headers['Cache-Control'] === 'private, no-store' && $response->headers['X-Robots-Tag'] === 'noindex, nofollow', 'Viewer must retain download/close controls and privacy/crawler headers.');
+	aidCheck(str_contains($response->body, 'class="tadl-finding-aid-viewer"') && str_contains($response->body, 'title="Finding aid: Synthetic Archives Collection (SYN.42)"') && str_contains($response->body, '<span class="tadl-viewer-object-identifier"> (SYN.42)</span>'), 'The bounded finding-aid viewer must display the readable collection identifier after its title.');
 	aidCheck(array_slice($GLOBALS['aidLoads'], $before) === [['ca_collections', 42]], 'Opening the viewer must validate only the root; PDF generation happens once when PDF.js requests it.');
 }
+$saved_root = $GLOBALS['aidRows']['ca_collections'][42];
+foreach ([['', [], ''], ['PRIVATE identifier', ['idno'], ''], ['SYN &quot;42&quot; &amp; &lt;unsafe&gt;', [], ' (SYN "42" & <unsafe>)']] as [$identifier, $denied, $suffix]) {
+	$GLOBALS['aidRows']['ca_collections'][42]['values']['ca_collections.idno'] = $identifier;
+	$GLOBALS['aidRows']['ca_collections'][42]['denied'] = $denied;
+	$response = new AidResponse(); (new CollectionFindingAidController(new AidRequest(), $response))->Viewer();
+	$document = new DOMDocument(); $document->loadHTML('<meta charset="UTF-8">'.$response->body, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+	$nodes = new DOMXPath($document); $heading = $nodes->query('//div[@class="objectInfo"]')->item(0);
+	aidCheck($heading && $heading->textContent === 'Finding aid: Synthetic Archives Collection'.$suffix && $heading->getAttribute('title') === $heading->textContent && $nodes->query('.//unsafe', $heading)->length === 0, 'Viewer identifiers must be escaped and missing/restricted values omitted without empty parentheses.');
+}
+$GLOBALS['aidRows']['ca_collections'][42] = $saved_root;
 $GLOBALS['aidViewerFail'] = true;
 $response = new AidResponse(); (new CollectionFindingAidController(new AidRequest(), $response))->Viewer();
 aidCheck($response->status === 503 && str_contains($response->body, 'Please use Download instead.') && !str_contains($response->body, 'Synthetic viewer failure'), 'Viewer errors must provide a safe download fallback.');

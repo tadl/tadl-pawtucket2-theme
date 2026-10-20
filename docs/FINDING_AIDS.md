@@ -8,6 +8,10 @@ and browsers without the panel follow a direct inline-PDF link instead; browser
 PDF settings can override inline viewing. The viewer's **Download PDF** link sends
 the same access-checked document as an attachment. No Providence representation
 or stored export is created.
+The title bar includes the public collection identifier in parentheses after the
+title when present and readable. It occupies its own row above PDF.js controls;
+the document scrolls inside the remaining viewer space. Other media overlays keep
+their existing layout.
 Series, subseries, boxes, folders,
 volumes and other components use their own recorded metadata. A folder can
 correctly describe 80 clippings without having 80 individual object records.
@@ -184,8 +188,11 @@ Set `TADL_REFERENCE_ROOT` if the reference Pawtucket assets are elsewhere, and
 `TADL_BROWSER_CHANNEL=chrome` to use an installed Chrome instead of Playwright's
 Chromium. The optional check renders real synthetic PDF bytes locally and covers
 paging, text search, download, closing/reopening, focus restoration and desktop/
-phone widths. Viewer responses use the actual controller's status, headers and
-markup for each request method, including the native panel's POST. It never
+phone widths. It holds the PDF response to check the loading state, then checks
+rendered/zoomed geometry for overlapping bars and extra outer scrollbars, plus
+title/identifier display and layout cleanup on close. Viewer responses use the
+actual controller's status, headers and markup for each request method, including
+the native panel's POST. It never
 bootstraps the catalogue or contacts a production site.
 
 Also set `TADL_TEST_FINDING_AID_PDF` to an absolute disposable output path outside

@@ -33,6 +33,7 @@ require_once(__DIR__.'/../../helpers/image_downloads.php');
 $download_controls = tadlNofollowMediaLinks($this->getVar('controls'));
 $viewer_download = '';
 $viewer_object_heading = '';
+$finding_aid_viewer = (bool)$this->getVar('finding_aid_viewer');
 if ($this->getVar('viewer') === 'TileViewer' && in_array($this->getVar('context') ?: $this->request->getParameter('context', pString), ['objects', 'gallery'], true)
 	&& preg_match('/^representation:(\d+)$/', (string)$this->getVar('identifier'), $download_match)) {
 	$t_download_object = Datamodel::getInstance('ca_objects', true);
@@ -52,6 +53,7 @@ if ($this->getVar('viewer') === 'TileViewer' && in_array($this->getVar('context'
 	}
 }
 ?>
+<?php if ($finding_aid_viewer) { ?><div class="tadl-finding-aid-viewer"><?php } ?>
 <div id="caMediaOverlayContent"><?php print $this->render($this->getVar('viewer').".php").$viewer_download; ?></div>
 <?php if ($this->getVar('hideOverlayControls')) { ?>
 <div class="caMediaOverlayControlsMinimal">
@@ -63,6 +65,7 @@ if ($this->getVar('viewer') === 'TileViewer' && in_array($this->getVar('context'
 	<?php print $download_controls; ?>
 </div>
 <?php } ?>
+<?php if ($finding_aid_viewer) { ?></div><?php } ?>
 
 <script>
 	jQuery(document).ready(function () {

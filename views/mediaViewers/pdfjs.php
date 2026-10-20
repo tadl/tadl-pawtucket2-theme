@@ -397,4 +397,3 @@
  	window.pdfjsDefaultScrollMode = <?= $this->getVar('scroll_mode'); ?>;
  </script>
  <script src="<?= $this->request->getBaseUrlPath(); ?>/assets/pdfjs/viewer/viewer.js"></script>
- <?= $this->getVar('scroll_mode'); ?>

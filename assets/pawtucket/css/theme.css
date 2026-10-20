@@ -1536,6 +1536,36 @@ h6 {
     z-index: 300;
 }
 
+/* Keep PDF.js scrolling inside the document, below the finding-aid title bar. */
+#caMediaPanelContentArea:has(> .tadl-finding-aid-viewer) {
+    margin-top: 0;
+    overflow: hidden;
+}
+
+.tadl-finding-aid-viewer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    background-color: #404040;
+}
+
+.tadl-finding-aid-viewer > #caMediaOverlayContent {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    overflow: hidden;
+}
+
+.tadl-finding-aid-viewer > .tadl-finding-aid-controls {
+    position: static;
+    order: -1;
+    flex: 0 0 auto;
+    height: auto;
+    min-height: 44px;
+}
+
 div.caMediaOverlayControls.tadl-image-viewer-controls,
 div.caMediaOverlayControls.tadl-finding-aid-controls {
     display: flex;

@@ -63,6 +63,25 @@ const server = http.createServer((request, response) => {
     response.end('Synthetic resource not found');
 });
 let browser;
+async function viewerLayout(page) {
+    return page.evaluate(() => {
+        const rect = selector => {
+            const {top, bottom} = document.querySelector(selector).getBoundingClientRect();
+            return {top, bottom};
+        };
+        return {
+            title: rect('.tadl-finding-aid-controls'), toolbar: rect('#toolbarContainer'),
+            containers: ['caMediaPanel', 'caMediaPanelContentArea', 'caMediaOverlayContent'].map(id => {
+                const node = document.getElementById(id);
+                return {id, height: node.clientHeight, content: node.scrollHeight, scroll: node.scrollTop};
+            })
+        };
+    });
+}
+function checkViewerLayout(layout, phase) {
+    assert(layout.toolbar.top >= layout.title.bottom - 1, `${phase}: PDF controls overlap the title bar: ${JSON.stringify(layout)}`);
+    assert(layout.containers.every(node => node.content <= node.height + 1 && node.scroll === 0), `${phase}: outer viewer containers must not have a second scrollbar: ${JSON.stringify(layout)}`);
+}
 (async () => {
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const origin = 'http://127.0.0.1:' + server.address().port;
@@ -75,15 +94,30 @@ let browser;
     for (const width of [1280, 390]) {
         await page.setViewportSize({width, height:900});
         await page.goto(origin);
+        let allowPDF;
+        const pdfReady = new Promise(resolve => { allowPDF = resolve; });
+        await page.route('**/CollectionFindingAid/View/collection_id/42', async route => { await pdfReady; await route.continue(); });
         const viewerResponse = page.waitForResponse(response => response.url() === origin + '/synthetic/CollectionFindingAid/Viewer/collection_id/42');
         await page.getByRole('link', {name:'View finding aid (PDF)', exact:true}).click();
         assert.equal((await viewerResponse).status(), 200, 'Native media-panel POST must pass the actual controller method guard.');
+        await page.locator('#toolbarContainer').waitFor({state:'visible'});
+        await page.waitForFunction(() => getComputedStyle(document.getElementById('caMediaPanelContentArea')).marginTop === '0px', undefined, {timeout:5000});
+        const loadingLayout = await viewerLayout(page);
+        allowPDF();
         await page.locator('#viewer .page canvas').first().waitFor({state:'visible'});
+        checkViewerLayout(await viewerLayout(page), `${width}px rendered`);
+        checkViewerLayout(loadingLayout, `${width}px loading`);
+        assert(await page.locator('#viewerContainer').evaluate(node => node.scrollHeight > node.clientHeight), 'Multi-page documents must scroll within PDF.js.');
+        assert.equal(await page.locator('.tadl-finding-aid-controls .objectInfo').textContent(), 'Finding aid: Synthetic Archives Collection (SYN.42)');
         assert.equal(page.url(), origin + '/');
         assert.equal(await page.locator('#caMediaPanel').getAttribute('aria-hidden'), 'false');
         assert(await page.locator('#caMediaPanel').evaluate(node => node.contains(document.activeElement)));
         const pages = await page.evaluate(() => PDFViewerApplication.pdfDocument.numPages);
         assert(pages >= 2);
+        const scale = await page.evaluate(() => PDFViewerApplication.pdfViewer.currentScale);
+        await page.locator('#zoomIn').click();
+        await page.waitForFunction(scale => PDFViewerApplication.pdfViewer.currentScale > scale, scale);
+        checkViewerLayout(await viewerLayout(page), `${width}px zoomed`);
         await page.locator('#pageNumber').fill('2');
         await page.locator('#pageNumber').press('Enter');
         await page.waitForFunction(() => PDFViewerApplication.page === 2);
@@ -100,6 +134,8 @@ let browser;
         }
         await page.getByRole('button', {name:'Close media viewer', exact:true}).click();
         await page.waitForFunction(() => document.querySelector('#caMediaPanel').getAttribute('aria-hidden') === 'true');
+        await page.waitForFunction(() => getComputedStyle(document.getElementById('caMediaPanelContentArea')).marginTop === '40px');
+        await page.unroute('**/CollectionFindingAid/View/collection_id/42');
         assert.equal(await page.evaluate(() => document.activeElement.textContent.replace(/\s+/g, ' ').trim()), 'View finding aid (PDF)');
         await page.getByRole('link', {name:'View finding aid (PDF)', exact:true}).click();
         await page.locator('#viewer .page canvas').first().waitFor({state:'visible'});
@@ -109,7 +145,7 @@ let browser;
     assert.deepEqual(errors, [], 'Native document viewer JavaScript errors.');
     assert.deepEqual(viewerMethods, ['POST', 'POST', 'POST', 'POST'], 'Exercise the native media-panel transport on every opening.');
     assert.equal(pdfRequests, 4, 'Each opening should request the PDF once without pre-generating or caching it.');
-    console.log('Finding-aid browser passed: native PDF.js rendering, paging, text search, download, close/reopen and focus restoration at 1280/390px.');
+    console.log('Finding-aid browser passed: loading/rendered/zoomed layout, single document scroller, title/identifier, native PDF.js paging/search/download, close/reopen and focus restoration at 1280/390px.');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
     if (browser) { await browser.close(); }
     server.close();

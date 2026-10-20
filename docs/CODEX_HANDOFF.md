@@ -459,9 +459,17 @@ The optional `tests/finding_aid_viewer_browser_test.js` uses real Dompdf bytes a
 native PDF.js assets with synthetic fixtures to check the viewer's rendering,
 paging, text search, download, closing/reopening and focus restoration at desktop
 and phone widths. See `docs/FINDING_AIDS.md` for its dependencies and invocation.
-This passed at 1280/390px with the actual PDF.js viewer. Finding-aid titlebar
-controls reuse the image-viewer flex layout so long titles cannot cover the
-document toolbar on phones. No native viewer source or dependency was replaced.
+This passed at 1280/390px with the actual PDF.js viewer. Finding aids use a scoped
+full-height flex wrapper: the title/download/close bar occupies a separate row,
+and the remaining PDF area clips outer overflow while PDF.js owns document
+scrolling. The wrapper's presence removes the native content-area top margin;
+removing it restores other media layouts without persistent classes or scripts.
+The toolbar title appends readable `idno` in parentheses, escaping it and omitting
+missing/restricted values. The stray scroll-mode text formerly printed after the
+PDF viewer script is removed. Browser regressions hold the PDF response to check
+loading geometry, then verify rendered/zoomed controls and a single document
+scroller, title/identifier, download and close cleanup. No native viewer source
+or dependency was replaced.
 
 ### Asset cache versions
 
