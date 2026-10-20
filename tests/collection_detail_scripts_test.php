@@ -129,11 +129,10 @@ foreach ([[], ['ca_collections.description' => '<p>&nbsp;</p>', 'ca_collections.
 $html = (new DetailScriptView(0, ['ca_collections.description' => 'Synthetic description', 'ca_collections.date.dates_value' => '1930', 'relativeTo="ca_places"' => '<a href="/synthetic/place">Synthetic place</a>']))->render('ca_collections');
 $finding_document = new DOMDocument(); $finding_document->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_NONET);
 $finding_xpath = new DOMXPath($finding_document);
-$finding_download = $finding_xpath->query('//div[@class="exportCollection"]/a[contains(@href,"/CollectionFindingAid/Download/")]')->item(0);
 $finding_view = $finding_xpath->query('//div[@class="exportCollection"]/a[contains(@href,"/CollectionFindingAid/View/")]')->item(0);
-checkDetailScripts($finding_download && str_contains($finding_download->getAttribute('href'), '/collection_id/42') && !$finding_download->hasAttribute('target') && trim($finding_download->textContent) === 'Download finding aid (PDF)', 'Finding aid Download must preserve the selected collection, descriptive name and current-tab attachment behavior.');
+checkDetailScripts($finding_xpath->query('//div[@class="exportCollection"]/a')->length === 1 && $finding_view && trim($finding_view->textContent) === 'View finding aid (PDF)', 'The collection page must offer one descriptive View finding aid link, with downloading available inside the viewer.');
 checkDetailScripts($finding_view && str_contains($finding_view->getAttribute('href'), '/collection_id/42') && !$finding_view->hasAttribute('target') && $finding_view->getAttribute('aria-haspopup') === 'dialog' && $finding_view->getAttribute('aria-controls') === 'caMediaPanel', 'View must open the existing document dialog and retain a direct PDF fallback.');
-checkDetailScripts($finding_view->getAttribute('rel') === 'nofollow' && $finding_download->getAttribute('rel') === 'nofollow' && $finding_xpath->query('.//span[contains(@class,"glyphicon")]', $finding_view)->length === 0, 'View must remain a text link with descriptive link text and crawler directives.');
+checkDetailScripts($finding_view->getAttribute('rel') === 'nofollow' && $finding_xpath->query('.//span[contains(@class,"glyphicon")]', $finding_view)->length === 0, 'View must remain a text link with descriptive link text and crawler directives.');
 checkDetailScripts($finding_view->getAttribute('data-finding-aid-viewer') === '/synthetic/CollectionFindingAid/Viewer/collection_id/42' && str_contains($finding_view->getAttribute('onclick'), 'caMediaPanel.showPanel('), 'The viewer dialog must use the selected finding-aid endpoint.');
 $finding_callback = $finding_view->getAttribute('onclick');
 $finding_js = 'const assert = require("node:assert/strict"); const events = []; const link = {getAttribute: () => "/synthetic/CollectionFindingAid/Viewer/collection_id/42"}; const callback = new Function("event", "window", "caMediaPanel", '.json_encode($finding_callback).'); const panel = {showPanel: url => events.push(url)}; assert.equal(callback.call(link, {}, {caMediaPanel:panel}, panel), false); assert.deepEqual(events, [link.getAttribute()]); for (const modifier of ["ctrlKey","metaKey","shiftKey","altKey"]) {assert.equal(callback.call(link, {[modifier]:true}, {caMediaPanel:panel}, panel), undefined);} assert.equal(events.length,1); assert.equal(callback.call(link, {}, {}, undefined), undefined);';
@@ -299,7 +298,7 @@ $status = proc_close($process);
 checkDetailScripts($status === 0, "Rendered detail JavaScript failed in Node.js:\n".$stderr);
 $nodeResult = json_decode($stdout, true, 512, JSON_THROW_ON_ERROR);
 if (($argv[1] ?? '') === '--finding-aid-fixture') {
-	print json_encode(['links' => $finding_document->saveHTML($finding_download->parentNode)], JSON_THROW_ON_ERROR);
+	print json_encode(['links' => $finding_document->saveHTML($finding_view->parentNode)], JSON_THROW_ON_ERROR);
 } else {
 	echo json_encode(array('status' => 'passed', 'assertions' => $GLOBALS['detailScriptAssertions'] + $nodeResult['assertions'], 'templates' => 'actual collection detail; authority pages have authority_detail_test.php', 'dependencies' => 'synthetic view/model/config/jQuery boundaries; Node.js syntax and execution'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;
 }

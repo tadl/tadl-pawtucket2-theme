@@ -116,7 +116,7 @@ For automatic suggestions, follow [thumbnail focus](docs/THUMBNAIL_FOCUS.md) to 
 
 Document text requires at least one accessible attached PDF. The theme prefers populated `ca_object_representations.media_content`, then `ca_objects.transcription`, then `ca_objects.pdf_text`. It displays existing text; it does not run OCR, import transcriptions, or configure your search index. A private paired PDF does not expose text on a TIFF-only public object. See [document text](docs/DOCUMENT_TEXT.md).
 
-Finding aids use Pawtucket's supplied Dompdf dependency and the mappings in `conf/finding_aid.conf`. Visitors can download the PDF or open it in the existing PDF.js document viewer. The aid describes the complete readable hierarchy using each archival unit's own populated metadata, independent of the visitor's media preference. Extents and descriptions come from staff cataloguing; the PDF has no catalogue-object counts or automatic object inventory. See [finding aids](docs/FINDING_AIDS.md) to adapt field mappings and verify exports.
+Finding aids use Pawtucket's supplied Dompdf dependency and the mappings in `conf/finding_aid.conf`. **View finding aid** opens the existing PDF.js document viewer, where visitors can download the PDF. The aid describes the complete readable hierarchy using each archival unit's own populated metadata, independent of the visitor's media preference. Extents and descriptions come from staff cataloguing; the PDF has no catalogue-object counts or automatic object inventory. See [finding aids](docs/FINDING_AIDS.md) to adapt field mappings and verify exports.
 
 ### Crawler policy
 

@@ -9,11 +9,11 @@ its ancestors, siblings or unrelated collections.
 ## Flat and hierarchy views
 
 When readable children exist and the browser is enabled in configuration,
-**View collection hierarchy** appears beneath the **Finding aid** actions. It opens
+**View collection hierarchy** appears beneath **View finding aid**. It opens
 the hierarchy browser and restores directly attached items on the collection page.
 **View all collection items** returns to the flat list. Leaf collections omit the switch.
-Both view-switch links have an eye icon; the Finding aid line has a document icon
-and separate **Download** and **View** text links.
+Both view-switch links have an eye icon; **View finding aid** has a document icon.
+The document viewer provides the download option.
 
 | Behavior | Flat view | Hierarchy view |
 | --- | --- | --- |
@@ -39,8 +39,8 @@ descriptive metadata remains sparse until staff catalogue it in Providence.
 External links retain their source labels. HTTP(S) URLs become links; other
 recorded URI text remains escaped plain text. Empty metadata
 columns and fields are omitted; long text uses **Read more / Read less**. Columns
-stack on phones. Finding-aid actions use sentence case, ordinary detail-link
-styling and a hover underline; `rel="nofollow"` remains. View opens the existing
+stack on phones. **View finding aid** uses sentence case, ordinary detail-link
+styling and a hover underline; `rel="nofollow"` remains. It opens the existing
 document viewer, with a direct PDF fallback.
 The title header has a right-aligned **Prev / Next / Browse collections** toolbar.
 Prev/Next use the visitor's native result context; absent neighbors are omitted.

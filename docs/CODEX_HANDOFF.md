@@ -390,12 +390,13 @@ use the native locale-aware attribute API; labels/URLs are escaped and only
 HTTP(S) URLs become clickable. The selected-unit regressions live in
 `tests/collection_detail_scripts_test.php`.
 
-The **Finding aid** line offers **Download** (PDF attachment) and **View** (native
-PDF.js document viewer in the existing accessible media overlay). View is a
-text link with dialog semantics; ordinary activation uses `caMediaPanel`, while
-modified clicks or a missing panel follow a direct inline-PDF link. Both links
-use `nofollow`; PDF and viewer responses retain private/no-store and noindex
-headers. The viewer validates root access, then PDF.js requests the checked PDF
+The collection page offers one **View finding aid** link, opening the native
+PDF.js document viewer in the existing accessible media overlay. The viewer's
+**Download PDF** action sends the PDF attachment. The collection link has dialog
+semantics; ordinary activation uses `caMediaPanel`, while modified clicks or a
+missing panel follow a direct inline-PDF link. Links use `nofollow`; PDF and viewer
+responses retain private/no-store and noindex headers. The viewer validates root
+access, then PDF.js requests the checked PDF
 endpoint once; it does not create a representation or save a shared export.
 The viewer markup accepts GET and POST because native `caMediaPanel.showPanel()`
 uses jQuery `.load()` with an object payload, which sends POST. Both methods
@@ -403,8 +404,8 @@ share the same root/login/access checks; View and Download remain GET-only.
 Unsupported methods return 405 with the action's allowed methods. The optional
 browser fixture uses actual controller responses by method so it detects this
 transport mismatch instead of returning successful markup for every request.
-Both actions share the same export of the selected unit and all readable descendants
-as a descriptive PDF. As of 2026-10-19, every hierarchy level uses the same
+View and Download share the same export of the selected unit and all readable
+descendants as a descriptive PDF. As of 2026-10-19, every hierarchy level uses the same
 `collection_fields` mapping: extent, description, dates, creator relationships,
 scope/content, language, provenance, rights and other configured public metadata.
 Missing fields are omitted. A folder without individually catalogued objects can

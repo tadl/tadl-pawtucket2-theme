@@ -1,13 +1,13 @@
 # Collection finding aids
 
-The **Finding aid** line offers **Download** and **View** for a descriptive PDF
-of the selected archival unit and its complete readable hierarchy. Download sends
-an attachment; View opens Pawtucket's existing PDF.js document viewer in the media
-overlay, with paging, zoom, text search and download controls. The existing dialog
-handles keyboard focus and returns focus to View when closed. Modified clicks
+The **View finding aid** link opens a descriptive PDF of the selected archival
+unit and its complete readable hierarchy in Pawtucket's existing PDF.js document
+viewer in the media overlay, with paging, zoom, text search and download controls. The existing dialog
+handles keyboard focus and returns focus to the link when closed. Modified clicks
 and browsers without the panel follow a direct inline-PDF link instead; browser
-PDF settings can override inline viewing. Both options use the same access-checked
-document. No Providence representation or stored export is created.
+PDF settings can override inline viewing. The viewer's **Download PDF** link sends
+the same access-checked document as an attachment. No Providence representation
+or stored export is created.
 Series, subseries, boxes, folders,
 volumes and other components use their own recorded metadata. A folder can
 correctly describe 80 clippings without having 80 individual object records.
