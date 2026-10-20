@@ -122,7 +122,7 @@ $gallery = function () { include dirname(__DIR__).'/views/Gallery/set_item_info_
 ob_start(); $gallery->call($view); $html = ob_get_clean();
 $dom = new DOMDocument(); $dom->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 $xpath = new DOMXPath($dom);
-uiCheck($xpath->query('//div[@class="detail"]/div[@class="unit"]/label')->length === 2, 'Gallery must use shared detail units and omit an empty description.');
+uiCheck($xpath->query('//div[@class="detail"]/div[@class="unit"]/h3')->length === 2, 'Gallery must use shared detail units and omit an empty description.');
 uiCheck($xpath->query('//h2')->item(0)->textContent === '<Synthetic & title>', 'Gallery titles must be escaped.');
 uiCheck(!str_contains($html, 'class="units"') && str_contains($html, '(contributor)') && str_contains($html, '>View record</a>'), 'Gallery units, relationship labels and link case must match detail pages.');
 $view->vars['object']->description = str_repeat('Synthetic description. ', 40);

@@ -48,5 +48,5 @@ function tadlCollectionExternalLinks($request, $item) {
 	}
 	if (!$links) { return ''; }
 	$label = _t('External links');
-	return '<div class="unit"><label>'.$escape($label).'</label>'.tadlDetailExpandableValue(join('<br/>', $links), $label, true).'</div>';
+	return '<div class="unit"><h3>'.$escape($label).'</h3>'.tadlDetailExpandableValue(join('<br/>', $links), $label, true).'</div>';
 }

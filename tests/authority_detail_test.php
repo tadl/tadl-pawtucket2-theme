@@ -168,8 +168,8 @@ $hierarchyTemplate = '<unit relativeTo="ca_places.hierarchy" delimiter=" &gt; ">
 $place->fields[$hierarchyTemplate] = '<a href="/synthetic/Detail/places/19">Synthetic region</a> &gt; <a href="/synthetic/Detail/places/42">Synthetic place</a>';
 $placeHtml = (new AuthorityView(new AuthorityRequest(), $place))->render();
 $placeXPath = authorityDocument($placeHtml);
-checkAuthority(in_array($hierarchyTemplate, $place->templateReads, true) && $placeXPath->query('//div[label="Place hierarchy"]/a')->length === 2, 'Place hierarchy must use the native linked hierarchy unit and preserve both links.');
-checkAuthority($placeXPath->query('//div[label="Place hierarchy"]')->item(0)->textContent === 'Place hierarchySynthetic region > Synthetic place', 'Place hierarchy must retain a separator between names without a trailing separator.');
+checkAuthority(in_array($hierarchyTemplate, $place->templateReads, true) && $placeXPath->query('//div[h3="Place hierarchy"]/a')->length === 2, 'Place hierarchy must use the native linked hierarchy unit and preserve both links.');
+checkAuthority($placeXPath->query('//div[h3="Place hierarchy"]')->item(0)->textContent === 'Place hierarchySynthetic region > Synthetic place', 'Place hierarchy must retain a separator between names without a trailing separator.');
 $GLOBALS['authorityMediaCalls'] = [];
 
 foreach ([
@@ -239,8 +239,8 @@ foreach ([['ca_entities:ca_places', 'ca_places'], ['ca_places:preferred_labels',
 	$GLOBALS['authorityBundleAccess'] = [$deniedBundle => 0];
 	$item->relationReads = [];
 	$restricted = tadlAuthorityRelatedGroups(new AuthorityRequest(), $item, 'ca_entities');
-	checkAuthority(!in_array($deniedTable, array_column($item->relationReads, 0), true), 'Denied relation/label bundle queried records: '.$deniedBundle);
-	checkAuthority(!in_array($deniedTable === 'ca_places' ? 'place_id' : 'entity_id', array_column($restricted, 'key'), true), 'Denied relation/label bundle rendered a group: '.$deniedBundle);
+	checkAuthority(!in_array($deniedTable, array_column($item->relationReads, 0), true), 'Denied relation/h3 bundle queried records: '.$deniedBundle);
+	checkAuthority(!in_array($deniedTable === 'ca_places' ? 'place_id' : 'entity_id', array_column($restricted, 'key'), true), 'Denied relation/h3 bundle rendered a group: '.$deniedBundle);
 }
 $GLOBALS['authorityBundleAccess'] = [];
 
@@ -344,7 +344,7 @@ $item->addresses = [
 foreach ([10, 20, 30] as $entityType) {
 	$item->typeID = $entityType;
 	$html = (new AuthorityView(new AuthorityRequest('all'), $item))->render();
-	$address = authorityDocument($html)->query('//div[label="Address"]')->item(0);
+	$address = authorityDocument($html)->query('//div[h3="Address"]')->item(0);
 	checkAuthority($address && str_contains($html, '123 Example Street<br/>Suite 4<br/>Exampleville, MI 00000<br/>Example country<br/>Studio (1900–1920)<br/><br/>Synthetic town<br/>Home'), 'People, organizations and families need correctly paired repeatable addresses.');
 	checkAuthority(!str_contains($html, 'No address') && !str_contains($html, '1999') && !str_contains($html, 'Home ()'), 'Empty addresses and optional context must not create headings or punctuation.');
 	checkAuthority(str_contains($html, '&lt;script&gt;synthetic&lt;/script&gt; &amp; &quot;quoted&quot;<br>') && str_contains($html, '&lt;b&gt;1930&lt;/b&gt;') && !$address->getElementsByTagName('script')->length, 'Address values and historical context must be escaped with line breaks preserved.');
@@ -352,11 +352,11 @@ foreach ([10, 20, 30] as $entityType) {
 $GLOBALS['authorityBundleAccess']['ca_entities:address'] = 0;
 $item->intrinsicReads = [];
 $html = (new AuthorityView(new AuthorityRequest(), $item))->render();
-checkAuthority(!str_contains($html, '<label>Address</label>') && !in_array('ca_entities.address', $item->intrinsicReads, true), 'Denied addresses must not be read or displayed.');
+checkAuthority(!str_contains($html, '<h3>Address</h3>') && !in_array('ca_entities.address', $item->intrinsicReads, true), 'Denied addresses must not be read or displayed.');
 $GLOBALS['authorityBundleAccess'] = [];
 $item->addresses = [];
 $html = (new AuthorityView(new AuthorityRequest(), $item))->render();
-checkAuthority(!str_contains($html, '<label>Address</label>'), 'An entity without an address must omit the field heading.');
+checkAuthority(!str_contains($html, '<h3>Address</h3>'), 'An entity without an address must omit the field heading.');
 
 $item = new AuthorityItem('ca_entities', 12, 'Synthetic photographer');
 $item->occupations = [
@@ -371,28 +371,28 @@ $html = (new AuthorityView(new AuthorityRequest(), $item))->render();
 checkAuthority(str_contains($html, 'Photographer (1940–1960)<br/>Archivist<br/>'), 'Occupations must retain row pairing and omit missing date punctuation.');
 checkAuthority(!str_contains($html, '1970') && !str_contains($html, 'Archivist ()'), 'Blank occupation names or dates must not produce orphan values or punctuation.');
 checkAuthority(str_contains($html, '&lt;script&gt;synthetic&lt;/script&gt; &amp; &quot;writer&quot; (&lt;b&gt;1980&lt;/b&gt;)'), 'Occupation name/date output must be escaped.');
-checkAuthority(!str_contains($html, '<label>Dates</label>') && !str_contains($html, '<label>Birth date</label>') && !str_contains($html, '<label>Death date</label>'), 'Empty life dates must omit headings.');
+checkAuthority(!str_contains($html, '<h3>Dates</h3>') && !str_contains($html, '<h3>Birth date</h3>') && !str_contains($html, '<h3>Death date</h3>'), 'Empty life dates must omit headings.');
 checkAuthority(!in_array('^ca_entities.individual_dates', $item->templateReads, true), 'Entity dates must not use the delimiter-only container fallback.');
 
 foreach (['individual_dates_birth' => 'Birth date', 'individual_birthdate' => 'Birth date', 'individual_dates_death' => 'Death date', 'individual_deathdate' => 'Death date'] as $code => $label) {
 	$dated = new AuthorityItem();
 	$dated->fields['^ca_entities.individual_dates.'.$code] = '1901';
 	$html = (new AuthorityView(new AuthorityRequest(), $dated))->render();
-	checkAuthority(str_contains($html, '<label>'.$label.'</label>1901'), 'Current/legacy individual date subfield missing: '.$code);
-	checkAuthority(!str_contains($html, '<label>'.($label === 'Birth date' ? 'Death date' : 'Birth date').'</label>'), 'A missing companion date must not create a heading.');
+	checkAuthority(str_contains($html, '<h3>'.$label.'</h3>1901'), 'Current/legacy individual date subfield missing: '.$code);
+	checkAuthority(!str_contains($html, '<h3>'.($label === 'Birth date' ? 'Death date' : 'Birth date').'</h3>'), 'A missing companion date must not create a heading.');
 }
 $dated->fields['^ca_entities.individual_dates.individual_dates_death'] = '1988';
 $html = (new AuthorityView(new AuthorityRequest(), $dated))->render();
-checkAuthority(substr_count($html, '<label>Death date</label>') === 1 && str_contains($html, '<label>Death date</label>1988') && !str_contains($html, '<label>Death date</label>1901'), 'Current and legacy date aliases must not duplicate a field.');
+checkAuthority(substr_count($html, '<h3>Death date</h3>') === 1 && str_contains($html, '<h3>Death date</h3>1988') && !str_contains($html, '<h3>Death date</h3>1901'), 'Current and legacy date aliases must not duplicate a field.');
 $GLOBALS['authorityBundleAccess']['ca_entities:occupation'] = 0;
 $item->intrinsicReads = [];
 $html = (new AuthorityView(new AuthorityRequest(), $item))->render();
-checkAuthority(!str_contains($html, '<label>Occupation</label>') && !in_array('ca_entities.occupation', $item->intrinsicReads, true), 'Denied occupations must not be read or displayed.');
+checkAuthority(!str_contains($html, '<h3>Occupation</h3>') && !in_array('ca_entities.occupation', $item->intrinsicReads, true), 'Denied occupations must not be read or displayed.');
 $GLOBALS['authorityBundleAccess'] = [];
 $organization = new AuthorityItem('ca_entities', 20, 'Organization');
 $organization->occupations = $item->occupations;
 $html = (new AuthorityView(new AuthorityRequest(), $organization))->render();
-checkAuthority(!str_contains($html, '<label>Occupation</label>') && !in_array('ca_entities.occupation', $organization->intrinsicReads, true), 'Occupation display belongs only to individual entity types.');
+checkAuthority(!str_contains($html, '<h3>Occupation</h3>') && !in_array('ca_entities.occupation', $organization->intrinsicReads, true), 'Occupation display belongs only to individual entity types.');
 
 $GLOBALS['authorityUrlOverride'] = "/synthetic/Search/objects?search=place_id:42&note=collector's \"quoted\" \\ </script> <>& \u{2028}\u{2029}";
 $html = (new AuthorityView(new AuthorityRequest(), new AuthorityItem('ca_places')))->render();

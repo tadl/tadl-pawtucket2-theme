@@ -78,8 +78,9 @@ body.tadl-interior {
     margin-bottom: 12px;
 }
 
-.detail .unit label,
-.tadl-detail-metadata .unit label,
+.detail .unit > h3,
+.unit > h3,
+.tadl-detail-metadata .unit > h3,
 .tadl-detail-metadata .tadl-metadata-heading {
     display: block;
     margin: 10px 0 5px;

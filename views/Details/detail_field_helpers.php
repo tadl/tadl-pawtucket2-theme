@@ -65,7 +65,7 @@ if (!function_exists('tadlDetailField')) {
 		$entries = preg_match('/<unit\b/i', $template) && preg_match('/<(?:l|a)\b/i', $template);
 		$value = tadlDetailExpandableValue($value, $label, $entries);
 
-		return "<div class='unit'><label>".htmlspecialchars($label, ENT_QUOTES, 'UTF-8')."</label>{$value}</div>\n";
+		return "<div class='unit'><h3>".htmlspecialchars($label, ENT_QUOTES, 'UTF-8')."</h3>{$value}</div>\n";
 	}
 }
 
@@ -113,7 +113,7 @@ function tadlObjectSubjects($request, $object) {
 		$url = caNavUrl($request, '', 'Browse', 'subjects', ['facet' => 'term_facet', 'id' => $id, 'clear' => 1]);
 		$links[] = '<li><a href="'.htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'">'.htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'</a></li>';
 	}
-	return '<div class="unit"><label>'.htmlspecialchars(_t('Subjects'), ENT_QUOTES, 'UTF-8').'</label><ul class="tadl-subject-terms">'.join('', $links).'</ul></div>';
+	return '<div class="unit"><h3>'.htmlspecialchars(_t('Subjects'), ENT_QUOTES, 'UTF-8').'</h3><ul class="tadl-subject-terms">'.join('', $links).'</ul></div>';
 }
 
 if (!function_exists('tadlObjectThesaurusTerms')) {
@@ -145,7 +145,7 @@ if (!function_exists('tadlObjectThesaurusTerms')) {
 		}
 		if (!$terms) { return ''; }
 
-		return "<div class='unit'><label>".htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')."</label>".join('<br/>', $terms)."</div>\n";
+		return "<div class='unit'><h3>".htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')."</h3>".join('<br/>', $terms)."</div>\n";
 	}
 }
 
@@ -182,6 +182,6 @@ if (!function_exists('tadlObjectRepresentationCaptions')) {
 
 		if (!sizeof($captions)) { return ''; }
 
-		return "<div class='unit'><label>".htmlspecialchars($label, ENT_QUOTES, 'UTF-8')."</label>".tadlDetailExpandableValue(join('<br/>', $captions), $label)."</div>\n";
+		return "<div class='unit'><h3>".htmlspecialchars($label, ENT_QUOTES, 'UTF-8')."</h3>".tadlDetailExpandableValue(join('<br/>', $captions), $label)."</div>\n";
 	}
 }

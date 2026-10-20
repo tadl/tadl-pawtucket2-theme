@@ -61,7 +61,7 @@ $links = $xpath->query('//li/a');
 checkSubjects($links->length === 2, 'Duplicate/invalid/empty subjects were displayed.');
 checkSubjects($links->item(0)->textContent === $object->rows[1]['label'], 'Subjects lost text or alphabetical order.');
 checkSubjects($xpath->query('//script')->length === 0, 'Subject label became executable markup.');
-checkSubjects($xpath->query('//label')->item(0)->textContent === 'Subjects', 'Missing Subjects heading.');
+checkSubjects($xpath->query('//h3')->item(0)->textContent === 'Subjects', 'Missing Subjects heading.');
 foreach ($links as $i => $link) {
 	$url = parse_url($link->getAttribute('href'));
 	parse_str($url['query'], $params);

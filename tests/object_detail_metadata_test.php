@@ -64,12 +64,12 @@ foreach ([null, '', " \t\n", '<p><br/></p>', '<span>&nbsp;</span>', '&#160;', "\
 foreach (['0', '1930', '<p>Synthetic description &amp; context</p>', '<a href="/synthetic/place">Synthetic place</a>'] as $value) {
 	$item = new MetadataTemplateItem(['synthetic-template' => $value]);
 	$html = tadlDetailField(new MetadataRequest([1, 2]), $item, 'Synthetic field', 'synthetic-template');
-	checkMetadata(str_contains($html, '<label>Synthetic field</label>'.$value), 'Populated field lost its heading or native markup.');
+	checkMetadata(str_contains($html, '<h3>Synthetic field</h3>'.$value), 'Populated field lost its heading or native markup.');
 	checkMetadata($item->calls[0]['options'] === ['convertCodesToDisplayText' => true, 'checkAccess' => [1, 2]], 'Populated field lost native display/access options.');
 }
 $item = new MetadataTemplateItem(['blank' => '<p>&nbsp;</p>', 'fallback' => 'Synthetic fallback']);
 $html = tadlDetailFirstAvailableField(new MetadataRequest(), $item, 'Description', ['blank', 'fallback']);
-checkMetadata(str_contains($html, '<label>Description</label>Synthetic fallback'), 'Blank rich text blocked a populated fallback.');
+checkMetadata(str_contains($html, '<h3>Description</h3>Synthetic fallback'), 'Blank rich text blocked a populated fallback.');
 checkMetadata(count($item->calls) === 2, 'Fallback field did not try both templates.');
 checkMetadata(tadlDetailField(new MetadataRequest(), null, 'Date', 'synthetic-template') === '', 'Missing record emitted a field.');
 
@@ -105,7 +105,7 @@ function checkMetadataOutput($html, $terms, $heading, $caseName) {
 	$units = $xpath->query('//body/div[@class="unit"]');
 	checkMetadata($units->length === 1, $caseName.': metadata did not render one unit.');
 	$unit = $units->item(0);
-	$labels = $xpath->query('./label', $unit);
+	$labels = $xpath->query('./h3', $unit);
 	checkMetadata($labels->length === 1 && $labels->item(0)->textContent === $heading, $caseName.': heading was missing, repeated or escaped incorrectly.');
 	checkMetadata($xpath->query('./br', $unit)->length === count($terms) - 1, $caseName.': term separators were incorrect.');
 	$expectedLinks = array_values(array_filter($terms, function ($term) { return isset($term['id']); }));

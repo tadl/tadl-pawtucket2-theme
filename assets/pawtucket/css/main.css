@@ -1521,7 +1521,10 @@ a.browseRemoveFacet img {
 	padding-bottom:0px;
 	margin:10px 0px 5px 0px;
 }
-.detail label{
+.detail label, .unit > h3 {
+	font-family: inherit;
+	font-weight: normal;
+	line-height: inherit;
 	display:block;
 	font-size: max(var(--tadl-text-min, 0px), 12px);
 	color:#454545;

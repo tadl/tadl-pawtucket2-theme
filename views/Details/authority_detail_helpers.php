@@ -37,7 +37,7 @@ function tadlAuthorityAddresses($request, $item) {
 		$addresses[] = join('<br/>', array_map(static fn($line) => nl2br(tadlAuthorityEscape($line), false), $lines));
 	}
 	if (!$addresses) { return ''; }
-	return "<div class='unit'><label>".tadlAuthorityEscape(_t('Address'))."</label>"
+	return "<div class='unit'><h3>".tadlAuthorityEscape(_t('Address'))."</h3>"
 		.tadlDetailExpandableValue(join('<br/><br/>', $addresses), _t('Address'))."</div>\n";
 }
 
@@ -58,7 +58,7 @@ function tadlAuthorityOccupations($request, $item) {
 		$occupations[] = $value;
 	}
 	if (!$occupations) { return ''; }
-	return "<div class='unit'><label>".tadlAuthorityEscape(_t('Occupation'))."</label>".join('<br/>', $occupations)."</div>\n";
+	return "<div class='unit'><h3>".tadlAuthorityEscape(_t('Occupation'))."</h3>".join('<br/>', $occupations)."</div>\n";
 }
 
 /** Recognize configured entity subtypes without calling an unknown type a person. */

@@ -140,7 +140,7 @@ class DetailScriptView {
 
 foreach ([[], ['ca_collections.description' => '<p>&nbsp;</p>', 'ca_collections.date.dates_value' => '<br/>', 'relativeTo="ca_places"' => '&nbsp;']] as $values) {
 	$html = (new DetailScriptView(0, $values))->render('ca_collections');
-	checkDetailScripts(!preg_match('~<label>(Description|Dates|Related collections|Related people|Related events|Related places)</label>~', $html), 'Empty collection fields or relationships emitted headings.');
+	checkDetailScripts(!preg_match('~<h3>(Description|Dates|Related collections|Related people|Related events|Related places)</h3>~', $html), 'Empty collection fields or relationships emitted headings.');
 }
 $html = (new DetailScriptView(0, ['ca_collections.description' => 'Synthetic description', 'ca_collections.date.dates_value' => '1930', 'relativeTo="ca_places"' => '<a href="/synthetic/place">Synthetic place</a>']))->render('ca_collections');
 $finding_document = new DOMDocument(); $finding_document->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_NONET);
@@ -181,12 +181,12 @@ $GLOBALS['detailScriptDeniedBundles'] = ['preferred_labels'];
 checkDetailScripts(!str_contains((new DetailScriptView(0, [], [], 73, 'folder'))->render('ca_collections'), 'Part of:'), 'Unreadable parent labels must not produce a Part of heading.');
 $GLOBALS['detailScriptDeniedBundles'] = []; $GLOBALS['detailScriptParents'] = []; $GLOBALS['detailScriptCollectionAccess'] = []; $GLOBALS['detailScriptCollectionLabels'] = [];
 checkDetailScripts(!str_contains($html, 'Download as PDF') && !str_contains($html, '_pdf_ca_collections_summary'), 'Collection still links to the generic summary export.');
-checkDetailScripts(str_contains($html, '<label>Description</label>Synthetic description') && str_contains($html, '<label>Dates</label>1930') && str_contains($html, '<label>Related places</label><a href="/synthetic/place">Synthetic place</a>'), 'Populated collection fields lost headings or native links.');
+checkDetailScripts(str_contains($html, '<h3>Description</h3>Synthetic description') && str_contains($html, '<h3>Dates</h3>1930') && str_contains($html, '<h3>Related places</h3><a href="/synthetic/place">Synthetic place</a>'), 'Populated collection fields lost headings or native links.');
 $long_description = '<p>'.str_repeat('Synthetic collection description. ', 30).'</p>';
 $long_scope = '<p>'.str_repeat('Synthetic scope and content. ', 30).'</p>';
 $html = (new DetailScriptView(0, ['ca_collections.description_source' => '', 'ca_collections.description' => $long_description, 'ca_collections.collection_scope_content' => $long_scope, 'ca_collections.date.dates_value' => '1930']))->render('ca_collections');
 checkDetailScripts(substr_count($html, '<details class="tadl-long-field-details">') === 2, 'Long description and scope/content need independent native disclosures on the actual collection template.');
-checkDetailScripts(str_contains($html, '<div class="tadl-long-field-full">'.$long_description.'</div>') && str_contains($html, '<div class="tadl-long-field-full">'.$long_scope.'</div>') && str_contains($html, '<label>Dates</label>1930'), 'Collection disclosures must keep complete rich values and leave short fields unchanged.');
+checkDetailScripts(str_contains($html, '<div class="tadl-long-field-full">'.$long_description.'</div>') && str_contains($html, '<div class="tadl-long-field-full">'.$long_scope.'</div>') && str_contains($html, '<h3>Dates</h3>1930'), 'Collection disclosures must keep complete rich values and leave short fields unchanged.');
 
 // Reload/direct collection links forward only supported result state, never a supplied search/key.
 foreach ([
@@ -213,7 +213,7 @@ checkDetailScripts(strpos($html, 'tadl-collection-metadata') < strpos($html, 'br
 $document = new DOMDocument();
 $document->loadHTML('<meta charset="UTF-8">'.$html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 $xpath = new DOMXPath($document);
-$column_labels = static fn($class) => array_map(static fn($node) => $node->textContent, iterator_to_array($xpath->query('//div[@class="'.$class.'"]//div[@class="unit"]/label')));
+$column_labels = static fn($class) => array_map(static fn($node) => $node->textContent, iterator_to_array($xpath->query('//div[@class="'.$class.'"]//div[@class="unit"]/h3')));
 checkDetailScripts($column_labels('tadl-collection-fields') === ['Description', 'Source of description', 'Scope and content'], 'Center column must group the narrative fields together.');
 checkDetailScripts($column_labels('tadl-collection-facts') === ['Creators', 'Dates', 'Extent', 'Language', 'Vocabulary terms', 'Library of Congress subject headings', 'Rights', 'Copyright statement', 'Related places'], 'Right column must group collection facts and relationships without losing fields.');
 checkDetailScripts($xpath->query('//div[@class="tadl-collection-facts"]//a[@href="/synthetic/creator"]')->length === 1, 'Moving creators must preserve their native links.');
@@ -223,23 +223,23 @@ foreach (['series', 'container', 'folder', 'sub_sub_series'] as $offset => $type
 	$GLOBALS['detailScriptExternalLinks'] = [29 => [901 => ['url_source' => 'Synthetic guide & index', 'url_entry' => 'https://example.org/guide?x=1&y=2'], 902 => ['url_source' => '<script>not markup</script>', 'url_entry' => 'javascript:alert(1)'], 903 => ['url_source' => 'No URL', 'url_entry' => '']]];
 	$values = ['ca_collections.description' => 'Own '.$type.' description.', 'ca_collections.collection_scope_content' => 'Own '.$type.' scope.', 'ca_collections.extent_text' => '80 synthetic clippings; 20 x 30 cm', 'ca_collections.date.dates_value' => '1900-1910', 'ca_collections.language' => 'English', 'ca_collections.provenance' => $long_description, 'ca_collections.rights.rightsText' => 'Synthetic use conditions', 'ca_collections.internal_notes' => 'PRIVATE staff notes', 'ca_collections.mdpn_identifiers' => 'PRIVATE preservation identifiers'];
 	$html = (new DetailScriptView(0, $values, [], $id, $type))->render('ca_collections');
-	checkDetailScripts(str_contains($html, 'Own '.$type.' description.') && str_contains($html, 'Own '.$type.' scope.') && str_contains($html, '80 synthetic clippings; 20 x 30 cm') && str_contains($html, '<label>Dates</label>1900-1910') && str_contains($html, 'Synthetic use conditions'), 'Every archival level needs its own descriptive metadata even without catalogued objects.');
-	checkDetailScripts(str_contains($html, '<label>Provenance</label>') && str_contains($html, '<div class="tadl-long-field-full">'.$long_description.'</div>'), 'Provenance must preserve rich text and long-field disclosures.');
+	checkDetailScripts(str_contains($html, 'Own '.$type.' description.') && str_contains($html, 'Own '.$type.' scope.') && str_contains($html, '80 synthetic clippings; 20 x 30 cm') && str_contains($html, '<h3>Dates</h3>1900-1910') && str_contains($html, 'Synthetic use conditions'), 'Every archival level needs its own descriptive metadata even without catalogued objects.');
+	checkDetailScripts(str_contains($html, '<h3>Provenance</h3>') && str_contains($html, '<div class="tadl-long-field-full">'.$long_description.'</div>'), 'Provenance must preserve rich text and long-field disclosures.');
 	$doc = new DOMDocument(); $doc->loadHTML('<meta charset="UTF-8">'.$html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $nodes = new DOMXPath($doc);
-	checkDetailScripts($nodes->query('//div[label="External links"]//a')->length === 1 && $nodes->query('//div[label="External links"]//a')->item(0)->getAttribute('href') === 'https://example.org/guide?x=1&y=2', 'External links must preserve their source/URL pairing and use safely escaped HTTP(S) URLs.');
-	checkDetailScripts($nodes->query('//div[label="External links"]//script')->length === 0 && !str_contains($html, 'PRIVATE') && !str_contains($html, 'No URL'), 'Links must escape labels, avoid executable URLs and omit blank links; staff fields stay excluded.');
+	checkDetailScripts($nodes->query('//div[h3="External links"]//a')->length === 1 && $nodes->query('//div[h3="External links"]//a')->item(0)->getAttribute('href') === 'https://example.org/guide?x=1&y=2', 'External links must preserve their source/URL pairing and use safely escaped HTTP(S) URLs.');
+	checkDetailScripts($nodes->query('//div[h3="External links"]//script')->length === 0 && !str_contains($html, 'PRIVATE') && !str_contains($html, 'No URL'), 'Links must escape labels, avoid executable URLs and omit blank links; staff fields stay excluded.');
 	checkDetailScripts(str_contains($html, '/collection_id/'.$id) && end($GLOBALS['detailScriptExternalReads']) === $id, 'Metadata and controls must use the selected archival unit rather than its parent or an object record.');
 }
 $GLOBALS['detailScriptDeniedBundles'] = ['description', 'description_source', 'collection_scope_content', 'provenance', 'date', 'extent_text', 'language', 'lcsh_terms', 'rights', 'external_link'];
 $GLOBALS['detailScriptMetadataReads'] = []; $GLOBALS['detailScriptExternalReads'] = [];
 $html = (new DetailScriptView(0, $values))->render('ca_collections');
-checkDetailScripts(!str_contains($html, 'Own sub_sub_series description.') && !str_contains($html, '80 synthetic clippings') && !str_contains($html, '<label>Provenance</label>') && !str_contains($html, 'Synthetic use conditions') && !str_contains($html, '<label>External links</label>') && !$GLOBALS['detailScriptExternalReads'], 'Unreadable descriptive bundles must be omitted before fetching values.');
+checkDetailScripts(!str_contains($html, 'Own sub_sub_series description.') && !str_contains($html, '80 synthetic clippings') && !str_contains($html, '<h3>Provenance</h3>') && !str_contains($html, 'Synthetic use conditions') && !str_contains($html, '<h3>External links</h3>') && !$GLOBALS['detailScriptExternalReads'], 'Unreadable descriptive bundles must be omitted before fetching values.');
 foreach ($GLOBALS['detailScriptMetadataReads'] as $template) {
 	checkDetailScripts(!preg_match('/\^ca_collections\.(?:description|date|extent_text|language|lcsh_terms|rights|provenance|collection_scope_content)(?:\b|\.)/', $template), 'Denied native metadata must not be read.');
 }
 $GLOBALS['detailScriptDeniedBundles'] = []; $GLOBALS['detailScriptMissingElements'] = ['provenance', 'external_link'];
 $html = (new DetailScriptView(0, $values))->render('ca_collections');
-checkDetailScripts(!str_contains($html, '<label>Provenance</label>') && !str_contains($html, '<label>External links</label>'), 'A profile without optional descriptive fields must not be queried or display placeholders.');
+checkDetailScripts(!str_contains($html, '<h3>Provenance</h3>') && !str_contains($html, '<h3>External links</h3>'), 'A profile without optional descriptive fields must not be queried or display placeholders.');
 $GLOBALS['detailScriptMissingElements'] = []; $GLOBALS['detailScriptExternalLinks'] = [];
 foreach ([['ca_collections.description' => 'Synthetic description'], ['ca_collections.extent_text' => 'Synthetic extent']] as $values) {
 	$html = (new DetailScriptView(0, $values))->render('ca_collections');
