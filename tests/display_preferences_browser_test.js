@@ -32,7 +32,9 @@ const server = http.createServer((request, response) => {
         if (separator > 0) { cookies[pair.slice(0, separator)] = decodeURIComponent(pair.slice(separator + 1)); }
     }
     const total = url.pathname === '/small' ? 14 : Number(/^synthetic-(\d+)$/.exec(params.key || '')?.[1] || 144);
-    const result = spawnSync('php', [path.join(__dirname, 'display_preferences_test.php'), '--render'], {input:JSON.stringify({params, cookies, total}), encoding:'utf8'});
+    const [controller,action] = url.pathname.split('/').filter(Boolean);
+    const route = ['Collections','Search','Browse'].includes(controller) && action ? {controller,action} : {};
+    const result = spawnSync('php', [path.join(__dirname, 'display_preferences_test.php'), '--render'], {input:JSON.stringify({params, cookies, total, ...route}), encoding:'utf8'});
     assert.equal(result.status, 0, result.stderr || result.stdout);
     response.setHeader('Content-Type', 'text/html; charset=utf-8');
     response.end(shell.header + '<h1>Synthetic collection</h1>' + result.stdout + shell.footer);
@@ -106,6 +108,32 @@ let browser;
     assert.equal(await page.locator('[data-result]').count(), 88, 'List All may show at most 100 records.');
     await page.goto(origin + '/?view=images&per_page=all&key=synthetic-1000');
     assert.equal(await page.locator('[data-result]').count(), 18, 'A crafted Tiles All link must fall back to 18 in a large collection.');
+    await page.goto(origin + '/?view=list');
+    await page.getByRole('link', {name:'Tiles', exact:true}).click();
+    await page.waitForFunction(() => document.querySelector('[data-view]')?.dataset.view === 'images');
+    await page.goto(origin + '/Collections/Index');
+    assert.equal(await page.locator('[data-result]').count(),18, 'Collection-record grids must start with their own default.');
+    assert.deepEqual(await page.locator('select[name=per_page] option').evaluateAll(nodes => nodes.map(node => node.value)), ['9','18','27','36','45','54','63','72','81','90']);
+    await Promise.all([page.waitForURL('**per_page=90**'), page.getByRole('combobox', {name:'Items per page'}).selectOption('90')]);
+    assert.equal(await page.locator('[data-result]').count(),90);
+    for (const route of ['/Search/objects','/Browse/people','/Browse/places','/Detail/collections/43']) {
+        await page.goto(origin + route);
+        assert.equal(await page.locator('[data-result]').count(),27, 'Other result sets must retain their independent grid size.');
+        assert.equal(await page.locator('option[value="90"]').count(),0);
+    }
+    await Promise.all([page.waitForURL('**per_page=36**'), page.getByRole('combobox', {name:'Items per page'}).selectOption('36')]);
+    for (const route of ['/Collections/Index','/Search/collections','/Browse/collections']) {
+        await page.goto(origin + route);
+        assert.equal(await page.locator('[data-result]').count(),90, 'Collection grids must restore their own setting after visiting other result sets.');
+    }
+    await page.goto(origin + '/Collections/Index?key=synthetic-84&per_page=9');
+    await Promise.all([page.waitForURL('**per_page=all**'), page.getByRole('combobox', {name:'Items per page'}).selectOption('all')]);
+    assert.equal(await page.locator('[data-result]').count(),84);
+    assert.equal(new URL(page.url()).searchParams.get('n'),'90', 'Collection All must use the collection-specific numeric limit.');
+    await page.goto(origin + '/Collections/Index');
+    assert.equal(await page.locator('[data-result]').count(),18, 'Collection All must reset the next set to 18.');
+    await page.goto(origin + '/Search/objects');
+    assert.equal(await page.locator('[data-result]').count(),36, 'Collection All must not overwrite the object-grid preference.');
     const plain = await browser.newContext({javaScriptEnabled:false});
     await plain.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
     const plainPage = await plain.newPage();
@@ -114,6 +142,11 @@ let browser;
     await plainPage.getByRole('button', {name:'Apply', exact:true}).click();
     await plainPage.waitForURL('**per_page=27**');
     assert.equal(await plainPage.locator('[data-result]').count(), 27, 'GET selection must work without JavaScript.');
+    await plainPage.goto(origin + '/Collections/Index');
+    await plainPage.getByRole('combobox', {name:'Items per page'}).selectOption('90');
+    await plainPage.getByRole('button', {name:'Apply', exact:true}).click();
+    await plainPage.waitForURL('**per_page=90**');
+    assert.equal(await plainPage.locator('[data-result]').count(),90, 'Collection-specific limits must work without JavaScript.');
     assert.deepEqual(errors, []);
     await plain.close();
     console.log('Display preference browser passed: 320–1600px controls, bounded All, paging, cross-page cookies, view/mode persistence and no-JavaScript GET.');

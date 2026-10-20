@@ -6,7 +6,7 @@ function tadlDisplayPreferences($request) {
 	$preferences = is_string($value) && strlen($value) <= 512 ? json_decode($value, true) : null;
 	if (!is_array($preferences)) { return []; }
 	$valid = [];
-	foreach (['view' => ['images', 'list'], 'collection_view' => ['flat', 'hierarchy'], 'images_per_page' => array_map('strval', range(9, 72, 9)), 'list_per_page' => ['25', '50', '100']] as $key => $allowed) {
+	foreach (['view' => ['images', 'list'], 'collection_view' => ['flat', 'hierarchy'], 'images_per_page' => array_map('strval', range(9, 72, 9)), 'collections_images_per_page' => array_map('strval', range(9, 90, 9)), 'list_per_page' => ['25', '50', '100']] as $key => $allowed) {
 		if (isset($preferences[$key]) && is_scalar($preferences[$key]) && in_array((string)$preferences[$key], $allowed, true)) {
 			$valid[$key] = (string)$preferences[$key];
 		}
@@ -19,20 +19,29 @@ function tadlDisplayView($request, $default = 'images') {
 	return is_string($explicit) && $explicit !== '' ? $explicit : (tadlDisplayPreferences($request)['view'] ?? $default);
 }
 
-function tadlResultPagePolicy($view) {
-	return $view === 'list'
-		? ['key'=>'list_per_page', 'choices'=>[25,50,100], 'default'=>25, 'max'=>100]
-		: ['key'=>'images_per_page', 'choices'=>range(9,72,9), 'default'=>18, 'max'=>72];
+function tadlResultPagePolicy($view, $request = null) {
+	if ($view === 'list') { return ['key'=>'list_per_page', 'choices'=>[25,50,100], 'default'=>25, 'max'=>100]; }
+	// Collection records have their own grid preference; objects within a
+	// collection still use the ordinary object-result policy.
+	if ($request && method_exists($request, 'getController') && method_exists($request, 'getAction')) {
+		$controller = strtolower((string)$request->getController());
+		$action = strtolower((string)$request->getAction());
+		if (($controller === 'collections' && $action === 'index')
+			|| (in_array($controller, ['browse', 'search'], true) && $action === 'collections')) {
+			return ['key'=>'collections_images_per_page', 'choices'=>range(9,90,9), 'default'=>18, 'max'=>90];
+		}
+	}
+	return ['key'=>'images_per_page', 'choices'=>range(9,72,9), 'default'=>18, 'max'=>72];
 }
 
 function tadlPreferredPageChoice($request, $view) {
-	$policy = tadlResultPagePolicy($view);
+	$policy = tadlResultPagePolicy($view, $request);
 	return tadlDisplayPreferences($request)[$policy['key']] ?? (string)$policy['default'];
 }
 
 function tadlResultPageChoice($request, $view = null) {
 	$view = $view ?? tadlDisplayView($request);
-	$policy = tadlResultPagePolicy($view);
+	$policy = tadlResultPagePolicy($view, $request);
 	$choice = $request->getParameter('per_page', pString);
 	if ($choice === null || $choice === '') {
 		$choice = $request->getParameter('n', pString);
@@ -44,7 +53,7 @@ function tadlResultPageChoice($request, $view = null) {
 /** All remains bounded, including crafted requests and a changed result total. */
 function tadlResultPageSize($request, $total = null, $view = null) {
 	$view = $view ?? tadlDisplayView($request);
-	$policy = tadlResultPagePolicy($view);
+	$policy = tadlResultPagePolicy($view, $request);
 	$choice = tadlResultPageChoice($request, $view);
 	$size = $choice === 'all' ? ($total !== null && $total > $policy['max'] ? $policy['default'] : $policy['max']) : (int)$choice;
 	return $total === null ? $size : max(1, min($size, max(0, (int)$total)));
@@ -56,11 +65,11 @@ function tadlPerPagePicker($request, $total, $size, $route, array $params = []) 
 	$id = 'tadl-per-page-'.(++$sequence);
 	$escape = static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 	$view = $params['view'] ?? tadlDisplayView($request);
-	$policy = tadlResultPagePolicy($view);
+	$policy = tadlResultPagePolicy($view, $request);
 	$choice = tadlResultPageChoice($request, $view);
 	$selected = $total <= $policy['max'] && $size >= $total ? 'all' : ($choice === 'all' ? (string)$policy['default'] : $choice);
 	[$module, $controller, $action] = $route;
-	$output = '<form class="tadl-per-page" data-tadl-per-page-form method="get" action="'.$escape(caNavUrl($request, $module, $controller, $action)).'">';
+	$output = '<form class="tadl-per-page" data-tadl-per-page-form data-tadl-page-size-key="'.$escape($policy['key']).'" method="get" action="'.$escape(caNavUrl($request, $module, $controller, $action)).'">';
 	unset($params['n'], $params['per_page']);
 	foreach ($params as $key => $value) {
 		if (is_scalar($value)) { $output .= '<input type="hidden" name="'.$escape($key).'" value="'.$escape($value).'">'; }

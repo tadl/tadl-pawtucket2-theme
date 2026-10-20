@@ -20,6 +20,19 @@ Changes belong here rather than in upstream CollectiveAccess. The surrounding
 workspace has reference checkouts of Pawtucket and Providence at local tag
 `2.0.10`; that is a local source fact, not a verified current production version.
 
+## Collection-record grid page sizes
+
+The Collections index and Search/Browse Collections grids offer nine-record steps
+through 90, with an independent `collections_images_per_page` display-cookie key.
+They default to 18 when that key is absent; the existing `images_per_page` value
+does not migrate into it. Other grids, including the objects within a collection,
+retain their separate 9–72 policy. List view retains its 25/50/100 policy.
+The shared picker emits its validated preference key for browser persistence.
+“All” is available for at most 90 collection records and saves 18 for the next
+collection result set, without overwriting the other grid preference. PHP policy,
+actual Collections-index rendering and cross-route browser regressions cover
+the separate settings, offsets, limits, All reset and no-JavaScript GET selection.
+
 ## 2026-10-20: Server-rendered catalogue results
 
 This supersedes earlier references below to initial result AJAX loaders, hierarchy

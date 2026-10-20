@@ -7,11 +7,11 @@ require_once(__DIR__.'/../helpers/collection_contents.php');
 require_once(__DIR__.'/../views/Browse/tadl_result_helpers.php');
 function _t($text, ...$values) { foreach ($values as $i => $value) { $text = str_replace('%'.($i+1), (string)$value, $text); } return $text; }
 class DisplayRequest {
-	function __construct(public array $params = [], public array $cookies = []) {}
+	function __construct(public array $params = [], public array $cookies = [], public string $controller = 'Search', public string $action = 'objects') {}
 	function getParameter($key, $type) { return $this->params[$key] ?? null; }
 	function getParameters($sources) { return $sources === ['COOKIE'] ? $this->cookies : $this->params; }
-	function getController() { return 'Search'; }
-	function getAction() { return 'objects'; }
+	function getController() { return $this->controller; }
+	function getAction() { return $this->action; }
 	function isAjax() { return false; }
 }
 function caNavUrl($request, $module, $controller, $action, $params = []) {
@@ -39,7 +39,7 @@ function displayFixture($request, $total) {
 }
 if (($argv[1] ?? '') === '--render') {
 	$input = json_decode(stream_get_contents(STDIN), true, flags:JSON_THROW_ON_ERROR);
-	echo displayFixture(new DisplayRequest($input['params'], $input['cookies']), $input['total']);
+	echo displayFixture(new DisplayRequest($input['params'], $input['cookies'], $input['controller'] ?? 'Search', $input['action'] ?? 'objects'), $input['total']);
 	exit;
 }
 $checks = 0;
@@ -76,5 +76,34 @@ displayCheck(tadlDisplayView($request) === 'images' && tadlCollectionContentsMod
 displayCheck(tadlResultPageSize(new DisplayRequest([], ['tadlDisplayPreferences'=>'{"images_per_page":"all"}']), 1000) === 18, 'All must never become a remembered default, including old or crafted cookies.');
 foreach (['invalid', 'null', '[]', str_repeat('x',513), '{"view":["list"],"images_per_page":999999}'] as $bad) {
 	displayCheck(tadlDisplayPreferences(new DisplayRequest([], ['tadlDisplayPreferences'=>$bad])) === [], 'Malformed cookies must safely fall back.');
+}
+$cookies = ['tadlDisplayPreferences'=>json_encode(['images_per_page'=>'27', 'collections_images_per_page'=>'90', 'list_per_page'=>'50'])];
+foreach ([['Collections','Index','tiles'], ['Search','collections','images'], ['Browse','collections','images']] as [$controller,$action,$view]) {
+	$request = new DisplayRequest(['view'=>$view], $cookies, $controller, $action);
+	displayCheck(tadlResultPageSize($request, 144) === 90 && tadlPreferredPageChoice($request,$view) === '90', 'Every collection-record grid must use its independent remembered size.');
+	$html = displayFixture($request,144);
+	$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING); $xpath = new DOMXPath($document);
+	displayCheck(array_map(fn($node)=>(int)$node->getAttribute('value'), iterator_to_array($xpath->query('//select/option'))) === range(9,90,9), 'Collection grids must offer nine-item steps through 90.');
+	displayCheck($xpath->query('//form[@data-tadl-page-size-key="collections_images_per_page"]')->length === 1, 'The browser must save the collection-specific preference key.');
+	foreach ([81,84,90,91,144] as $total) {
+		$request->params['per_page'] = 'all';
+		displayCheck(tadlResultPageSize($request,$total) === ($total <= 90 ? $total : 18), 'Collection All must remain bounded at 90 and fall back safely for larger sets.');
+		$picker = tadlPerPagePicker($request,$total,tadlResultPageSize($request,$total),['',$controller,$action],['view'=>$view]);
+		displayCheck(str_contains($picker,'value="all"') === ($total <= 90), 'Collection All must only be offered for small result sets.');
+	}
+	$request->params = ['view'=>'list'];
+	displayCheck(tadlResultPageSize($request,144) === 50, 'The collection grid policy must preserve the existing list policy.');
+}
+foreach ([['Search','objects'],['Browse','people'],['Browse','organizations'],['Browse','places'],['Browse','occurrences'],['Detail','collections'],['CollectionContents','Objects']] as [$controller,$action]) {
+	$request = new DisplayRequest(['view'=>'images'],$cookies,$controller,$action);
+	displayCheck(tadlResultPageSize($request,144) === 27, 'Collection grid preferences must not change object/entity/place grids or objects within a collection.');
+	$request->params['per_page'] = '90';
+	displayCheck(tadlResultPageSize($request,144) === 18, 'The 90-item option belongs only to collection-record grids.');
+}
+$request = new DisplayRequest(['view'=>'tiles'],['tadlDisplayPreferences'=>'{"images_per_page":"72"}'],'Collections','Index');
+displayCheck(tadlResultPageSize($request,144) === 18, 'Collection grids must start at 18 rather than inheriting the former shared grid setting.');
+foreach (['all','99',['90']] as $bad) {
+	$request->cookies = ['tadlDisplayPreferences'=>json_encode(['collections_images_per_page'=>$bad])];
+	displayCheck(tadlResultPageSize($request,144) === 18, 'Malformed or All collection preferences must not become a sticky size.');
 }
 echo "Display preferences passed: {$checks} assertions.\n";

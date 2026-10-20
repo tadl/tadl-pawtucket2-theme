@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     const name = 'tadlDisplayPreferences';
-    const allowed = {view:['images', 'list'], collection_view:['flat', 'hierarchy'], images_per_page:Array.from({length:8}, (_, index) => String((index + 1) * 9)), list_per_page:['25', '50', '100']};
+    const allowed = {view:['images', 'list'], collection_view:['flat', 'hierarchy'], images_per_page:Array.from({length:8}, (_, index) => String((index + 1) * 9)), collections_images_per_page:Array.from({length:10}, (_, index) => String((index + 1) * 9)), list_per_page:['25', '50', '100']};
     document.documentElement.classList.add('tadl-display-preferences-ready');
     function save(changes) {
         let preferences = {};
@@ -32,10 +32,12 @@
         if (!form) { return; }
         const choice = form.elements.per_page.value;
         const list = form.elements.view?.value === 'list';
+        const key = form.dataset.tadlPageSizeKey || (list ? 'list_per_page' : 'images_per_page');
+        if (!['images_per_page', 'collections_images_per_page', 'list_per_page'].includes(key)) { return; }
         // Keep Pawtucket's native numeric preload/context parameter bounded too.
-        form.elements.n.value = choice === 'all' ? (list ? '100' : '72') : choice;
+        form.elements.n.value = choice === 'all' ? allowed[key][allowed[key].length - 1] : choice;
         // All belongs to this result set; remember the safe default for its view.
-        save({[list ? 'list_per_page' : 'images_per_page']:choice === 'all' ? (list ? '25' : '18') : choice});
+        save({[key]:choice === 'all' ? (list ? '25' : '18') : choice});
     });
     document.addEventListener('change', event => {
         const form = event.target.closest('[data-tadl-per-page-form]');

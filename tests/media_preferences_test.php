@@ -825,6 +825,13 @@ $latePageView = new TestView(testMediaRequest('all', ['page' => 62, 'view' => 't
 $html = $latePageView->render(TEST_THEME.'/views/Collections/index_html.php');
 testAssert(strpos($html, '/Detail/collections/3098') !== false, 'Late collection index rendered the wrong page.');
 testAssert(in_array(3098, ResultContext::$saved['ca_collections:collections:']['ids'], true), 'Collection index saved detail context before calculating the page offset.');
+$collectionGridRequest = testMediaRequest('all', ['page'=>2, 'view'=>'tiles'], 'Collections', 'Index');
+$collectionGridRequest->cookies['tadlDisplayPreferences'] = json_encode(['collections_images_per_page'=>'90','images_per_page'=>'27']);
+$collectionGridView = new TestView($collectionGridRequest, ['collection_results'=>new SearchResult('ca_collections',range(2000,2199)), 'collections_config'=>$collectionConfig, 'section_name'=>'Synthetic collections']);
+$html = $collectionGridView->render('Collections/index_html.php');
+testAssert(substr_count($html,'data-collection-item') === 90 && str_contains($html,'/Detail/collections/2090') && !str_contains($html,'/Detail/collections/2089'), 'The actual collection index must use its independent 90-record page size and offset.');
+testAssert(str_contains($html,'data-tadl-page-size-key="collections_images_per_page"') && str_contains($html,'/Collections/Index/page/3/view/tiles/per_page/90'), 'Collection picker and both pagers must retain the collection-specific setting.');
+testAssert(ResultContext::$saved['ca_collections:collections:']['per_page'] === 90, 'Native collection detail navigation must save the displayed 90-record page size.');
 
 // Native multisearch captures counts before preview rendering; verify full filtered IDs
 // drive both the actual preview and the overview navigation/counts.
