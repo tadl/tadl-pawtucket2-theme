@@ -773,8 +773,8 @@ below retain implementation details and historical verification evidence.
   or face detection run was performed.
 - Collection item Tiles/List replace the object identifier line above the title
   with square white-on-dark-gray original-format tags. Their 14px text is an
-  intentional exception to the interior page's 18px floor; the `#383838` fill
-  matches the former `#222` at 90% opacity on white without fading the text.
+  intentional exception to the interior page's 18px floor. The dark background
+  uses 70% opacity (`rgba(34, 34, 34, 0.7)`) while the white text stays opaque.
   The collection AJAX context guard keeps ordinary search/browse identifiers
   unchanged. Tags are a labeled,
   noninteractive list; metadata-only items omit the row. Public secondary formats
