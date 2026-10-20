@@ -2544,7 +2544,8 @@ div.tadl-finding-aid-controls .close {
 }
 
 .tadl-search-card:hover,
-.tadl-search-card:focus {
+.tadl-search-card:focus,
+.tadl-search-card:focus-within {
     border-color: var(--tadl-primary);
     background: #f5f8fb;
     text-decoration: none;

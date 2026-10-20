@@ -96,8 +96,9 @@
 <?php
 		if ($vb_media_cards) {
 ?>
-		<a class="tadl-search-card<?php print ($vs_table === 'ca_collections') ? ' tadl-search-card--collection' : ''; ?>" href="<?php print $vs_item_url; ?>" aria-label="<?= $vs_item_label; ?><?= !empty($va_formats[$va_item['id']]) ? ' ('.htmlspecialchars(join(', ', $va_formats[$va_item['id']]), ENT_QUOTES, 'UTF-8').')' : ''; ?>"<?= $format_description_id ? ' aria-describedby="'.htmlspecialchars($format_description_id, ENT_QUOTES, 'UTF-8').'"' : ''; ?>>
-			<span class="tadl-search-card-media" aria-hidden="true">
+        <?php $object_card = $vs_table === 'ca_objects'; ?>
+        <?php if ($object_card): ?><div class="tadl-search-card"><?php else: ?><a class="tadl-search-card tadl-search-card--collection" href="<?= $vs_item_url; ?>"><?php endif; ?>
+			<?php if ($object_card): ?><a class="tadl-search-card-media" href="<?= $vs_item_url; ?>" aria-label="<?= $vs_item_label; ?>"><?php else: ?><span class="tadl-search-card-media" aria-hidden="true"><?php endif; ?>
 <?php
 			if ($va_item['image']) {
 				print $va_item['image'];
@@ -107,16 +108,16 @@
 <?php
 			}
 ?>
-			</span>
+			<?php if ($object_card): ?></a><?php else: ?></span><?php endif; ?>
 			<?php if ($vs_table === 'ca_objects'): ?>
 			<div class="tadl-search-card-caption<?= !empty($va_formats[$va_item['id']]) ? ' tadl-result-with-formats' : ''; ?>">
-				<span class="tadl-search-card-title"><?= $vs_item_label; ?></span>
+				<a class="tadl-search-card-title" href="<?= $vs_item_url; ?>"><?= $vs_item_label; ?></a>
 				<?= tadlRepresentationFormatTags($va_formats[$va_item['id']] ?? [], $format_description_id); ?>
 			</div>
 			<?php else: ?>
 			<span class="tadl-search-card-title"><?= $vs_item_label; ?></span>
 			<?php endif; ?>
-		</a>
+		<?php if ($object_card): ?></div><?php else: ?></a><?php endif; ?>
 <?php
 		} else {
 ?>

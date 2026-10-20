@@ -168,7 +168,7 @@ async function fixedCrop(card) {
         }), 'Overview format tags must retain the right-aligned stack.');
         await page.addScriptTag({path:process.env.TADL_AXE_PATH || require.resolve('axe-core/axe.min.js')});
         const overviewViolations = await page.evaluate(async () => (await axe.run('#main', {runOnly:{type:'tag', values:['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']}})).violations);
-        assert.deepEqual(overviewViolations.map(item => item.id), []);
+        assert.deepEqual(overviewViolations.map(item => ({id:item.id,nodes:item.nodes.map(node => ({html:node.html, message:node.failureSummary}))})), []);
         assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Overview must not overflow on phones.');
         if (process.env.TADL_A11Y_ARTIFACT_DIR) { await page.screenshot({path:path.join(process.env.TADL_A11Y_ARTIFACT_DIR, `overview-${width}.png`)}); }
     }

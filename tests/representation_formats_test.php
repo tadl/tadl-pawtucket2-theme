@@ -250,4 +250,4 @@ else { echo "Representation formats passed: {$checks} assertions (batched origin
 $described = tadlRepresentationFormatTags(['JPEG', 'TIFF'], 'synthetic-formats');
 if (!str_contains($described, 'id="synthetic-formats"') || !str_contains($described, '>JPEG<') || !str_contains($described, '>TIFF<')) { throw new RuntimeException('Format descriptions must retain every visible format.'); }
 $preview_source = file_get_contents(dirname(__DIR__).'/views/Search/tadl_search_results_subview_html.php');
-if (!str_contains($preview_source, 'aria-describedby=') || !str_contains($preview_source, 'aria-label="<?= $vs_item_label; ?>')) { throw new RuntimeException('Preview links need the object title as name and formats as a separate description.'); }
+if (!str_contains($preview_source, '<a class="tadl-search-card-title"') || !str_contains($preview_source, '<div class="tadl-search-card">')) { throw new RuntimeException('Object preview formats must sit outside title and image links.'); }
