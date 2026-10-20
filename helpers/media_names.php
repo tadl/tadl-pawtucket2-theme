@@ -9,6 +9,6 @@ function tadlMediaImageNames($html, $label) {
   $tag = preg_replace_callback('~\s+([^\s=/>]+)(?:\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]+))?~', static function ($attribute) {
    return in_array(strtolower($attribute[1]), ['alt', 'title'], true) ? '' : $attribute[0];
   }, $token[0]);
-  return preg_replace('~\s*(/?)>$~', ' alt="'.$label.'"$1>', $tag);
+  return preg_replace_callback('~\s*(/?)>$~', static fn($end) => ' alt="'.$label.'"'.$end[1].'>', $tag);
  }, (string)$html);
 }

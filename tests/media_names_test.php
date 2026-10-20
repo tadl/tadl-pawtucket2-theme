@@ -8,3 +8,7 @@ if ($document->getElementsByTagName('img')->item(0)->getAttribute('alt') !== 'Sy
  || !str_contains($output, 'onclick="nativeCallback()"') || !str_contains($output, '`<img alt="script stays">`')
  || str_contains($output, 'import_file_123.tif')) { throw new RuntimeException('Native image names must use record text and preserve scripts/callbacks.'); }
 echo "Media image names passed.\n";
+
+$literal = 'Price $1 and a backslash \\ in the title';
+$document->loadHTML(tadlMediaImageNames('<img src="/image">', $literal), LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_NONET);
+if ($document->getElementsByTagName('img')->item(0)->getAttribute('alt') !== $literal) { throw new RuntimeException('Image labels must not interpret replacement-string syntax.'); }
