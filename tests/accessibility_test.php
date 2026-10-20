@@ -132,7 +132,7 @@ foreach (['set_list_html.php', 'set_detail_html.php'] as $file) {
 }
 $html = (new A11yView(['user_groups' => [['group_id' => 1, 'name' => 'Synthetic group', 'access' => 1]], 'users' => [['user_id' => 2, 'name' => 'Synthetic user', 'email' => 'example@example.org', 'access' => 1, 'owner' => false]]]))->render('Lightbox/set_access_html.php');
 $xpath = a11yDocument($html);
-a11yCheck($xpath->query('//a/button|//button/a')->length === 0 && $xpath->query('//button[contains(@class,"btn-xs")]')->length === 2, 'Access changes must use buttons without nested interactive controls.');
+a11yCheck($xpath->query('//a/button|//button/a')->length === 0 && $xpath->query('//button[contains(@class,"btn-xs")]')->length === 4, 'Access changes must use buttons without nested interactive controls.');
 $fixtures['share-lightbox'] = (new A11yView(['display_name' => 'lightbox', 'errors' => $errors, 'user_groups' => [['group_id' => 7, 'name' => 'Synthetic group']]]))->render('Lightbox/form_share_set_html.php');
 a11yLabels($fixtures['share-lightbox']);
 $fixtures['cookies'] = (new A11yView([
