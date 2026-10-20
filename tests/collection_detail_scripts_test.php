@@ -332,6 +332,8 @@ for (const fixture of cases) {
     const scrollers = [];
     const jquery = selector => ({
         ready(callback) { callback(); },
+        attr() { return this; },
+        html() { return this; },
         load(url, callback) { loads.push({ selector, url }); if (callback) callback(); },
         jscroll(options) { scrollers.push({ selector, options }); },
         readmore() {}
@@ -339,6 +341,19 @@ for (const fixture of cases) {
     const context = vm.createContext({ document: {}, jQuery: jquery, $: jquery });
     for (const [index, script] of fixture.scripts.entries()) {
         new vm.Script(script, { filename: `${fixture.name} inline script ${index + 1}` }).runInContext(context, { timeout: 1000 });
+    }
+    if (fixture.objectsUrl || fixture.hierarchyUrl) {
+        const failures = [];
+        const failedJQuery = selector => ({
+            ready(callback) { callback(); }, attr() { return this; },
+            load(url, callback) { if (callback) callback.call(selector, '', 'error'); },
+            html(html) { failures.push(html); },
+            jscroll() { assert.fail('Failed contents must not initialize scrolling.'); }
+        });
+        const failedContext = vm.createContext({document:{}, jQuery:failedJQuery, $:failedJQuery});
+        for (const script of fixture.scripts) { new vm.Script(script).runInContext(failedContext); }
+        assert.equal(failures.length, Number(!!fixture.objectsUrl) + Number(!!fixture.hierarchyUrl));
+        if (fixture.objectsUrl) { assert(failures.some(html => html.includes('href=') && html.includes('role="status"'))); }
     }
     const expectedLoads = [];
     if (fixture.hierarchyUrl) expectedLoads.push({ selector: '#collectionHierarchy', url: fixture.hierarchyUrl });
@@ -376,3 +391,6 @@ if (($argv[1] ?? '') === '--finding-aid-fixture') {
 } else {
 	echo json_encode(array('status' => 'passed', 'assertions' => $GLOBALS['detailScriptAssertions'] + $nodeResult['assertions'], 'templates' => 'actual collection detail; authority pages have authority_detail_test.php', 'dependencies' => 'synthetic view/model/config/jQuery boundaries; Node.js syntax and execution'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;
 }
+
+$collection_source = file_get_contents(dirname(__DIR__).'/views/Details/ca_collections_default_html.php');
+checkDetailScripts(substr_count($collection_source, "status === 'error'") === 2 && str_contains($collection_source, '<noscript>'), 'Both collection loaders need failure feedback and contents need an ordinary no-script link.');
