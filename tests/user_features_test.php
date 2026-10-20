@@ -142,6 +142,18 @@ foreach ([[false, 0], [false, 1], [true, 1], [true, 255], [true, 99], [true, 0]]
 		checkUserFeature(str_contains($anchor->textContent, 'View in Providence') && str_contains($anchor->textContent, '(opens in a new tab)'), 'Editor action must have a useful label and accessible new-tab hint.');
 	}
 }
+$objectNavigation = (new FeatureView(new FeatureRequest(), [
+	'item' => new FeatureDetailObject(),
+	'previousLink' => '<a href="/Detail/objects/41">Prev</a>',
+	'nextLink' => '<a href="/Detail/objects/43">Next</a>'
+]))->render('Details/ca_objects_default_html.php');
+$document = new DOMDocument(); $document->loadHTML($objectNavigation, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+$xpath = new DOMXPath($document);
+checkUserFeature($xpath->query('//div[contains(@class,"tadl-object-info")]/*[1][self::nav and @class="tadl-record-nav"]')->length === 1, 'Object navigation must precede the heading inside the metadata column, without displacing the photo.');
+foreach (['previous' => 41, 'next' => 43] as $direction => $id) {
+	$label = 'Go to '.$direction.' object';
+	checkUserFeature($xpath->query('//nav/a[@href="/Detail/objects/'.$id.'" and @title="'.$label.'" and @aria-label="'.$label.'"]')->length === 1, 'Object navigation must retain native destinations and contextual tooltips/accessible names.');
+}
 $request = new FeatureRequest(true, false, 0);
 checkUserFeature(str_contains(tadlProvidenceObjectLink($request, '123'), '/object_id/123"'), 'Native numeric-string object IDs must be supported.');
 checkUserFeature(str_contains(tadlProvidenceCollectionLink($request, '123'), '/collection_id/123"'), 'Native numeric-string collection IDs must be supported.');

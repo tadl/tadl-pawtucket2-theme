@@ -301,8 +301,11 @@ so detail **Prev / Next** follows it. Search and MultiSearch relevance defaults
 remain unchanged. An already-open detail context keeps its existing order until
 the visitor enters a browse again.
 Object details intentionally omit **Browse objects**, showing only native
-**Prev / Next** when available. Direct object visits without result context omit
-the empty toolbar. Other detail types retain their Browse destination.
+**Prev / Next** when available. The toolbar is right-aligned at the top of the
+metadata column above the title, leaving the photo at the top of the body region.
+Its tooltips and ARIA labels identify the previous/next object. Direct object
+visits without result context omit the empty toolbar. Other detail types retain
+their Browse destination.
 
 Verification: portable navigation/menu/default-map checks plus the actual native
 configuration parser; media eligibility/context, authority, document-text,
@@ -873,10 +876,11 @@ below retain implementation details and historical verification evidence.
   clipping, axe and fixed thumbnail geometry at 320,
   390, 768, 1280 and 1600px. No production deployment was performed.
 - Object, collection, person, organization, place and event Detail pages use
-  `tadlDetailNavigation()` beside their headings: native context **Prev / Next**
+  `tadlDetailNavigation()`: native context **Prev / Next**
   links plus the corresponding Browse action, with no Back button. Object details
   are the exception: only Prev/Next, with no toolbar when both are unavailable.
-  The toolbar aligns right and wraps beneath the heading when space is limited;
+  Object navigation sits above its metadata heading; the other toolbars sit beside
+  their headings. The toolbars align right and wrap when space is limited;
   it reserves no outer navigation columns. Other detail types retain Browse on
   direct visits with no neighbors.
   Object media keeps its existing width; collection results stay full-width.

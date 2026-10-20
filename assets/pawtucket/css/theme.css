@@ -1401,6 +1401,10 @@ h6 {
     line-height: 1.35;
 }
 
+.tadl-object-info > .tadl-record-nav {
+    margin-bottom: 16px;
+}
+
 .tadl-image-downloads {
     position: relative;
     width: max-content;
