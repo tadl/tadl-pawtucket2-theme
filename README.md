@@ -182,3 +182,5 @@ The standalone regression suites use synthetic data and do not require an applic
 These are development tools, not extra requirements for serving the ordinary theme. GitHub Actions runs syntax checks, the standalone suites, and browser accessibility checks. See the [accessibility guide](docs/ACCESSIBILITY.md) for the separate local browser-test setup.
 
 Before making a customized site public, check collection and authority results, both media preferences, narrow-screen navigation, and access restrictions with representative records. Verify login, password reset, lightbox ownership/sharing, contact delivery, and exports in a controlled environment. The [production checklist](docs/PRODUCTION_CHECKS.md) covers these application-level checks; standalone tests cannot confirm your mail, media tools, catalogue mappings, or server configuration.
+
+The sample contribution form is disabled (`conf/contribute.conf`, `enabled = 0`), including direct named-form routes. To accept contributions, configure an institution-specific mapping, review upload/access policies, and explicitly enable both the submission interface and contribution controller.

@@ -178,3 +178,6 @@ try {
 	foreach ($files as $file) { $file->isDir() ? rmdir($file->getPathname()) : unlink($file->getPathname()); }
 	rmdir($directory);
 }
+
+$contribute_config = file_get_contents(dirname(__DIR__).'/conf/contribute.conf');
+if (!preg_match('/^enabled\s*=\s*0\s*$/m', $contribute_config)) { throw new RuntimeException('Contribution forms must be disabled at the native controller gate.'); }
