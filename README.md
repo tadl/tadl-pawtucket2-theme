@@ -16,7 +16,7 @@ This repository contains the complete `tadl` theme. Install it in an existing Pa
 | Media and downloads | Native image, PDF, audio, and video viewers; original and generated image download choices; accessible secondary-image thumbnails when the primary representation is unavailable. Available formats depend on Pawtucket's media processing configuration. |
 | Document text | A copyable text section for accessible PDFs, using extracted text first and imported transcription fields as fallbacks. |
 | Finding aids | View or download a descriptive collection PDF with its complete readable hierarchy and each level's recorded extent, description, dates, creators, and other public metadata. Individually catalogued objects are not required. |
-| Researcher accounts | Native login, profiles, password reset, lightboxes, and sharing, plus a staff-only shortcut to the object in Providence. Anonymous visitors see no login link. |
+| Researcher accounts | Native login, profiles, password reset, lightboxes, and sharing, plus staff-only shortcuts to objects and archival units in Providence. Anonymous visitors see no login link. |
 | Editable FAQ | Publish categorized questions and rich-text answers through Providence Site Pages, without redeploying the theme for content changes. |
 | Thumbnail focus | Filled image crops respect Providence's **Set center** setting. Optional local face detection supplies suggestions where staff have not chosen a center. |
 | Contact and recovery | A contact form with named Reply-To addresses and distinct subject references, optional Cloudflare Turnstile, and helpful error pages with search and browse links. |
@@ -74,7 +74,7 @@ The shipped site copy, logos, email recipient, external feeds, and Providence sh
 | Fields, facets, labels, and sorts | [Browse](conf/browse.conf), [search](conf/search.conf), [detail](conf/detail.conf), and [collection](conf/collections.conf) configuration, plus templates under `views/Details/` and `views/Search/`. |
 | Finding-aid metadata | [Field mappings](conf/finding_aid.conf) and [PDF view](views/Details/finding_aid_pdf_html.php), including its institutional identification. |
 | Contact recipient | [Contact configuration](conf/contact.conf) ships with TADL's address. Replace it and configure your application's outgoing mail before enabling public submissions. |
-| Staff editor shortcut | [User-feature helper](helpers/user_features.php) contains TADL's Providence hostname and `Screen49` object-editor route. Change both to match your installation. |
+| Staff editor shortcuts | [User-feature helper](helpers/user_features.php) contains TADL's Providence hostname, `Screen49` object-editor route, and default-screen collection-editor route. Adapt these to your installation. |
 | Gallery sets | [Gallery configuration](conf/gallery.conf) expects set type `public_presentation`. Use a matching type and published sets, or adapt the setting. |
 | Security headers and outside services | Review [headers.conf](conf/headers.conf) for the providers your site actually uses. Private application credentials belong in server configuration, never in this repository. |
 
@@ -98,7 +98,7 @@ After setup, staff edit category, question, answer, order, and public access in 
 
 Bookmark `/LoginReg/LoginForm` beneath your Pawtucket base URL. Existing accounts can sign in even though the anonymous navigation has no login link. Self-registration is disabled by default; the public catalogue remains open.
 
-Signed-in users get **My account** and **Add to lightbox** on object details. Result thumbnails omit that button. The staff Providence shortcut is limited to native full-access accounts; Providence has its own login session and permissions. See [accounts and user features](docs/USER_FEATURES.md) before changing account settings or enabling additional native workflows.
+Signed-in users get **My account** and **Add to lightbox** on object details. Result thumbnails omit that button. Staff Providence shortcuts on object and collection details are limited to native full-access accounts; Providence has its own login session and permissions. See [accounts and user features](docs/USER_FEATURES.md) before changing account settings or enabling additional native workflows.
 
 ### Contact mail and Turnstile
 

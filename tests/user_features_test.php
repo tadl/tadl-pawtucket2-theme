@@ -119,6 +119,8 @@ foreach ([[false, 0], [false, 1], [true, 1], [true, 255], [true, 99], [true, 0]]
 	$staff = $loggedIn && $userclass === 0;
 	$link = tadlProvidenceObjectLink($request, 42);
 	checkUserFeature(($link !== '') === $staff, 'Editor link must require both a login and native full-access user class.');
+	$collection_link = tadlProvidenceCollectionLink($request, 73);
+	checkUserFeature(($collection_link !== '') === $staff, 'Collection editor link must use the same login/full-access staff gate.');
 	$html = (new FeatureView($request, ['item' => new FeatureDetailObject()]))->render('Details/ca_objects_default_html.php');
 	$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 	$xpath = new DOMXPath($document);
@@ -127,6 +129,10 @@ foreach ([[false, 0], [false, 1], [true, 1], [true, 255], [true, 99], [true, 0]]
 	checkUserFeature($staff || !str_contains($html, 'collections.tadl.org'), 'Nonstaff HTML must omit the editor URL entirely.');
 	checkUserFeature($staff || !str_contains($html, 'tadl-object-staff-actions'), 'Nonstaff HTML must omit the staff action wrapper.');
 	if ($staff) {
+		$collection_document = new DOMDocument(); $collection_document->loadHTML($collection_link);
+		$collection_anchor = $collection_document->getElementsByTagName('a')->item(0);
+		checkUserFeature($collection_anchor->getAttribute('href') === 'https://collections.tadl.org/index.php/editor/collections/CollectionEditor/Edit/collection_id/73', 'Collection editor must use its own route and the selected archival unit ID.');
+		checkUserFeature($collection_anchor->getAttribute('target') === '_blank' && $collection_anchor->getAttribute('rel') === 'noopener noreferrer' && str_contains($collection_anchor->textContent, '(opens in a new tab)'), 'Collection shortcut must retain new-tab safety and the accessible hint.');
 		$anchor = $links->item(0);
 		checkUserFeature($anchor->getAttribute('href') === 'https://collections.tadl.org/index.php/editor/objects/ObjectEditor/Edit/Screen49/object_id/42', 'Editor URL must use the currently displayed object ID.');
 		checkUserFeature($anchor->getAttribute('target') === '_blank' && $anchor->getAttribute('rel') === 'noopener noreferrer', 'Editor must open a new tab without access to the opener.');
@@ -135,8 +141,11 @@ foreach ([[false, 0], [false, 1], [true, 1], [true, 255], [true, 99], [true, 0]]
 }
 $request = new FeatureRequest(true, false, 0);
 checkUserFeature(str_contains(tadlProvidenceObjectLink($request, '123'), '/object_id/123"'), 'Native numeric-string object IDs must be supported.');
+checkUserFeature(str_contains(tadlProvidenceCollectionLink($request, '123'), '/collection_id/123"'), 'Native numeric-string collection IDs must be supported.');
+checkUserFeature(tadlProvidenceRecordLink($request, 'ca_entities', 42) === '' && tadlProvidenceRecordLink($request, '../objects', 42) === '', 'Unsupported editor routes must not be rendered.');
 foreach ([null, 0, -1, '', '42/other', '42" onclick="synthetic()', '42.5', [], true, 42.5] as $invalidID) {
 	checkUserFeature(tadlProvidenceObjectLink($request, $invalidID) === '', 'Invalid object IDs must not get Providence actions.');
+	checkUserFeature(tadlProvidenceCollectionLink($request, $invalidID) === '', 'Invalid collection IDs must not get Providence actions.');
 }
 
 foreach (['images', 'list'] as $viewName) {

@@ -345,7 +345,7 @@ These are cooperative crawler hints, not enforced request throttling. A robots
 disallow prevents crawlers from reading a noindex directive on that URL; the policy
 reduces crawl work rather than guaranteeing removal of already indexed URLs.
 
-### Staff object editor shortcut
+### Staff editor shortcuts
 
 `tadlProvidenceObjectLink()` in `helpers/user_features.php` renders **View in
 Providence** beneath the object title in the metadata column. It requires a
@@ -356,6 +356,20 @@ The displayed object's positive numeric ID is used in the fixed Providence
 link opens a new tab with `noopener noreferrer` and an accessible new-tab hint.
 It requires no media and leaves Providence authentication/permissions in charge.
 Keep whole-page caching disabled for this session-dependent control.
+`tadlProvidenceCollectionLink()` now uses the same shared
+`tadlProvidenceRecordLink()` renderer and staff gate on collection details. The
+button sits beneath the right-aligned Prev/Next/Browse toolbar, including on
+series, containers and folders without media. Its fixed
+`CollectionEditor/Edit/collection_id/ID` route targets the selected unit, not the
+finding-aid root, and lets Providence choose the appropriate default editor
+screen. The object route and existing new-tab safety/accessibility stay intact.
+Actual collection/header and user-feature regressions cover anonymous/public/
+deleted/other/full-access users, selected root/folder IDs and invalid IDs. The
+optional accessibility browser suite includes the long collection header's
+staff action at desktop/phone widths, enlarged text and text spacing.
+The change passed all 36 portable suites, changed-file PHP lint, JavaScript
+syntax checks and the 20-state accessibility browser run. No production
+deployment was performed.
 
 ### Profile saves
 
@@ -1080,7 +1094,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/faq_setup_test.php` | Read-only setup plans, targeted native template registration, additive editor placements, private pre-change backup, no-op reruns, preserving unrelated configuration and transactional rollback |
 | `tests/profile_save_test.php` | Own-email/staff-public login behavior, collisions, separate user staging, request-close persistence, validation/setter/model failures, native password delegation, POST/session/CSRF boundaries, public-use groups and direct/AJAX profile form error escaping |
 | `tests/contact_mail_test.php` | Actual contact controller/form/mail templates and Turnstile verifier; named Reply-To, unique subjects, validation/POST/CSRF, legacy CAPTCHA, two-host Turnstile success/failures, partial setup, retry guidance and CSP override; optional native header merge check; synthetic HTTP and captured mail only |
-| `tests/user_features_test.php` | Anonymous/authenticated navigation and result actions, staff-only Providence shortcut in actual object detail HTML, valid object IDs/new-tab safety, native login POST/CSRF, registration policy, password-manager fields and cache separation |
+| `tests/user_features_test.php` | Anonymous/authenticated navigation and result actions, staff-only Providence shortcuts and actual object detail HTML, valid object/collection IDs, allowlisted routes/new-tab safety, native login POST/CSRF, registration policy, password-manager fields and cache separation |
 | `tests/home_faq_test.php` | Published/readable Site Pages, drafts, incomplete entries, locale, rank, escaped questions and purified answers; optional real HTMLPurifier |
 | `tests/finding_aid_test.php` | Selected-unit export; full nested/uncatalogued/wide hierarchy; rank/name ordering and duplicate-named branches; access/ACL/bundle and creator privacy; language labels; configurable metadata at every level; no object models, queries, counts or entries; escaped text and safe PDF failures; optional real Dompdf/native dispatcher |
 | `tests/asset_versions_test.php` | Stable/changed CSS and JS URLs, preserved timestamps, native loader options, subdirectory/absolute theme URLs, escaping, inline-code preservation and path boundaries |

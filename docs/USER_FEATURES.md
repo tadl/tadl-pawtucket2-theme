@@ -50,9 +50,17 @@ Object details show a small **View in Providence** button beneath the title only
 when the Pawtucket session is logged in and `request->user->isStandardUser()` is
 true (native `userclass = 0`, full-access). Public-access (`1`), deleted (`255`),
 other user classes and anonymous sessions receive neither the button nor its URL.
+Collection detail pages use the same staff check, with the button right-aligned
+beneath Prev/Next/Browse. This includes series, containers, folders and other
+archival levels, even without media.
 The link uses the displayed object's numeric ID and opens
 `https://collections.tadl.org/index.php/editor/objects/ObjectEditor/Edit/Screen49/object_id/ID`
-in a new tab with `noopener noreferrer`. It works on objects without media too.
+or, for archival units, the selected collection record's ID at
+`https://collections.tadl.org/index.php/editor/collections/CollectionEditor/Edit/collection_id/ID`.
+Providence chooses the collection editor's default screen for the selected type;
+this shortcut does not switch to the hierarchy's root. Both open in a new tab with
+`noopener noreferrer` and an accessible new-tab hint. Objects without media also
+retain their shortcut.
 This shortcut does not grant editor access or transfer the Pawtucket session;
 Providence still enforces its own authentication and permissions. Keep whole-page
 caching disabled so staff controls cannot be served to other visitors.

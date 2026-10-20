@@ -27,6 +27,7 @@
  */
 
 	require_once(__DIR__.'/detail_field_helpers.php');
+	require_once(__DIR__.'/../../helpers/user_features.php');
 	require_once(__DIR__.'/../../helpers/collection_contents.php');
 	require_once(__DIR__.'/../../helpers/collection_metadata.php');
 	require_once(__DIR__.'/../../helpers/finding_aid.php');
@@ -124,7 +125,12 @@
 					<H1>{{{^ca_collections.preferred_labels.name}}}</H1>
 					<H2>{{{^ca_collections.type_id}}}{{{<ifdef code="ca_collections.idno">, ^ca_collections.idno</ifdef>}}}</H2>
 				</div>
-				<?= tadlDetailNavigation($this, 'index', _t('Browse collections'), 'Collections'); ?>
+				<div class="tadl-collection-header-actions">
+					<?= tadlDetailNavigation($this, 'index', _t('Browse collections'), 'Collections'); ?>
+					<?php if ($providence_link = tadlProvidenceCollectionLink($this->request, $t_item->getPrimaryKey())): ?>
+					<div class="tadl-collection-staff-actions"><?= $providence_link; ?></div>
+					<?php endif; ?>
+				</div>
 			</header>
 			<div class="tadl-collection-overview">
 				<div class="tadl-collection-heading">

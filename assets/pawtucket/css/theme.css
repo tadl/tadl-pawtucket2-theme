@@ -2191,6 +2191,15 @@ div.tadl-finding-aid-controls .close {
     margin-bottom: 24px;
 }
 
+.tadl-collection-header-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    max-width: 100%;
+    margin-left: auto;
+}
+
 .tadl-record-nav {
     display: flex;
     flex-wrap: wrap;

@@ -13,6 +13,9 @@ const axeSource = fs.readFileSync(axePath, 'utf8');
 const rendered = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'accessibility_test.php'), '--fixtures'], {encoding:'utf8'});
 assert.equal(rendered.status, 0, rendered.stderr || rendered.stdout);
 const fixtures = JSON.parse(rendered.stdout);
+const collectionHeaders = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'collection_detail_scripts_test.php'), '--staff-shortcut-fixtures'], {encoding:'utf8'});
+assert.equal(collectionHeaders.status, 0, collectionHeaders.stderr || collectionHeaders.stdout);
+Object.assign(fixtures, JSON.parse(collectionHeaders.stdout));
 const artifacts = process.env.TADL_A11Y_ARTIFACT_DIR;
 if (artifacts) { fs.mkdirSync(artifacts, {recursive:true, mode:0o700}); }
 const reorderRequests = [];
@@ -75,7 +78,7 @@ let browser;
     const reports = [];
     for (const width of [1280, 320]) {
         await page.setViewportSize({width, height:900});
-        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'lightbox-order', 'featured', 'notifications']) {
+        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'lightbox-order', 'featured', 'notifications', 'collection-staff']) {
             await page.goto(origin + '/' + name);
             if (name === 'gallery') { await page.locator('.galleryDetailNext').waitFor(); }
             await page.evaluate(axeSource);
@@ -85,6 +88,12 @@ let browser;
             });
             assert.deepEqual(result, [], `${name} at ${width}px: ${JSON.stringify(result)}`);
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name}: horizontal page overflow at ${width}px`);
+            if (name === 'collection-staff') {
+                const navigation = await page.locator('.tadl-record-nav').boundingBox();
+                const editor = await page.locator('.tadl-providence-collection').boundingBox();
+                assert(editor.y >= navigation.y + navigation.height, 'Collection editor shortcut must sit below navigation.');
+                assert(Math.abs(editor.x + editor.width - navigation.x - navigation.width) < 2, 'Collection editor shortcut must align with the right edge of navigation.');
+            }
             if (artifacts) { await page.screenshot({path:path.join(artifacts, `${name}-${width}.png`), fullPage:true}); }
             await page.evaluate(() => {
                 const sizes = Array.from(document.querySelectorAll('#main *')).map(node => [node, parseFloat(getComputedStyle(node).fontSize)]);

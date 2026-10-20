@@ -54,6 +54,10 @@ The title header has a right-aligned **Prev / Next / Browse collections** toolba
 Prev/Next use the visitor's native result context; absent neighbors are omitted.
 There is no Back button or reserved side column. Controls wrap below the title
 when space is limited, and browser Back remains available.
+Logged-in full-access staff also get **View in Providence** beneath that toolbar.
+It opens the currently viewed collection, series, container or folder in a new
+tab, leaving Providence to enforce its own login and permissions. Public accounts
+and anonymous visitors receive no editor link.
 
 ## Navigation and URL state
 

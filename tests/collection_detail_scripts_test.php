@@ -39,8 +39,14 @@ function caNavUrl($request, $module, $controller, $action, $params = array(), $o
 	foreach ($params as $name => $value) { $url .= '/'.$name.'/'.(($options['dontURLEncodeParameters'] ?? false) ? $value : rawurlencode((string)$value)); }
 	return $url;
 }
+class DetailScriptUser {
+    public function __construct(private int $userclass) {}
+    public function isStandardUser() { return $this->userclass === 0; }
+}
 class DetailScriptRequest {
-    public function __construct(public array $params = []) {}
+    public DetailScriptUser $user;
+    public function __construct(public array $params = [], public bool $loggedIn = false, int $userclass = 1) { $this->user = new DetailScriptUser($userclass); }
+    public function isLoggedIn() { return $this->loggedIn; }
     public function getParameter($name, $type, $options = []) { return $this->params[$name] ?? null; }
 }
 class DetailScriptConfig {
@@ -248,6 +254,32 @@ $html = (new DetailScriptView(0))->render('ca_collections');
 checkDetailScripts(!str_contains($html, 'tadl-collection-view-switch') && !str_contains($html, 'collectionHierarchy'), 'Leaf collections must not offer an empty hierarchy.');
 $GLOBALS['detailScriptHasChildren'] = true;
 
+$staff_shortcut_fixtures = [];
+foreach ([42 => 'collection', 73 => 'folder'] as $id => $type) {
+	foreach ([[false, 0], [false, 1], [true, 1], [true, 255], [true, 99], [true, 0]] as [$logged_in, $userclass]) {
+		$staff = $logged_in && $userclass === 0;
+		$view = new DetailScriptView(0, [], [], $id, $type);
+		$view->request = new DetailScriptRequest([], $logged_in, $userclass);
+		$html = $view->render('ca_collections');
+		$document = new DOMDocument(); $document->loadHTML('<meta charset="UTF-8">'.$html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $xpath = new DOMXPath($document);
+		$editor_links = $xpath->query('//div[@class="tadl-collection-header-actions"]/div[@class="tadl-collection-staff-actions"]/a');
+		checkDetailScripts($editor_links->length === ($staff ? 1 : 0), 'The actual collection header must offer a Providence shortcut only to logged-in full-access staff.');
+		checkDetailScripts($staff || (!str_contains($html, 'collections.tadl.org') && !str_contains($html, 'tadl-collection-staff-actions')), 'Anonymous/public account HTML must omit the staff action and its URL entirely.');
+		if ($staff) {
+			$link = $editor_links->item(0);
+			checkDetailScripts($link->getAttribute('href') === 'https://collections.tadl.org/index.php/editor/collections/CollectionEditor/Edit/collection_id/'.$id, 'The collection shortcut must target the selected record, including a folder, rather than its finding-aid root.');
+			checkDetailScripts($xpath->query('//nav[@class="tadl-record-nav"]/following-sibling::div[@class="tadl-collection-staff-actions"]')->length === 1, 'The staff button must sit beneath the collection navigation.');
+			checkDetailScripts($link->getAttribute('target') === '_blank' && $link->getAttribute('rel') === 'noopener noreferrer' && str_contains($link->textContent, '(opens in a new tab)'), 'Actual collection markup must preserve safe new-tab behavior and its accessible hint.');
+		}
+		if ($id === 42 && ($staff || (!$logged_in && $userclass === 1))) {
+			$header = $xpath->query('//header[contains(@class,"tadl-collection-record-header")]')->item(0);
+			$header->getElementsByTagName('h1')->item(0)->nodeValue = 'Synthetic Community History Collection: Oral Histories, Photographs, Diaries, Family Papers and Records of Regional Organizations';
+			$header->getElementsByTagName('h2')->item(0)->nodeValue = 'COLLECTION, SYNTHETIC.42';
+			$staff_shortcut_fixtures[$staff ? 'collection-staff' : 'collection-public'] = $document->saveHTML($header);
+		}
+	}
+}
+
 $cases = array();
 foreach (array(
 	array('name' => 'multiple objects and hierarchy', 'table' => 'ca_collections', 'objects' => 2, 'hierarchy' => true, 'mode' => 'only', 'collectionView' => 'hierarchy'),
@@ -265,7 +297,7 @@ foreach (array(
 	checkDetailScripts(!preg_match('~navTop|navLeftRight|detailNavBg|\{\{\{(?:previousLink|nextLink)\}\}\}~', $html), $case['name'].': collection detail still reserves record-navigation columns.');
 	$navigationDom = new DOMDocument(); $navigationDom->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 	$navigationXPath = new DOMXPath($navigationDom);
-	checkDetailScripts($navigationXPath->query('//header[contains(@class,"tadl-record-header")]/nav[@class="tadl-record-nav"]/a')->length === 3
+	checkDetailScripts($navigationXPath->query('//header[contains(@class,"tadl-record-header")]//nav[@class="tadl-record-nav"]/a')->length === 3
 		&& !str_contains($html, '/synthetic/results'), $case['name'].': collection heading must have Prev, Next and Browse, without Back.');
 	checkDetailScripts(str_contains($html, '<div class="row tadl-collection-detail">') && str_contains($html, "<div class='col-xs-12'>"), $case['name'].': collection content lost its full-width layout.');
 	preg_match_all('~<script\b[^>]*>(.*?)</script\s*>~is', $html, $scripts);
@@ -334,6 +366,8 @@ checkDetailScripts($status === 0, "Rendered detail JavaScript failed in Node.js:
 $nodeResult = json_decode($stdout, true, 512, JSON_THROW_ON_ERROR);
 if (($argv[1] ?? '') === '--finding-aid-fixture') {
 	print json_encode(['links' => $subunit_document->saveHTML($subunit_view->parentNode)], JSON_THROW_ON_ERROR);
+} elseif (($argv[1] ?? '') === '--staff-shortcut-fixtures') {
+	print json_encode($staff_shortcut_fixtures, JSON_THROW_ON_ERROR);
 } else {
 	echo json_encode(array('status' => 'passed', 'assertions' => $GLOBALS['detailScriptAssertions'] + $nodeResult['assertions'], 'templates' => 'actual collection detail; authority pages have authority_detail_test.php', 'dependencies' => 'synthetic view/model/config/jQuery boundaries; Node.js syntax and execution'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;
 }
