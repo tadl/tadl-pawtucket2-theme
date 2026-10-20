@@ -16,6 +16,7 @@ if (!function_exists('tadlAdvancedSearchTabs')) {
 			'collections' => _t('Collections'),
 			'people' => _t('People'),
 			'organizations' => _t('Organizations'),
+			'families' => _t('Families'),
 			'occurrences' => _t('Events'),
 			'places' => _t('Places')
 		);
