@@ -135,7 +135,7 @@ class BasePawtucketController {
 	public $view;
 	public $rendered;
 	function __construct(public $request, public $response) { $this->view = new AidView(); }
-	function render($path, $raw) { aidCheck($raw && $path === 'Details/finding_aid_binary.php', 'PDF must bypass page wrappers.'); $this->rendered = $path; }
+	function render($path, $raw) { aidCheck(($raw && $path === 'Details/finding_aid_binary.php') || (!$raw && $path === 'Details/finding_aid_html.php'), 'PDF must bypass wrappers; accessible HTML uses the shared shell.'); $this->rendered = $path; }
 }
 $directory = sys_get_temp_dir().'/tadl-aid-test-'.bin2hex(random_bytes(8));
 mkdir($directory.'/pawtucket', 0700, true);
@@ -449,3 +449,11 @@ if (($argv[1] ?? '') === '--viewer-fixture') {
 } else {
 	echo "Finding aid passed: {$GLOBALS['assertions']} assertions (".($autoload?'real Dompdf':'synthetic renderer').").\n";
 }
+
+$response = new AidResponse(); $text_controller = new CollectionFindingAidController(new AidRequest(), $response); $text_controller->Text();
+aidCheck($text_controller->rendered === 'Details/finding_aid_html.php' && $response->headers['Cache-Control'] === 'private, no-store', 'Accessible finding aid must recheck access and use private HTML.');
+$text_html = $text_controller->view->render('Details/finding_aid_html.php');
+$text_document = new DOMDocument(); $text_document->loadHTML($text_html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $text_xpath = new DOMXPath($text_document);
+aidCheck($text_xpath->query('//h1')->length === 1 && $text_xpath->query('//dl/dt')->length > 0 && $text_xpath->query('//ol/li/ol/li')->length > 0, 'HTML finding aids must expose headings, terms/values and the full nested archival hierarchy.');
+$response = new AidResponse(); (new CollectionFindingAidController(new AidRequest(['collection_id' => 999]), $response))->Text();
+aidCheck($response->status === 404, 'Unavailable HTML finding aids must remain unavailable.');

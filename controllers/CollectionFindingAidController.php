@@ -14,6 +14,16 @@ class CollectionFindingAidController extends BasePawtucketController {
 		$this->renderFindingAid(true);
 	}
 
+    /** Equivalent semantic HTML remains usable without a PDF viewer or PDF tagging support. */
+    public function Text() {
+        if (!$collection = $this->readableCollection()) { return; }
+        $this->response->addHeader('Cache-Control', 'private, no-store');
+        $this->response->addHeader('X-Robots-Tag', 'noindex, nofollow');
+        $this->view->setVar('finding_aid', tadlFindingAidData($this->request, $collection, Configuration::load(__DIR__.'/../conf/finding_aid.conf')));
+        $this->view->setVar('download_url', caNavUrl($this->request, '', 'CollectionFindingAid', 'Download', ['collection_id' => (int)$collection->getPrimaryKey()]));
+        $this->render('Details/finding_aid_html.php', false);
+    }
+
 	public function Viewer() {
 		// Native caMediaPanel.showPanel() loads read-only overlay markup by POST.
 		if (!$collection = $this->readableCollection(['GET', 'POST'])) { return; }
@@ -21,6 +31,7 @@ class CollectionFindingAidController extends BasePawtucketController {
 		$this->response->addHeader('X-Robots-Tag', 'noindex, nofollow');
 		$id = (int)$collection->getPrimaryKey();
 		$pdf_url = caNavUrl($this->request, '', 'CollectionFindingAid', 'View', ['collection_id' => $id]);
+		$text_url = caNavUrl($this->request, '', 'CollectionFindingAid', 'Text', ['collection_id' => $id]);
 		$download_url = caNavUrl($this->request, '', 'CollectionFindingAid', 'Download', ['collection_id' => $id]);
 		$title = tadlFindingAidValue($this->request, $collection, ['ca_collections.preferred_labels.name']) ?: _t('Finding aid');
 		$identifier = tadlFindingAidValue($this->request, $collection, ['ca_collections.idno']);
@@ -34,7 +45,7 @@ class CollectionFindingAidController extends BasePawtucketController {
 			$identifier_text = $identifier !== '' ? htmlspecialchars(' ('.$identifier.')', ENT_QUOTES, 'UTF-8') : '';
 			$viewer->setVar('controls', '<div class="objectInfo" title="'.$heading.$identifier_text.'"><span class="tadl-viewer-object-title">'.$heading.'</span>'
 				.($identifier_text !== '' ? '<span class="tadl-viewer-object-identifier">'.$identifier_text.'</span>' : '').'</div>'
-				.'<div class="download"><a href="'.htmlspecialchars($download_url, ENT_QUOTES, 'UTF-8').'" rel="nofollow">'.htmlspecialchars(_t('Download PDF'), ENT_QUOTES, 'UTF-8').'</a></div>');
+				.'<div class="download"><a href="'.htmlspecialchars($text_url, ENT_QUOTES, 'UTF-8').'" rel="nofollow">'.htmlspecialchars(_t('Read as text'), ENT_QUOTES, 'UTF-8').'</a> <a href="'.htmlspecialchars($download_url, ENT_QUOTES, 'UTF-8').'" rel="nofollow">'.htmlspecialchars(_t('Download PDF'), ENT_QUOTES, 'UTF-8').'</a></div>');
 			$this->response->addContent($viewer->render('viewerWrapper.php'));
 		} catch (Throwable $error) {
 			tadlLogExportFailure('finding_aid', ['collection_id' => $id, 'format' => 'viewer'], $error);
