@@ -45,13 +45,13 @@ class DetailScriptRequest {
 }
 class DetailScriptConfig {
     public function getAssoc($name) { return ['objects' => ['sortBy' => ['Identifier' => 'idno', 'Title' => 'name']]]; }
-	public function get($name) { return $name === 'do_not_display_collection_browser' && !$GLOBALS['detailScriptShowHierarchy']; }
+	public function get($name) { return $name === 'landing_page_collection_type' ? 'collection' : ($name === 'do_not_display_collection_browser' && !$GLOBALS['detailScriptShowHierarchy']); }
 }
 class DetailScriptItem {
 	private array $values;
 	public function __construct($objectCount, private array $templates = [], private int $id = 42, private string $type = 'collection') {
 		$this->values = array(
-			'collection_id' => $id, 'parent_id' => $GLOBALS['detailScriptParents'][$id] ?? null, 'type_id' => $type, 'access' => 1, 'deleted' => 0,
+			'collection_id' => $id, 'parent_id' => $GLOBALS['detailScriptParents'][$id] ?? null, 'type_id' => $type, 'access' => $GLOBALS['detailScriptCollectionAccess'][$id] ?? 1, 'deleted' => 0,
 			'entity_id' => 42,
 			'place_id' => 42,
 			'occurrence_id' => 42,
@@ -60,11 +60,15 @@ class DetailScriptItem {
 		);
 	}
 	public function getPrimaryKey() { return $this->id; }
+	public function tableName() { return 'ca_collections'; }
+	public function getTypeCode() { return $this->type; }
 	public function hasElement($code) { return !in_array($code, $GLOBALS['detailScriptMissingElements'] ?? [], true); }
 	public function load($id) {
 		$this->id = (int)$id;
+		$this->type = $GLOBALS['detailScriptCollectionTypes'][$this->id] ?? ($this->id === 42 ? 'collection' : 'container');
 		$this->values['collection_id'] = $this->id;
 		$this->values['parent_id'] = $GLOBALS['detailScriptParents'][$this->id] ?? null;
+		$this->values['access'] = $GLOBALS['detailScriptCollectionAccess'][$this->id] ?? 1;
 		return !in_array($this->id, $GLOBALS['detailScriptUnavailableCollections'] ?? [], true);
 	}
 	public function isReadable($request, $bundle = null) { return !in_array($bundle, $GLOBALS['detailScriptDeniedBundles'] ?? [], true); }
@@ -82,6 +86,7 @@ class DetailScriptItem {
 			checkDetailScripts(($options['checkAccess'] ?? null) === [1] && ($options['dontReturnDefault'] ?? null) === true, 'Selected-unit metadata must retain native access options and never invent default values.');
 		}
 		checkDetailScripts(($options['convertCodesToDisplayText'] ?? null) === true, 'Detail fields lost native display conversion.');
+		if ($template === '^ca_collections.preferred_labels.name') { return $GLOBALS['detailScriptCollectionLabels'][$this->id] ?? 'Synthetic collection '.$this->id; }
 		foreach ($this->templates as $code => $value) {
 			if (str_contains($template, $code)) { return $value; }
 		}
@@ -152,8 +157,23 @@ $subunit_view = $subunit_xpath->query('//div[@class="exportCollection"]/a')->ite
 checkDetailScripts($subunit_view && $subunit_view->getAttribute('href') === '/synthetic/CollectionFindingAid/View/collection_id/42' && $subunit_view->getAttribute('data-finding-aid-viewer') === '/synthetic/CollectionFindingAid/Viewer/collection_id/42', 'Folder links and their direct-PDF fallbacks must open the whole hierarchy root finding aid.');
 checkDetailScripts(str_contains($subunit_html, 'Selected folder description') && str_contains(str_replace('\\/', '/', $subunit_html), '/CollectionContents/Objects/collection_id/73/'), 'Resolving the aid root must not change the selected folder metadata or item scope.');
 $GLOBALS['detailScriptUnavailableCollections'] = [71];
-checkDetailScripts(!str_contains((new DetailScriptView(0, [], [], 73))->render('ca_collections'), 'exportCollection'), 'An unavailable ancestor must suppress the root finding-aid link instead of falling back to a partial aid.');
+checkDetailScripts(!str_contains((new DetailScriptView(0, [], [], 73, 'folder'))->render('ca_collections'), 'exportCollection'), 'An unavailable ancestor must suppress the root finding-aid link instead of falling back to a partial aid.');
 $GLOBALS['detailScriptUnavailableCollections'] = []; $GLOBALS['detailScriptParents'] = [];
+checkDetailScripts(!str_contains($html, 'Part of:'), 'A root without parents must not display a self-referencing Part of line.');
+$GLOBALS['detailScriptParents'] = [73 => 72, 72 => 42, 42 => 90, 90 => 91];
+$GLOBALS['detailScriptCollectionAccess'] = [90 => 0];
+$GLOBALS['detailScriptCollectionLabels'] = [42 => 'Synthetic root &amp; &lt;archive&gt;', 72 => 'Synthetic box', 90 => 'PRIVATE grouping', 91 => 'Ancestor above private grouping'];
+$public_root_html = (new DetailScriptView(0))->render('ca_collections');
+checkDetailScripts(!str_contains($public_root_html, 'Part of:') && str_contains($public_root_html, '/CollectionFindingAid/View/collection_id/42'), 'A public root beneath private administrative groups must omit Part of but retain its own finding aid.');
+$public_folder_html = (new DetailScriptView(0, [], [], 73, 'folder'))->render('ca_collections');
+$parent_document = new DOMDocument(); $parent_document->loadHTML($public_folder_html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $parent_xpath = new DOMXPath($parent_document);
+$parent_line = $parent_xpath->query('//div[@class="unit"][starts-with(normalize-space(.), "Part of:")]')->item(0);
+checkDetailScripts($parent_line && $parent_line->textContent === 'Part of: Synthetic root & <archive> > Synthetic box', 'A folder must display genuine ancestors in root-to-parent order with safely escaped names.');
+checkDetailScripts($parent_xpath->query('.//a', $parent_line)->length === 2 && $parent_xpath->query('.//a[@href="/synthetic/Detail/collections/73"]|.//archive', $parent_line)->length === 0 && !str_contains($public_folder_html, 'PRIVATE grouping') && !str_contains($public_folder_html, 'Ancestor above private grouping'), 'Part of must not link the current record, expose administrative groups or cross a hidden ancestor.');
+checkDetailScripts(str_contains($public_folder_html, '/CollectionFindingAid/View/collection_id/42'), 'Subfolders beneath a public root must retain its full finding aid despite hidden administrative ancestors.');
+$GLOBALS['detailScriptDeniedBundles'] = ['preferred_labels'];
+checkDetailScripts(!str_contains((new DetailScriptView(0, [], [], 73, 'folder'))->render('ca_collections'), 'Part of:'), 'Unreadable parent labels must not produce a Part of heading.');
+$GLOBALS['detailScriptDeniedBundles'] = []; $GLOBALS['detailScriptParents'] = []; $GLOBALS['detailScriptCollectionAccess'] = []; $GLOBALS['detailScriptCollectionLabels'] = [];
 checkDetailScripts(!str_contains($html, 'Download as PDF') && !str_contains($html, '_pdf_ca_collections_summary'), 'Collection still links to the generic summary export.');
 checkDetailScripts(str_contains($html, '<label>Description</label>Synthetic description') && str_contains($html, '<label>Dates</label>1930') && str_contains($html, '<label>Related places</label><a href="/synthetic/place">Synthetic place</a>'), 'Populated collection fields lost headings or native links.');
 $long_description = '<p>'.str_repeat('Synthetic collection description. ', 30).'</p>';

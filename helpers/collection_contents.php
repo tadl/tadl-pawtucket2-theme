@@ -13,6 +13,28 @@ function tadlCollectionContentsReadable($request, $collection, array $access) {
 			|| $collection->checkACLAccessForUser($request->user) >= __CA_ACL_READONLY_ACCESS__);
 }
 
+/** Stop at the configured base collection, or below hidden administrative groups. */
+function tadlCollectionContentsAncestry($request, $collection) {
+	$access = array_map('intval', (array)caGetUserAccessValues($request));
+	$root_type = (string)caGetCollectionsConfig()->get('landing_page_collection_type');
+	$nodes = [];
+	while (tadlCollectionContentsReadable($request, $collection, $access)) {
+		$id = (int)$collection->getPrimaryKey();
+		if (isset($nodes[$id])) { return []; }
+		$nodes[$id] = $collection;
+		if ($root_type !== '' && $collection->getTypeCode() === $root_type) { break; }
+		$parent_id = (int)$collection->get('parent_id');
+		if (!$parent_id) { break; }
+		if (!$collection->isReadable($request, 'hierarchy')) { return []; }
+		$parent = Datamodel::getInstance('ca_collections', false);
+		if (!$parent || !$parent->load($parent_id)) { return []; }
+		if (!tadlCollectionContentsReadable($request, $parent, $access)) { break; }
+		if (!$parent->isReadable($request, 'hierarchy')) { return []; }
+		$collection = $parent;
+	}
+	return array_reverse($nodes, true);
+}
+
 /** One scoped lookup per level/batch; never load thousands of object records. */
 function tadlCollectionContentsChildren($request, array $parents, array $access) {
 	if (!$parents || !$access) { return []; }

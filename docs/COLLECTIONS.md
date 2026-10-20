@@ -43,9 +43,13 @@ stack on phones. **View finding aid** uses sentence case, ordinary detail-link
 styling and a hover underline; `rel="nofollow"` remains. It opens the existing
 document viewer, with a direct PDF fallback.
 At every archival level, the viewer and direct-PDF fallback target the top-level
-collection's full finding aid. Native access checks apply to every ancestor;
-unavailable or restricted ancestry suppresses the link. The page's own metadata
-and item scope stay unchanged.
+public collection's full finding aid. The readable ancestor chain stops below
+private administrative groups, and at the configured `landing_page_collection_type`
+even when staff can read its administrative parents. Those groups neither appear
+in **Part of** nor hide the public collection's finding aid. **Part of** lists only genuine readable
+ancestors, never the selected record, and is omitted on public roots. Missing
+records, cycles and hierarchy-bundle restrictions fail closed. The page's own
+metadata and item scope stay unchanged.
 The title header has a right-aligned **Prev / Next / Browse collections** toolbar.
 Prev/Next use the visitor's native result context; absent neighbors are omitted.
 There is no Back button or reserved side column. Controls wrap below the title
@@ -113,6 +117,7 @@ Relevant settings in `conf/collections.conf`:
 
 | Setting | Current value / effect |
 | --- | --- |
+| `landing_page_collection_type` | `collection`; also defines the base level used for parent links and finding-aid scope. |
 | `detail_child_collection_sort` | `ca_collections.preferred_labels.name`; natural ordering is applied by the views. Explicit non-name sorts remain respected. |
 | `do_not_display_collection_browser` | `0`; `1` hides the hierarchy browser and its switch. |
 | `browser_closed` | `0`; controls initial browser visibility within hierarchy mode. |

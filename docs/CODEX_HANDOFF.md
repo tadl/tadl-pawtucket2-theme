@@ -398,11 +398,18 @@ missing panel follow a direct inline-PDF link. Links use `nofollow`; PDF and vie
 responses retain private/no-store and noindex headers. The viewer validates root
 access, then PDF.js requests the checked PDF
 endpoint once; it does not create a representation or save a shared export.
-At any hierarchy level, `tadlFindingAidRoot()` resolves the top-level collection
-for both the viewer URL and direct PDF fallback. It follows only the parent chain
-with independent native models and record/type/source/bundle/Pawtucket ACL checks;
-hidden/deleted/missing ancestors, hierarchy restrictions and cycles omit the link.
-The selected detail record, metadata and item scope remain unchanged. Explicit
+At any hierarchy level, `tadlCollectionContentsAncestry()` resolves the top-level
+public collection for both the viewer URL and direct PDF fallback. The same
+checked chain supplies **Part of**, excluding the selected record; public roots
+have no self-referencing breadcrumb. The configured `landing_page_collection_type`
+is the base-collection boundary even when staff can read higher groups.
+Hidden/deleted administrative groups above
+a public collection stop traversal without hiding its finding aid or exposing
+those groups. Independent native models retain record/type/source/bundle/Pawtucket
+ACL checks. Missing ancestors, hierarchy restrictions and cycles fail closed.
+`tadlFindingAidRoot()` uses this shared boundary; the detail view computes the
+chain once for parent links and finding-aid URLs. The selected detail record,
+metadata and item scope remain unchanged. Explicit
 export endpoints still honor the supplied root ID. Helper and actual-template
 regressions cover nested links and inaccessible/broken ancestry.
 The viewer markup accepts GET and POST because native `caMediaPanel.showPanel()`

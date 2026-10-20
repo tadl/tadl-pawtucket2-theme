@@ -1,4 +1,6 @@
 <?php
+require_once(__DIR__.'/collection_contents.php');
+
 /** Public finding aids never bypass native record, type, source or bundle access. */
 function tadlFindingAidReadable($request, $record) {
 	$access = array_map('intval', (array)caGetUserAccessValues($request));
@@ -9,21 +11,10 @@ function tadlFindingAidReadable($request, $record) {
 			|| $record->checkACLAccessForUser($request->user) >= __CA_ACL_READONLY_ACCESS__);
 }
 
-/** Resolve the full aid without crossing a hidden/broken ancestor or mutating the detail record. */
+/** The public root may sit below private administrative grouping records. */
 function tadlFindingAidRoot($request, $collection) {
-	$visited = [];
-	while (tadlFindingAidReadable($request, $collection)) {
-		$id = (int)$collection->getPrimaryKey();
-		if (isset($visited[$id])) { return null; }
-		$visited[$id] = true;
-		$parent_id = (int)$collection->get('parent_id');
-		if (!$parent_id) { return $collection; }
-		if (!$collection->isReadable($request, 'hierarchy')) { return null; }
-		$parent = Datamodel::getInstance('ca_collections', false);
-		if (!$parent || !$parent->load($parent_id) || !$parent->isReadable($request, 'hierarchy')) { return null; }
-		$collection = $parent;
-	}
-	return null;
+	$ancestry = tadlCollectionContentsAncestry($request, $collection);
+	return $ancestry ? reset($ancestry) : null;
 }
 
 /** Catalog text becomes escaped text in the PDF, never executable HTML. */

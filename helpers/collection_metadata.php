@@ -1,5 +1,19 @@
 <?php
 require_once(__DIR__.'/../views/Details/detail_field_helpers.php');
+require_once(__DIR__.'/finding_aid.php');
+
+/** "Part of" names real readable ancestors only, never the selected collection. */
+function tadlCollectionParentLinks($request, array $ancestry, $selected_id) {
+	$links = [];
+	foreach ($ancestry as $id => $ancestor) {
+		if ((int)$id === (int)$selected_id) { continue; }
+		$label = tadlFindingAidValue($request, $ancestor, ['ca_collections.preferred_labels.name']);
+		if ($label === '') { continue; }
+		$url = caNavUrl($request, '', 'Detail', 'collections/'.(int)$id);
+		$links[] = '<a href="'.htmlspecialchars($url, ENT_QUOTES, 'UTF-8').'">'.htmlspecialchars($label, ENT_QUOTES, 'UTF-8').'</a>';
+	}
+	return join(' &gt; ', $links);
+}
 
 /** Read only the selected archival unit's configured descriptive fields. */
 function tadlCollectionMetadataField($request, $item, $label, $bundles, $repeat = false) {

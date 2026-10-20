@@ -128,9 +128,12 @@
 			</header>
 			<div class="tadl-collection-overview">
 				<div class="tadl-collection-heading">
-					{{{<ifdef code="ca_collections.parent_id"><div class="unit">Part of: <unit relativeTo="ca_collections.hierarchy" delimiter=" &gt; "><l>^ca_collections.preferred_labels.name</l></unit></div></ifdef>}}}
 <?php
-					if ($vn_pdf_enabled && ($finding_aid_root = tadlFindingAidRoot($this->request, $t_item))) {
+					$collection_ancestry = tadlCollectionContentsAncestry($this->request, $t_item);
+					$parent_links = tadlCollectionParentLinks($this->request, $collection_ancestry, $t_item->getPrimaryKey());
+					if ($parent_links !== '') { print '<div class="unit">'.htmlspecialchars(_t('Part of:'), ENT_QUOTES, 'UTF-8').' '.$parent_links.'</div>'; }
+					if ($vn_pdf_enabled && $collection_ancestry) {
+						$finding_aid_root = reset($collection_ancestry);
 						$finding_aid_id = (int)$finding_aid_root->getPrimaryKey();
 						$finding_aid_view_url = caNavUrl($this->request, '', 'CollectionFindingAid', 'View', ['collection_id' => $finding_aid_id]);
 						$finding_aid_viewer_url = caNavUrl($this->request, '', 'CollectionFindingAid', 'Viewer', ['collection_id' => $finding_aid_id]);

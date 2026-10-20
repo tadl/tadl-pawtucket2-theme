@@ -46,9 +46,14 @@ inferred from database record counts. Components without separately catalogued
 objects or media still appear.
 
 Collection-page links resolve the top-level collection through readable ancestors,
-so series, boxes and folders open the same complete finding aid. A private,
-deleted, unreadable or missing ancestor, restricted hierarchy or cycle suppresses
-the link rather than exposing an ancestor or offering a partial aid. Resolution
+stopping at the `landing_page_collection_type` configured in `conf/collections.conf`
+(`collection` by default), so series, boxes and folders open the same complete
+finding aid. Staff access to higher administrative groups does not change this
+base collection. Private, deleted
+or otherwise unreadable administrative ancestors mark the public boundary:
+resolution stops below them without hiding the public collection's finding aid
+or exposing/skipping across the hidden groups. Missing ancestors, restricted
+hierarchy bundles and cycles suppress the link. Resolution
 loads only the parent chain and leaves the selected page's metadata/items unchanged.
 Explicit export URLs still use their supplied `collection_id` as the export root.
 The export root's metadata appears once in **About this collection**; descendants
