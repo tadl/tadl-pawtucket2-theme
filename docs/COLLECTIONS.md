@@ -73,6 +73,8 @@ Ordinary links, reloads and browser Back retain collection context. Paging,
 sorting and Tiles/List stay on `/Detail/collections/<id>` rather than switching
 the visitor to a standalone Search page. The page loads its results through
 `/CollectionContents/Objects/collection_id/<id>`.
+The AJAX response activates its filtered native result context as well as saving
+the ordered IDs, so object **Prev / Next** follows those collection results.
 
 | Parameter | Meaning |
 | --- | --- |

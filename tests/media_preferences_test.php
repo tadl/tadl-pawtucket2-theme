@@ -71,6 +71,7 @@ class Session {
 }
 class TestRequest {
     public array $access = [1];
+    public bool $ajax = false;
     public int $userID = 0;
     public TestConfig $config;
     function __construct(public array $params = [], public string $controller = 'Browse', public string $action = 'objects', public array $cookies = []) { $this->config = new TestConfig(['maximum_find_result_list_values' => 1000]); }
@@ -90,7 +91,7 @@ class TestRequest {
     function getModulePath() { return ''; }
     function getActionExtra() { return ''; }
     function getBaseUrlPath() { return ''; }
-    function isAjax() { return false; }
+    function isAjax() { return $this->ajax; }
 }
 function testMediaRequest($mode, $params = [], $controller = 'Browse', $action = 'objects') {
     return new TestRequest($params, $controller, $action, ['tadlMediaPreference' => $mode]);
@@ -127,6 +128,7 @@ class TestMediaUrl {
 class_alias(TestMediaUrl::class, 'CA\\MediaUrl');
 class ResultContext {
     static public array $saved = [];
+    static public array $lastFind = [];
     private array $values = [];
     function __construct($request, private string $table, private string $type, private ?string $block = null) {}
     function setResultList($ids) { $this->values['ids'] = $ids; $this->setSearchHistory(count($ids)); }
@@ -134,6 +136,7 @@ class ResultContext {
     function setParameter($key, $value) { $this->values[$key] = $value; }
     function setItemsPerPage($count) { $this->values['per_page'] = $count; }
     function setCurrentView($view) { $this->values['view'] = $view; }
+    function setAsLastFind($setAction = true) { self::$lastFind[$this->table] = [$this->type, $this->block, $setAction]; }
     function saveContext() { self::$saved[$this->table.':'.$this->type.':'.$this->block] = $this->values; }
 }
 class TestConfig {
@@ -744,6 +747,30 @@ testAssert(in_array(1101, $windowIDs, true), 'Detail context window does not inc
 testAssert(ResultContext::$saved['ca_objects:browse:']['count'] === 2400, 'Bounded context replaced full result count with window length.');
 testAssert(ResultContext::$saved['ca_objects:browse:']['media'] === null, 'Saved result context retained a URL preference.');
 testAssert($windowResult->currentIndex() === -1, 'Saving detail context did not reset the result cursor.');
+// AJAX collection loads bypass native setAsLastFind(); saving IDs alone leaves
+// object details using no context, or a stale unrelated search/browse context.
+foreach (['CollectionContents', 'FamilyContents', 'PlaceContents', 'Search', 'Browse'] as $controller) {
+    foreach ([false, true] as $ajax) {
+        $request = testMediaRequest('all', [], $controller, 'objects');
+        $request->ajax = $ajax;
+        ResultContext::$lastFind['ca_objects'] = ['browse', 'stale-results', true];
+        $orderedIDs = [601, 603, 602];
+        $result = new SearchResult('ca_objects', $orderedIDs);
+        $findType = $controller === 'Browse' ? 'browse' : 'search';
+        tadlMediaResultContext(new TestView($request, ['start'=>0]), $result, $findType, 'objects');
+        testAssert(ResultContext::$lastFind['ca_objects'] === ($ajax && $findType === 'search' ? ['search', 'objects', false] : ['browse', 'stale-results', true]), $controller.': AJAX searches must activate their exact type/subtype without replacing ordinary native action tracking.');
+        testAssert(ResultContext::$saved['ca_objects:'.$findType.':objects']['ids'] === $orderedIDs, $controller.': activating navigation must retain the displayed result order.');
+    }
+}
+$request->ajax = true;
+$lastFind = ResultContext::$lastFind;
+tadlMediaResultContext(new TestView($request, []), $result, 'multisearch', 'objects');
+testAssert(ResultContext::$lastFind === $lastFind, 'Copying result IDs to a multisearch context must not replace the active full-results context.');
+foreach (['dontSetFind', 'getFacet'] as $parameter) {
+    $request->params = [$parameter=>1];
+    tadlMediaResultContext(new TestView($request, []), $result, 'search', 'objects');
+    testAssert(ResultContext::$lastFind === $lastFind, 'Explicit native navigation suppression must remain effective for '.$parameter.'.');
+}
 // Logical name/identifier order can differ completely from database ID order.
 foreach (['people' => 'ca_entities', 'organizations' => 'ca_entities', 'places' => 'ca_places', 'occurrences' => 'ca_occurrences'] as $route => $table) {
     $orderedIDs = [13, 8, 2, 11];

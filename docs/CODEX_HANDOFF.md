@@ -306,6 +306,13 @@ metadata column above the title, leaving the photo at the top of the body region
 Its tooltips and ARIA labels identify the previous/next object. Direct object
 visits without result context omit the empty toolbar. Other detail types retain
 their Browse destination.
+AJAX result loads explicitly activate their filtered native context before saving
+it: upstream Search skips `setAsLastFind()` on AJAX. Without
+this, clicking a collection tile could leave object Prev/Next absent or following
+an earlier unrelated result set. The theme activates the same type/subtype it
+saves without adopting the AJAX endpoint's action. Native Browse action tracking
+and explicit `dontSetFind`/facet suppression remain intact. Copying IDs to a
+multisearch context does not replace the active full-results context.
 
 Verification: portable navigation/menu/default-map checks plus the actual native
 configuration parser; media eligibility/context, authority, document-text,

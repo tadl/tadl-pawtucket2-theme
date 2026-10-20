@@ -73,6 +73,12 @@ function tadlMediaResultContext($view, $result, $findType, $block = null) {
 	if (in_array($view->getVar('view'), ['images', 'list', 'tiles'], true) && method_exists($context, 'setCurrentView')) {
 		$context->setCurrentView($view->getVar('view'));
 	}
+	// Native Search skips this for AJAX. Detail navigation must use the
+	// filtered results just displayed, including collection/authority previews.
+	if ($view->request->isAjax() && in_array($findType, ['search', 'search_advanced'], true)
+		&& !$view->request->getParameter('dontSetFind', pInteger) && !$view->request->getParameter('getFacet', pInteger)) {
+		$context->setAsLastFind(false);
+	}
 	$context->saveContext();
 	$result->seek(0);
 }
