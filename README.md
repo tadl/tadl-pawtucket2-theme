@@ -18,7 +18,7 @@ This repository contains the complete `tadl` theme. Install it in an existing Pa
 | Finding aids | View or download a descriptive collection PDF with its complete readable hierarchy and each level's recorded extent, description, dates, creators, and other public metadata. Individually catalogued objects are not required. |
 | Researcher accounts | Native login, profiles, password reset, lightboxes, and sharing, plus staff-only shortcuts to objects and archival units in Providence. Anonymous visitors see no login link. |
 | Editable FAQ | Publish categorized questions and rich-text answers through Providence Site Pages, without redeploying the theme for content changes. |
-| Thumbnail focus | Filled image crops respect Providence's **Set center** setting. Grid cards reveal the full image on hover or keyboard focus. Optional local face detection supplies suggestions where staff have not chosen a center. |
+| Thumbnail focus | Filled image crops respect Providence's **Set center** setting. Optional local face detection supplies suggestions where staff have not chosen a center. |
 | Contact and recovery | A contact form with named Reply-To addresses and distinct subject references, optional Cloudflare Turnstile, and helpful error pages with search and browse links. |
 
 The shared interface includes keyboard navigation, visible focus, reduced-motion support, responsive reflow, and accessible alternatives to dragging lightbox items. See the [accessibility guide](docs/ACCESSIBILITY.md) for coverage and remaining manual checks; installing the theme does not establish whole-site WCAG conformance.

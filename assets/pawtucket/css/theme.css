@@ -3327,7 +3327,6 @@ div.tadl-finding-aid-controls .close {
 }
 
 .tadl-results-grid > .bResultItemCol {
-    position: relative;
     float: none;
     width: auto;
     min-width: 0;
@@ -3438,40 +3437,6 @@ div.tadl-finding-aid-controls .close {
 
 .bResultItem .bResultItemImgPlaceholder {
     min-height: 0;
-}
-
-.bResultItem.tadl-thumbnail-preview-active {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 100;
-    width: 100%;
-    height: auto;
-    transform: none;
-}
-
-.tadl-thumbnail-preview-active .bResultItemContent {
-    height: auto;
-}
-
-.tadl-thumbnail-preview-active .bResultItemImg {
-    position: relative;
-    transition: height 220ms ease;
-}
-
-.bResultItem img.tadl-thumbnail-preview-image {
-    position: absolute;
-    inset: 0;
-    object-fit: contain;
-    object-position: center;
-    background: #f4f6f8;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 180ms ease;
-}
-
-.bResultItem.tadl-thumbnail-preview-open img.tadl-thumbnail-preview-image {
-    opacity: 1;
 }
 
 .bResultItem .bResultItemText {

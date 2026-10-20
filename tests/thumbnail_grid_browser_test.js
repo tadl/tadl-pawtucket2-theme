@@ -1,4 +1,4 @@
-/* Actual grid markup and thumbnail scripts; synthetic images and local assets only. */
+/* Actual grid markup and focal-point script; synthetic images and local assets only. */
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -19,7 +19,7 @@ const formatCards = fixture('representation_formats_test.php', '--fixtures');
 const server = http.createServer((request, response) => {
     const url = new URL(request.url, 'http://localhost');
     if (['/wide', '/sidebar', '/list', '/formats', '/formats-list'].includes(url.pathname)) {
-        const scripts = ['thumbnail-focus', 'thumbnail-preview'].map(name => `<script src="/themes/tadl/assets/pawtucket/js/${name}.js"></script>`).join('');
+        const scripts = '<script src="/themes/tadl/assets/pawtucket/js/thumbnail-focus.js"></script>';
         const header = shell.header.replace('</head>', scripts + '</head>');
         const tiles = '<section class="tadl-authority-items"><h2>Related items</h2><div class="row">' + cards.tiles + '</div></section>';
         const content = url.pathname === '/formats' ? formatCards.tiles : url.pathname === '/formats-list' ? formatCards.list
@@ -27,7 +27,7 @@ const server = http.createServer((request, response) => {
             ? '<div class="tadl-authority-layout">' + tiles + '<aside class="tadl-authority-sidebar"><h2>Record information</h2><p>Synthetic metadata.</p></aside></div>'
             : tiles.replace(' class="tadl-authority-items"', '');
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
-        response.end(header + '<h1>Synthetic thumbnail previews</h1>' + content + shell.footer);
+        response.end(header + '<h1>Synthetic thumbnail grid</h1>' + content + shell.footer);
         return;
     }
     if (['/portrait.svg', '/landscape.svg', '/tall.svg'].includes(url.pathname)) {
@@ -53,20 +53,15 @@ const server = http.createServer((request, response) => {
     response.statusCode = 404; response.end('Synthetic resource not found');
 });
 let browser;
-async function closed(card) { await card.evaluate(node => new Promise((resolve, reject) => {
-    if (!node.classList.contains('tadl-thumbnail-preview-active')) { resolve(); return; }
-    const timer = setTimeout(() => { observer.disconnect(); reject(new Error('Thumbnail preview did not close.')); }, 5000);
-    const observer = new MutationObserver(() => { if (!node.classList.contains('tadl-thumbnail-preview-active')) { clearTimeout(timer); observer.disconnect(); resolve(); } });
-    observer.observe(node, {attributes:true, attributeFilter:['class']});
-})); }
-async function expanded(page, card) {
-    await page.waitForFunction(id => {
-        const node = document.getElementById(id), box = node.querySelector('.bResultItemImg'), image = box.querySelector('img');
-        const height = Math.max(box.clientWidth / 1.5, Math.min(box.clientWidth * image.naturalHeight / image.naturalWidth, innerHeight * .75));
-        const preview = node.querySelector('.tadl-thumbnail-preview-image');
-        return node.classList.contains('tadl-thumbnail-preview-open') && preview && preview.complete
-            && Math.abs(box.getBoundingClientRect().height - height) < 1 && getComputedStyle(preview).opacity === '1';
-    }, await card.getAttribute('id'));
+async function fixedCrop(card) {
+    const box = card.locator('.bResultItemImg'), before = await box.boundingBox();
+    await box.hover();
+    await card.locator('.bResultItemImg a').focus();
+    const after = await box.boundingBox();
+    assert(Math.abs(after.height - before.height) < 1 && Math.abs(after.width / after.height - 1.5) < .01, 'Hover/focus must keep the 3:2 crop.');
+    assert.equal(await card.locator('.bResultItemImg img').count(), 1, 'Hover/focus must not add a full-image layer.');
+    assert.equal(await card.locator('img').evaluate(node => getComputedStyle(node).objectFit), 'cover');
+    assert.notEqual(await card.evaluate(node => getComputedStyle(node).position), 'absolute', 'The card must remain in the grid.');
 }
 (async () => {
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -81,69 +76,38 @@ async function expanded(page, card) {
         for (const name of ['wide', 'sidebar']) {
             await page.goto(origin + '/' + name); await page.mouse.move(1, 1);
             await page.waitForFunction(() => document.querySelector('#row100 img').naturalWidth > 0);
-            const card = page.locator('#row100'), box = card.locator('.bResultItemImg');
-            const base = await box.boundingBox();
-            assert(Math.abs(base.width / base.height - 1.5) < .01);
+            const card = page.locator('#row100');
             const nextRow = await page.locator('#row104').evaluate(node => node.getBoundingClientRect().top + scrollY);
             const links = await card.locator('a').count();
-            await box.hover(); await expanded(page, card);
-            assert((await box.boundingBox()).height > base.height, 'Portrait preview must expand downward.');
-            const fullBox = await box.boundingBox();
-            await page.mouse.move(fullBox.x + 20, fullBox.y + fullBox.height - 10);
-            assert((await card.getAttribute('class')).includes('tadl-thumbnail-preview-open'), 'Moving onto the revealed image must keep the preview open.');
-            assert.equal(await page.locator('#row104').evaluate(node => node.getBoundingClientRect().top + scrollY), nextRow, 'Expanded previews must not move the grid rows.');
-            assert.equal(await card.locator('a').count(), links, 'Preview must retain original links without duplicate controls.');
-            assert.equal(await card.locator('.tadl-thumbnail-preview-image').getAttribute('aria-hidden'), 'true');
-            assert.equal(await card.locator('.tadl-thumbnail-preview-image').getAttribute('src'), await card.locator('img:not(.tadl-thumbnail-preview-image)').evaluate(node => node.currentSrc), 'Preview must reuse the selected derivative.');
-            assert.equal(await card.locator('.tadl-thumbnail-preview-image').evaluate(node => getComputedStyle(node).objectFit), 'contain');
+            await fixedCrop(card);
+            assert.equal(await page.locator('#row104').evaluate(node => node.getBoundingClientRect().top + scrollY), nextRow, 'Hover/focus must not move the grid rows.');
+            assert.equal(await card.locator('a').count(), links, 'Native links must remain intact.');
             if (process.env.TADL_A11Y_ARTIFACT_DIR) {
                 fs.mkdirSync(process.env.TADL_A11Y_ARTIFACT_DIR, {recursive:true});
-                await page.screenshot({path:path.join(process.env.TADL_A11Y_ARTIFACT_DIR, `thumbnail-preview-${name}-${width}.png`)});
+                await page.screenshot({path:path.join(process.env.TADL_A11Y_ARTIFACT_DIR, `thumbnail-grid-${name}-${width}.png`)});
             }
+            await fixedCrop(page.locator('#row103'));
+            await fixedCrop(page.locator('#row104'));
+            const placeholder = page.locator('#row102 .bResultItemImg');
+            await placeholder.hover();
+            const bounds = await placeholder.boundingBox();
+            assert(Math.abs(bounds.width / bounds.height - 1.5) < .01, 'Placeholders retain the grid aspect ratio.');
             await page.mouse.move(1, 1);
-            assert(await box.evaluate(node => node.getAnimations().some(animation => animation.effect.getTiming().duration > 0)), 'Contraction should animate.');
-            await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-            await page.mouse.move(base.x + 20, base.y + 20); await expanded(page, card);
-            await page.mouse.move(1, 1);
-            await closed(card);
-            assert(Math.abs((await box.boundingBox()).height - base.height) < 1, 'Leaving must restore the normal crop.');
-            assert(await card.evaluate(node => !node.style.minHeight && !node.parentElement.style.height && !node.querySelector('.bResultItemImg').style.height), 'Closing must release temporary layout dimensions.');
-            await box.hover(); await expanded(page, card); await page.keyboard.press('Escape'); await closed(card);
-            assert(!(await card.getAttribute('class')).includes('tadl-thumbnail-preview-open'));
-            await page.mouse.move(1, 1);
-            await card.locator('.bResultItemImg a').focus(); await expanded(page, card);
-            await page.locator('.tadl-logo-link').focus(); await closed(card);
-            const wide = page.locator('#row103'); await wide.locator('.bResultItemImg').hover(); await expanded(page, wide);
-            assert(Math.abs((await wide.locator('.bResultItemImg').boundingBox()).width / (await wide.locator('.bResultItemImg').boundingBox()).height - 1.5) < .01, 'Landscape preview can reveal the full image without enlarging the box.');
-            await page.mouse.move(1, 1); await closed(wide);
-            const tall = page.locator('#row104'); await tall.locator('.bResultItemImg').hover(); await expanded(page, tall);
-            assert((await tall.locator('.bResultItemImg').boundingBox()).height <= 751, 'Very tall previews must fit their full image inside a viewport-bounded box.');
-            await page.mouse.move(1, 1); await closed(tall);
-            await page.locator('#row102 .bResultItemImg').hover();
-            assert.equal(await page.locator('#row102.tadl-thumbnail-preview-active').count(), 0, 'Placeholder cards must not expand.');
-            console.log(`${name} ${width}px: hover/leave animation, full portrait/landscape, stable grid, focus/Escape and placeholders passed`);
+            console.log(`${name} ${width}px: fixed portrait/landscape/tall crops, stable grid, focus and placeholders passed`);
         }
     }
     await page.goto(origin + '/wide'); await page.mouse.move(1, 1); await page.keyboard.press('Tab');
-    await page.locator('#row100 .bResultItemImg a').focus(); await expanded(page, page.locator('#row100'));
-    await page.setViewportSize({width:1024, height:800}); await expanded(page, page.locator('#row100'));
-    await page.locator('.tadl-logo-link').focus(); await closed(page.locator('#row100'));
+    await page.setViewportSize({width:1024, height:800}); await fixedCrop(page.locator('#row100'));
     await page.evaluate(html => {
         const row = document.createElement('div'); row.id = 'ajax-results'; row.innerHTML = html.replace(/id='row/g, "id='ajax-row"); document.querySelector('#main').append(row);
     }, cards.tiles);
-    await page.locator('#ajax-row100 .bResultItemImg').hover(); await expanded(page, page.locator('#ajax-row100'));
-    await page.locator('#ajax-results').evaluate(node => { window.syntheticRemovedResults = node; node.remove(); });
-    await page.mouse.move(1, 1);
-    await page.evaluate(() => { document.querySelector('#main').append(window.syntheticRemovedResults); delete window.syntheticRemovedResults; });
-    await page.locator('#ajax-row100 .bResultItemImg a').focus(); await expanded(page, page.locator('#ajax-row100'));
-    await page.locator('.tadl-logo-link').focus(); await closed(page.locator('#ajax-row100'));
+    await fixedCrop(page.locator('#ajax-row100'));
     await page.locator('#ajax-results').evaluate(node => node.remove());
     await page.emulateMedia({reducedMotion:'reduce'}); await page.mouse.move(1, 1);
-    await page.locator('#row100 .bResultItemImg').hover(); await expanded(page, page.locator('#row100'));
-    assert(await page.locator('#row100 .bResultItemImg').evaluate(node => node.getAnimations().every(animation => animation.effect.getTiming().duration < 1)), 'Reduced motion must disable expansion animation.');
-    await page.mouse.move(1, 1); await closed(page.locator('#row100'));
+    await fixedCrop(page.locator('#row100'));
     await page.goto(origin + '/list'); await page.locator('.bResultListItemImg').first().hover();
-    assert.equal(await page.locator('.tadl-thumbnail-preview-active').count(), 0, 'List view must remain unchanged.');
+    const listBox = await page.locator('.bResultListItemImg').first().boundingBox();
+    assert.equal(listBox.width, 112); assert.equal(listBox.height, 88, 'List view dimensions must remain unchanged.');
     for (const width of [320, 390, 768, 1280, 1600]) {
         await page.setViewportSize({width, height:1000});
         for (const name of ['formats', 'formats-list']) {
@@ -170,17 +134,16 @@ async function expanded(page, card) {
         }
     }
     await page.goto(origin + '/formats');
-    await page.locator('#row1 .bResultItemImg').hover(); await expanded(page, page.locator('#row1'));
-    assert.equal(await page.locator('#row1 .tadl-representation-format').count(), 6, 'Expanded previews must retain their format tags.');
-    await page.mouse.move(1, 1); await closed(page.locator('#row1'));
-    console.log('Collection formats: square black/white tags, wrapping, metadata-only items, axe and hover previews passed at 320–1600px.');
+    await fixedCrop(page.locator('#row1'));
+    assert.equal(await page.locator('#row1 .tadl-representation-format').count(), 6, 'Hovered cards must retain their format tags.');
+    console.log('Collection formats: square black/white tags, wrapping, metadata-only items and axe passed at 320–1600px.');
     const touch = await browser.newContext({viewport:{width:390,height:844}, isMobile:true, hasTouch:true});
     await touch.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
     const touchPage = await touch.newPage(); await touchPage.goto(origin + '/wide');
     await touchPage.locator('#row100 .bResultItemImg a').tap();
     await touchPage.waitForURL(origin + '/Detail/objects/100');
-    assert.deepEqual(errors, [], 'Thumbnail preview browser errors.');
-    console.log('Resize, AJAX insertion/removal, reduced motion, List view and direct touch navigation passed.');
+    assert.deepEqual(errors, [], 'Thumbnail grid browser errors.');
+    console.log('Resize, AJAX insertion, reduced motion, List view and direct touch navigation passed.');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
     if (browser) await browser.close(); server.close();
 });

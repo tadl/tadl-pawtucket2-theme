@@ -743,7 +743,7 @@ below retain implementation details and historical verification evidence.
   columns in the narrower authority layout at 992–1199px.
   Shared tile image boxes now keep a 3:2 aspect ratio as cards widen, replacing
   the fixed 210px height that made full-width grids much wider than sidebar
-  previews. The image area cannot shrink to accommodate long titles; collapsed cards and
+  previews. The image area cannot shrink to accommodate long titles; hovered cards and
   placeholders retain its proportions. List thumbnail dimensions are unchanged.
   Native `object-fit: cover`, representation selection and focal metadata remain
   intact. Normalized manual points/face boxes and the existing ResizeObserver
@@ -754,23 +754,15 @@ below retain implementation details and historical verification evidence.
   full-width/sidebar/List layouts at 320, 390, 768, 1024, 1280 and 1600px, including
   hover, placeholders, equal row heights, manual/group focus and resize/AJAX updates.
   No production deployment or detection run was performed.
-- Grid cards now have a downward full-image preview on mouse hover and visible
-  keyboard focus. `thumbnail-preview.js` keeps the original slot height while
-  floating the actual card, animates image height and restores inline dimensions
-  on leave/blur. Escape dismisses the preview while the trigger remains active.
-  A decorative clone of the already selected derivative fades over the cover crop
-  using `contain`; normal focal-point cover behavior resumes on contraction.
-  Very tall previews are capped at 75vh. Placeholder/List cards and direct touch
-  links retain their usual behavior, and reduced motion disables the animation.
-  Width/viewport resize, rapid re-entry, AJAX insertion and detached-card cleanup
-  are handled. Deploy the new asset, `conf/assets.conf` and CSS together; no face
-  cache rebuild is required. `tests/thumbnail_preview_browser_test.js` exercises
-  actual grid markup, portrait/landscape/tall/placeholder media, stable following
-  rows, animation, keyboard/Escape, resize/AJAX and touch behavior using only local
-  synthetic assets. CI runs it alongside the accessibility browser suite.
-  All 36 portable suites and the dedicated browser checks passed, with changed-file
-  PHP/JavaScript syntax and whitespace checks. No production deployment or face
-  detection run was performed.
+- The experimental expanding hover/focus preview from `3b29189` was removed at
+  the user's request. Grid cards retain the earlier subtle hover lift/shadow and
+  fixed 3:2 cover crops, with no floating full-image layer. The preview script,
+  asset registration and expansion CSS are removed; focal points, face detection,
+  format tags and native record links remain unchanged. No face-cache rebuild is
+  needed. `tests/thumbnail_grid_browser_test.js` retains actual grid, format-tag,
+  responsive, focus, AJAX and direct touch checks using only local synthetic assets.
+  CI runs it alongside the accessibility browser suite. No production deployment
+  or face detection run was performed.
 - Collection item Tiles/List replace the object identifier line above the title
   with square white-on-black original-format tags. The collection AJAX context
   guard keeps ordinary search/browse identifiers unchanged. Tags are a labeled,
@@ -786,7 +778,7 @@ below retain implementation details and historical verification evidence.
   `tests/representation_formats_test.php` covers actual SQLite queries, private
   pairs, metadata permissions, object/representation restrictions, batch bounds,
   normalization, Back scope and both rendered result templates. The thumbnail
-  browser suite adds tag wrapping/style, axe and preview preservation at 320,
+  browser suite adds tag wrapping/style, axe and fixed thumbnail geometry at 320,
   390, 768, 1280 and 1600px. No production deployment was performed.
 - Object, collection, person, organization, place and event Detail pages use
   `tadlDetailNavigation()` beside their headings: native context **Prev / Next**
