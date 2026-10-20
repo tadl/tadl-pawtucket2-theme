@@ -125,6 +125,11 @@ The 43 PHP suites include bounded-size and cookie tests; the new browser suite
 checks 320–1600px layout, automatic changes/no-script GET, paging, mode/view
 persistence and All fallback.
 
+Detail Prev/Next links now have matching native hover tooltips and descriptive
+ARIA labels for their context: collection, object, person, organization, family,
+place or event. Unknown authority types use record. Native destinations and
+visible labels remain intact; no additional catalogue lookups are needed.
+
 ## Completed work and useful commits
 
 | Commit | Result |

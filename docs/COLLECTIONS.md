@@ -58,6 +58,8 @@ records, cycles and hierarchy-bundle restrictions fail closed. The page's own
 metadata and item scope stay unchanged.
 The title header has a right-aligned **Prev / Next / Browse collections** toolbar.
 Prev/Next use the visitor's native result context; absent neighbors are omitted.
+Their hover tooltips and screen-reader labels say **Go to previous collection**
+and **Go to next collection**, distinguishing them from item pagination.
 There is no Back button or reserved side column. Controls wrap below the title
 when space is limited, and browser Back remains available.
 Logged-in full-access staff also get **View in Providence** beneath that toolbar.

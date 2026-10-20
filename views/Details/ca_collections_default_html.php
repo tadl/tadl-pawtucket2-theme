@@ -121,7 +121,7 @@
 					<H2>{{{^ca_collections.type_id}}}{{{<ifdef code="ca_collections.idno">, ^ca_collections.idno</ifdef>}}}</H2>
 				</div>
 				<div class="tadl-collection-header-actions">
-					<?= tadlDetailNavigation($this, 'index', _t('Browse collections'), 'Collections'); ?>
+					<?= tadlDetailNavigation($this, 'index', _t('Browse collections'), 'Collections', 'collections'); ?>
 					<?php if ($providence_link = tadlProvidenceCollectionLink($this->request, $t_item->getPrimaryKey())): ?>
 					<div class="tadl-collection-staff-actions"><?= $providence_link; ?></div>
 					<?php endif; ?>

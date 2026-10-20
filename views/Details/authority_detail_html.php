@@ -18,7 +18,7 @@ $error_html = '<p class="tadl-authority-error">'.tadlAuthorityEscape(_t('Related
 		</div>
 		<?php endif; ?>
 		</div>
-		<?= tadlDetailNavigation($this, $authority['browse'], $authority['browse_label']); ?>
+		<?= tadlDetailNavigation($this, $authority['browse'], $authority['browse_label'], 'Browse', $authority['browse'] ?? 'records'); ?>
 	</header>
 	<div class="tadl-authority-layout<?= $has_sidebar ? '' : ' tadl-authority-layout--items-only'; ?>">
 		<section class="tadl-authority-items" aria-labelledby="tadl-authority-items-title">

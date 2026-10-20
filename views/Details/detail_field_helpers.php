@@ -3,10 +3,32 @@ require_once(dirname(__DIR__, 2).'/helpers/browse_navigation.php');
 require_once(__DIR__.'/detail_preview_helpers.php');
 require_once(dirname(__DIR__, 2).'/helpers/rich_text.php');
 
+/** Label the existing native link without changing its destination or contents. */
+function tadlDetailNavigationLink($html, $label) {
+	if ($html === '') { return ''; }
+	$document = new DOMDocument('1.0', 'UTF-8');
+	$document->loadHTML('<meta charset="UTF-8">'.$html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+	$link = $document->getElementsByTagName('a')->item(0);
+	if (!$link) { return $html; }
+	$link->setAttribute('title', $label);
+	$link->setAttribute('aria-label', $label);
+	return $document->saveHTML($link);
+}
+
 /** Reuse native result-context links, with an optional browse destination. */
-function tadlDetailNavigation($view, $browseAction = null, $browseLabel = '', $browseController = 'Browse') {
+function tadlDetailNavigation($view, $browseAction = null, $browseLabel = '', $browseController = 'Browse', $recordType = 'objects') {
 	$escape = static fn($text) => htmlspecialchars((string)$text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-	$links = (string)$view->getVar('previousLink').(string)$view->getVar('nextLink');
+	$labels = [
+		'objects' => [_t('Go to previous object'), _t('Go to next object')],
+		'collections' => [_t('Go to previous collection'), _t('Go to next collection')],
+		'people' => [_t('Go to previous person'), _t('Go to next person')],
+		'organizations' => [_t('Go to previous organization'), _t('Go to next organization')],
+		'families' => [_t('Go to previous family'), _t('Go to next family')],
+		'places' => [_t('Go to previous place'), _t('Go to next place')],
+		'occurrences' => [_t('Go to previous event'), _t('Go to next event')]
+	][$recordType] ?? [_t('Go to previous record'), _t('Go to next record')];
+	$links = tadlDetailNavigationLink((string)$view->getVar('previousLink'), $labels[0])
+		.tadlDetailNavigationLink((string)$view->getVar('nextLink'), $labels[1]);
 	if ($browseAction !== null) {
 		$browseParams = $browseController === 'Browse' ? tadlBrowseEntryParameters($browseAction, null, $view->request) : [];
 		$links .= caNavLink($view->request, $escape($browseLabel), '', '', $browseController, $browseAction, $browseParams);

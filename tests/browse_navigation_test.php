@@ -31,7 +31,7 @@ class BrowseNavigationView {
 	public $request;
 	function __construct() { $this->request = new BrowseNavigationRequest(); }
 	function getVar($name) {
-		return ['previousLink' => '<a href="/synthetic/previous">Prev</a>', 'nextLink' => '<a href="/synthetic/next">Next</a>'][$name] ?? null;
+		return ['previousLink' => '<a href="/synthetic/previous" aria-label="Previous" title="Previous"><span aria-hidden="true">‹</span> Prev</a>', 'nextLink' => '<a href="/synthetic/next" aria-label="Next">Next</a>'][$name] ?? null;
 	}
 	function renderMenu() {
 		ob_start();
@@ -92,11 +92,23 @@ foreach (array_keys($expected) as $index => $type) {
 	$detailLinks = browseLinks(tadlDetailNavigation($view, $type, 'Browse <synthetic>'));
 	browseCheck($detailLinks->item(0)->getAttribute('href') === $url && $detailLinks->item(0)->textContent === 'Browse <synthetic>', $type.': detail Browse link must use the same default and escape its label.');
 }
-$nav = tadlDetailNavigation($view, 'index', 'Browse collections', 'Collections');
+$nav = tadlDetailNavigation($view, 'index', 'Browse collections', 'Collections', 'collections');
 browseCheck(str_contains($nav, 'href="/synthetic/Collections/index"') && !str_contains($nav, '?sort='), 'Dedicated collection index keeps its own native configuration.');
 browseCheck(str_contains($nav, '/synthetic/previous') && str_contains($nav, '/synthetic/next'), 'Default entry sorting must not replace native Prev/Next links.');
 $objectNav = tadlDetailNavigation($view);
 browseCheck(str_contains($objectNav, '/synthetic/previous') && str_contains($objectNav, '/synthetic/next') && browseLinks($objectNav)->length === 0, 'Object navigation must retain Prev/Next without a Browse destination.');
+foreach (['objects'=>'object', 'collections'=>'collection', 'people'=>'person', 'organizations'=>'organization', 'families'=>'family', 'places'=>'place', 'occurrences'=>'event', 'unknown'=>'record'] as $type => $singular) {
+	$html = tadlDetailNavigation($view, null, '', 'Browse', $type);
+	$document = new DOMDocument(); $document->loadHTML('<meta charset="UTF-8">'.$html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+	$links = (new DOMXPath($document))->query('//nav/a');
+	foreach (['previous', 'next'] as $index => $direction) {
+		$link = $links->item($index);
+		$label = 'Go to '.$direction.' '.$singular;
+		browseCheck($link->getAttribute('title') === $label && $link->getAttribute('aria-label') === $label, $type.': tooltip and accessible name must identify the neighboring record type.');
+		browseCheck($link->getAttribute('href') === '/synthetic/'.$direction, $type.': labeling must preserve the native destination.');
+	}
+	browseCheck($links->item(0)->textContent === '‹ Prev' && $links->item(0)->getElementsByTagName('span')->item(0)->getAttribute('aria-hidden') === 'true', $type.': labels must preserve native visible text and icon semantics.');
+}
 $directObjectView = new class extends BrowseNavigationView { function getVar($name) { return null; } };
 browseCheck(tadlDetailNavigation($directObjectView) === '', 'Objects without result context must omit the empty navigation wrapper.');
 browseCheck(tadlBrowseEntryParameters('unknown') === [], 'An unconfigured destination must retain its ordinary native link.');

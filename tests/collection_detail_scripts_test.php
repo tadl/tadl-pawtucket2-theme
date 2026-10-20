@@ -323,6 +323,10 @@ foreach (array(
 	$navigationXPath = new DOMXPath($navigationDom);
 	checkDetailScripts($navigationXPath->query('//header[contains(@class,"tadl-record-header")]//nav[@class="tadl-record-nav"]/a')->length === 3
 		&& !str_contains($html, '/synthetic/results'), $case['name'].': collection heading must have Prev, Next and Browse, without Back.');
+	foreach (['previous', 'next'] as $direction) {
+		$label = 'Go to '.$direction.' collection';
+		checkDetailScripts($navigationXPath->query('//nav[@class="tadl-record-nav"]/a[@title="'.$label.'" and @aria-label="'.$label.'"]')->length === 1, $case['name'].': collection navigation must have contextual tooltips and accessible names.');
+	}
 	checkDetailScripts(str_contains($html, '<div class="row tadl-collection-detail">') && str_contains($html, "<div class='col-xs-12'>"), $case['name'].': collection content lost its full-width layout.');
 	preg_match_all('~<script\b[^>]*>(.*?)</script\s*>~is', $html, $scripts);
 	$expectedScriptCount = ($case['hierarchy'] ? 1 : 0) + ($hasGrid ? 1 : 0);

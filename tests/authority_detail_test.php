@@ -160,6 +160,10 @@ foreach (['ca_entities' => ['people', 'Browse people'], 'ca_places' => ['places'
 	checkAuthority(array_map(static fn($node) => $node->textContent, iterator_to_array($links)) === ['Prev', 'Next', $label], 'Authority header must contain native Prev/Next and the correct Browse action, without Back.');
 	$sort = $browse === 'people' ? 'Identifier' : 'Name';
 	checkAuthority(!str_contains($html, '/synthetic/back') && $links->item(2)->getAttribute('href') === '/synthetic/Browse/'.$browse.'?sort='.$sort.'&direction=asc', 'Authority navigation must omit Back and start its browse in logical order.');
+	$recordType = ['people'=>'person', 'places'=>'place', 'occurrences'=>'event'][$browse];
+	foreach (['previous', 'next'] as $index => $direction) {
+		checkAuthority($links->item($index)->getAttribute('title') === 'Go to '.$direction.' '.$recordType && $links->item($index)->getAttribute('aria-label') === 'Go to '.$direction.' '.$recordType, 'Authority navigation must identify the correct record type in tooltips and accessible names.');
+	}
 }
 $directVisit = tadlDetailNavigation(new AuthorityView(new AuthorityRequest(), new AuthorityItem()), 'people', 'Browse people');
 checkAuthority(authorityDocument($directVisit)->query('//nav/a')->length === 1, 'A direct visit must retain Browse without inventing previous/next targets.');
