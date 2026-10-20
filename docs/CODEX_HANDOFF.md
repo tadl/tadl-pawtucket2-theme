@@ -102,6 +102,12 @@ for finding aids and object PDFs. The native PDF browser regression now uses a
 long synthetic document and verifies the full sidebar width, no horizontal
 overflow, vertical scrolling and last-page selection at 1280/390px.
 
+Collection item pagination now omits the descriptive metadata on nonzero `s`
+offsets. It skips those field/relationship reads, keeps the title, finding aid
+and navigation, and adds **About this collection** back to the first page with
+the current view/mode/sort retained. This applies to flat and hierarchy modes;
+the collection hierarchy browser itself remains available in hierarchy mode.
+
 ## Completed work and useful commits
 
 | Commit | Result |

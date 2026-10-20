@@ -61,52 +61,56 @@
 		's' => max(0, (int)$this->request->getParameter('s', pInteger)),
 		'n' => $collection_view === 'list' ? 24 : 9
 	];
-	ob_start();
-		print tadlCollectionMetadataField($this->request, $t_item, 'Description', ['ca_collections.description']);
-		print tadlCollectionMetadataField($this->request, $t_item, 'Source of description', ['ca_collections.description_source']);
-		print tadlCollectionMetadataField($this->request, $t_item, 'Scope and content', ['ca_collections.collection_scope_content']);
-		print tadlCollectionMetadataField($this->request, $t_item, 'Provenance', ['ca_collections.provenance']);
-		# Comment and Share Tools
-		if ($vn_comments_enabled | $vn_share_enabled) {
-			print '<div id="detailTools">';
-			if ($vn_comments_enabled) {
+	$collection_show_metadata = $collection_result_params['s'] === 0;
+	$collection_fields = $collection_facts = '';
+	if ($collection_show_metadata) {
+		ob_start();
+			print tadlCollectionMetadataField($this->request, $t_item, 'Description', ['ca_collections.description']);
+			print tadlCollectionMetadataField($this->request, $t_item, 'Source of description', ['ca_collections.description_source']);
+			print tadlCollectionMetadataField($this->request, $t_item, 'Scope and content', ['ca_collections.collection_scope_content']);
+			print tadlCollectionMetadataField($this->request, $t_item, 'Provenance', ['ca_collections.provenance']);
+			# Comment and Share Tools
+			if ($vn_comments_enabled | $vn_share_enabled) {
+				print '<div id="detailTools">';
+				if ($vn_comments_enabled) {
 ?>
-				<div class="detailTool"><a href='#' onclick='jQuery("#detailComments").slideToggle(); return false;'><span class="glyphicon glyphicon-comment" aria-hidden="true"></span>Comments (<?php print sizeof($va_comments); ?>)</a></div><!-- end detailTool -->
-				<div id='detailComments'><?php print $this->getVar("itemComments");?></div><!-- end itemComments -->
+					<div class="detailTool"><a href='#' onclick='jQuery("#detailComments").slideToggle(); return false;'><span class="glyphicon glyphicon-comment" aria-hidden="true"></span>Comments (<?php print sizeof($va_comments); ?>)</a></div><!-- end detailTool -->
+					<div id='detailComments'><?php print $this->getVar("itemComments");?></div><!-- end itemComments -->
 <?php
+				}
+				if ($vn_share_enabled) {
+					print '<div class="detailTool"><span class="glyphicon glyphicon-share-alt" aria-hidden="true"></span>'.$this->getVar("shareLink").'</div><!-- end detailTool -->';
+				}
+				print '</div><!-- end detailTools -->';
 			}
-			if ($vn_share_enabled) {
-				print '<div class="detailTool"><span class="glyphicon glyphicon-share-alt" aria-hidden="true"></span>'.$this->getVar("shareLink").'</div><!-- end detailTool -->';
+		$collection_fields = trim(ob_get_clean());
+		ob_start();
+			print tadlDetailField($this->request, $t_item, 'Creators', '<unit relativeTo="ca_entities" restrictToRelationshipTypes="creator" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l></unit>');
+			print tadlCollectionMetadataField($this->request, $t_item, 'Dates', ['ca_collections.date.dates_value']);
+			print tadlCollectionMetadataField($this->request, $t_item, 'Extent', [
+				'ca_collections.extent_text',
+				'ca_collections.extent'
+			]);
+			if ($t_item->hasElement('language') && $t_item->isReadable($this->request, 'language')) {
+				print tadlDetailFirstAvailableField($this->request, $t_item, 'Language', [
+					'<unit relativeTo="ca_collections.language" delimiter="<br/>">^ca_collections.language</unit>',
+					'^ca_collections.language'
+				], ['skipAccessCheck' => true, 'dontReturnDefault' => true]);
 			}
-			print '</div><!-- end detailTools -->';
-		}
-	$collection_fields = trim(ob_get_clean());
-	ob_start();
-		print tadlDetailField($this->request, $t_item, 'Creators', '<unit relativeTo="ca_entities" restrictToRelationshipTypes="creator" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l></unit>');
-		print tadlCollectionMetadataField($this->request, $t_item, 'Dates', ['ca_collections.date.dates_value']);
-		print tadlCollectionMetadataField($this->request, $t_item, 'Extent', [
-			'ca_collections.extent_text',
-			'ca_collections.extent'
-		]);
-		if ($t_item->hasElement('language') && $t_item->isReadable($this->request, 'language')) {
-			print tadlDetailFirstAvailableField($this->request, $t_item, 'Language', [
-				'<unit relativeTo="ca_collections.language" delimiter="<br/>">^ca_collections.language</unit>',
-				'^ca_collections.language'
-			], ['skipAccessCheck' => true, 'dontReturnDefault' => true]);
-		}
-		print tadlDetailFirstAvailableField($this->request, $t_item, 'Vocabulary terms', [
-			'<unit relativeTo="ca_list_items" delimiter="<br/>"><l>^ca_list_items.preferred_labels.name_singular</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>',
-			'<unit relativeTo="ca_list_items" delimiter="<br/>"><l>^ca_list_items.preferred_labels.name_plural</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>'
-		], ['skipAccessCheck' => true]);
-		print tadlCollectionMetadataField($this->request, $t_item, 'Library of Congress subject headings', ['ca_collections.lcsh_terms'], true);
-		print tadlCollectionMetadataField($this->request, $t_item, 'Rights', ['ca_collections.rights.rightsText']);
-		print tadlCollectionMetadataField($this->request, $t_item, 'Copyright statement', ['ca_collections.rights.copyrightStatement']);
-		print tadlCollectionExternalLinks($this->request, $t_item);
-		print tadlDetailField($this->request, $t_item, 'Related collections', '<unit relativeTo="ca_collections.related" delimiter="<br/>"><l>^ca_collections.preferred_labels.name</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>');
-		print tadlDetailField($this->request, $t_item, 'Related people', '<unit relativeTo="ca_entities" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>');
-		print tadlDetailField($this->request, $t_item, 'Related events', '<unit relativeTo="ca_occurrences" delimiter="<br/>"><l>^ca_occurrences.preferred_labels.name</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>');
-		print tadlDetailField($this->request, $t_item, 'Related places', '<unit relativeTo="ca_places" delimiter="<br/>"><l>^ca_places.preferred_labels.name</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>');
-	$collection_facts = trim(ob_get_clean());
+			print tadlDetailFirstAvailableField($this->request, $t_item, 'Vocabulary terms', [
+				'<unit relativeTo="ca_list_items" delimiter="<br/>"><l>^ca_list_items.preferred_labels.name_singular</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>',
+				'<unit relativeTo="ca_list_items" delimiter="<br/>"><l>^ca_list_items.preferred_labels.name_plural</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>'
+			], ['skipAccessCheck' => true]);
+			print tadlCollectionMetadataField($this->request, $t_item, 'Library of Congress subject headings', ['ca_collections.lcsh_terms'], true);
+			print tadlCollectionMetadataField($this->request, $t_item, 'Rights', ['ca_collections.rights.rightsText']);
+			print tadlCollectionMetadataField($this->request, $t_item, 'Copyright statement', ['ca_collections.rights.copyrightStatement']);
+			print tadlCollectionExternalLinks($this->request, $t_item);
+			print tadlDetailField($this->request, $t_item, 'Related collections', '<unit relativeTo="ca_collections.related" delimiter="<br/>"><l>^ca_collections.preferred_labels.name</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>');
+			print tadlDetailField($this->request, $t_item, 'Related people', '<unit relativeTo="ca_entities" delimiter="<br/>"><l>^ca_entities.preferred_labels.displayname</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>');
+			print tadlDetailField($this->request, $t_item, 'Related events', '<unit relativeTo="ca_occurrences" delimiter="<br/>"><l>^ca_occurrences.preferred_labels.name</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>');
+			print tadlDetailField($this->request, $t_item, 'Related places', '<unit relativeTo="ca_places" delimiter="<br/>"><l>^ca_places.preferred_labels.name</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>');
+		$collection_facts = trim(ob_get_clean());
+	}
 ?>
 <div class="row tadl-collection-detail">
 	<div class='col-xs-12'>
@@ -123,9 +127,16 @@
 					<?php endif; ?>
 				</div>
 			</header>
-			<div class="tadl-collection-overview">
+			<div class="tadl-collection-overview<?= $collection_show_metadata ? '' : ' tadl-collection-overview--compact'; ?>">
 				<div class="tadl-collection-heading">
 <?php
+					if (!$collection_show_metadata) {
+						$details_params = $collection_result_params;
+						unset($details_params['collection_id']);
+						$details_params['s'] = 0;
+						$details_url = caNavUrl($this->request, '', 'Detail', 'collections/'.(int)$t_item->getPrimaryKey(), $details_params);
+						print '<p class="tadl-collection-details-link"><a href="'.htmlspecialchars($details_url, ENT_QUOTES, 'UTF-8').'">'.htmlspecialchars(_t('About this collection'), ENT_QUOTES, 'UTF-8').'</a></p>';
+					}
 					$collection_ancestry = tadlCollectionContentsAncestry($this->request, $t_item);
 					$parent_links = tadlCollectionParentLinks($this->request, $collection_ancestry, $t_item->getPrimaryKey());
 					if ($parent_links !== '') { print '<div class="unit">'.htmlspecialchars(_t('Part of:'), ENT_QUOTES, 'UTF-8').' '.$parent_links.'</div>'; }

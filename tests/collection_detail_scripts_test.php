@@ -145,6 +145,17 @@ foreach ([[], ['ca_collections.description' => '<p>&nbsp;</p>', 'ca_collections.
 	checkDetailScripts(!preg_match('~<h3>(Description|Dates|Related collections|Related people|Related events|Related places)</h3>~', $html), 'Empty collection fields or relationships emitted headings.');
 }
 $html = (new DetailScriptView(0, ['ca_collections.description' => 'Synthetic description', 'ca_collections.date.dates_value' => '1930', 'relativeTo="ca_places"' => '<a href="/synthetic/place">Synthetic place</a>']))->render('ca_collections');
+foreach (['flat', 'hierarchy'] as $mode) {
+	$GLOBALS['detailScriptMetadataReads'] = [];
+	$paged_html = (new DetailScriptView(2, ['ca_collections.description' => 'Repeated description', 'ca_collections.date.dates_value' => '1930'],
+		['s' => 9, 'sort' => 'Title', 'direction' => 'desc', 'collection_view' => $mode]))->render('ca_collections');
+	checkDetailScripts(!str_contains($paged_html, 'Repeated description') && !str_contains($paged_html, 'tadl-collection-metadata'), 'Subsequent collection pages must omit descriptive metadata.');
+	checkDetailScripts(!array_filter($GLOBALS['detailScriptMetadataReads'], static fn($value) => str_contains($value, '^ca_collections.description') || str_contains($value, '^ca_collections.date') || str_contains($value, 'relativeTo="ca_entities"')), 'Subsequent pages must avoid fetching omitted metadata and related people.');
+	checkDetailScripts(str_contains($paged_html, 'About this collection') && str_contains($paged_html, '/collection_view/'.$mode.'/view/images/sort/Title/direction/desc/s/0'), 'Later pages must link to the first page and retain collection view/sort state.');
+	checkDetailScripts(str_contains($paged_html, 'View finding aid') && str_contains($paged_html, '<H1>') && str_contains($paged_html, 'Browse collections'), 'Paged collections must retain identity, finding aid and navigation.');
+}
+$first_page = (new DetailScriptView(0, ['ca_collections.description' => 'First page description'], ['s' => 0]))->render('ca_collections');
+checkDetailScripts(str_contains($first_page, 'First page description') && !str_contains($first_page, 'About this collection'), 'The first page must retain full metadata without a redundant details link.');
 $finding_document = new DOMDocument(); $finding_document->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_NONET);
 $finding_xpath = new DOMXPath($finding_document);
 $finding_view = $finding_xpath->query('//div[@class="exportCollection"]/a[contains(@href,"/CollectionFindingAid/View/")]')->item(0);

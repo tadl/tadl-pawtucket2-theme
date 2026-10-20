@@ -92,6 +92,12 @@ in the visitor's cookie/session rather than these URLs, so shared links follow
 the recipient's preference. Incoming search expressions, browse keys and facet
 state cannot replace the controller's selected collection scope.
 
+The first collection-items page includes the full descriptive metadata. Later
+pages omit the description, facts and related-record fields without fetching
+their values again. They retain the collection title/identifier, finding aid,
+hierarchy controls and navigation, with **About this collection** linking back
+to the first page using the same display and sort settings.
+
 Collection item cards in Tiles and List show small square, white-on-dark-gray
 format tags stacked at the right of their titles, replacing the object identifier
 line. On narrow List rows, the stack sits beneath the title and stays right-aligned.

@@ -1278,6 +1278,10 @@ h6 {
     overflow-wrap: anywhere;
 }
 
+.tadl-collection-overview--compact {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .tadl-collection-metadata > :only-child {
     grid-column: 1 / -1;
 }
