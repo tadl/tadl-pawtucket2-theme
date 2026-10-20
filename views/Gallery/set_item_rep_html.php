@@ -29,7 +29,9 @@
 			$vs_rep_toolbar = tadlImageToolbar($this->request, $t_download_object, (int)$pn_rep_id, $vs_rep_toolbar);
 		}
 	}
-	print caDetailLink($this->request, $this->getVar("rep"), '', $ps_table, $pn_row_id)."</div>";
+	require_once(__DIR__.'/../../helpers/media_names.php');
+	$media_label = isset($t_download_object) && method_exists($t_download_object, 'getLabelForDisplay') && $t_download_object->isReadable($this->request, 'preferred_labels') ? $t_download_object->getLabelForDisplay() : _t('View item record');
+	print caDetailLink($this->request, tadlMediaImageNames($this->getVar("rep"), $media_label), '', $ps_table, $pn_row_id)."</div>";
 	if ($vs_rep_toolbar) {
 		print '<div class="tadl-gallery-media-actions" role="group" aria-label="'.htmlspecialchars(_t('Media actions'), ENT_QUOTES, 'UTF-8').'">'.$vs_rep_toolbar.'</div>';
 	}

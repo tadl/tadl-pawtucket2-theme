@@ -3,6 +3,7 @@
  * themes/tadl/Front/featured_set_slideshow_html.php
  * ----------------------------------------------------------------------
  */
+require_once(__DIR__.'/../../helpers/media_names.php');
 $va_access_values = $this->getVar("access_values");
 $va_item_ids = $this->getVar('featured_set_item_ids');
 $va_slides = [];
@@ -25,7 +26,7 @@ if (is_array($va_item_ids) && sizeof($va_item_ids)) {
 			}
 			if (!$vs_media_tag) { continue; }
 			$va_slides[] = [
-				'media' => caDetailLink($this->request, $va_media["tags"][$vs_media_tag], '', 'ca_objects', $vn_object_id),
+				'media' => caDetailLink($this->request, tadlMediaImageNames($va_media["tags"][$vs_media_tag], $va_item_labels[$vn_object_id] ?? _t('View featured item')), '', 'ca_objects', $vn_object_id),
 				'caption' => $va_item_labels[$vn_object_id] ?? ''
 			];
 		}

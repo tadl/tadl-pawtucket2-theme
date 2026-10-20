@@ -42,6 +42,11 @@ if (function_exists('caObjectsDisplayDownloadLink') && $t_subject && $t_subject-
 		}
 	}
 }
+require_once(__DIR__.'/../../helpers/media_names.php');
+if (method_exists($t_subject, 'getLabelForDisplay')) {
+	$media_label = $t_subject->isReadable($this->request, 'preferred_labels') ? $t_subject->getLabelForDisplay() : _t('View image');
+	foreach ((array)$slide_list as $index => $slide) { $slide_list[$index] = tadlMediaImageNames($slide, $media_label); }
+}
 $initial_index = tadlObjectDetailInitialMediaIndex($this->request, $t_subject, $slide_list);
 $rendered_count = count((array)$slide_list);
 

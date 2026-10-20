@@ -29,6 +29,7 @@
 	require_once(__DIR__.'/detail_field_helpers.php');
 	require_once(__DIR__.'/../../helpers/user_features.php');
 	require_once(__DIR__.'/../../helpers/document_text.php');
+	require_once(__DIR__.'/../../helpers/media_names.php');
 
 	$t_object = 			$this->getVar("item");
 	$va_comments = 			$this->getVar("comments");
@@ -56,7 +57,7 @@
 				if ($va_representation_thumbnails): ?>
 				<div id="detailRepresentationThumbnails" class="tadl-object-thumbnails" role="group" aria-label="<?= htmlspecialchars(_t('Select media'), ENT_QUOTES, 'UTF-8'); ?>">
 					<?php foreach ($va_representation_thumbnails as $vn_representation_id => $vs_thumbnail_link): ?>
-					<div id="detailRepresentationThumbnail<?= (int)$vn_representation_id; ?>"><?= $vs_thumbnail_link; ?></div>
+					<div id="detailRepresentationThumbnail<?= (int)$vn_representation_id; ?>"><?= tadlMediaImageNames($vs_thumbnail_link, _t('Select media %1', (int)$vn_representation_id)); ?></div>
 					<?php endforeach; ?>
 				</div>
 				<?php endif; ?>
