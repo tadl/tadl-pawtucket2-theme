@@ -29,6 +29,7 @@
  *
  * ----------------------------------------------------------------------
  */
+	require_once(__DIR__.'/../../helpers/representation_formats.php');
 	$o_lightbox_config 				= $this->getVar("set_config");
 	$qr_set_items 					= $this->getVar("result");
 	$t_set 							= $this->getVar("set");
@@ -248,6 +249,7 @@ if (!$vb_ajax) {	// !ajax
 
 							$va_item_ids = array_keys($va_items);
 							$va_object_ids = caExtractArrayValuesFromArrayOfArrays($va_items, 'object_id');
+							$va_formats = tadlObjectRepresentationFormats($this->request, $va_object_ids, $va_access_values);
 
 							$va_captions = caProcessTemplateForIDs($vs_caption_template, 'ca_objects', $va_object_ids, array('returnAsArray' => true));
 
@@ -260,6 +262,7 @@ if (!$vb_ajax) {	// !ajax
 								$this->setVar('item_id', $vn_item_id);
 								$this->setVar('object_id', $vn_object_id = $va_items[$vn_item_id]['object_id']);
 								$this->setVar('caption', $va_captions[$vn_i]);
+								$this->setVar('format_tags', tadlRepresentationFormatTags($va_formats[$vn_object_id] ?? []));
 								$this->setVar('commentCount', (int)$va_comment_counts[$vn_item_id]);
 			
 								$vn_representation_id = null;
@@ -278,7 +281,7 @@ if (!$vb_ajax) {	// !ajax
 										print "<div class='col-xs-12 col-sm-4 lbItem{$vn_item_id}' id='row-{$vn_object_id}'><div class='lbItemContainer'>";
 										break;
 									default:
-										print "<div class='col-xs-6 col-sm-4 col-md-3 col-lg-3 lbItem{$vn_item_id}' id='row-{$vn_object_id}'><div class='lbItemContainer'>";
+										print "<div class='col-xs-12 col-sm-4 col-md-3 col-lg-3 lbItem{$vn_item_id}' id='row-{$vn_object_id}'><div class='lbItemContainer'>";
 										break;
 								}
 								if ($vb_write_access) { print $this->render('Lightbox/order_buttons_html.php'); }

@@ -18,11 +18,13 @@ const cards = fixture('object_thumbnail_test.php', '--grid-fixtures');
 const formatCards = fixture('representation_formats_test.php', '--fixtures');
 const server = http.createServer((request, response) => {
     const url = new URL(request.url, 'http://localhost');
-    if (['/wide', '/sidebar', '/list', '/formats', '/formats-list'].includes(url.pathname)) {
+    if (['/wide', '/sidebar', '/list', '/formats', '/formats-list', '/overview', '/lightbox', '/lightbox-list'].includes(url.pathname)) {
         const scripts = '<script src="/themes/tadl/assets/pawtucket/js/thumbnail-focus.js"></script>';
         const header = shell.header.replace('</head>', scripts + '</head>');
         const tiles = '<section class="tadl-authority-items"><h2>Related items</h2><div class="row">' + cards.tiles + '</div></section>';
-        const content = url.pathname === '/formats' ? formatCards.tiles : url.pathname === '/formats-list' ? formatCards.list
+        const content = url.pathname === '/overview' ? '<section class="tadl-search-overview">' + formatCards.overview + '</section>'
+            : url.pathname.startsWith('/lightbox') ? '<div class="row"><div class="col-xs-12 col-sm-4"><div id="row1" class="' + (url.pathname === '/lightbox-list' ? 'lbItemContainerList' : 'lbItemContainer') + '">' + formatCards.lightbox + '</div></div></div>'
+            : url.pathname === '/formats' ? formatCards.tiles : url.pathname === '/formats-list' ? formatCards.list
             : url.pathname === '/list' ? cards.list : url.pathname === '/sidebar'
             ? '<div class="tadl-authority-layout">' + tiles + '<aside class="tadl-authority-sidebar"><h2>Record information</h2><p>Synthetic metadata.</p></aside></div>'
             : tiles.replace(' class="tadl-authority-items"', '');
@@ -110,7 +112,7 @@ async function fixedCrop(card) {
     assert.equal(listBox.width, 112); assert.equal(listBox.height, 88, 'List view dimensions must remain unchanged.');
     for (const width of [320, 390, 768, 1280, 1600]) {
         await page.setViewportSize({width, height:1000});
-        for (const name of ['formats', 'formats-list']) {
+        for (const name of ['formats', 'formats-list', 'lightbox', 'lightbox-list']) {
             await page.goto(origin + '/' + name); await page.mouse.move(1, 1);
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name} ${width}px must not overflow.`);
             const tags = page.locator('#row1 .tadl-representation-format');
@@ -134,6 +136,10 @@ async function fixedCrop(card) {
                 return Math.abs(tags.right - right) < 1 && (belowTitle ? tags.top >= title.bottom : title.right < tags.left);
             }, name === 'formats-list' && width < 768), 'Title and tags must remain separate, with tags below the title on narrow List rows.');
             assert.equal(await page.locator('#row3 .tadl-representation-formats, #row3 small').count(), 0, 'Metadata-only items need no empty format or identifier row.');
+            assert(await tags.last().evaluate(node => {
+                const content = node.closest('.lbItemContent');
+                return !content || node.getBoundingClientRect().bottom <= content.getBoundingClientRect().bottom + 1;
+            }), 'Lightbox tags must not be clipped by the old fixed content height.');
             await page.addScriptTag({path:process.env.TADL_AXE_PATH || require.resolve('axe-core/axe.min.js')});
             const violations = await page.evaluate(async () => (await axe.run('#main', {runOnly:{type:'tag', values:['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']}})).violations);
             assert.deepEqual(violations.map(item => item.id), [], `${name} ${width}px accessibility violations.`);
@@ -142,11 +148,34 @@ async function fixedCrop(card) {
                 await page.screenshot({path:path.join(process.env.TADL_A11Y_ARTIFACT_DIR, `collection-${name}-${width}.png`)});
             }
         }
+        await page.goto(origin + '/overview'); await page.mouse.move(1, 1);
+        await page.waitForFunction(() => document.querySelector('.tadl-search-grid img').naturalWidth > 0);
+        const overviewCards = page.locator('.tadl-search-grid > li > .tadl-search-card');
+        assert.equal(await overviewCards.count(), 6, 'Search overview must retain six previews.');
+        for (const index of [0,1,2,3]) {
+            const card = overviewCards.nth(index), media = card.locator('.tadl-search-card-media');
+            const before = await media.boundingBox(); await card.hover(); await card.focus();
+            const after = await media.boundingBox();
+            assert(Math.abs(after.width / after.height - 1.5) < .01 && Math.abs(before.height - after.height) < 1, 'Overview portrait, landscape, tall and placeholder boxes must stay 3:2.');
+            if (index !== 1) { assert.equal(await media.locator('img').evaluate(node => getComputedStyle(node).objectFit), 'cover'); }
+        }
+        assert.equal(await overviewCards.first().locator('.tadl-representation-format').count(), 6);
+        assert(await overviewCards.first().locator('.tadl-search-card-caption').evaluate(node => {
+            const title = node.querySelector('.tadl-search-card-title').getBoundingClientRect();
+            const group = node.querySelector('ul').getBoundingClientRect();
+            return title.right < group.left && Array.from(node.querySelectorAll('li')).every((tag, index, tags) =>
+                Math.abs(tag.getBoundingClientRect().right - group.right) < 1 && (!index || tag.getBoundingClientRect().top > tags[index-1].getBoundingClientRect().bottom));
+        }), 'Overview format tags must retain the right-aligned stack.');
+        await page.addScriptTag({path:process.env.TADL_AXE_PATH || require.resolve('axe-core/axe.min.js')});
+        const overviewViolations = await page.evaluate(async () => (await axe.run('#main', {runOnly:{type:'tag', values:['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']}})).violations);
+        assert.deepEqual(overviewViolations.map(item => item.id), []);
+        assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Overview must not overflow on phones.');
+        if (process.env.TADL_A11Y_ARTIFACT_DIR) { await page.screenshot({path:path.join(process.env.TADL_A11Y_ARTIFACT_DIR, `overview-${width}.png`)}); }
     }
     await page.goto(origin + '/formats');
     await fixedCrop(page.locator('#row1'));
     assert.equal(await page.locator('#row1 .tadl-representation-format').count(), 6, 'Hovered cards must retain their format tags.');
-    console.log('Collection formats: right-aligned vertical tags, readable titles, metadata-only items and axe passed at 320–1600px.');
+    console.log('Object formats: result, overview and lightbox tags, 3:2 search previews, readable titles and axe passed at 320–1600px.');
     const touch = await browser.newContext({viewport:{width:390,height:844}, isMobile:true, hasTouch:true});
     await touch.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
     const touchPage = await touch.newPage(); await touchPage.goto(origin + '/wide');

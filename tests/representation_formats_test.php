@@ -155,13 +155,29 @@ function caDetailLink($request, $label, $class, $table, $id, $params = null, $at
 	return '<a href="/Detail/objects/'.$id.'"'.$extra.'>'.$label.'</a>';
 }
 function caGetPlaceholder($code, $key) { return ''; }
-class ca_objects { function __construct($id) {} function getPrimaryKey() { return null; } }
+function caDetailUrl($request, $table, $id) { return '/Detail/'.substr($table,3).'/'.$id; }
+function caNavUrl($request, $module, $controller, $action, $params = [], $options = []) { return '/'.$controller.'/'.$action.'?'.http_build_query($params); }
+// Eligibility is covered by media_preferences_test.php; these are already-readable result IDs.
+function tadlFilterMediaResult($request, $result) {}
+class ca_objects {
+	function __construct($id = 0) {}
+	function getPrimaryKey() { return null; }
+	function getPrimaryMediaForIDs($ids, $versions, $options) {
+		$media = [];
+		foreach ($ids as $id) {
+			if ($id === 3) { continue; }
+			$media[$id]['urls']['medium'] = $id === 4 ? '/landscape.svg' : ($id === 5 ? '/tall.svg' : '/portrait.svg');
+		}
+		return $media;
+	}
+}
 class ca_list_items { function load($id) {} function get($key) { return ''; } }
 class FormatResult {
 	public int $position = -1;
 	function __construct(private array $ids = [1,3,4,5,6,7,8,9,10]) {}
 	function numHits() { return count($this->ids); }
 	function getPrimaryKeyValues() { return $this->ids; }
+	function getPrimaryKey() { return $this->ids[$this->position]; }
 	function seek($start) { $this->position = $start - 1; }
 	function nextHit() { return ++$this->position < count($this->ids); }
 	function get($key, $options = []) {
@@ -174,8 +190,9 @@ class FormatResult {
 	function getWithTemplate($template) { return ''; }
 }
 class FormatView {
-	function __construct(public FormatRequest $request) {}
+	function __construct(public FormatRequest $request, private array $values = []) {}
 	function getVar($key) {
+		if (array_key_exists($key, $this->values)) { return $this->values[$key]; }
 		return match ($key) {
 			'result' => new FormatResult(), 'table' => 'ca_objects', 'primaryKey' => 'object_id', 'access_values' => [1],
 			'facets', 'criteria', 'options', 'views' => [], 'config' => new FormatConfig(), 'start', 'row_id' => 0, default => null
@@ -200,9 +217,32 @@ foreach (['tiles' => 'browse_results_images_html.php', 'list' => 'browse_results
 	formatCheck($xpath->query('//*[@id="row3"]//*[contains(@class,"tadl-result-with-formats")]')->length === 0, $name.': metadata-only items must retain the full caption width.');
 	$inventory = array_filter(array_slice(FormatDb::$queries, $queries), static fn($q) => str_contains($q[0], 'SELECT DISTINCT oxr.object_id'));
 	formatCheck(count($inventory) === 1, $name.': one page needs one inventory query.');
-	formatCheck(str_contains((new FormatView(new FormatRequest(false)))->render($file), 'SYN.1'), $name.': ordinary search must retain identifiers.');
-	formatCheck(str_contains((new FormatView(new FormatRequest(true,false)))->render($file), 'SYN.1'), $name.': query flags must not change full Search pages.');
+	formatCheck(str_contains((new FormatView(new FormatRequest(false)))->render($file), 'tadl-representation-formats'), $name.': ordinary object search/browse must also show formats.');
+	formatCheck(!str_contains((new FormatView(new FormatRequest(true,false)))->render($file), 'SYN.1'), $name.': full object Search pages must replace identifiers with formats too.');
 	$fixtures[$name] = $html;
 }
+$queries = count(FormatDb::$queries);
+$overview = (new FormatView(new FormatRequest(false), ['result' => new FormatResult(), 'itemsPerPage' => 6,
+	'block' => 'objects', 'blockInfo' => ['table' => 'ca_objects', 'displayName' => 'Objects'], 'search' => 'synthetic']))
+	->render('../Search/tadl_search_results_subview_html.php');
+$document = new DOMDocument(); @$document->loadHTML($overview); $xpath = new DOMXPath($document);
+formatCheck($xpath->query('//ul[@class="tadl-search-grid"]/li')->length === 6, 'Overview must retain a bounded six-item preview.');
+formatCheck($xpath->query('//ul[@class="tadl-search-grid"]/li[1]//ul[@aria-label="File formats"]/li')->length === 6, 'Overview must show each readable original format.');
+formatCheck($xpath->query('//ul[@class="tadl-search-grid"]/li[2]//ul')->length === 0, 'Overview metadata-only item must not get an empty badge list.');
+$inventory = array_values(array_filter(array_slice(FormatDb::$queries, $queries), static fn($q) => str_contains($q[0], 'SELECT DISTINCT oxr.object_id')));
+formatCheck(count($inventory) === 1 && $inventory[0][1][0] === [1,3,4,5,6,7], 'Overview inventory must query only the six displayed objects in one batch.');
+$fixtures['overview'] = $overview;
+$caption = caDetailLink($request, 'Synthetic lightbox item', '', 'ca_objects', 1);
+$representation = '<a href="/Detail/objects/1"><div class="lbItemImg"><img src="/portrait.svg" alt="Synthetic photograph"></div></a>';
+$lightbox = (new FormatView($request, ['write_access' => false, 'view' => 'images', 'item_id' => 99, 'set_id' => 42,
+	'object_id' => 1, 'caption' => $caption, 'representation_id' => 0, 'representation' => $representation,
+	'format_tags' => tadlRepresentationFormatTags(tadlObjectRepresentationFormats($request,[1],[1])[1])]))
+	->render('../Lightbox/set_detail_item_html.php');
+$lightbox = strtr($lightbox, ['{{{caption}}}' => $caption, '{{{representation}}}' => $representation,
+	'{{{item_id}}}' => '99', '{{{commentCount}}}' => '0']);
+$document = new DOMDocument(); @$document->loadHTML($lightbox); $xpath = new DOMXPath($document);
+formatCheck($xpath->query('//div[contains(@class,"caption")]//li')->length === 6, 'Lightbox caption must include all readable formats.');
+formatCheck($xpath->query('//a[@href="/Detail/objects/1"]')->length >= 2 && !str_contains($lightbox,'lbItemDeleteButton'), 'Read-only lightbox native links and controls must be preserved.');
+$fixtures['lightbox'] = $lightbox;
 if (($argv[1] ?? '') === '--fixtures') { echo json_encode($fixtures, JSON_THROW_ON_ERROR); }
-else { echo "Representation formats passed: {$checks} assertions (batched original formats, permissions, paging and actual Tiles/List views).\n"; }
+else { echo "Representation formats passed: {$checks} assertions (batched original formats, permissions, paging, Tiles/List, overview and lightbox views).\n"; }

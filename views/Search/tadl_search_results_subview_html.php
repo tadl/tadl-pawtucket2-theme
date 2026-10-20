@@ -1,6 +1,7 @@
 <?php
 	require_once(__DIR__.'/../../helpers/thumbnail_focus.php');
 	require_once(__DIR__.'/../../helpers/object_thumbnails.php');
+	require_once(__DIR__.'/../../helpers/representation_formats.php');
 	$qr_results = $this->getVar('result');
 	tadlFilterMediaResult($this->request, $qr_results);
 	if (!$qr_results || !($vn_result_count = (int)$qr_results->numHits())) { return; }
@@ -27,7 +28,9 @@
 		);
 	}
 
+	$va_formats = [];
 	if ($vs_table === 'ca_objects') {
+		$va_formats = tadlObjectRepresentationFormats($this->request, array_column($va_preview_items, 'id'), $va_access_values);
 		$t_object = new ca_objects();
 		$va_object_media = $t_object->getPrimaryMediaForIDs(array_column($va_preview_items, 'id'), array('medium'), array('checkAccess' => $va_access_values));
 		foreach ($va_preview_items as &$va_item) {
@@ -104,7 +107,14 @@
 			}
 ?>
 			</span>
-			<span class="tadl-search-card-title"><?php print $vs_item_label; ?></span>
+			<?php if ($vs_table === 'ca_objects'): ?>
+			<div class="tadl-search-card-caption<?= !empty($va_formats[$va_item['id']]) ? ' tadl-result-with-formats' : ''; ?>">
+				<span class="tadl-search-card-title"><?= $vs_item_label; ?></span>
+				<?= tadlRepresentationFormatTags($va_formats[$va_item['id']] ?? []); ?>
+			</div>
+			<?php else: ?>
+			<span class="tadl-search-card-title"><?= $vs_item_label; ?></span>
+			<?php endif; ?>
 		</a>
 <?php
 		} else {

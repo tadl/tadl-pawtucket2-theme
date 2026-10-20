@@ -2581,6 +2581,30 @@ div.tadl-finding-aid-controls .close {
     overflow-wrap: anywhere;
 }
 
+.tadl-search-grid .tadl-search-card-media {
+    position: relative;
+    flex: 0 0 auto;
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.tadl-search-grid .tadl-search-card-media img {
+    position: absolute;
+    inset: 0;
+    object-fit: cover;
+}
+
+.tadl-search-card-caption {
+    padding: 14px 16px;
+}
+
+.tadl-search-card-caption .tadl-search-card-title {
+    padding: 0;
+}
+
 .tadl-search-card--collection {
     flex-direction: row;
     align-items: center;
@@ -3499,6 +3523,20 @@ div.tadl-finding-aid-controls .close {
     font-weight: 600;
     line-height: 1.2;
     letter-spacing: 0.03em;
+}
+
+.lbItemContent.tadl-lightbox-item-content {
+    height: auto;
+    min-height: 250px;
+}
+
+.lbItemContainerList .tadl-lightbox-item-content {
+    min-height: 72px;
+}
+
+.tadl-lightbox-item-content .caption {
+    margin-top: 10px;
+    text-align: left;
 }
 
 @media (max-width: 767px) {

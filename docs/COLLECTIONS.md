@@ -100,8 +100,10 @@ readable original format appears once, such as **PDF**, **TIFF** or **JPEG**, in
 accessible secondary representations. Private paired PDFs/JPEGs, deleted
 representations, generated previews and download conversions do not add tags.
 Items without representation formats start with their title. Tags describe the
-attached files; they are not download buttons. Ordinary Search/Browse results
-and object-detail identifiers keep their existing presentation.
+attached files; they are not download buttons. The same tags appear in object
+Search/Browse results, related-item results, six-item search previews and lightbox
+Tiles/List views. Object-detail identifiers and non-object results retain their
+existing presentation.
 
 In the hierarchy browser, expanding a left-column container loads its branch in
 the right panel and records `#collection-<id>` in browser history. Normal detail
@@ -184,6 +186,8 @@ type/source restrictions, bundles and Pawtucket ACLs. The original MIME type
 takes precedence; a filename extension provides a fallback for legacy or unknown
 types. Repeated formats are deduplicated and sorted alphabetically. Paging and
 native Back restoration use the same displayed-ID scope as the result templates.
+Search overviews inventory only their six displayed previews; lightboxes inventory
+only their current page. These views share the same format and access rules.
 
 The main integration points are the collection detail view,
 `controllers/CollectionContentsController.php`, `helpers/collection_contents.php`,

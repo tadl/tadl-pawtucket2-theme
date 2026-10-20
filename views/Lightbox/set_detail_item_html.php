@@ -37,15 +37,16 @@
     $vn_object_id = $this->getVar('object_id');
 
     $vs_caption = $this->getVar('caption');
+    $vs_format_tags = (string)$this->getVar('format_tags');
     $vn_representation_id = $this->getVar('representation_id');
     $vs_representation = $this->getVar('representation');
     $vs_placeholder = $this->getVar('placeholder');
 ?>
 <div class='lbItem'>
-	<div class='lbItemContent'>
+	<div class='lbItemContent tadl-lightbox-item-content'>
 		{{{representation}}}
 		<div id='comment{{{item_id}}}' class='lbSetItemComment'><!-- load comments here --></div>
-		<div class='caption'>{{{caption}}}</div>
+		<div class='caption<?= $vs_format_tags !== '' ? ' tadl-result-with-formats' : ''; ?>'><div>{{{caption}}}</div><?= $vs_format_tags; ?></div>
 	</div><!-- end lbItemContent -->
 	<div class='lbExpandedInfo' id='lbExpandedInfo{{{item_id}}}'><hr/>
 <?php

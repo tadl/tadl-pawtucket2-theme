@@ -6,7 +6,8 @@ set_error_handler(function ($severity, $message, $file, $line) {
 	throw new ErrorException($message, 0, $severity, $file, $line);
 });
 define('__CA_BUNDLE_ACCESS_READONLY__', 1);
-function caGetBundleAccessLevel($table, $bundle) { return 1; }
+// This thumbnail fixture has no format inventory; format visibility has its own SQL suite.
+function caGetBundleAccessLevel($table, $bundle) { return $bundle === 'mimetype' ? 0 : 1; }
 function caACLIsEnabled($model, $options) { return false; }
 function caGetTypeRestrictionsForUser($table) { return null; }
 function caGetSourceRestrictionsForUser($table) { return null; }
@@ -93,6 +94,7 @@ class ObjectThumbnailResult {
 	function seek($start) { $this->done = false; }
 	function nextHit() { if ($this->done) { return false; } $this->done = true; return true; }
 	function getPrimaryKey() { return 1; }
+	function getPrimaryKeyValues() { return [1]; }
 	function get($key, $options = []) {
 		if (str_contains($key, '.media.')) { return ''; }
 		return str_contains($key, 'preferred_labels') ? 'Synthetic object' : 1;
@@ -126,6 +128,7 @@ if (($argv[1] ?? '') === '--grid-fixtures') {
 	class GridThumbnailResult extends ObjectThumbnailResult {
 		private int $position = -1;
 		function numHits() { return 9; }
+		function getPrimaryKeyValues() { return range(100,108); }
 		function seek($start) { $this->position = $start - 1; }
 		function nextHit() { return ++$this->position < 9; }
 		function getMediaTag($field, $version, $options) { return $this->get('ca_object_representations.media.'.$version); }

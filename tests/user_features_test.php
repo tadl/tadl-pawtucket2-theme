@@ -58,6 +58,7 @@ class FeatureResult {
 	public static string $identifier = 'SYNTHETIC.42', $label = 'Synthetic object', $extra = '';
 	private bool $done = false;
 	function numHits() { return 1; }
+	function getPrimaryKeyValues() { return [42]; }
 	function seek($start) { $this->done = false; }
 	function nextHit() { if ($this->done) { return false; } $this->done = true; return true; }
 	function get($key, $options = []) {

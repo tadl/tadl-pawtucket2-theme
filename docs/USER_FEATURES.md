@@ -105,6 +105,11 @@ deploying this change.
 
 Inspected against the nearby Pawtucket 2.0.10 source, not just old screenshots.
 
+Lightbox Tiles/List captions include the same access-aware original-format tags
+as other object results. Inventory is limited to the current page. Captions grow
+to fit stacked tags, and phone Tiles use one column to leave room for titles.
+Native ownership, sharing, comments and editing controls remain unchanged.
+
 | Feature | Current theme behavior / requirement |
 | --- | --- |
 | Named lightboxes / saved object lists | Native creation, naming, descriptions, additions and removal |

@@ -7,10 +7,13 @@ alter originals, or introduce a whole-image/letterbox fallback. Authority-relate
 object results use the same shared result views. Detail and gallery viewers are
 unchanged.
 
-Shared Tiles results use a consistent **3:2 thumbnail box**, with or without a
-sidebar. The box scales with card width instead of staying 210px tall; hover and
-placeholder cards retain the same proportions. List thumbnails keep their existing
-dimensions. Images continue to fill their boxes with `object-fit: cover`.
+Shared Tiles results and six-object search previews use a consistent **3:2
+thumbnail box**, with or without a sidebar. The box scales with card width instead
+of staying 210px tall; hover and placeholder cards retain the same proportions.
+Search preview images fill the box without allowing a tall source image to stretch
+it. List thumbnails keep their existing dimensions. Images continue to fill their
+boxes with `object-fit: cover`. Existing focal points work at this ratio; no face
+detection rerun or cache rebuild is needed.
 
 ## Grid presentation
 
