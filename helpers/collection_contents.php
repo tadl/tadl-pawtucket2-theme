@@ -93,7 +93,39 @@ function tadlCollectionContentsSearch(array $ids) {
 	return $ids ? join(' OR ', array_map(static fn($id) => 'collection_id:'.$id, $ids)) : 'ca_objects.object_id:0';
 }
 
-/** Unique visible objects in each whole branch, with one native object search per browser response. */
+/** Digitized-media presence throughout each readable branch, independent of display preference. */
+function tadlCollectionContentsMediaPresence($request, $collection) {
+	$nodes = tadlCollectionContentsCollections($request, $collection);
+	$presence = array_fill_keys(array_keys($nodes), false);
+	$scope = [];
+	foreach ($nodes as $id => $node) {
+		if ($node->isReadable($request, 'ca_objects')) { $scope[] = $id; }
+	}
+	if (!$scope) { return $presence; }
+	$db = new Db();
+	$memberships = []; $objects = [];
+	foreach (array_chunk($scope, 500) as $chunk) {
+		$rows = $db->query('SELECT DISTINCT object_id, collection_id FROM ca_objects_x_collections WHERE collection_id IN (?)', [$chunk]);
+		if (!$rows) { throw new RuntimeException('Unable to check collection media.'); }
+		while ($rows->nextRow()) {
+			$id = (int)$rows->get('object_id');
+			$objects[$id] = $id;
+			$memberships[] = [$id, (int)$rows->get('collection_id')];
+		}
+	}
+	$eligible = array_fill_keys(tadlMediaEligibleIDs('ca_objects', array_values($objects), (array)caGetUserAccessValues($request), $request), true);
+	foreach ($memberships as [$object_id, $id]) {
+		if (!isset($eligible[$object_id])) { continue; }
+		// An earlier positive result already marked this node and all its ancestors.
+		while (isset($nodes[$id]) && !$presence[$id]) {
+			$presence[$id] = true;
+			$id = (int)$nodes[$id]->get('parent_id');
+		}
+	}
+	return $presence;
+}
+
+/** Unique visible objects, retained for the optional object-dependent link policy. */
 function tadlCollectionContentsCounts($request, $collection) {
 	$nodes = tadlCollectionContentsCollections($request, $collection);
 	$counts = array_fill_keys(array_keys($nodes), 0);

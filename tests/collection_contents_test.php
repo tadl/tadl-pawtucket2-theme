@@ -124,6 +124,13 @@ function tadlFilterMediaResult($request, $result) {
 	$ids = Db::$pdo->query('SELECT object_id FROM objects WHERE media = 1')->fetchAll(PDO::FETCH_COLUMN);
 	$result->ids = array_values(array_intersect($result->ids, $ids));
 }
+function tadlMediaEligibleIDs($table, $ids, $access, $request) {
+	contentsCheck($table === 'ca_objects' && $access === $request->access, 'Media presence must use native object/representation eligibility with the current access context.');
+	if (!$ids) { return []; }
+	$query = Db::$pdo->prepare('SELECT object_id FROM objects WHERE object_id IN ('.join(',', array_fill(0, count($ids), '?')).') AND access IN ('.join(',', array_fill(0, count($access), '?')).') AND deleted = 0 AND readable = 1 AND media = 1');
+	$query->execute(array_merge($ids, $access));
+	return $query->fetchAll(PDO::FETCH_COLUMN);
+}
 // The parent boundary captures exactly what the actual controller delegates to native search.
 class SearchController {
 	public array $calls = [];
@@ -226,6 +233,17 @@ try {
 	Db::$queries = []; $before = ContentsBrowse::$calls;
 	$counts = tadlCollectionContentsCounts(new ContentsRequest(), contentsRecord(200));
 	contentsCheck($counts[200] === 602 && $counts[201] === 1 && $counts[802] === 1 && count(Db::$queries) === 8 && ContentsBrowse::$calls === $before + 1, 'Wide/deep branches must keep full unique counts with bounded hierarchy and membership queries.');
+	$before = ContentsBrowse::$calls;
+	$media_all = tadlCollectionContentsMediaPresence(new ContentsRequest(), $root);
+	$media_only = tadlCollectionContentsMediaPresence(new ContentsRequest(['media' => 'only']), $root);
+	contentsCheck($media_all === $media_only && $media_all[1] && $media_all[2] && $media_all[3] && $media_all[7] && !$media_all[15] && !$media_all[17], 'Digitized-media indicators must include deep descendants, respect denied relationship bundles and remain independent of the display preference.');
+	contentsCheck(!isset($media_all[8], $media_all[9], $media_all[10], $media_all[12], $media_all[14], $media_all[18], $media_all[21]), 'Media indicators must not expose unavailable branches or cross hidden ancestors.');
+	contentsCheck(ContentsBrowse::$calls === $before, 'Media presence must not run a keyword search or calculate catalogue totals.');
+	contentsCheck(tadlCollectionContentsMediaPresence(new ContentsRequest(), contentsRecord(8)) === [], 'An unavailable root must have no media indicators.');
+	Db::$queries = [];
+	$media_wide = tadlCollectionContentsMediaPresence(new ContentsRequest(), contentsRecord(200));
+	contentsCheck(count($media_wide) === 1205 && !in_array(false, $media_wide, true) && count(Db::$queries) === 8, 'Wide/deep media indicators must retain bounded collection and membership queries.');
+	contentsCheck(tadlCollectionContentsMediaPresence(new ContentsRequest(), contentsRecord(100)) === [100=>true,101=>true,102=>true], 'Media presence must terminate on cycles without losing eligible branches.');
 	foreach (['flat', 'hierarchy', 'unknown'] as $mode) {
 		$request = new ContentsRequest(['collection_id' => 1, 'collection_view' => $mode, 'view' => 'list', 'sort' => 'Title', 'direction' => 'desc', 's' => 24,
 			'search' => '*', 'key' => 'unrelated', 'facets' => 'unrelated', 'facet' => '_search', 'id' => '*', '_advanced' => 1, 'n' => 99999]);

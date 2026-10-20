@@ -16,16 +16,18 @@ function printLevel($po_request, $va_collection_ids, $o_config, $vn_level, $va_o
 	}
 	$va_access_values = caGetUserAccessValues($po_request);
 	$vb_only_media = (tadlMediaPreference($po_request) === 'only');
-	if (!isset($va_options['collection_counts'])) {
+	if (!isset($va_options['collection_media'])) {
+		$va_options['collection_media'] = [];
 		$va_options['collection_counts'] = [];
 		foreach ($va_collection_ids as $id) {
 			$root = Datamodel::getInstance('ca_collections', false);
 			if ($root && $root->load((int)$id)) {
-				$va_options['collection_counts'] += tadlCollectionContentsCounts($po_request, $root);
+				$va_options['collection_media'] += tadlCollectionContentsMediaPresence($po_request, $root);
+				if (!$o_config->get('always_link_to_detail')) { $va_options['collection_counts'] += tadlCollectionContentsCounts($po_request, $root); }
 			}
 		}
 	}
-	$va_collection_ids = array_values(array_intersect($va_collection_ids, array_keys($va_options['collection_counts'])));
+	$va_collection_ids = array_values(array_intersect($va_collection_ids, array_keys($va_options['collection_media'])));
 	$vs_output = "";
 	$vs_desc_template = $o_config->get("description_template");
 	$vs_child_collection_sort = $o_config->get("detail_child_collection_sort") ?: "ca_collections.preferred_labels.name";
@@ -36,14 +38,14 @@ function printLevel($po_request, $va_collection_ids, $o_config, $vn_level, $va_o
 		while($qr_collections->nextHit()) {
 			$vs_icon = "";
 			$vn_rel_object_count = $va_options['collection_counts'][(int)$qr_collections->get('ca_collections.collection_id')] ?? 0;
-			$vs_record_count = tadlCollectionHierarchyCount($vn_rel_object_count);
+			$vs_title = tadlCollectionHierarchyTitle($qr_collections->get('ca_collections.preferred_labels'), $va_options['collection_media'][(int)$qr_collections->get('ca_collections.collection_id')] ?? false);
 			if(is_array($va_options["collection_type_icons"])){
 				$vs_icon = $va_options["collection_type_icons"][$qr_collections->get("ca_collections.type_id")];
 			}
 			$va_child_ids = (array)$qr_collections->get("ca_collections.children.collection_id", array("returnAsArray" => true, "checkAccess" => $va_access_values, "sort" => $vs_child_collection_sort));
-			$va_child_ids = array_values(array_intersect($va_child_ids, array_keys($va_options['collection_counts'])));
+			$va_child_ids = array_values(array_intersect($va_child_ids, array_keys($va_options['collection_media'])));
 			if ($vb_only_media) {
-				$va_child_ids = tadlMediaEligibleIDs('ca_collections', $va_child_ids, (array)$va_access_values, $po_request);
+				$va_child_ids = array_values(array_filter($va_child_ids, static fn($id) => $va_options['collection_media'][$id]));
 			}
 			# --- check if collection record type is configured to be excluded
 			if(($vn_level > 1) && is_array($va_options["exclude_collection_type_ids"]) && (in_array($qr_collections->get("ca_collections.type_id"), $va_options["exclude_collection_type_ids"]))){
@@ -77,17 +79,17 @@ function printLevel($po_request, $va_collection_ids, $o_config, $vn_level, $va_o
 			if($vb_link){
 				$vs_output .= $vs_icon." ";
 				if($vb_collapse_link){
-					$vs_output .= "<a href='#' onClick='jQuery(\"#level".$qr_collections->get('ca_collections.collection_id')."\").toggle(); return false;'>".$qr_collections->get('ca_collections.preferred_labels').$vs_date.$vs_record_count."</a>";
+					$vs_output .= "<a href='#' onClick='jQuery(\"#level".$qr_collections->get('ca_collections.collection_id')."\").toggle(); return false;'>".$vs_title.$vs_date."</a>";
 				}else{
-					$vs_output .= caDetailLink($po_request, $qr_collections->get('ca_collections.preferred_labels').$vs_date.$vs_record_count, '', 'ca_collections',  $qr_collections->get("ca_collections.collection_id"));
+					$vs_output .= caDetailLink($po_request, $vs_title.$vs_date, '', 'ca_collections',  $qr_collections->get("ca_collections.collection_id"));
 				}
 				$vs_output .= " ".caDetailLink($po_request, (($o_config->get("link_out_icon")) ? $o_config->get("link_out_icon") : ""), '', 'ca_collections',  $qr_collections->get("ca_collections.collection_id"));
 			}else{
 				$vs_output .= "<span class='nonLinkedCollection'>".$vs_icon." ";
 				if($vb_collapse_link){
-					$vs_output .= "<a href='#' onClick='jQuery(\"#level".$qr_collections->get('ca_collections.collection_id')."\").toggle(); return false;'>".$qr_collections->get('ca_collections.preferred_labels').$vs_date.$vs_record_count."</a>";
+					$vs_output .= "<a href='#' onClick='jQuery(\"#level".$qr_collections->get('ca_collections.collection_id')."\").toggle(); return false;'>".$vs_title.$vs_date."</a>";
 				}else{
-					$vs_output .= $qr_collections->get("ca_collections.preferred_labels").$vs_date.$vs_record_count;
+					$vs_output .= $vs_title.$vs_date;
 				}
 				$vs_output .= "</span>";
 			}

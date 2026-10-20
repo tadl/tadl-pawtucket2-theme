@@ -649,22 +649,26 @@ below retain implementation details and historical verification evidence.
   Leaf collections omit the switch. Catalogue hierarchy and finding aids are unchanged.
   Both view-switch links use a decorative eye icon hidden from assistive technology;
   the finding-aid download retains its document icon.
-- Both hierarchy browser columns append **(42)** inside the collection title link
-  (or nonlinked title), without `records` or a forced line break. Counts include
-  unique visible objects in the selected branch and all readable descendants,
-  including levels deeper than `max_levels`; empty visible branches show **(0)**.
-  `tadlCollectionContentsCounts()` reuses the flat-list traversal/access policy,
-  executes one fresh native object browse per browser response, applies the theme
-  media filter, and fetches memberships in batches of 500 collections. It rolls
-  each object up its ancestor chain once, so overlapping memberships do not inflate
-  parent counts. No per-object model loads or per-title searches are needed.
-  Rendering also prunes titles outside that readable branch. Counts are request-local;
-  PDF finding aids now use descriptive metadata without object counts. Deploy the helper,
-  both hierarchy views and CSS together. No schema change is required.
-  The 2026-10-08 count change passed all 27 standalone suites, changed-file PHP
-  lint and synthetic desktop/phone browser checks of both columns, long titles,
-  selected-link styling and AJAX expansion. Native production integration remains
-  a deployment check; this change has not been deployed.
+- Both hierarchy browser columns use **bold titles** for branches containing
+  accessible digitized object media, without numeric count suffixes. Screen-reader
+  text adds "contains digitized media" to the title. The indicator includes readable
+  descendants below `max_levels` and stays independent of the display preference.
+  All-items mode retains normal-weight metadata-only/empty branches; media-only
+  mode omits them. An empty child never inherits its parent's media status.
+  `tadlCollectionContentsMediaPresence()` uses the existing readable traversal,
+  batches memberships by 500 collections, runs shared native object/representation
+  eligibility checks and rolls positive flags up the ancestor chain. Recursive
+  rendering shares one presence map and does not run object-count searches with
+  the default `always_link_to_detail = 1`. The counts helper remains only for the
+  optional object-dependent linking policy, preserving metadata-only object links.
+  Native access/ACL/bundle checks remain in effect. Result-toolbar totals stay
+  unchanged; PDF finding aids use descriptive metadata without object counts.
+  Deploy the helper, both hierarchy views and CSS together. No schema change is
+  required. Native production integration remains a deployment check.
+  The 2026-10-20 indicator change passed all 36 portable PHP suites, changed-file
+  PHP lint and `git diff --check`. Synthetic browser checks at 1280px and 375px
+  verified normal/bold title weights, accessible names, keyboard AJAX expansion,
+  selected links, Back/Forward history and reflow in both media preferences.
 - Collection traversal retains independent model instances, including loader and
   recursive-browser roots. Native `Datamodel::getInstance(..., true)` returns one
   mutable cached instance, not a fresh initialized model. Reusing it for saved
@@ -1057,7 +1061,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 
 | Test | Coverage |
 | --- | --- |
-| `tests/collection_hierarchy_test.php` | Initial/recursive hierarchy rendering, natural name order, inline descendant counts in both columns, one search per response, numeric labels, access/media-filtered siblings, stable ties and history/direct links |
+| `tests/collection_hierarchy_test.php` | Initial/recursive hierarchy rendering, natural name order, descendant media emphasis and screen-reader descriptions in both columns, no default count search, optional object-dependent links, escaped/numeric labels, access/media-filtered siblings, stable ties and history/direct links; `--fixtures` emits synthetic rendered HTML |
 | `tests/collection_thumbnail_test.php` | Actual SQL and Tiles/List rendering, bounded media rows, stable selection, access/deletion, native collection primary precedence and direct/descendant fallbacks |
 | `tests/object_thumbnail_test.php` | Primary preference, native access/ACL/deletion delegation, deterministic fallback, usable derivatives and actual object Tiles/List/multisearch rendering |
 | `tests/thumbnail_focus_test.php` | Native image-tag preservation, manual focal priority, invalid/stale cache rejection, responsive cover geometry and multiple faces |
@@ -1077,7 +1081,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/place_contents_test.php` | Actual SQLite descendant scopes and object relationships, private/deleted/ACL/type branch pruning, a 6,000-descendant branch, bounded queries, native search replacement and controller scope/paging |
 | `tests/media_preference_controller_test.php` | Cookie options, POST/CSRF, redirect validation |
 | `tests/collection_detail_scripts_test.php` | Collection detail loader JavaScript, empty/populated field/relationship headings, long-field controls and narrative/facts column placement |
-| `tests/collection_contents_test.php` | Actual helper/controller, SQLite hierarchy/membership queries, deep/wide branches, unique descendant rollup counts, media preference, scope/access/deletion/ACL/bundle pruning, cycles, duplicate memberships, bounded queries and canonical native search delegation |
+| `tests/collection_contents_test.php` | Actual helper/controller, SQLite hierarchy/membership queries, deep/wide branches, media-presence rollups independent of preference without count searches, optional unique descendant counts, scope/access/deletion/ACL/bundle pruning, cycles, duplicate memberships, bounded queries and canonical native search delegation |
 | `tests/object_detail_media_test.php` | Media selection, viewer controls and callbacks |
 | `tests/object_detail_video_poster_test.php` | Covers, playback, player fallback and access |
 | `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |

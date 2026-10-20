@@ -2561,6 +2561,7 @@ a.browseRemoveFacet .glyphicon {
 }
 #collectionLoad .label{
 	padding-left:0px;
+	font-weight:normal;
 }
 .collectionsContainer a, .collectionsContainer .listItem{
 	width:100%;
@@ -2585,9 +2586,8 @@ a.browseRemoveFacet .glyphicon {
 .collectionsContainer small{
 	color:#757575;
 }
-.tadl-collection-record-count {
-	white-space:nowrap;
-	font-weight:normal;
+.tadl-collection-has-media {
+	font-weight:700;
 }
 .collectionsContainer p{
 	font-size:max(var(--tadl-text-min, 0px), 12px);

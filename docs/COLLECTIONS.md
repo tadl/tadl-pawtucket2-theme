@@ -88,24 +88,30 @@ the right panel and records `#collection-<id>` in browser history. Normal detail
 URLs remain available as non-JavaScript and modified-click fallbacks. Sibling
 titles default to case-insensitive natural order, so Drawer 2 precedes Drawer 10.
 
-## Counts
+## Digitized media and result counts
 
-Both browser columns append an inline numeric suffix, such as **Series (42)**,
-inside the title link or nonlinked title. There is no forced line break or
-`records` label. Each total includes unique visible objects throughout that
-branch, even below the right panel's configured display depth. Visible empty
-branches show **(0)**. Shared objects count once in each ancestor total; sibling
-totals can overlap and should not be summed to infer the parent total.
+Both hierarchy browser columns use **bold titles** for branches with accessible
+digitized object media, including media in readable descendants below the right
+panel's configured display depth. Titles have no numeric count suffix. A matching
+screen-reader description says "contains digitized media" without replacing the
+collection's name. Empty branches and branches containing only metadata records
+use normal-weight titles. Media attached only to an ancestor does not make its
+empty descendants bold.
 
-Browser counts describe visible catalogue objects:
+This indicator uses the same object/representation access, ACL and usable-media
+checks as the theme's media filter. It is independent of the visitor's display
+preference: **All items** keeps metadata-only branches visible without bolding them;
+**Only items with media** omits those branches. Media attached directly to a
+collection, rather than to a related object, does not qualify a branch.
+
+Item totals remain in the results toolbar and describe visible catalogue objects:
 
 | Count | Includes descendants? | Uses the media preference? |
 | --- | --- | --- |
 | Flat result total | Yes, deduplicated across the selected branch | Yes |
 | Hierarchy page's item total | No, directly attached objects | Yes |
-| Inline hierarchy title count | Yes, deduplicated within that title's branch | Yes |
 
-All browser counts respect access permissions. PDF finding aids have no object
+All result totals respect access permissions. PDF finding aids have no object
 counts. They describe every readable archival unit using its recorded extent,
 description, dates and other public metadata, including units with no separately
 catalogued objects. They do not infer physical contents from browser totals.
@@ -122,7 +128,7 @@ Relevant settings in `conf/collections.conf`:
 | `do_not_display_collection_browser` | `0`; `1` hides the hierarchy browser and its switch. |
 | `browser_closed` | `0`; controls initial browser visibility within hierarchy mode. |
 | `collapse_levels` | `0`; enables native nested expansion when set. |
-| `max_levels` | `4`; limits right-panel rendering, not flat contents, branch counts or finding aids. |
+| `max_levels` | `4`; limits right-panel rendering, not flat contents, branch media checks or finding aids. |
 | `always_link_to_detail` | `1`; native non-linkable type configuration can still override it. |
 | `cache_timeout` | Keep `0`; native child-list HTML cache keys omit media preference and access context. |
 
@@ -130,11 +136,15 @@ Relevant settings in `conf/collections.conf`:
 of 500 parents, guards cycles and builds numeric collection terms for native object
 search. Retained nodes use independent, uncached model instances: native
 `Datamodel::getInstance(..., true)` returns the same mutable model, so loading a
-later child would overwrite earlier nodes' IDs, parents and access state. Counting
-shares one fresh native object browse per hierarchy response,
-applies media filtering before counting, and batches memberships by 500 collections.
-Objects are not individually loaded for browser rollups or searched separately
-for every title. Native object search still handles visibility and deduplication.
+later child would overwrite earlier nodes' IDs, parents and access state.
+`tadlCollectionContentsMediaPresence()` batches memberships by 500 collections,
+checks related objects with the shared native media-eligibility helper, and marks
+each qualifying branch and its ancestors. Recursion reuses the presence map.
+The default hierarchy rendering needs no object-count search or per-title search.
+`tadlCollectionContentsCounts()` remains available only for the optional
+`always_link_to_detail = 0` policy, where metadata-only objects must still enable
+detail links. Native object search handles visibility and deduplication for result
+lists and these optional counts.
 
 Collection browse eligibility and thumbnails use `helpers/record_access.php` to
 check native type/source/bundle permissions and Pawtucket-only ACLs in bulk,
@@ -168,7 +178,7 @@ php tests/finding_aid_test.php
 The full portable suite and requirements are in [AGENTS.md](../AGENTS.md) and the
 [handoff](CODEX_HANDOFF.md#local-verification-on-the-laptop). These tests do not
 bootstrap a production catalogue. Synthetic desktop/phone previews verified the
-mode switch, page/sort state, AJAX expansion, inline counts and finding-aid hover
+mode switch, page/sort state, AJAX expansion, media emphasis and finding-aid hover
 style. Native production integration and performance remain deployment-time checks.
 
 Deploy a coherent theme revision, including the controller, helper, views and
@@ -178,10 +188,11 @@ Reload picks up changed CSS/JS through the existing content versions.
 
 After an authorized deployment, check a flat collection, a deeply nested branch,
 an overlapping-membership example and an empty branch. In both media preferences,
-verify counts, access restrictions, paging, sorting, Tiles/List, Back and the two
-mode-switch links. Check that the finding aid retains each unit's recorded extent
+verify result counts, media emphasis, access restrictions, paging, sorting,
+Tiles/List, Back and the two mode-switch links. Check that the finding aid retains each unit's recorded extent
 and description without adding catalogue-object counts.
 Check a series with directly attached items and empty boxes/folders underneath it:
-only the series should count those items; empty descendants must stay at **(0)**.
+only the series should have a bold title and media description; empty descendants
+must remain normal weight without a media description.
 Check normal/hover link styling and narrow-screen layouts. Keep native collection
 HTML and whole-page caches disabled; source pushes alone do not deploy anything.

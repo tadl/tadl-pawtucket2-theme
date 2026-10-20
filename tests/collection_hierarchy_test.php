@@ -33,9 +33,9 @@ $GLOBALS['hierarchyObjects'] = [10=>[101], 211=>[201,202], 212=>[202,203], 213=>
 $GLOBALS['hierarchyWithoutMedia'] = [101,203,207];
 $GLOBALS['hierarchyBrowseCalls'] = 0;
 class HierarchyConfig {
- function __construct(private $sort=null) {}
+ function __construct(private $sort=null, private $alwaysLink=true) {}
  function get($field) {
-  return match($field) { 'detail_child_collection_sort'=>$this->sort, 'always_link_to_detail'=>1, 'max_levels'=>4, default=>null };
+  return match($field) { 'detail_child_collection_sort'=>$this->sort, 'always_link_to_detail'=>(int)$this->alwaysLink, 'max_levels'=>4, default=>null };
  }
 }
 class HierarchyResult {
@@ -86,7 +86,7 @@ class Db {
     }
    }
   } else {
-   hierarchyCheck($sql==='SELECT DISTINCT object_id, collection_id FROM ca_objects_x_collections WHERE collection_id IN (?)','Unexpected count query');
+   hierarchyCheck($sql==='SELECT DISTINCT object_id, collection_id FROM ca_objects_x_collections WHERE collection_id IN (?)','Unexpected membership query');
    foreach ($params[0] as $id) { foreach ($GLOBALS['hierarchyObjects'][$id]??[] as $object) { $rows[]=['object_id'=>$object,'collection_id'=>$id]; } }
   }
   return new class($rows) {
@@ -120,9 +120,9 @@ function tadlFilterMediaResult($request,$result) {
 function caMakeSearchResult($table,$ids) { hierarchyCheck($table==='ca_collections','Wrong hierarchy table'); return new HierarchyResult($ids); }
 function tadlMediaPreference($request) { return $GLOBALS['hierarchyMode']; }
 function caGetUserAccessValues($request) { return [1]; }
-function tadlMediaEligibleIDs($table,$ids,$access) {
+function tadlMediaEligibleIDs($table,$ids,$access,$request=null) {
  hierarchyCheck($access===[1],'Media filtering lost native access context');
- return $table==='ca_collections' ? array_values(array_filter($ids,fn($id)=>$GLOBALS['hierarchyRecords'][$id]['media']??true)) : $ids;
+ return $table==='ca_collections' ? array_values(array_filter($ids,fn($id)=>$GLOBALS['hierarchyRecords'][$id]['media']??true)) : array_values(array_diff($ids,$GLOBALS['hierarchyWithoutMedia']));
 }
 function caDetailUrl($request,$table,$id) { return '/Detail/collections/'.$id; }
 function caDetailLink($request,$label,$class,$table,$id) { return '<a href="'.caDetailUrl($request,$table,$id).'">'.$label.'</a>'; }
@@ -155,7 +155,17 @@ function hierarchyOrder($html,$labels) {
   $previous=$position;
  }
 }
+function hierarchyMediaTitles($html) {
+ $document=new DOMDocument(); $document->loadHTML('<meta charset="UTF-8">'.$html,LIBXML_NONET|LIBXML_NOERROR|LIBXML_NOWARNING); $nodes=new DOMXPath($document);
+ $titles=array_map(fn($node)=>$node->textContent,iterator_to_array($nodes->query('//strong[@class="tadl-collection-has-media"]')));
+ hierarchyCheck($nodes->query('//span[@class="sr-only" and contains(.,"contains digitized media")]')->length===count($titles),'Every bold title needs a screen-reader media description');
+ hierarchyCheck(!str_contains($html,'tadl-collection-record-count') && !preg_match('/\(\d+\)/',$html),'Hierarchy titles must not display numeric counts');
+ return $titles;
+}
 require dirname(__DIR__).'/views/Collections/hierarchy_helpers.php';
+$escaped=tadlCollectionHierarchyTitle('Letters & notes (1900) <script>unsafe</script>',true);
+hierarchyCheck(str_contains($escaped,'Letters &amp; notes (1900) &lt;script&gt;unsafe&lt;/script&gt;') && !str_contains($escaped,'<script>'),'Media titles must escape markup while preserving meaningful parentheses');
+hierarchyCheck(tadlCollectionHierarchyTitle('Notes & maps',false)==='Notes &amp; maps','Metadata-only titles must stay plain and escaped');
 // Parent-only memberships must never leak into the last box loaded through the model cache.
 $GLOBALS['hierarchyRecords'] += [
  4000=>['name'=>'Synthetic letters series','children'=>[4020,4030]],
@@ -185,37 +195,54 @@ foreach([null,'ca_collections.preferred_labels.name'] as $sort) {
  $view=new HierarchyView($sort);
  $html=$view->render('collection_hierarchy_html.php');
  hierarchyCheck($view->getVar('item')->getPrimaryKey()===1,'Rendering the browser must preserve the native cached page collection');
- hierarchyOrder($html,['alpha','Series 2','Series 10']);
+ hierarchyOrder($html,['Series 2','Series 10']);
  hierarchyCheck(!str_contains($html,'Private series') && !str_contains($html,'Empty series') && !str_contains($html,'Restricted series'), 'Root browser displayed filtered collections');
  hierarchyCheck(str_contains($html,'data-child-list-url="/Collections/childList/collection_id/20"') && str_contains($html,'href="/Detail/collections/20"'), 'AJAX route/direct-link fallback changed');
  hierarchyCheck(str_contains($html,"window.history.pushState") && str_contains($html,"popstate"), 'Browser history support disappeared');
- hierarchyCheck($GLOBALS['hierarchyBrowseCalls']===$before+1,'Left-column totals must share one native object search');
- hierarchyCheck(str_contains($html,'Series 2 <span class="tadl-collection-record-count">(5)</span></a>'),'Left-column title must include unique descendant media counts inside its link');
- hierarchyCheck(str_contains($html,'alpha <span class="tadl-collection-record-count">(0)</span>'),'Visible empty branch must show zero');
- hierarchyCheck(!preg_match('~<br\s*/?>\s*<small>|\(\d+ records?\)~',$html),'Counts must be inline numeric suffixes');
+ hierarchyCheck($GLOBALS['hierarchyBrowseCalls']===$before,'Media indicators must not perform an object-count search');
+ hierarchyCheck(hierarchyMediaTitles($html)===['Series 2','Series 10'],'Left-column branches with digitized descendants must be bold');
+ hierarchyCheck(!str_contains($html,'alpha'),'Media-only mode must omit branches containing metadata-only objects');
 }
 // Include the recursive template once (it defines native printLevel), then exercise both preference modes.
 $html=(new HierarchyView())->render('child_list_html.php');
-hierarchyOrder($html,['Drawer 1','drawer 2','Drawer 4','Drawer 10']);
+hierarchyOrder($html,['Drawer 1','Drawer 4','Drawer 10']);
 hierarchyOrder($html,['Volume 1','Volume 2','Volume 10']);
 hierarchyCheck(!str_contains($html,'Private drawer') && !str_contains($html,'Empty drawer') && !str_contains($html,'Restricted drawer'), 'Recursive child list displayed excluded collections');
-hierarchyCheck(str_contains($html,'Drawer 1 <span class="tadl-collection-record-count">(3)</span></a>') && str_contains($html,'Volume 2 <span class="tadl-collection-record-count">(1)</span></a>'),'Right column must use branch totals and leaf totals in the same inline format');
+hierarchyCheck(in_array('Drawer 1',hierarchyMediaTitles($html),true) && in_array('Volume 2',hierarchyMediaTitles($html),true),'Right-column parents and leaves must indicate accessible media');
 $GLOBALS['hierarchyMode']='all';
 $before=$GLOBALS['hierarchyBrowseCalls'];
+$html=(new HierarchyView())->render('collection_hierarchy_html.php');
+hierarchyOrder($html,['alpha','Empty series','Series 2','Series 10']);
+hierarchyCheck(hierarchyMediaTitles($html)===['Series 2','Series 10'] && $GLOBALS['hierarchyBrowseCalls']===$before,'All-items mode must retain plain metadata-only titles in the left pane without changing media emphasis');
 $html=printLevel(new stdClass(),[20],new HierarchyConfig(),1,['exclude_collection_type_ids'=>[],'non_linkable_collection_type_ids'=>[],'collection_type_icons'=>['box'=>''],'collapse_levels'=>false]);
 hierarchyCheck(str_contains($html,'Empty drawer') && !str_contains($html,'Private drawer'), 'All-items mode bypassed access or retained media filtering');
 hierarchyOrder($html,['Drawer 1','drawer 2','Drawer 4','Drawer 10','Empty drawer']);
-hierarchyCheck($GLOBALS['hierarchyBrowseCalls']===$before+1 && str_contains($html,'Series 2 <span class="tadl-collection-record-count">(7)</span>'),'Recursive all-items totals must use one search and include records without media');
+hierarchyCheck($GLOBALS['hierarchyBrowseCalls']===$before && !in_array('Empty drawer',hierarchyMediaTitles($html),true) && !in_array('drawer 2',hierarchyMediaTitles($html),true),'All-items mode must retain metadata-only branches without bolding them or running count searches');
 $html=printLevel(new stdClass(),[20],new HierarchyConfig(),1,['exclude_collection_type_ids'=>[],'non_linkable_collection_type_ids'=>['box'],'collection_type_icons'=>['box'=>''],'collapse_levels'=>true]);
-hierarchyCheck(str_contains($html,"<span class='nonLinkedCollection'> Series 2 <span class=\"tadl-collection-record-count\">(7)</span></span>") && str_contains($html,'Drawer 1 <span class="tadl-collection-record-count">(4)</span></a>'),'Nonlinked and collapsible titles must retain their inline count suffix');
-hierarchyCheck(printLevel(new stdClass(),[45],new HierarchyConfig(),1,['exclude_collection_type_ids'=>[],'non_linkable_collection_type_ids'=>[],'collection_type_icons'=>['box'=>''],'collapse_levels'=>false])==='','Unavailable AJAX root must not display a title or descendant counts');
+hierarchyCheck(str_contains($html,"<span class='nonLinkedCollection'> <strong") && in_array('Drawer 1',hierarchyMediaTitles($html),true),'Nonlinked and collapsible titles must retain accessible media emphasis');
+hierarchyCheck(printLevel(new stdClass(),[45],new HierarchyConfig(),1,['exclude_collection_type_ids'=>[],'non_linkable_collection_type_ids'=>[],'collection_type_icons'=>['box'=>''],'collapse_levels'=>false])==='','Unavailable AJAX root must not display a title or media indicator');
+$before=$GLOBALS['hierarchyBrowseCalls'];
+$html=printLevel(new stdClass(),[20],new HierarchyConfig(null,false),1,['exclude_collection_type_ids'=>[],'non_linkable_collection_type_ids'=>[],'collection_type_icons'=>['box'=>''],'collapse_levels'=>false]);
+hierarchyCheck($GLOBALS['hierarchyBrowseCalls']===$before+1 && str_contains($html,'href="/Detail/collections/26">Empty drawer</a>') && str_contains($html,"<span class='nonLinkedCollection'> drawer 2</span>"),'Optional object-dependent links must still link metadata-only objects without linking empty leaves');
+hierarchyCheck(!in_array('Empty drawer',hierarchyMediaTitles($html),true),'Object-dependent linking must not bold metadata-only leaves');
 foreach (['all','only'] as $mode) {
  $GLOBALS['hierarchyMode']=$mode;
  $before=$GLOBALS['hierarchyBrowseCalls'];
  $html=printLevel(new stdClass(),[4000],new HierarchyConfig(),1,['exclude_collection_type_ids'=>[],'non_linkable_collection_type_ids'=>[],'collection_type_icons'=>['box'=>''],'collapse_levels'=>false]);
- hierarchyCheck($GLOBALS['hierarchyBrowseCalls']===$before+1 && str_contains($html,'Synthetic letters series <span class="tadl-collection-record-count">(404)</span>'),'Parent-only totals must render correctly using one native search');
+ hierarchyCheck($GLOBALS['hierarchyBrowseCalls']===$before && hierarchyMediaTitles($html)===['Synthetic letters series'],'Parent-only media must bold only the parent without a count search');
  foreach (['Synthetic empty box 5','Synthetic empty box 6','Synthetic empty folder 5','Synthetic empty folder 6'] as $label) {
-  hierarchyCheck(str_contains($html,$label.' <span class="tadl-collection-record-count">(0)</span>'),'Empty descendants must render zero instead of their parent total');
+  hierarchyCheck($mode==='only' ? !str_contains($html,$label) : (str_contains($html,$label) && !str_contains($html,'>'.$label.'</strong>')),'Empty descendants must never inherit their parent media indicator');
  }
 }
-echo 'Collection hierarchy passed: '.$assertions.' assertions (rendered siblings, recursive natural ordering, access/media filters and history links).'.PHP_EOL;
+if (in_array('--fixtures',$argv??[],true)) {
+ $fixtures=[];
+ foreach (['all','only'] as $mode) {
+  $GLOBALS['hierarchyMode']=$mode;
+  $view=new HierarchyView();
+  $options=['exclude_collection_type_ids'=>[],'non_linkable_collection_type_ids'=>[],'collection_type_icons'=>['box'=>''],'collapse_levels'=>false];
+  $fixtures[$mode]=['browser'=>$view->render('collection_hierarchy_html.php'),'children'=>printLevel($view->request,[20],new HierarchyConfig(),1,$options),'empty_children'=>printLevel($view->request,[50],new HierarchyConfig(),1,$options)];
+ }
+ echo json_encode($fixtures,JSON_THROW_ON_ERROR);
+} else {
+ echo 'Collection hierarchy passed: '.$assertions.' assertions (rendered siblings, recursive natural ordering, access/media filters and history links).'.PHP_EOL;
+}
