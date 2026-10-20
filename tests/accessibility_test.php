@@ -139,6 +139,11 @@ a11yLabels($fixtures['share-lightbox']);
 $clip_html = (new A11yView(['player_name' => 'synthetic-player', 'annotation_list' => ['Synthetic clip', '<b>Second clip</b>'], 'annotation_times' => [[0, 5], [5, 10]]]))->render('Details/annotations_html.php');
 $clip_xpath = a11yDocument($clip_html);
 a11yCheck($clip_xpath->query('//button[@type="button" and contains(@class,"tadl-featured-clip")]')->length === 2 && $clip_xpath->query('//h2')->length === 1, 'Featured clips need named keyboard buttons and a section heading.');
+$comments_html = (new A11yView(['item_id' => 9, 'tablename' => 'ca_set_items']))->render('Lightbox/ajax_comments.php');
+$comments_html = str_replace('{{{item_id}}}', '9', $comments_html);
+$comments_xpath = a11yLabels($comments_html);
+a11yCheck($comments_xpath->query('//*[@role="alert"]')->length === 1 && $comments_xpath->query('//*[@role="status"]')->length === 1, 'Comments require error and save-status announcements.');
+a11yCheck(substr_count($comments_html, '.fail(function') === 2 && !str_contains($comments_html, '.html(data.errors'), 'Comment writes require safe error messages and transport failure handling.');
 $fixtures['cookies'] = (new A11yView([
 	'config' => new A11yConfig(),
 	'cookiesByCategory' => [
