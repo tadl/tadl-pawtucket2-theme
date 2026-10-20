@@ -667,9 +667,9 @@ below retain implementation details and historical verification evidence.
 - Collection details default to a flat list of the selected collection's objects
   plus every readable descendant's objects. Native search unions memberships, so
   an object linked to several descendants appears once. A readable hierarchy
-  offers **View collection hierarchy** beneath the finding-aid link; explicit
+  offers **Collection hierarchy view** beneath the finding-aid link; explicit
   `collection_view=hierarchy` restores the existing browser and directly attached
-  items. **View all collection items** returns to flat mode. Unknown/missing mode
+  items. **Flat collection view** returns to flat mode. Unknown/missing mode
   defaults to flat; switching scope resets paging and retains sort/display state.
   Leaf collections omit the switch. Catalogue hierarchy and finding aids are unchanged.
   Both view-switch links use a decorative eye icon hidden from assistive technology;

@@ -246,9 +246,9 @@ foreach ([['ca_collections.description' => 'Synthetic description'], ['ca_collec
 	checkDetailScripts(substr_count($html, 'class="tadl-collection-fields"') + substr_count($html, 'class="tadl-collection-facts"') === 1, 'A single populated metadata column must not reserve an empty sibling.');
 }
 $html = (new DetailScriptView(0))->render('ca_collections');
-checkDetailScripts(strpos($html, 'exportCollection') < strpos($html, 'View collection hierarchy') && str_contains($html, '/Detail/collections/42/collection_view/hierarchy/view/images/sort/Identifier/direction/asc/s/0'), 'Flat view needs an ordinary hierarchy link beneath the finding aid.');
+checkDetailScripts(strpos($html, 'exportCollection') < strpos($html, 'Collection hierarchy view') && str_contains($html, '/Detail/collections/42/collection_view/hierarchy/view/images/sort/Identifier/direction/asc/s/0'), 'Flat view needs an ordinary hierarchy link beneath the finding aid.');
 $html = (new DetailScriptView(2, [], ['collection_view' => 'hierarchy', 'view' => 'list', 'sort' => 'Title', 'direction' => 'desc', 's' => 24]))->render('ca_collections');
-checkDetailScripts(str_contains($html, 'View all collection items') && str_contains($html, '/Detail/collections/42/collection_view/flat/view/list/sort/Title/direction/desc/s/0'), 'Return link must retain view/sort but reset paging for the larger scope.');
+checkDetailScripts(str_contains($html, 'Flat collection view') && str_contains($html, '/Detail/collections/42/collection_view/flat/view/list/sort/Title/direction/desc/s/0'), 'Return link must retain view/sort but reset paging for the larger scope.');
 $GLOBALS['detailScriptHasChildren'] = false;
 $html = (new DetailScriptView(0))->render('ca_collections');
 checkDetailScripts(!str_contains($html, 'tadl-collection-view-switch') && !str_contains($html, 'collectionHierarchy'), 'Leaf collections must not offer an empty hierarchy.');

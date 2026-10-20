@@ -9,9 +9,9 @@ its ancestors, siblings or unrelated collections.
 ## Flat and hierarchy views
 
 When readable children exist and the browser is enabled in configuration,
-**View collection hierarchy** appears beneath **View finding aid**. It opens
+**Collection hierarchy view** appears beneath **View finding aid**. It opens
 the hierarchy browser and restores directly attached items on the collection page.
-**View all collection items** returns to the flat list. Leaf collections omit the switch.
+**Flat collection view** returns to the flat list. Leaf collections omit the switch.
 Both view-switch links have an eye icon; **View finding aid** has a document icon.
 The document viewer provides the download option.
 
