@@ -22,7 +22,7 @@
 	<h1><?= htmlspecialchars((string)$this->getVar('section_name').': '.(string)$this->getVar('label'), ENT_QUOTES, 'UTF-8'); ?></h1>
 	<p id="tadl-gallery-status" class="sr-only" role="status"></p>
 	<div class="tadl-gallery-detail-columns tadl-gallery-detail-main">
-		<div id="galleryDetailImageArea"><?php if (!$vn_initial_item_id) { print '<p>'._t('No gallery items are currently available.').'</p>'; } ?></div>
+		<div id="galleryDetailImageArea" data-load-error="<?= htmlspecialchars(_t('The gallery item could not be loaded. Please try again or follow its link.'), ENT_QUOTES, 'UTF-8'); ?>"><?php if (!$vn_initial_item_id) { print '<p>'._t('No gallery items are currently available.').'</p>'; } ?></div>
 		<div id="galleryDetailObjectInfo"></div>
 	</div>
 	<div class="tadl-gallery-detail-columns tadl-gallery-detail-bottom">
@@ -55,18 +55,16 @@
 		jQuery('#galleryDetailImageGrid').on('click', '.tadl-gallery-thumbnail-link', function (event) {
 			if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) { return; }
 			event.preventDefault();
-			jQuery('#galleryDetailImageArea').load(jQuery(this).attr('data-rep-url'));
-			jQuery('#galleryDetailObjectInfo').load(jQuery(this).attr('data-info-url'));
-			galleryHighlightThumbnail(this.id);
+			tadlSelectGalleryItem({representation:this.getAttribute('data-rep-url'), information:this.getAttribute('data-info-url'), thumbnail:this.id});
 		});
 		jQuery('#moreLink').on('click', function () {
-			jQuery('#galleryDetailImageGrid .galleryIconHidden').removeClass('galleryIconHidden');
+			var revealed = jQuery('#galleryDetailImageGrid .galleryIconHidden');
+			revealed.removeClass('galleryIconHidden');
+			revealed.find('a').first().trigger('focus');
 			jQuery(this).hide();
 		});
 		<?php if ($vn_initial_item_id): ?>
-		jQuery('#galleryDetailImageArea').load(<?= json_encode(caNavUrl($this->request, '', 'Gallery', 'getSetItemRep', ['item_id' => $vn_initial_item_id, 'set_id' => $pn_set_id]), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>);
-		jQuery('#galleryDetailObjectInfo').load(<?= json_encode(caNavUrl($this->request, '', 'Gallery', 'getSetItemInfo', ['item_id' => $vn_initial_item_id, 'set_id' => $pn_set_id]), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>);
-		galleryHighlightThumbnail(<?= json_encode('galleryIcon'.$vn_initial_item_id); ?>);
+		tadlSelectGalleryItem(<?= json_encode(['representation' => caNavUrl($this->request, '', 'Gallery', 'getSetItemRep', ['item_id' => $vn_initial_item_id, 'set_id' => $pn_set_id]), 'information' => caNavUrl($this->request, '', 'Gallery', 'getSetItemInfo', ['item_id' => $vn_initial_item_id, 'set_id' => $pn_set_id]), 'thumbnail' => 'galleryIcon'.$vn_initial_item_id], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>);
 		<?php endif; ?>
 	});
 	function galleryHighlightThumbnail(id) {

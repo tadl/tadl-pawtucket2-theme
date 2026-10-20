@@ -127,6 +127,19 @@ let browser;
     await page.waitForFunction(() => document.querySelector('#galleryIcon2').getAttribute('aria-current') === 'true' && document.querySelector('#galleryDetailImageArea').getAttribute('aria-busy') === 'false' && document.activeElement.classList.contains('galleryDetailNext'));
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => document.querySelector('#galleryIcon3').getAttribute('aria-current') === 'true' && document.activeElement.classList.contains('galleryDetailPrevious'));
+    await page.locator('#moreLink').click();
+    assert.equal(await page.locator(':focus').getAttribute('id'), 'galleryIcon13', 'Revealing items must move focus to the first new thumbnail.');
+    await page.route('**/Gallery/getSetItem*', async route => {
+        if (new URL(route.request().url()).searchParams.get('item_id') === '2') { await new Promise(resolve => setTimeout(resolve, 250)); }
+        await route.continue().catch(() => {});
+    });
+    await page.locator('#galleryIcon2').click();
+    await page.locator('#galleryIcon3').click();
+    await page.waitForFunction(() => document.querySelector('#galleryIcon3').getAttribute('aria-current') === 'true' && document.querySelector('#galleryDetailImageArea').getAttribute('aria-busy') === 'false');
+    await page.waitForTimeout(350);
+    assert(await page.locator('.galleryDetailNext').isDisabled(), 'A delayed older response must not replace the selected final item.');
+    assert.equal(await page.locator('#galleryIcon3').getAttribute('aria-current'), 'true');
+    await page.unroute('**/Gallery/getSetItem*');
     // Exercise the actual native panel, the changed dialog template and its focus adapter.
     await page.goto(origin + '/contact');
     await page.evaluate(() => {

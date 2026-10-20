@@ -60,16 +60,6 @@
         if (!target) { return; }
         var selector = mode === 'previous' ? '.galleryDetailPrevious' : '.galleryDetailNext';
         var restoreFocus = jQuery(document.activeElement).is(selector);
-        jQuery('#galleryDetailImageArea').attr('aria-busy', 'true').load(target.representation, function () {
-            jQuery(this).attr('aria-busy', 'false');
-            if (restoreFocus) {
-                var control = jQuery(this).find(selector + ':not(:disabled)').first();
-                if (!control.length) { control = jQuery(this).find('button:not(:disabled), a[href]').first(); }
-                control.trigger('focus');
-            }
-        });
-        jQuery('#galleryDetailObjectInfo').load(target.information);
-        galleryHighlightThumbnail(target.thumbnail);
-        jQuery('#caMediaPanelContentArea:visible').load(target.overlay);
+        tadlSelectGalleryItem(target, restoreFocus ? selector : null);
     }
 </script>

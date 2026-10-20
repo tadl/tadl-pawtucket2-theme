@@ -40,7 +40,8 @@ class AssetLoadManager {
 			.'<script src="/native/bootstrap/js/bootstrap.js"></script>'
 			.'<script src="/native/ca/js/ca.genericpanel.js"></script>'
 			.'<script src="/themes/tadl/assets/pawtucket/js/user-features.js"></script>'
-			.'<script src="/themes/tadl/assets/pawtucket/js/lightbox-order.js"></script>';
+			.'<script src="/themes/tadl/assets/pawtucket/js/lightbox-order.js"></script>'
+			.'<script src="/themes/tadl/assets/pawtucket/js/gallery-navigation.js"></script>';
 	}
 }
 define('pInteger', 1); define('pString', 2);
@@ -152,7 +153,7 @@ foreach (['fname' => 'given-name', 'lname' => 'family-name', 'email' => 'email',
 	a11yCheck($control->getAttribute('name') === $field && $control->getAttribute('autocomplete') === $purpose, 'Native submitted name must survive purpose annotations.');
 	a11yCheck($control->getAttribute('aria-invalid') === 'true', 'Native fields must expose validation errors.');
 }
-$fixtures['gallery'] = (new A11yView(['set_id' => 7, 'set_items' => [['item_id' => 1], ['item_id' => 2], ['item_id' => 3]], 'section_name' => 'Gallery', 'label' => 'Synthetic gallery']))->render('Gallery/detail_html.php');
+$fixtures['gallery'] = (new A11yView(['set_id' => 7, 'set_items' => array_map(static fn($id) => ['item_id' => $id], range(1, 14)), 'section_name' => 'Gallery', 'label' => 'Synthetic gallery']))->render('Gallery/detail_html.php');
 $fixtures['featured'] = '<h1>Synthetic featured collection</h1>'.(new A11yView(['access_values' => [1], 'featured_set_item_ids' => [1, 2, 3, 4]]))->render('Front/featured_set_slideshow_html.php');
 $fixtures['notifications'] = '<h1>Synthetic notifications</h1>'.(new A11yView(['notifications' => [['type' => 1, 'message' => 'Synthetic error notice.'], ['type' => 3, 'message' => 'Synthetic informational notice.']]]))->render('pageFormat/notifications.php');
 foreach ([1, 2, 3] as $id) {

@@ -520,6 +520,10 @@ const galleryContext = vm.createContext({
   load(url) { loads.push({selector, url}); return this; },
   data(key) { assert.equal(selector, '#syntheticMediaPanel'); assert.equal(key, 'reloadUrl'); return '/Gallery/301?set_item_id=22'; }
  }; },
+ tadlSelectGalleryItem(target) {
+  loads.push({selector:'#galleryDetailImageArea',url:target.representation}, {selector:'#galleryDetailObjectInfo',url:target.information}, {selector:'#caMediaPanelContentArea:visible',url:target.overlay});
+  highlights.push(target.thumbnail);
+ },
  galleryHighlightThumbnail(id) { highlights.push(id); },
  caMediaPanel: {showPanel(url, callback) { opened.push({url, callback}); }, getPanelID() { return 'syntheticMediaPanel'; }}
 });
