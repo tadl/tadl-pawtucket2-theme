@@ -740,6 +740,19 @@ below retain implementation details and historical verification evidence.
   into gaps. Each AJAX/infinite-scroll page owns its grid; controls and pagination
   remain outside it. Desktop/tablet/phone columns remain three/two/one, with two
   columns in the narrower authority layout at 992–1199px.
+  Shared tile image boxes now keep a 3:2 aspect ratio as cards widen, replacing
+  the fixed 210px height that made full-width grids much wider than sidebar
+  previews. The image area cannot shrink to accommodate long titles; hover and
+  placeholders retain its proportions. List thumbnail dimensions are unchanged.
+  Native `object-fit: cover`, representation selection and focal metadata remain
+  intact. Normalized manual points/face boxes and the existing ResizeObserver
+  already adapt to the rendered dimensions, so no detector changes or cache
+  rebuild are needed. Focal geometry regressions include several 3:2 box sizes.
+  Focus, detector, package export, object/collection thumbnail and asset-version
+  checks passed. Synthetic browser previews of actual result markup verified
+  full-width/sidebar/List layouts at 320, 390, 768, 1024, 1280 and 1600px, including
+  hover, placeholders, equal row heights, manual/group focus and resize/AJAX updates.
+  No production deployment or detection run was performed.
 - Object, collection, person, organization, place and event Detail pages use
   `tadlDetailNavigation()` beside their headings: native context **Prev / Next**
   links plus the corresponding Browse action, with no Back button. Object details

@@ -3391,21 +3391,20 @@ div.tadl-finding-aid-controls .close {
     min-height: 0;
 }
 
-.bResultItem .bResultItemImg {
+.bResultItem .bResultItemImg,
+.bResultItem:hover .bResultItemImg {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 210px;
+    flex: 0 0 auto;
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    height: auto;
     max-height: none;
-    min-height: 210px;
+    min-height: 0;
     margin: 0;
     overflow: hidden;
     background: #f4f6f8;
-}
-
-.bResultItem:hover .bResultItemImg {
-    height: 210px;
-    max-height: none;
 }
 
 .bResultItem .bResultItemImg a {
@@ -3434,6 +3433,10 @@ div.tadl-finding-aid-controls .close {
     background: #eef2f5;
     color: #6d7780;
     padding: 0;
+}
+
+.bResultItem .bResultItemImgPlaceholder {
+    min-height: 0;
 }
 
 .bResultItem .bResultItemText {

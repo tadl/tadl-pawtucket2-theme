@@ -114,6 +114,19 @@ const start = group[1]/100*(1-visible);
 check(start<=0.08 && start+visible>=0.21); // retain both faces when they fit
 check(cropPosition(332,400,468,210,{...point,faces})[1]===crop[1]); // manual wins
 check(cropPosition(332,400,468,210,{faces:[[0,0,1,1]]}).every(Number.isFinite)); // impossible group stays cover
+// Sidebar and full-width tiles now share 3:2 geometry; normalized detections remain reusable.
+const tileSizes = [240,304,468,600];
+const tileCrop = cropPosition(332,400,304,304/1.5,point);
+for (const width of tileSizes) {
+    const sizeCrop = cropPosition(332,400,width,width/1.5,point);
+    check(sizeCrop.every((axis,index)=>Math.abs(axis-tileCrop[index])<1e-10));
+    const visibleY = (width/1.5)/(400*(width/332));
+    const top = sizeCrop[1]/100*(1-visibleY);
+    check(top<=point.point.y && top+visibleY>=point.point.y);
+    const groupCrop = cropPosition(332,400,width,width/1.5,{faces});
+    const groupTop = groupCrop[1]/100*(1-visibleY);
+    check(groupTop<=0.08 && groupTop+visibleY>=0.21);
+}
 process.stdout.write(String(count));
 JS;
 $process = proc_open(['node', '-e', $js, dirname(__DIR__).'/assets/pawtucket/js/thumbnail-focus.js'],

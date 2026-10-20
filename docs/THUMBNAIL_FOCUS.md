@@ -7,6 +7,11 @@ alter originals, or introduce a whole-image/letterbox fallback. Authority-relate
 object results use the same shared result views. Detail and gallery viewers are
 unchanged.
 
+Shared Tiles results use a consistent **3:2 thumbnail box**, with or without a
+sidebar. The box scales with card width instead of staying 210px tall; hover and
+placeholder cards retain the same proportions. List thumbnails keep their existing
+dimensions. Images continue to fill their boxes with `object-fit: cover`.
+
 ## Share with another Pawtucket site
 
 `support/package-thumbnail-faces.py` creates a standalone directory and optional
@@ -46,6 +51,9 @@ rendered card dimensions. Using the coordinates directly as CSS percentages woul
 not center the selected subject correctly. The calculation clamps at image edges
 and reruns on load, resize and new AJAX/infinite-scroll results. A percentage
 fallback is present for manual points before JS loads. Both paths keep cover.
+Face boxes and staff points are normalized to the source image, independent of
+the card's dimensions. Changing the tile aspect ratio does not require rerunning
+detection or rebuilding existing face caches; the browser uses the new box size.
 
 Original-image coordinates are applied only to derivatives with essentially the
 same aspect ratio (2% tolerance for rounding). For an already cropped derivative,
