@@ -123,9 +123,13 @@ class DetailScriptView {
 		$GLOBALS['detailScriptExpectedCollection'] = $id;
 		$this->request = new DetailScriptRequest($params);
 		$this->values = array('item' => new DetailScriptItem($objectCount, $templates, $id, $type), 'comments' => array(), 'pdfEnabled' => true,
-			'previousLink' => '<a href="/synthetic/Detail/collections/41">Previous</a>',
-			'nextLink' => '<a href="/synthetic/Detail/collections/43">Next</a>',
 			'resultsLink' => '<a href="/synthetic/results">Back</a>');
+		// Use the shipped native labels so browser checks exercise the actual arrows.
+		$detailConfig = file_get_contents(dirname(__DIR__).'/conf/detail.conf');
+		foreach (['previousLink' => 41, 'nextLink' => 43] as $name => $target) {
+			preg_match('/^\s*'.$name.'\s*=\s*(.+),$/m', $detailConfig, $match);
+			$this->values[$name] = '<a href="/synthetic/Detail/collections/'.$target.'">'.$match[1].'</a>';
+		}
 	}
 	public function getVar($name) { return $this->values[$name] ?? null; }
 	public function setVar($name, $value) { $this->values[$name] = $value; }

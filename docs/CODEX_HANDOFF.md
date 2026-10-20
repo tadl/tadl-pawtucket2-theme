@@ -374,6 +374,9 @@ metadata column above the title, leaving the photo at the top of the body region
 Its tooltips and ARIA labels identify the previous/next object. Direct object
 visits without result context omit the empty toolbar. Other detail types retain
 their Browse destination.
+Detail navigation places its arrows outside the labels: **‹ Previous** and
+**Next ›**. Icons are decorative; hover/focus underlines only the label, including
+inside object metadata, without changing the contextual tooltips or ARIA names.
 Embedded server-rendered result fragments explicitly activate their filtered
 native context before saving it; their helper bypasses the native SearchController
 initialization. Legacy AJAX callers retain the same activation because upstream
@@ -383,7 +386,9 @@ adopting the contents endpoint's action. Native Browse action tracking and expli
 does not replace the active full-results context.
 
 Verification: portable navigation/menu/default-map checks plus the actual native
-configuration parser; media eligibility/context, authority, document-text,
+configuration parser. Browser checks use the shipped arrow markup and verify
+hover/focus decoration at desktop/mobile widths, including inside metadata;
+media eligibility/context, authority, document-text,
 account and results suites cover the integration boundaries. No deployment or
 production record changes were performed for this source change.
 

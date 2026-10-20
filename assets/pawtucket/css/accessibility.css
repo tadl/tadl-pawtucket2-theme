@@ -36,6 +36,11 @@ html:has(#caMediaPanel[aria-hidden="false"]) { overflow: hidden; }
     text-underline-offset: .15em;
 }
 
+/* Bordered record controls underline their labels separately from their icons. */
+#main .tadl-record-nav a:not(.btn) {
+    text-decoration: none;
+}
+
 .tadl-dialog-close {
     display: inline-flex;
     align-items: center;

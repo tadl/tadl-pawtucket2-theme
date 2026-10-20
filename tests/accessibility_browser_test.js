@@ -90,6 +90,11 @@ let browser;
         for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'featured', 'notifications', 'collection-staff']) {
             await page.goto(origin + '/' + name);
             if (name === 'gallery') { await page.locator('.galleryDetailNext').waitFor(); }
+            await page.evaluate(async () => {
+                await document.fonts.ready;
+                // Hit-target checks need the new page painted, including after a resize.
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            });
             await page.evaluate(axeSource);
             const result = await page.evaluate(async () => {
                 const result = await axe.run(document, {runOnly:{type:'tag', values:['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa','best-practice']}});
@@ -102,6 +107,22 @@ let browser;
                 const editor = await page.locator('.tadl-providence-collection').boundingBox();
                 assert(editor.y >= navigation.y + navigation.height, 'Collection editor shortcut must sit below navigation.');
                 assert(Math.abs(editor.x + editor.width - navigation.x - navigation.width) < 2, 'Collection editor shortcut must align with the right edge of navigation.');
+                // Object navigation also lives inside metadata, whose prose links are underlined.
+                const actions = page.locator('.tadl-collection-header-actions');
+                for (const insideMetadata of [false, true]) {
+                    await actions.evaluate((node, enabled) => node.classList.toggle('tadl-detail-metadata', enabled), insideMetadata);
+                    for (const direction of ['previous', 'next']) {
+                        const link = page.getByRole('link', {name:`Go to ${direction} collection`, exact:true});
+                        const icon = await link.locator('i').boundingBox();
+                        const label = await link.locator('.small').boundingBox();
+                        assert(direction === 'previous' ? icon.x + icon.width <= label.x : label.x + label.width <= icon.x, 'Detail arrows must point outward from their labels.');
+                        for (const state of ['hover', 'focus']) {
+                            await link[state]();
+                            assert.deepEqual(await link.evaluate(node => [node, node.querySelector('i'), node.querySelector('.small')].map(element => getComputedStyle(element).textDecorationLine)), ['none', 'none', 'underline'], 'Only the label may underline, including inside object metadata.');
+                        }
+                    }
+                }
+                await actions.evaluate(node => node.classList.remove('tadl-detail-metadata'));
             }
             if (artifacts) { await page.screenshot({path:path.join(artifacts, `${name}-${width}.png`), fullPage:true}); }
             await page.evaluate(() => {

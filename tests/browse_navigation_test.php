@@ -31,7 +31,8 @@ class BrowseNavigationView {
 	public $request;
 	function __construct() { $this->request = new BrowseNavigationRequest(); }
 	function getVar($name) {
-		return ['previousLink' => '<a href="/synthetic/previous" aria-label="Previous" title="Previous"><span aria-hidden="true">‹</span> Previous</a>', 'nextLink' => '<a href="/synthetic/next" aria-label="Next">Next</a>'][$name] ?? null;
+		$direction = ['previousLink' => 'previous', 'nextLink' => 'next'][$name] ?? null;
+		return $direction ? '<a href="/synthetic/'.$direction.'">'.$GLOBALS['detailNavigation'][$name].'</a>' : null;
 	}
 	function renderMenu() {
 		ob_start();
@@ -77,6 +78,18 @@ foreach ($expected as $type => [$sort, $field]) {
 }
 require dirname(__DIR__).'/views/Details/detail_field_helpers.php';
 
+$detailSource = file_get_contents(dirname(__DIR__).'/conf/detail.conf');
+preg_match_all('/^\s*(previousLink|nextLink)\s*=\s*(.+),$/m', $detailSource, $configuredLinks, PREG_SET_ORDER);
+browseCheck(count($configuredLinks) === 12, 'Every configured detail type must retain previous/next navigation.');
+foreach ($configuredLinks as [, $name, $markup]) {
+	$document = new DOMDocument();
+	$document->loadHTML('<a>'.$markup.'</a>', LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+	$link = $document->getElementsByTagName('a')->item(0);
+	$icon = $name === 'previousLink' ? $link->firstChild : $link->lastChild;
+	browseCheck($icon->nodeName === 'i' && $icon->getAttribute('aria-hidden') === 'true' && str_contains($icon->getAttribute('class'), $name === 'previousLink' ? 'fa-angle-left' : 'fa-angle-right'), 'Configured detail arrows must precede Previous and follow Next, and remain decorative.');
+	$GLOBALS['detailNavigation'][$name] = $markup;
+}
+
 $GLOBALS['menuTypes'] = $GLOBALS['browseTypes'];
 $view = new BrowseNavigationView();
 $links = browseLinks($view->renderMenu());
@@ -107,7 +120,7 @@ foreach (['objects'=>'object', 'collections'=>'collection', 'people'=>'person', 
 		browseCheck($link->getAttribute('title') === $label && $link->getAttribute('aria-label') === $label, $type.': tooltip and accessible name must identify the neighboring record type.');
 		browseCheck($link->getAttribute('href') === '/synthetic/'.$direction, $type.': labeling must preserve the native destination.');
 	}
-	browseCheck($links->item(0)->textContent === '‹ Previous' && $links->item(0)->getElementsByTagName('span')->item(0)->getAttribute('aria-hidden') === 'true', $type.': labels must preserve native visible text and icon semantics.');
+	browseCheck($links->item(0)->textContent === 'Previous' && $links->item(1)->textContent === 'Next' && $links->item(0)->firstChild->nodeName === 'i' && $links->item(1)->lastChild->nodeName === 'i', $type.': labels must preserve the configured visible text and arrow order.');
 }
 $directObjectView = new class extends BrowseNavigationView { function getVar($name) { return null; } };
 browseCheck(tadlDetailNavigation($directObjectView) === '', 'Objects without result context must omit the empty navigation wrapper.');
@@ -126,6 +139,12 @@ if ($parser = getenv('TADL_TEST_CONFIGURATION')) {
 	browseCheck($types['families']['defaultView'] === 'images' && array_key_first($types['families']['views']) === 'images', 'Native family configuration must default to Tiles.');
 	foreach ($expected as $type => [$sort, $field]) {
 		browseCheck($types[$type]['sortBy'] === $GLOBALS['browseTypes'][$type]['sortBy'] && $types[$type]['sortDirection'] === $GLOBALS['browseTypes'][$type]['sortDirection'], $type.': native parser differs from the portable sort-map checks.');
+	}
+	browseCheck($config->loadFile(dirname(__DIR__).'/conf/detail.conf'), 'Native parser rejected detail.conf.');
+	foreach ($config->getAssoc('detailTypes') as $type => $detail) {
+		foreach ($GLOBALS['detailNavigation'] as $name => $markup) {
+			browseCheck($detail['options'][$name] === $markup, $type.': native parser must preserve arrow markup.');
+		}
 	}
 }
 echo "Browse navigation passed: {$checks} assertions.\n";

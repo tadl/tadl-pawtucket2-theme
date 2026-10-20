@@ -2262,10 +2262,17 @@ div.tadl-finding-aid-controls .close {
     border-color: var(--tadl-primary);
     background: #eef4f8;
     color: var(--tadl-primary-dark);
+    text-decoration: none;
 }
 
 .tadl-record-nav .small {
     font-size: inherit;
+}
+
+.tadl-record-nav a:hover .small,
+.tadl-record-nav a:focus .small {
+    text-decoration: underline;
+    text-underline-offset: .15em;
 }
 
 .tadl-authority-header {
