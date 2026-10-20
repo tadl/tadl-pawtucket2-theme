@@ -129,6 +129,10 @@ Detail Prev/Next links now have matching native hover tooltips and descriptive
 ARIA labels for their context: collection, object, person, organization, family,
 place or event. Unknown authority types use record. Native destinations and
 visible labels remain intact; no additional catalogue lookups are needed.
+Use the full visible label **Previous** in `conf/detail.conf` and native-boundary
+fixtures. Abbreviated **Prev** fails the label-in-name check against **Go to
+previous collection** (and the equivalent object/authority labels). The October
+20 CI follow-up verified the same pinned Playwright/axe versions used by Actions.
 
 ## Completed work and useful commits
 

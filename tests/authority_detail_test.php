@@ -151,13 +151,13 @@ require dirname(__DIR__).'/views/Details/authority_detail_helpers.php';
 foreach (['ca_entities' => ['people', 'Browse people'], 'ca_places' => ['places', 'Browse places'], 'ca_occurrences' => ['occurrences', 'Browse events']] as $table => [$browse, $label]) {
 	$item = new AuthorityItem($table);
 	$html = (new AuthorityView(new AuthorityRequest(), $item, [
-		'previousLink' => '<a href="/synthetic/previous">Prev</a>',
+		'previousLink' => '<a href="/synthetic/previous">Previous</a>',
 		'nextLink' => '<a href="/synthetic/next">Next</a>',
 		'resultsLink' => '<a href="/synthetic/back">Back</a>'
 	]))->render();
 	$xpath = authorityDocument($html);
 	$links = $xpath->query('//header[contains(@class,"tadl-record-header")]/nav[@class="tadl-record-nav"]/a');
-	checkAuthority(array_map(static fn($node) => $node->textContent, iterator_to_array($links)) === ['Prev', 'Next', $label], 'Authority header must contain native Prev/Next and the correct Browse action, without Back.');
+	checkAuthority(array_map(static fn($node) => $node->textContent, iterator_to_array($links)) === ['Previous', 'Next', $label], 'Authority header must contain native Previous/Next and the correct Browse action, without Back.');
 	$sort = $browse === 'people' ? 'Identifier' : 'Name';
 	checkAuthority(!str_contains($html, '/synthetic/back') && $links->item(2)->getAttribute('href') === '/synthetic/Browse/'.$browse.'?sort='.$sort.'&direction=asc', 'Authority navigation must omit Back and start its browse in logical order.');
 	$recordType = ['people'=>'person', 'places'=>'place', 'occurrences'=>'event'][$browse];

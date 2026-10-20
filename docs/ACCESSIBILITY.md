@@ -20,6 +20,8 @@ with an Apply button for the no-JavaScript GET fallback. Its separate browser re
 covers 320–1600px reflow, automated A/AA checks on the result controls, paging and
 cross-page display preferences. Subsequent collection pages omit repeated metadata
 and retain a link back to the complete description.
+Detail navigation uses the full visible word **Previous**, so it is included in
+contextual accessible names such as **Go to previous collection** (WCAG 2.5.3).
 
 ## Coverage and evidence
 

@@ -144,7 +144,7 @@ foreach ([[false, 0], [false, 1], [true, 1], [true, 255], [true, 99], [true, 0]]
 }
 $objectNavigation = (new FeatureView(new FeatureRequest(), [
 	'item' => new FeatureDetailObject(),
-	'previousLink' => '<a href="/Detail/objects/41">Prev</a>',
+	'previousLink' => '<a href="/Detail/objects/41">Previous</a>',
 	'nextLink' => '<a href="/Detail/objects/43">Next</a>'
 ]))->render('Details/ca_objects_default_html.php');
 $document = new DOMDocument(); $document->loadHTML($objectNavigation, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);

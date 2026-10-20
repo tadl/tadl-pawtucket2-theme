@@ -287,7 +287,7 @@ class TextView {
 	function __construct(public TextRequest $request, public TextObject $object) {}
 	function getVar($name) { return match ($name) {
 		'item' => $this->object,
-		'previousLink' => '<a href="/synthetic/Detail/objects/41">Prev</a>',
+		'previousLink' => '<a href="/synthetic/Detail/objects/41">Previous</a>',
 		'nextLink' => '<a href="/synthetic/Detail/objects/43">Next</a>',
 		'resultsLink' => '<a href="/synthetic/results">Back</a>',
 		default => null

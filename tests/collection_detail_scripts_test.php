@@ -123,7 +123,7 @@ class DetailScriptView {
 		$GLOBALS['detailScriptExpectedCollection'] = $id;
 		$this->request = new DetailScriptRequest($params);
 		$this->values = array('item' => new DetailScriptItem($objectCount, $templates, $id, $type), 'comments' => array(), 'pdfEnabled' => true,
-			'previousLink' => '<a href="/synthetic/Detail/collections/41">Prev</a>',
+			'previousLink' => '<a href="/synthetic/Detail/collections/41">Previous</a>',
 			'nextLink' => '<a href="/synthetic/Detail/collections/43">Next</a>',
 			'resultsLink' => '<a href="/synthetic/results">Back</a>');
 	}

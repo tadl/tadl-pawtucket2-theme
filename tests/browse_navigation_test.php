@@ -31,7 +31,7 @@ class BrowseNavigationView {
 	public $request;
 	function __construct() { $this->request = new BrowseNavigationRequest(); }
 	function getVar($name) {
-		return ['previousLink' => '<a href="/synthetic/previous" aria-label="Previous" title="Previous"><span aria-hidden="true">‹</span> Prev</a>', 'nextLink' => '<a href="/synthetic/next" aria-label="Next">Next</a>'][$name] ?? null;
+		return ['previousLink' => '<a href="/synthetic/previous" aria-label="Previous" title="Previous"><span aria-hidden="true">‹</span> Previous</a>', 'nextLink' => '<a href="/synthetic/next" aria-label="Next">Next</a>'][$name] ?? null;
 	}
 	function renderMenu() {
 		ob_start();
@@ -107,7 +107,7 @@ foreach (['objects'=>'object', 'collections'=>'collection', 'people'=>'person', 
 		browseCheck($link->getAttribute('title') === $label && $link->getAttribute('aria-label') === $label, $type.': tooltip and accessible name must identify the neighboring record type.');
 		browseCheck($link->getAttribute('href') === '/synthetic/'.$direction, $type.': labeling must preserve the native destination.');
 	}
-	browseCheck($links->item(0)->textContent === '‹ Prev' && $links->item(0)->getElementsByTagName('span')->item(0)->getAttribute('aria-hidden') === 'true', $type.': labels must preserve native visible text and icon semantics.');
+	browseCheck($links->item(0)->textContent === '‹ Previous' && $links->item(0)->getElementsByTagName('span')->item(0)->getAttribute('aria-hidden') === 'true', $type.': labels must preserve native visible text and icon semantics.');
 }
 $directObjectView = new class extends BrowseNavigationView { function getVar($name) { return null; } };
 browseCheck(tadlDetailNavigation($directObjectView) === '', 'Objects without result context must omit the empty navigation wrapper.');
