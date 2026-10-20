@@ -9,6 +9,23 @@ function tadlFindingAidReadable($request, $record) {
 			|| $record->checkACLAccessForUser($request->user) >= __CA_ACL_READONLY_ACCESS__);
 }
 
+/** Resolve the full aid without crossing a hidden/broken ancestor or mutating the detail record. */
+function tadlFindingAidRoot($request, $collection) {
+	$visited = [];
+	while (tadlFindingAidReadable($request, $collection)) {
+		$id = (int)$collection->getPrimaryKey();
+		if (isset($visited[$id])) { return null; }
+		$visited[$id] = true;
+		$parent_id = (int)$collection->get('parent_id');
+		if (!$parent_id) { return $collection; }
+		if (!$collection->isReadable($request, 'hierarchy')) { return null; }
+		$parent = Datamodel::getInstance('ca_collections', false);
+		if (!$parent || !$parent->load($parent_id) || !$parent->isReadable($request, 'hierarchy')) { return null; }
+		$collection = $parent;
+	}
+	return null;
+}
+
 /** Catalog text becomes escaped text in the PDF, never executable HTML. */
 function tadlFindingAidText($value) {
 	$value = preg_replace('~<(script|style)\b[^>]*>.*?</\1\s*>~is', '', (string)$value);

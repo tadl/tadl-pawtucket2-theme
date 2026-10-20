@@ -198,9 +198,33 @@ $GLOBALS['aidRows'] = [
 		206 => aidRow(206, 'ca_entities', 'PRIVATE label creator', '', ['denied' => ['preferred_labels']])
 	]
 ];
+foreach ([7 => 42, 8 => 42, 9 => 8, 10 => 42, 11 => 42, 12 => 42, 13 => 7, 14 => 7, 15 => 13] as $id => $parent_id) {
+	$GLOBALS['aidRows']['ca_collections'][$id]['parent_id'] = $parent_id;
+}
 $request = new AidRequest();
 $collection = new AidModel('ca_collections'); $collection->load(42);
 $GLOBALS['aidLoads'] = []; $GLOBALS['aidReads'] = []; $GLOBALS['aidRelations'] = [];
+aidCheck(tadlFindingAidRoot($request, $collection) === $collection && !$GLOBALS['aidLoads'], 'A top-level finding-aid link must retain its root without ancestor queries.');
+$folder = new AidModel('ca_collections'); $folder->load(15);
+$GLOBALS['aidLoads'] = [];
+aidCheck(tadlFindingAidRoot($request, $folder)->getPrimaryKey() === 42 && $folder->getPrimaryKey() === 15, 'A deeply nested folder must resolve the top-level finding aid without mutating the selected detail record.');
+aidCheck($GLOBALS['aidLoads'] === [['ca_collections', 13], ['ca_collections', 7], ['ca_collections', 42]] && !$GLOBALS['aidReads'] && !$GLOBALS['aidRelations'], 'Root resolution must load only the parent chain, without reading metadata, children or objects.');
+$saved_ancestor = $GLOBALS['aidRows']['ca_collections'][7];
+foreach ([['access' => 0], ['deleted' => 1], ['readable' => false], ['acl' => true, 'acl_level' => 0], ['denied' => ['hierarchy']]] as $restriction) {
+	$GLOBALS['aidRows']['ca_collections'][7] = array_replace($saved_ancestor, $restriction);
+	$GLOBALS['aidLoads'] = [];
+	aidCheck(tadlFindingAidRoot($request, $folder) === null && !in_array(['ca_collections', 42], $GLOBALS['aidLoads'], true), 'A private, deleted, unreadable, ACL-denied or hierarchy-denied ancestor must stop root resolution.');
+}
+$GLOBALS['aidRows']['ca_collections'][7] = $saved_ancestor;
+$restricted_folder = clone $folder; $restricted_folder->row['denied'] = ['hierarchy'];
+$GLOBALS['aidLoads'] = [];
+aidCheck(tadlFindingAidRoot($request, $restricted_folder) === null && !$GLOBALS['aidLoads'], 'Denied hierarchy access must not load any ancestors.');
+$GLOBALS['aidRows']['ca_collections'][13]['parent_id'] = 999;
+aidCheck(tadlFindingAidRoot($request, $folder) === null, 'A missing ancestor must not produce a partial finding-aid link.');
+$GLOBALS['aidRows']['ca_collections'][13]['parent_id'] = 7;
+$GLOBALS['aidRows']['ca_collections'][42]['parent_id'] = 15;
+aidCheck(tadlFindingAidRoot($request, $folder) === null, 'Cyclic ancestry must terminate without producing a finding-aid link.');
+unset($GLOBALS['aidRows']['ca_collections'][42]['parent_id']);
 $data = tadlFindingAidData($request, $collection, $GLOBALS['aidConfig']);
 aidCheck(!isset($data['object_count']) && !isset($data['objects']), 'Finding aids must describe archival units without object counts or inventory.');
 aidCheck(array_keys($data['collections']) === [42, 7, 13, 15, 14, 12], 'Every readable descendant must appear in natural sibling order, with whole branches and no cycles.');

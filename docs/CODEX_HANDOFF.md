@@ -398,6 +398,13 @@ missing panel follow a direct inline-PDF link. Links use `nofollow`; PDF and vie
 responses retain private/no-store and noindex headers. The viewer validates root
 access, then PDF.js requests the checked PDF
 endpoint once; it does not create a representation or save a shared export.
+At any hierarchy level, `tadlFindingAidRoot()` resolves the top-level collection
+for both the viewer URL and direct PDF fallback. It follows only the parent chain
+with independent native models and record/type/source/bundle/Pawtucket ACL checks;
+hidden/deleted/missing ancestors, hierarchy restrictions and cycles omit the link.
+The selected detail record, metadata and item scope remain unchanged. Explicit
+export endpoints still honor the supplied root ID. Helper and actual-template
+regressions cover nested links and inaccessible/broken ancestry.
 The viewer markup accepts GET and POST because native `caMediaPanel.showPanel()`
 uses jQuery `.load()` with an object payload, which sends POST. Both methods
 share the same root/login/access checks; View and Download remain GET-only.

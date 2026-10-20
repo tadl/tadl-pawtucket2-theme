@@ -1,7 +1,7 @@
 # Collection finding aids
 
-The **View finding aid** link opens a descriptive PDF of the selected archival
-unit and its complete readable hierarchy in Pawtucket's existing PDF.js document
+The **View finding aid** link at every archival level opens the top-level
+collection's complete readable hierarchy in Pawtucket's existing PDF.js document
 viewer in the media overlay, with paging, zoom, text search and download controls. The existing dialog
 handles keyboard focus and returns focus to the link when closed. Modified clicks
 and browsers without the panel follow a direct inline-PDF link instead; browser
@@ -41,9 +41,14 @@ statement. Extent, dates and other values are not copied down from a parent or
 inferred from database record counts. Components without separately catalogued
 objects or media still appear.
 
-The selected unit is the export root, including when it is a series or folder.
-Its metadata appears once in **About this collection**; descendants follow under
-**Arrangement and contents**. The collection page's flat/hierarchy mode, browser
+Collection-page links resolve the top-level collection through readable ancestors,
+so series, boxes and folders open the same complete finding aid. A private,
+deleted, unreadable or missing ancestor, restricted hierarchy or cycle suppresses
+the link rather than exposing an ancestor or offering a partial aid. Resolution
+loads only the parent chain and leaves the selected page's metadata/items unchanged.
+Explicit export URLs still use their supplied `collection_id` as the export root.
+The export root's metadata appears once in **About this collection**; descendants
+follow under **Arrangement and contents**. The collection page's flat/hierarchy mode, browser
 display depth, pagination and media preference do not limit the PDF.
 
 ## Field mappings
@@ -125,7 +130,7 @@ remains usable without JavaScript, through context menus and with modifier keys.
 - `views/Details/finding_aid_pdf_html.php`: escaped text and print layout.
 - `views/Details/finding_aid_binary.php`: inline or attachment PDF with `private, no-store`,
   indexing directives and `nosniff` headers.
-- `views/Details/ca_collections_default_html.php`: selected unit's Download/View links.
+- `views/Details/ca_collections_default_html.php`: full-hierarchy View finding aid link.
 - `views/mediaViewers/pdfjs.php` and `viewerWrapper.php`: existing document viewer
   and close/download controls, reused without a second viewer implementation.
 
@@ -153,7 +158,8 @@ Run `php tests/finding_aid_test.php` for synthetic controller, metadata, creator
 privacy, field/bundle restrictions, ordering and hierarchy regressions. Fixtures
 cover a folder with a physical extent and no object records, all descriptive
 levels, missing/custom mappings, private branches, denied language labels,
-selected-subunit exports, identical branch names, cycles and 200 siblings.
+root-link resolution, selected-subunit exports, identical branch names, cycles
+and 200 siblings.
 Object queries and models throw in the fixture, including for a root seeded with
 4,105 linked IDs: those IDs must have no effect on the document.
 

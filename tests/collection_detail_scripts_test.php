@@ -51,7 +51,7 @@ class DetailScriptItem {
 	private array $values;
 	public function __construct($objectCount, private array $templates = [], private int $id = 42, private string $type = 'collection') {
 		$this->values = array(
-			'collection_id' => $id, 'type_id' => $type, 'access' => 1, 'deleted' => 0,
+			'collection_id' => $id, 'parent_id' => $GLOBALS['detailScriptParents'][$id] ?? null, 'type_id' => $type, 'access' => 1, 'deleted' => 0,
 			'entity_id' => 42,
 			'place_id' => 42,
 			'occurrence_id' => 42,
@@ -61,7 +61,12 @@ class DetailScriptItem {
 	}
 	public function getPrimaryKey() { return $this->id; }
 	public function hasElement($code) { return !in_array($code, $GLOBALS['detailScriptMissingElements'] ?? [], true); }
-	public function load($id) { $this->id = (int)$id; return true; }
+	public function load($id) {
+		$this->id = (int)$id;
+		$this->values['collection_id'] = $this->id;
+		$this->values['parent_id'] = $GLOBALS['detailScriptParents'][$this->id] ?? null;
+		return !in_array($this->id, $GLOBALS['detailScriptUnavailableCollections'] ?? [], true);
+	}
 	public function isReadable($request, $bundle = null) { return !in_array($bundle, $GLOBALS['detailScriptDeniedBundles'] ?? [], true); }
 	public function getAttributeDisplayValues($code, $id, $options) {
 		checkDetailScripts($code === 'external_link' && $id === $this->id && $options === ['checkAccess' => [1], 'convertCodesToDisplayText' => true], 'External links must read only the current unit with native access options.');
@@ -139,6 +144,16 @@ $finding_js = 'const assert = require("node:assert/strict"); const events = []; 
 $finding_process = proc_open(['node', '-e', $finding_js], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $finding_pipes);
 fclose($finding_pipes[0]); $finding_output = stream_get_contents($finding_pipes[1]).stream_get_contents($finding_pipes[2]); fclose($finding_pipes[1]); fclose($finding_pipes[2]);
 checkDetailScripts(proc_close($finding_process) === 0, 'Finding-aid viewer callback must retain modified-click and missing-viewer fallbacks: '.$finding_output);
+$GLOBALS['detailScriptParents'] = [73 => 72, 72 => 71, 71 => 42];
+$subunit_html = (new DetailScriptView(0, ['ca_collections.description' => 'Selected folder description'], [], 73, 'folder'))->render('ca_collections');
+$subunit_document = new DOMDocument(); $subunit_document->loadHTML($subunit_html, LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_NONET);
+$subunit_xpath = new DOMXPath($subunit_document);
+$subunit_view = $subunit_xpath->query('//div[@class="exportCollection"]/a')->item(0);
+checkDetailScripts($subunit_view && $subunit_view->getAttribute('href') === '/synthetic/CollectionFindingAid/View/collection_id/42' && $subunit_view->getAttribute('data-finding-aid-viewer') === '/synthetic/CollectionFindingAid/Viewer/collection_id/42', 'Folder links and their direct-PDF fallbacks must open the whole hierarchy root finding aid.');
+checkDetailScripts(str_contains($subunit_html, 'Selected folder description') && str_contains(str_replace('\\/', '/', $subunit_html), '/CollectionContents/Objects/collection_id/73/'), 'Resolving the aid root must not change the selected folder metadata or item scope.');
+$GLOBALS['detailScriptUnavailableCollections'] = [71];
+checkDetailScripts(!str_contains((new DetailScriptView(0, [], [], 73))->render('ca_collections'), 'exportCollection'), 'An unavailable ancestor must suppress the root finding-aid link instead of falling back to a partial aid.');
+$GLOBALS['detailScriptUnavailableCollections'] = []; $GLOBALS['detailScriptParents'] = [];
 checkDetailScripts(!str_contains($html, 'Download as PDF') && !str_contains($html, '_pdf_ca_collections_summary'), 'Collection still links to the generic summary export.');
 checkDetailScripts(str_contains($html, '<label>Description</label>Synthetic description') && str_contains($html, '<label>Dates</label>1930') && str_contains($html, '<label>Related places</label><a href="/synthetic/place">Synthetic place</a>'), 'Populated collection fields lost headings or native links.');
 $long_description = '<p>'.str_repeat('Synthetic collection description. ', 30).'</p>';
@@ -298,7 +313,7 @@ $status = proc_close($process);
 checkDetailScripts($status === 0, "Rendered detail JavaScript failed in Node.js:\n".$stderr);
 $nodeResult = json_decode($stdout, true, 512, JSON_THROW_ON_ERROR);
 if (($argv[1] ?? '') === '--finding-aid-fixture') {
-	print json_encode(['links' => $finding_document->saveHTML($finding_view->parentNode)], JSON_THROW_ON_ERROR);
+	print json_encode(['links' => $subunit_document->saveHTML($subunit_view->parentNode)], JSON_THROW_ON_ERROR);
 } else {
 	echo json_encode(array('status' => 'passed', 'assertions' => $GLOBALS['detailScriptAssertions'] + $nodeResult['assertions'], 'templates' => 'actual collection detail; authority pages have authority_detail_test.php', 'dependencies' => 'synthetic view/model/config/jQuery boundaries; Node.js syntax and execution'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;
 }

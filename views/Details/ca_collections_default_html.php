@@ -29,6 +29,7 @@
 	require_once(__DIR__.'/detail_field_helpers.php');
 	require_once(__DIR__.'/../../helpers/collection_contents.php');
 	require_once(__DIR__.'/../../helpers/collection_metadata.php');
+	require_once(__DIR__.'/../../helpers/finding_aid.php');
 
 	$t_item = $this->getVar("item");
 	$va_access_values = (array)caGetUserAccessValues($this->request);
@@ -129,9 +130,10 @@
 				<div class="tadl-collection-heading">
 					{{{<ifdef code="ca_collections.parent_id"><div class="unit">Part of: <unit relativeTo="ca_collections.hierarchy" delimiter=" &gt; "><l>^ca_collections.preferred_labels.name</l></unit></div></ifdef>}}}
 <?php
-					if ($vn_pdf_enabled) {
-						$finding_aid_view_url = caNavUrl($this->request, '', 'CollectionFindingAid', 'View', ['collection_id' => (int)$t_item->get('collection_id')]);
-						$finding_aid_viewer_url = caNavUrl($this->request, '', 'CollectionFindingAid', 'Viewer', ['collection_id' => (int)$t_item->get('collection_id')]);
+					if ($vn_pdf_enabled && ($finding_aid_root = tadlFindingAidRoot($this->request, $t_item))) {
+						$finding_aid_id = (int)$finding_aid_root->getPrimaryKey();
+						$finding_aid_view_url = caNavUrl($this->request, '', 'CollectionFindingAid', 'View', ['collection_id' => $finding_aid_id]);
+						$finding_aid_viewer_url = caNavUrl($this->request, '', 'CollectionFindingAid', 'Viewer', ['collection_id' => $finding_aid_id]);
 						print '<div class="exportCollection"><span class="glyphicon glyphicon-file" aria-hidden="true"></span> '
 							.'<a href="'.htmlspecialchars($finding_aid_view_url, ENT_QUOTES, 'UTF-8').'" data-finding-aid-viewer="'.htmlspecialchars($finding_aid_viewer_url, ENT_QUOTES, 'UTF-8').'" aria-haspopup="dialog" aria-controls="caMediaPanel" rel="nofollow" title="'.htmlspecialchars(_t('View finding aid in document viewer'), ENT_QUOTES, 'UTF-8').'" onclick="if (!event.ctrlKey &amp;&amp; !event.metaKey &amp;&amp; !event.shiftKey &amp;&amp; !event.altKey &amp;&amp; window.caMediaPanel &amp;&amp; typeof caMediaPanel.showPanel === &quot;function&quot;) { caMediaPanel.showPanel(this.getAttribute(&quot;data-finding-aid-viewer&quot;)); return false; }">'.htmlspecialchars(_t('View finding aid'), ENT_QUOTES, 'UTF-8').'<span class="sr-only"> '.htmlspecialchars(_t('(PDF)'), ENT_QUOTES, 'UTF-8').'</span></a></div>';
 					}
