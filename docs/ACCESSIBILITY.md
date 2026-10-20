@@ -5,6 +5,17 @@ This records source remediation and its evidence. It is not a declaration that
 every deployed page, catalogue item, document, viewer or complete account process
 conforms. The remaining acceptance work below is part of reaching that target.
 
+## October 20 follow-up
+
+[Audit remediation](AUDIT_REMEDIATION.md) records the later 26-issue source pass.
+The current suite has 42 PHP programs, with 12 browser page states at 320/1280px,
+an open Lightbox menu, gallery race/failure tests, canvas-scoped native keyboard
+shortcuts and lazy document text. Grid regressions cover 320–1600px; native PDF.js
+checks include scrolling, paging/search/download and focus restoration. The viewer
+provides a semantic HTML finding-aid alternative; the Dompdf PDF is still untagged.
+The older counts below describe the October 16 checkpoint, not current coverage.
+Full deployed/content/process and assistive-technology acceptance remains required.
+
 ## Coverage and evidence
 
 - Inventoried all theme view areas, helpers, controllers, styles and scripts.

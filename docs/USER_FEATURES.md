@@ -37,6 +37,11 @@ including the same link spacing and hover/focus colors.
 The All items / Only items with media buttons use an 18px minimum in both the
 desktop header and collapsed menu, including on the homepage.
 
+Lightbox **Options** is a named disclosure button with ordinary list/Tab semantics
+and Escape dismissal. Item actions remain visible without hover, and cards keep
+stable dimensions. User-entered form values are escaped for their HTML context.
+Comments have an associated label and announce save/remove/network outcomes.
+
 The native login form retains password reset and now supports password managers.
 Profile forms support contact details and password changes. Email delivery,
 password reset and the corrected profile-save endpoint need live checks after

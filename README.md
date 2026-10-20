@@ -114,9 +114,9 @@ For automatic suggestions, follow [thumbnail focus](docs/THUMBNAIL_FOCUS.md) to 
 
 ### PDF text and finding aids
 
-Document text requires at least one accessible attached PDF. The theme prefers populated `ca_object_representations.media_content`, then `ca_objects.transcription`, then `ca_objects.pdf_text`. It displays existing text; it does not run OCR, import transcriptions, or configure your search index. A private paired PDF does not expose text on a TIFF-only public object. See [document text](docs/DOCUMENT_TEXT.md).
+Document text requires at least one accessible attached PDF. The theme prefers populated `ca_object_representations.media_content`, then `ca_objects.transcription`, then `ca_objects.pdf_text`. Complete text loads when its disclosure opens, with a normal page link as a fallback. It displays existing text; it does not run OCR, import transcriptions, or configure your search index. A private paired PDF does not expose text on a TIFF-only public object. See [document text](docs/DOCUMENT_TEXT.md).
 
-Finding aids use Pawtucket's supplied Dompdf dependency and the mappings in `conf/finding_aid.conf`. **View finding aid** opens the top-level collection's aid from any level of its hierarchy in the existing PDF.js document viewer, where visitors can download the PDF. The aid describes the complete readable hierarchy using each archival unit's own populated metadata, independent of the visitor's media preference. Extents and descriptions come from staff cataloguing; the PDF has no catalogue-object counts or automatic object inventory. See [finding aids](docs/FINDING_AIDS.md) to adapt field mappings and verify exports.
+Finding aids use Pawtucket's supplied Dompdf dependency and the mappings in `conf/finding_aid.conf`. **View finding aid** opens the top-level collection's aid from any level of its hierarchy in the existing PDF.js document viewer, where visitors can download the PDF or choose an equivalent structured HTML version with **Read as text**. The aid describes the complete readable hierarchy using each archival unit's own populated metadata, independent of the visitor's media preference. Extents and descriptions come from staff cataloguing; the PDF has no catalogue-object counts or automatic object inventory. See [finding aids](docs/FINDING_AIDS.md) to adapt field mappings and verify exports.
 
 ### Crawler policy
 
@@ -137,7 +137,7 @@ The theme extends Pawtucket through its native theme mechanism. PHP views provid
 | `support/` | Explicit maintenance/setup tools, deployment helper, and optional detector. |
 | `docs/` and `tests/` | Feature guides and synthetic regression checks. |
 
-Eligible records are filtered before theme counts and pagination, with batched lookups where appropriate. Keep `do_content_caching = 0` in `conf/app.conf` and collection `cache_timeout = 0`: rendered pages depend on the visitor's media preference and permissions, which native shared HTML cache keys do not fully represent. Other application caching can continue normally.
+Eligible records are filtered before theme counts and pagination, with batched lookups where appropriate. Keep `do_content_caching = 0` in `conf/app.conf` and collection `cache_timeout = 0`: rendered pages depend on the visitor's media preference and permissions, which native shared HTML cache keys do not fully represent. Other application caching can continue normally. PDF bytes and media-descriptor validity have separate content-keyed native caches; current access checks still run for every request.
 
 ## Updating and deploying
 
@@ -158,6 +158,7 @@ The supplied `support/deploy-theme.sh` is an rsync helper for the `/var/www/pawt
 | [Collections](docs/COLLECTIONS.md) | Flat and hierarchy views, counts, result controls, and URL state. |
 | [Families](docs/FAMILIES.md) | Related-member objects and media/access filtering. |
 | [Finding aids](docs/FINDING_AIDS.md) | Descriptive PDF structure, metadata at every hierarchy level, field mappings and access. |
+| [Audit remediation](docs/AUDIT_REMEDIATION.md) | Review findings, source fixes, verification and deployment boundaries. |
 | [Document text](docs/DOCUMENT_TEXT.md) | Extraction/transcription fallbacks, formatting, permissions, and indexing boundaries. |
 | [Image downloads](docs/IMAGE_DOWNLOADS.md) | Export formats, native processing requirements, private conversion cache, and limits. |
 | [Accounts](docs/USER_FEATURES.md) | Login, profiles, lightboxes, staff tools, and FAQ presentation. |

@@ -154,29 +154,41 @@ Relevant settings in `conf/collections.conf`:
 | `always_link_to_detail` | `1`; native non-linkable type configuration can still override it. |
 | `cache_timeout` | Keep `0`; native child-list HTML cache keys omit media preference and access context. |
 
-`helpers/collection_contents.php` traverses readable collection models in batches
-of 500 parents, guards cycles and builds numeric collection terms for native object
-search. Retained nodes use independent, uncached model instances: native
-`Datamodel::getInstance(..., true)` returns the same mutable model, so loading a
-later child would overwrite earlier nodes' IDs, parents and access state.
-`tadlCollectionContentsMediaPresence()` batches memberships by 500 collections,
-checks related objects with the shared native media-eligibility helper, and marks
-each qualifying branch and its ancestors. Recursion reuses the presence map.
-The default hierarchy rendering needs no object-count search or per-title search.
-`tadlCollectionContentsCounts()` remains available only for the optional
-`always_link_to_detail = 0` policy, where metadata-only objects must still enable
-detail links. Native object search handles visibility and deduplication for result
-lists and these optional counts.
+`helpers/collection_contents.php` traverses scalar collection IDs and parent IDs in
+batches of 500, with bulk native type/source/bundle/Pawtucket ACL checks and cycle
+protection. The active scope, media-presence and optional count paths do not retain
+or load a model per descendant. Private intermediate records prune their branch.
+The root/ancestor metadata paths still use independent native models.
 
-Collection browse eligibility and thumbnails use `helpers/record_access.php` to
-check native type/source/bundle permissions and Pawtucket-only ACLs in bulk,
-including unreadable intermediate collections. Thumbnail selection prefers
-direct collection media, then direct-object images, then readable descendants.
-Within an object, a public secondary image can replace an unavailable primary.
-Queries fetch scalar candidate IDs first and read media descriptors only until
-each card has a usable image. Search/browse Tiles and List HTML is rendered fresh;
-the theme does not save or reuse shared result HTML even when a native cache
-backend treats a zero lifetime as persistent.
+The automatically discovered `tadlPlaceContents` theme plugin handles both
+`CollectionContents/Objects` and `PlaceContents/Objects`. It reads indexed
+relationships and gives native Browse a wildcard plus an intrinsic object-ID
+filter, rather than constructing thousands of Lucene OR terms. Empty scopes use
+ID zero. Native base criteria, type restrictions, visibility, sorting, exports and
+result context remain in force. These scoped results have their own context and
+recompute membership/permissions instead of reloading a caller's browse key. Deploy
+the complete theme including `plugins/`; a missing plugin fails closed.
+
+`tadlCollectionContentsMediaPresence()` batches memberships, applies the current
+usable-media checks, and propagates presence through the scalar parent map.
+`tadlCollectionContentsCounts()` is used only by the optional
+`always_link_to_detail = 0` policy; it also uses an indexed object-ID filter.
+Neither path performs a separate object search for every title.
+
+Collection index, Search and Browse use the same image policy: permitted native
+collection media, direct-object images, then readable descendants. A public
+secondary image can replace an unavailable primary. Candidate queries return at
+most 32 rows per root/keyset window, continuing past inaccessible or unusable
+candidates and stopping when an image is found. Media blobs are read only as
+needed. Responsive derivatives preserve the selected representation's geometry.
+
+Media-only filtering still checks the complete candidate set before pagination so
+counts and navigation stay correct. Its optional native-cache entries contain only
+media-descriptor validity, keyed by representation ID, the current SHA-256 descriptor
+fingerprint, site and decoder version. Current permissions/membership are never
+persisted. Cached validity expires after five minutes; changed media invalidates
+it immediately. Without a working cache the native decoder remains the fallback.
+Search/Browse result HTML remains uncached.
 
 `helpers/representation_formats.php` fetches scalar original MIME types and,
 when permitted, original filenames for only the displayed object IDs. It never

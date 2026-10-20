@@ -266,3 +266,14 @@ The isolated Linux runtime was subsequently installed and verified as `www-data`
 with Python 3.12, OpenCV 4.13.0 and NumPy 2.4.3. The deployed detector passed
 synthetic blank/unreadable-image checks, and the application user cannot write to
 the runtime/model. No collection batch was run as part of runtime installation.
+
+## Responsive source selection
+
+Grid images offer existing small/medium/mediumlarge/large derivatives in `srcset`,
+with a responsive `sizes` hint; List rows use a narrow hint. Sources must belong to
+the exact permitted representation and match the base derivative's geometry
+(within one percent for native pixel rounding). Icons, queued media and originals
+are excluded. Cover crops remain 3:2 and do not expand on hover. Normalized manual
+points and cached face boxes remain reusable, so this change requires no detector
+rerun, runtime/model installation or cache rebuild. The vendor TileViewer keyboard
+adaptation is separate from thumbnail cropping.

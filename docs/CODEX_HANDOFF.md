@@ -63,9 +63,37 @@ changed during the accessibility work.
 
 ## 2026-10-20 audit remediation
 
-The theme substitutes a reviewed TileViewer 3.0.2 keyboard adaptation through its asset loader. Shortcuts operate only while the canvas has focus; Tab retains browser navigation. The vendor README records provenance and upgrade requirements. Browser coverage uses the actual registration block with native jQuery hotkeys.
+All 26 review concerns have source changes recorded in
+[Audit remediation](AUDIT_REMEDIATION.md). Earlier dated notes below are historical;
+use the feature guides and current code for the active contracts.
 
-Grid images now advertise same-representation small/medium/mediumlarge/large derivatives with native geometry checks and responsive `srcset`/`sizes`. Originals, icons and queued images are excluded. List images use a narrow source size. Normalized face suggestions and manual centers remain valid; no detector rerun or crop-ratio change is required. Collection thumbnails read 32 candidates per keyset window and stop when a usable permitted image is found.
+- Collection scopes/media presence/counts traverse scalar rows and bulk native
+  permissions. The existing `tadlPlaceContents` plugin now replaces both place
+  and collection contents with indexed membership/result filters; deploy `plugins/`
+  with the complete theme. No compound collection OR query is used for active paging.
+- Collection thumbnails use 32-row keyset windows. Entry points share primary,
+  direct-object and descendant precedence. Responsive same-geometry derivatives
+  retain cover crops and normalized centers/face boxes; no detector rerun is needed.
+- Only descriptor validity is reused for five minutes through the native cache,
+  with current SHA-256 identity and fresh permission/membership checks. PDF bytes
+  can be reused for identical current descriptive data and renderer identity for
+  one day. Shared page/result HTML caching remains disabled.
+- Finding aids offer equivalent semantic HTML via `CollectionFindingAid/Text` and
+  **Read as text**, including a no-script link. Dompdf output remains untagged.
+- Object document text uses bounded initial discovery and `DocumentText/View` on
+  expansion, preserving source precedence/access checks and a normal-page fallback.
+  Long candidate values are confirmed on opening; upstream model loading is unchanged.
+- Viewer shortcuts operate only on the focused canvas. The reviewed TileViewer
+  copy replaces its native asset once; retain its license/provenance when upgrading.
+  Lightbox controls/actions, forms/comments, gallery requests/focus, metadata
+  semantics/rich styles, preview format lists and shared font discovery are repaired.
+- Families have global/full/advanced search; Search/Browse/overview authority media
+  filtering now follows the same rules. Sample contribution routes are disabled.
+
+Verification covers all portable PHP suites, actual native-library browser
+fixtures, real Dompdf/HTMLPurifier and syntax checks. No production deployment,
+account/catalogue writes, cache purge, Apache reload/restart or face-cache rebuild
+was performed. The updated site-root robots policy remains a separate operator merge.
 
 ## Completed work and useful commits
 

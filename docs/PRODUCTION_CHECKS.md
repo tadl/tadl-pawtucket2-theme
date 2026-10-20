@@ -14,7 +14,7 @@ Use designated disposable accounts/sets and preserve their initial settings.
 - Check an invalid route returns a safe 404, and unexpected errors use a safe 500;
   no response may reveal stack traces, paths, request parameters or credentials.
 - Compare the origin root robots file with `support/site-root/robots.txt`, including
-  CollectionContents and FamilyContents. [Crawler policy](CRAWLER_POLICY.md) explains
+  CollectionContents, FamilyContents, PlaceContents and DocumentText. [Crawler policy](CRAWLER_POLICY.md) explains
   the separate installation; theme deployment alone does not replace the root file.
 - Check flat/hierarchy counts and paging with both media preferences. Inspect
   network/console errors and loading/error states; avoid public load testing.
@@ -40,8 +40,7 @@ Do not use an arbitrary staff/patron account or inspect another person's lightbo
    full image dimensions, PDF completeness and repeat exports. Generated files and
    download logs are production writes, so this is separate from read-only checks.
    Verify a private representation is denied even after its former export is cached.
-5. Download an approved finding aid and check metadata, complete hierarchy and
-   counts, with no per-object inventory. Preserve original media/access settings.
+5. Download an approved finding aid and check metadata, complete hierarchy, extent and the **Read as text** version, with no per-object inventory. Preserve original media/access settings.
 6. If an export fails, find `tadl_export_failed` in the server PHP error log. Expect
    safe IDs/format/code location, never passwords, request data or exception messages.
 

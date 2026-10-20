@@ -3,8 +3,30 @@
 Object detail pages show a collapsed **Document text** section below the media
 and metadata columns when readable text and at least one accessible attached
 PDF are available. Native HTML `details`/`summary` provides keyboard operation
-without JavaScript. Expanded text spans the content width, preserves line/page
+with JavaScript. An ordinary **Open document text** link opens the complete text
+on a separate catalogue page when JavaScript is unavailable. Expanded text spans the content width, preserves line/page
 breaks, wraps long words and can be selected/copied.
+
+## Loading and response boundaries
+
+The closed detail page contains no complete OCR/transcription payload.
+`helpers/document_text_disclosure.php` uses indexed PDF attachment IDs, bulk native
+representation permissions and at most 1024 characters per text value to discover
+whether a source is present. Short empty/whitespace/HTML-only values are omitted.
+A longer value whose tail is not inspected is confirmed when opened; if it proves
+empty or becomes unavailable, the reader receives a clear empty-state message.
+
+`assets/pawtucket/js/document-text.js` requests `DocumentText/View` once when the
+native disclosure opens, announces loading/failure and keeps a direct link as a
+fallback. Reopening the same loaded disclosure reuses its DOM content. The GET-only
+controller loads the requested object and rechecks current object/PDF/bundle/ACL
+permissions before invoking the source-selection helper. AJAX returns escaped text;
+a direct visit uses the normal page shell. Responses are private/no-store and
+noindex/nofollow. No permission decision or document body is persisted by this feature.
+
+Other native media-viewer operations may still load representation records as
+part of rendering media. This change defers the document-text feature's full
+extraction read, formatting and HTML payload; it does not change upstream model loading.
 
 ## Source selection
 
@@ -35,8 +57,8 @@ output. Empty HTML falls through to the next source or omits the section.
 Extracted PDF text is not stripped or entity-decoded, so literal angle brackets
 and other document text remain intact. CRLF/CR endings become newlines and PDF
 form-feed page breaks become blank lines. Stored HTML is never executed or
-rendered as rich text. No truncation, catalogue edits or text generation occurs
-during the request.
+rendered as rich text. Complete text is never truncated. No catalogue edits or text generation occur
+during a viewing request.
 
 ## Native permissions and extraction
 
@@ -73,6 +95,9 @@ and the planned import remain separate operational work.
   section after both columns, outside their responsive grid.
 - `assets/pawtucket/css/theme.css` supplies scoped layout, wrapping and focus
   styles; the existing asset-content versions handle CSS changes.
+- `tests/document_text_disclosure_test.php` checks the actual bounded SQL and
+  current visibility; browser regressions verify no request before opening and
+  one request across repeated expansion.
 - `tests/document_text_test.php` tests all three sources and precedence, empty and
   missing fields, private pairs, access/deletion/ACL/bundle restrictions and
   fallbacks, imported HTML/empty-markup cleanup, escaping, Unicode/line breaks,

@@ -5,7 +5,11 @@ collection's complete readable hierarchy in Pawtucket's existing PDF.js document
 viewer in the media overlay, with paging, zoom, text search and download controls. The existing dialog
 handles keyboard focus and returns focus to the link when closed. Modified clicks
 and browsers without the panel follow a direct inline-PDF link instead; browser
-PDF settings can override inline viewing. The viewer's **Download PDF** link sends
+PDF settings can override inline viewing. The viewer's **Read as text** link opens an equivalent semantic HTML finding aid
+with headings, description lists and the complete nested hierarchy. A no-script
+link on the collection page also reaches this version. The PDF supplied by the
+bundled Dompdf renderer remains untagged; use the HTML version for structured
+screen-reader reading. The viewer's **Download PDF** link sends
 the same access-checked document as an attachment. No Providence representation
 or stored export is created.
 The title bar includes the public collection identifier in parentheses after the
@@ -153,8 +157,14 @@ parent IDs, relative depths and cycle protection preserve the tree without
 interleaving identically named branches or imposing a first-page cutoff.
 
 The export uses the Dompdf supplied by Pawtucket. Remote resources, embedded PHP
-and JavaScript are disabled. Generated PDFs are not stored in a shared export
-cache. An unavailable renderer or generation failure returns a readable HTTP 503.
+and JavaScript are disabled. Every request rebuilds the current readable descriptive data. Identical data can
+reuse immutable PDF bytes through the configured native cache (Redis, files, etc.)
+for at most one day. The key includes every access-filtered field/hierarchy value
+and the template/helper/renderer identity; generation time is excluded so a reused
+PDF retains its actual creation timestamp. Changed metadata or permissions change
+the key. No page HTML or permission decisions are cached, and artifacts over 8 MiB
+are not retained. Set `pdf_cache_timeout = 0` in `conf/finding_aid.conf` to disable
+this optimization. Cache failures fall back to rendering. An unavailable renderer or generation failure returns a readable HTTP 503.
 PHP execution limits are raised to at least 180 seconds where configured;
 infrastructure timeouts still apply. Very large descriptive hierarchies may
 ultimately need background exports, but no work scales with linked-object counts.
@@ -220,7 +230,8 @@ cache purge or service restart is required. A source push does not deploy.
 
 This implements the descriptive-metadata portion of the review specification,
 not full archival-standard or PDF accessibility conformance. The supplied
-Dompdf export is not tagged. A linked contents list, PDF bookmarks, running
+Dompdf export is not tagged; the equivalent **Read as text** version provides
+structured HTML access to the same public descriptions. A linked contents list, PDF bookmarks, running
 collection headers, accessible-PDF structure, approved repository/contact
 mappings and public parent-collection context for subunit exports remain further
 work. No curated item-level inventory is appended automatically. Archives staff
