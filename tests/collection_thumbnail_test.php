@@ -147,6 +147,9 @@ checkThumbnail(str_contains(tadlGetCollectionImages([1], $options)[1] ?? '', 'im
 $GLOBALS['thumbnailBundles'] = [];
 $GLOBALS['thumbnailBundles'] = ['ca_collections:ca_objects' => 0];
 checkThumbnail(str_contains(tadlGetCollectionImages([1], $options)[1] ?? '', 'collection-primary.jpg'), 'A hidden linked-object bundle must not hide readable collection media.');
+$GLOBALS['thumbnailBundles'] = ['ca_collections:preferred_labels' => 0];
+$restrictedLabels = tadlGetDescendantCollectionImages([1], $options);
+checkThumbnail(!str_contains($restrictedLabels[1], 'Harbor') && str_contains($restrictedLabels[1], 'Collection image'), 'Restricted collection labels must not leak through thumbnail alternatives.');
 $GLOBALS['thumbnailBundles'] = [];
 // Render the actual Tiles/List routes with populated and media-less collections.
 function caGetDisplayImagesForAuthorityItems($table, $ids, $options) { throw new RuntimeException('Collection browse called the unbounded native authority fallback.'); }
