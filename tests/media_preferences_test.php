@@ -488,7 +488,7 @@ testAssert($peopleResult->seek(3) && $peopleResult->nextHit() && $peopleResult->
 $peopleContextView = new TestView($peopleRequest, ['start' => 0]);
 tadlMediaResultContext($peopleContextView, $peopleResult, 'browse');
 testAssert(ResultContext::$saved['ca_entities:browse:']['ids'] === array_reverse($peopleExpected) && ResultContext::$saved['ca_entities:browse:']['count'] === 7, 'People detail navigation retained excluded people.');
-foreach ([['Browse', 'people', 'all'], ['Browse', 'Index', 'only'], ['Search', 'people', 'only'], ['MultiSearch', 'Index', 'only']] as [$controller, $action, $mode]) {
+foreach ([['Browse', 'people', 'all'], ['Browse', 'Index', 'only']] as [$controller, $action, $mode]) {
     $result = new SearchResult('ca_entities', $peopleCandidates);
     $queryCount = count(Db::$queries);
     tadlFilterMediaResult(testMediaRequest($mode, [], $controller, $action), $result);
@@ -498,6 +498,14 @@ $ajaxPeopleResult = new SearchResult('ca_entities', $peopleCandidates);
 tadlFilterMediaResult(testMediaRequest('only', ['browseType' => 'people'], 'Browse', 'getFacetHierarchyLevel'), $ajaxPeopleResult);
 testAssert($ajaxPeopleResult->getPrimaryKeyValues() === $peopleExpected, 'People AJAX route lost its browse type.');
 
+foreach (['Search', 'MultiSearch'] as $controller) {
+    $result = new SearchResult('ca_entities', $peopleCandidates);
+    tadlFilterMediaResult(testMediaRequest('only', [], $controller, 'people'), $result);
+    testAssert($result->getPrimaryKeyValues() === $peopleExpected, 'Authority search must share media eligibility before paging and counts.');
+    $result = new SearchResult('ca_entities', $peopleCandidates);
+    tadlFilterMediaResult(testMediaRequest('only', [], $controller, 'Index'), $result, 'people');
+    testAssert($result->getPrimaryKeyValues() === $peopleExpected, 'Multisearch must use the block type rather than the Index action.');
+}
 // All authority routes qualify through the correct related-object table.
 foreach ($authorityBrowses as $route => [$table, $primaryKey, $singular, $plural]) {
     $request = testMediaRequest('only', [], 'Browse', $route);
@@ -523,7 +531,7 @@ foreach ($authorityBrowses as $route => [$table, $primaryKey, $singular, $plural
     $ajaxResult = new SearchResult($table, $peopleCandidates);
     tadlFilterMediaResult(testMediaRequest('only', ['browseType' => $route], 'Browse', 'getFacetHierarchyLevel'), $ajaxResult);
     testAssert($ajaxResult->getPrimaryKeyValues() === $peopleExpected, $route.': AJAX browse type was lost.');
-    foreach (['Browse' => 'all', 'Search' => 'only', 'MultiSearch' => 'only'] as $controller => $mode) {
+    foreach (['Browse' => 'all'] as $controller => $mode) {
         $result = new SearchResult($table, $peopleCandidates);
         $queryCount = count(Db::$queries);
         $unfilteredRequest = testMediaRequest($mode, [], $controller, $route);
@@ -741,8 +749,8 @@ $counts = [];
 foreach ([
     'objects' => ['ca_objects', range(1,13)],
     'collections' => ['ca_collections', $collectionCandidates],
-    'people' => ['ca_entities', [1,2,3]],
-    'organizations' => ['ca_entities', [4,5]],
+    'people' => ['ca_entities', array_slice($peopleExpected, 0, 3)],
+    'organizations' => ['ca_entities', array_slice($peopleExpected, 3, 2)],
 ] as $block => $definition) {
     [$table, $ids] = $definition;
     $result = new SearchResult($table, $ids);

@@ -253,13 +253,13 @@ function tadlFamilyMediaEligibleIDs($request, array $candidateIDs) {
  * Mutate the original result so callers retaining it also receive filtered IDs.
  * Native browse caches remain untouched; this runs before theme pagination.
  */
-function tadlFilterMediaResult($request, $result) {
+function tadlFilterMediaResult($request, $result, $type = null) {
 	if (!($result instanceof SearchResult) || (tadlMediaPreference($request) !== 'only')) {
 		return $result;
 	}
 	$table = $result->tableName();
-	if ($table === tadlMediaAuthorityBrowseTable($request)) {
-		$type = $request->getParameter('browseType', pString) ?: $request->getAction();
+	if ($table === tadlMediaAuthorityBrowseTable($request, $type)) {
+		$type = $type ?: ($request->getParameter('browseType', pString) ?: $request->getAction());
 		$ids = $type === 'families' ? tadlFamilyMediaEligibleIDs($request, $result->getPrimaryKeyValues())
 			: ($type === 'places' ? tadlPlaceMediaEligibleIDs($request, $result->getPrimaryKeyValues())
 				: tadlAuthorityMediaEligibleIDs($request, $table, $result->getPrimaryKeyValues()));

@@ -12,9 +12,9 @@ function tadlMediaPreference($request) {
 }
 
 /** Match the supported authority browse routes, including their AJAX requests. */
-function tadlMediaAuthorityBrowseTable($request) {
-	if ($request->getController() !== 'Browse') { return null; }
-	$browseType = $request->getParameter('browseType', pString) ?: $request->getAction();
+function tadlMediaAuthorityBrowseTable($request, $type = null) {
+	if (!in_array($request->getController(), ['Browse', 'Search', 'MultiSearch'], true)) { return null; }
+	$browseType = $type ?: ($request->getParameter('browseType', pString) ?: $request->getAction());
 	return [
 		'people' => 'ca_entities', 'organizations' => 'ca_entities', 'families' => 'ca_entities',
 		'places' => 'ca_places', 'occurrences' => 'ca_occurrences'
@@ -57,7 +57,7 @@ function tadlMediaPreferenceUrl($request) {
 /** Save the displayed (filtered) IDs for detail-page Previous/Next navigation. */
 function tadlMediaResultContext($view, $result, $findType, $block = null) {
 	if (!$result || (!in_array($result->tableName(), array('ca_objects', 'ca_collections'), true)
-		&& $result->tableName() !== tadlMediaAuthorityBrowseTable($view->request))) { return; }
+		&& $result->tableName() !== tadlMediaAuthorityBrowseTable($view->request, $block))) { return; }
 	$context = new ResultContext($view->request, $result->tableName(), $findType, $block);
 	$limit = (int)$view->request->config->get('maximum_find_result_list_values');
 	if ($limit < 10) { $limit = 1000; }

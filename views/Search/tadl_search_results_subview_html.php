@@ -3,7 +3,7 @@
 	require_once(__DIR__.'/../../helpers/object_thumbnails.php');
 	require_once(__DIR__.'/../../helpers/representation_formats.php');
 	$qr_results = $this->getVar('result');
-	tadlFilterMediaResult($this->request, $qr_results);
+	tadlFilterMediaResult($this->request, $qr_results, (string)$this->getVar('block'));
 	if (!$qr_results || !($vn_result_count = (int)$qr_results->numHits())) { return; }
 
 	$va_block_info = $this->getVar('blockInfo');
