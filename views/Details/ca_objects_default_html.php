@@ -87,7 +87,7 @@
 				<?= tadlDetailNavigation($this); ?>
 				<header class="tadl-record-header">
 				<div class="tadl-record-heading">
-				<H1>{{{<unit relativeTo="ca_collections" delimiter="<br/>"><l>^ca_collections.preferred_labels.name</l></unit><ifcount min="1" code="ca_collections"><br/></ifcount>}}}<span class="tadl-object-title">{{{<ifcount min="1" code="ca_collections">➔ </ifcount>}}}{{{ca_objects.preferred_labels.name}}}</span></H1>
+				<H1>{{{<unit relativeTo="ca_collections" delimiter="<br/>"><l>^ca_collections.preferred_labels.name</l></unit><ifcount min="1" code="ca_collections"><br/></ifcount>}}}<span class="tadl-object-title">{{{ca_objects.preferred_labels.name}}}</span></H1>
 				<H2>{{{<unit>^ca_objects.type_id</unit>}}}</H2>
 				</div>
 				</header>
