@@ -53,8 +53,10 @@ function caDetailLink($request, $label, $class, $table, $id) { return '<a href="
 function caGetIconsConfig() { return new TestConfig(['placeholder_media_icon' => '<span>Media</span>']); }
 class ca_list_items {}
 class ExternalCache {
+    static array $values = [];
+    static function fetch($key, $group = null) { return self::$values[$group][$key] ?? null; }
     static function contains($key, $group = null) { return false; }
-    static function save($key, $value, $group = null, $timeout = null) {}
+    static function save($key, $value, $group = null, $timeout = null) { self::$values[$group][$key] = $value; }
 }
 function caUnserializeForDatabase($data) {
     if (is_array($data)) { return $data; }
@@ -231,7 +233,9 @@ class SearchResult {
     }
     function getWithTemplate($template, $options = []) { return ''; }
 }
-Db::$pdo = new PDO('sqlite::memory:');
+Db::$pdo = class_exists('Pdo\Sqlite') ? new Pdo\Sqlite('sqlite::memory:') : new PDO('sqlite::memory:');
+$sqliteFunctionMethod = method_exists(Db::$pdo, 'createFunction') ? 'createFunction' : 'sqliteCreateFunction';
+Db::$pdo->$sqliteFunctionMethod('SHA2', static fn($data, $bits) => hash('sha256', (string)$data), 2);
 Db::$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 Db::$pdo->exec('CREATE TABLE ca_objects (object_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_object_representations (representation_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER, media BLOB, mimetype TEXT, original_filename TEXT, md5 TEXT)');
@@ -598,7 +602,7 @@ foreach (range(30000, 30600) as $id) { testPerson($id); testPersonObject($id, $i
 $largePeopleExpected = range(30000, 30600, 2);
 $queryCount = count(Db::$queries); $beforeMediaRows = Db::$mediaRows;
 testAssert(tadlAuthorityMediaEligibleIDs($peopleRequest, 'ca_entities', range(30000, 30600)) === $largePeopleExpected, 'Chunked people eligibility dropped results.');
-testAssert(count(Db::$queries) - $queryCount === 7 && Db::$mediaRows - $beforeMediaRows === 1, 'People eligibility must batch relationships and decode shared media once, rather than query per person.');
+testAssert(count(Db::$queries) - $queryCount === 7 && Db::$mediaRows - $beforeMediaRows === 0, 'People eligibility must batch relationships and decode shared media once, rather than query per person.');
 foreach (['ca_places' => 'place_id', 'ca_occurrences' => 'occurrence_id'] as $table => $primaryKey) {
     foreach (range(30000, 30600) as $id) {
         testInsert($table, [$primaryKey => $id, 'access' => 1, 'deleted' => 0]);
@@ -614,7 +618,7 @@ $aclPlacesRequest->userID = 12;
 $beforeACLCalls = count($GLOBALS['mediaACLCalls']);
 $queryCount = count(Db::$queries); $beforeMediaRows = Db::$mediaRows;
 testAssert(tadlAuthorityMediaEligibleIDs($aclPlacesRequest, 'ca_places', range(30000, 30600)) === $largeAuthorityExpected['ca_places'], 'Chunked Places eligibility with ACLs lost IDs or changed SQL tables.');
-testAssert(count($GLOBALS['mediaACLCalls']) - $beforeACLCalls === 4 && count(Db::$queries) - $queryCount === 7 && Db::$mediaRows - $beforeMediaRows === 1, 'Places must batch ACL checks and reuse shared media across chunks.');
+testAssert(count($GLOBALS['mediaACLCalls']) - $beforeACLCalls === 4 && count(Db::$queries) - $queryCount === 7 && Db::$mediaRows - $beforeMediaRows === 0, 'Places must batch ACL checks and reuse shared media across chunks.');
 $GLOBALS['mediaACL'] = [];
 foreach ($authorityBrowses as $route => [$table, $primaryKey, $singular, $plural]) {
     foreach (['images' => 9, 'list' => 24] as $displayView => $pageSize) {
@@ -807,3 +811,15 @@ tadlFilterMediaResult($request, $result);
 testAssert($result->getPrimaryKeyValues() === [50004,50000] && count(Db::$queries) === $before, 'All-items place browsing must stay unfiltered and avoid eligibility queries.');
 
 echo json_encode(['status' => 'passed', 'assertions' => $GLOBALS['assertions'], 'sql_queries' => count(Db::$queries), 'database' => 'SQLite in memory with actual helper SQL', 'result_adapter' => 'synthetic SearchResult boundary', 'records' => 'synthetic only'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;
+
+// A new candidate pass reuses descriptor validity while still reading current scalar identity.
+testRepresentation(990000);
+$known = []; $before = Db::$mediaRows;
+tadlReadMediaUsability(new Db(), [990000], [1], $known);
+testAssert($known[990000] && Db::$mediaRows === $before + 1, 'Cold usability must inspect the actual native descriptor.');
+$known = []; $before = Db::$mediaRows;
+tadlReadMediaUsability(new Db(), [990000], [1], $known);
+testAssert($known[990000] && Db::$mediaRows === $before, 'Warm usability must avoid fetching/decoding the blob.');
+$replace = Db::$pdo->prepare('UPDATE ca_object_representations SET media = ? WHERE representation_id = 990000'); $replace->execute([caSerializeForDatabase([])]);
+$known = []; tadlReadMediaUsability(new Db(), [990000], [1], $known);
+testAssert(!$known[990000] && Db::$mediaRows === $before + 1, 'A descriptor change must immediately invalidate usability.');

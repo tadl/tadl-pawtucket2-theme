@@ -1,5 +1,6 @@
 <?php
 require_once(__DIR__.'/record_access.php');
+require_once(__DIR__.'/media_usability.php');
 require_once(__DIR__.'/family_contents.php');
 require_once(__DIR__.'/place_contents.php');
 
@@ -159,13 +160,7 @@ function tadlRelatedMediaCandidates($db, array $pending, array $access, array &$
 			if (isset($eligible[$id]) || !isset($representationIDs[$positions[$id]])) { unset($pending[$id]); }
 		}
 		if (!$fetch) { break; }
-		$result = $db->query("SELECT representation_id, media FROM ca_object_representations
-			WHERE representation_id IN (?) AND deleted = 0 AND access IN (?)", [array_values($fetch), $access]);
-		if (!$result) { throw new RuntimeException('Unable to check related media availability.'); }
-		foreach ($fetch as $representationID) { $hasMedia[$representationID] = false; }
-		while ($result->nextRow()) {
-			$hasMedia[(int)$result->get('representation_id')] = tadlRepresentationHasUsableMedia($result, $mediaURL);
-		}
+		tadlReadMediaUsability($db, array_values($fetch), $access, $hasMedia);
 	}
 	return $eligible;
 }
