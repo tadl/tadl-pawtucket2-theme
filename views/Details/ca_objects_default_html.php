@@ -28,7 +28,7 @@
  
 	require_once(__DIR__.'/detail_field_helpers.php');
 	require_once(__DIR__.'/../../helpers/user_features.php');
-	require_once(__DIR__.'/../../helpers/document_text.php');
+	require_once(__DIR__.'/../../helpers/document_text_disclosure.php');
 	require_once(__DIR__.'/../../helpers/media_names.php');
 
 	$t_object = 			$this->getVar("item");
@@ -154,7 +154,7 @@
 						
 			</div><!-- end col -->
 		</div><!-- end row -->
-		<?= tadlObjectDocumentTextHTML($this->request, $t_object); ?>
+		<?= tadlObjectDocumentTextDisclosure($this->request, $t_object); ?>
 		</div><!-- end container -->
 	</div><!-- end col -->
 </div><!-- end row -->

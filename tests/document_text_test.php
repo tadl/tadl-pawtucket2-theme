@@ -13,12 +13,16 @@ function checkDocumentText($condition, $message) {
 	if (!$condition) { throw new RuntimeException($message); }
 }
 function _t($text) { return $text; }
-function caGetUserAccessValues($request) { return $request->access; }
+function caGetUserAccessValues($request) { $GLOBALS['documentRequest'] = $request; return $request->access; }
 function caACLIsEnabled($record, $options = []) {
 	checkDocumentText(($options['forPawtucket'] ?? false) === true, 'Item ACL check must include Pawtucket-only ACLs.');
 	return $record->values['acl_enabled'] ?? false;
 }
-function caGetBundleAccessLevel($table, $bundle) { return 0; } // Unrelated detail fields are unavailable.
+function caGetBundleAccessLevel($table, $bundle) { return $table === 'ca_object_representations' && !in_array($table.':'.$bundle, $GLOBALS['documentRequest']->denied ?? [], true) ? 1 : 0; } // Unrelated detail fields are unavailable.
+function caNavUrl($request, $module, $controller, $action, $params = []) { return '/'.$controller.'/'.$action.'?'.http_build_query($params); }
+function caSourceAccessControlIsEnabled($model) { return false; }
+function caGetTypeRestrictionsForUser($table) { return null; }
+function caGetSourceRestrictionsForUser($table) { return null; }
 function caDisplayLightbox($request) { return false; }
 function caGetInfoForBrowseType($type) { return ['sortBy' => ['Identifier' => 'ca_objects.idno']]; }
 function caNavLink($request, $label, $class, $module, $controller, $action, $params = []) {
@@ -37,6 +41,8 @@ class TextRecord {
 		$this->values += ['access' => 1, 'deleted' => 0, 'mimetype' => 'application/pdf'];
 	}
 	function getPrimaryKey() { return $this->id; }
+	function tableNum() { return 57; }
+	function getDb() { return new TextAvailabilityDB($this); }
 	function get($key, $options = []) { $this->reads[] = [$key, $options]; return $this->values[$key] ?? null; }
 	function isReadable($request, $bundle = null) {
 		return !($this->values['unreadable'] ?? false)
@@ -47,6 +53,7 @@ class TextRecord {
 }
 class TextObject extends TextRecord {
 	public array $representationCalls = [];
+	function load($id) { return (int)$id === $this->id; }
 	function __construct(public array $rows = [], array $values = []) { parent::__construct('ca_objects', 42, $values); }
 	function hasElement($element) {
 		return in_array($element, ['transcription', 'pdf_text'], true) && ($this->values['has_'.$element] ?? true);
@@ -69,7 +76,9 @@ class ca_object_representations extends TextRecord {
 	}
 }
 class Datamodel {
+	static function getInstanceByTableName($table, $cached) { return new TextBulkRepresentation(); }
 	static function getInstance($table, $useCache) {
+		if ($table === 'ca_objects') { return clone $GLOBALS['documentControllerObject']; }
 		checkDocumentText($table === 'ca_object_representations', 'PDF text must load its native representation model.');
 		static $cached;
 		return $useCache ? ($cached ??= new ca_object_representations()) : new ca_object_representations();
@@ -240,6 +249,40 @@ ca_object_representations::$records[11]['unreadable'] = false;
 ca_object_representations::$records[11]['media_content'] = 'Rank 1 primary';
 
 // Render the actual object template and verify full-width placement after both columns.
+class TextBulkRepresentation {
+ public array $values = [];
+ function getAppConfig() { return new class { function get($key) { return false; } }; }
+ function getDb() { return new TextAvailabilityDB(); }
+}
+class TextAvailabilityDB {
+ function __construct(private $object = null) {}
+ function query($sql, $params) {
+  $rows = [];
+  if (str_contains($sql, 'FROM ca_objects_x_object_representations')) {
+   foreach ($this->object->rows as $row) {
+    $id = $row['representation_id']; $value = ca_object_representations::$records[$id] ?? [];
+    if ($value && ($value['access'] ?? 1) === 1 && !($value['deleted'] ?? false) && ($row['mimetype'] ?? '') === 'application/pdf') { $rows[] = ['representation_id' => $id]; }
+   }
+  } elseif (str_contains($sql, 'SELECT representation_id FROM')) {
+   foreach ($params[0] as $id) {
+    $value = ca_object_representations::$records[$id] ?? [];
+    if ($value && !($value['unreadable'] ?? false) && !($value['deleted'] ?? false) && in_array($value['access'] ?? 1, $params[1], true) && (!($value['acl_enabled'] ?? false) || ($value['acl_access'] ?? 1) >= 1)) { $rows[] = ['representation_id' => $id]; }
+   }
+  } elseif (str_contains($sql, 'LENGTH(media_content)')) {
+   foreach ($params[0] as $id) { $text = ca_object_representations::$records[$id]['media_content'] ?? ''; $rows[] = ['text_length' => strlen($text), 'text_preview' => mb_substr($text, 0, 1024)]; }
+  } elseif (str_contains($sql, 'FROM ca_attributes')) {
+   foreach ($params[2] as $bundle) {
+    foreach ($this->object->values['ca_objects.'.$bundle][$this->object->id] ?? [] as $value) { $text = $value[$bundle] ?? ''; $rows[] = ['text_length' => strlen($text), 'text_preview' => mb_substr($text, 0, 1024)]; }
+   }
+  } else { throw new RuntimeException('Unexpected document presence SQL.'); }
+  return new class($rows) {
+   private int $position = -1;
+   function __construct(private array $rows) {}
+   function nextRow() { return ++$this->position < count($this->rows); }
+   function get($key) { return $this->rows[$this->position][$key]; }
+  };
+ }
+}
 class TextView {
 	function __construct(public TextRequest $request, public TextObject $object) {}
 	function getVar($name) { return match ($name) {
@@ -262,4 +305,46 @@ checkDocumentText($xpath->query('preceding-sibling::div[contains(@class,"row")]/
 ca_object_representations::$records[10]['access'] = 0;
 $html = (new TextView($request, $tiff))->render();
 checkDocumentText(!str_contains($html, 'tadl-document-text'), 'Actual TIFF detail must omit an empty document-text section.');
+// Initial pages contain a bounded disclosure, not the complete OCR payload.
+ca_object_representations::$records[10]['access'] = 1;
+ca_object_representations::$records[10]['media_content'] = str_repeat('Synthetic long OCR text. ', 500);
+$lazy_object = new TextObject([textPDFRow(10)]);
+$lazy_html = (new TextView($request, $lazy_object))->render();
+checkDocumentText(strlen($lazy_html) < 10000 && !str_contains($lazy_html, 'Synthetic long OCR text.') && str_contains($lazy_html, 'data-document-text-url'), 'Closed pages must not contain complete OCR text.');
+$lazy_object->representationCalls = []; tadlObjectDocumentTextDisclosure($request, $lazy_object);
+checkDocumentText(!$lazy_object->representationCalls, 'Document presence checks must not load native representation inventories.');
+$GLOBALS['documentControllerObject'] = $lazy_object;
+if (!defined('pInteger')) { define('pInteger', 1); }
+$document_lib = sys_get_temp_dir().'/tadl-document-controller-'.bin2hex(random_bytes(8)); mkdir($document_lib.'/pawtucket', 0700, true);
+file_put_contents($document_lib.'/pawtucket/BasePawtucketController.php', '<?php'); define('__CA_LIB_DIR__', $document_lib);
+register_shutdown_function(static function () use ($document_lib) { unlink($document_lib.'/pawtucket/BasePawtucketController.php'); rmdir($document_lib.'/pawtucket'); rmdir($document_lib); });
+class DocumentControllerRequest extends TextRequest {
+ public $config; public array $params = ['object_id' => 42]; public string $method = 'GET'; public bool $ajax = true;
+ function __construct() { parent::__construct(); $this->config = new class { function get($key) { return false; } }; }
+ function getRequestMethod() { return $this->method; }
+ function getParameter($key, $type) { return $this->params[$key] ?? null; }
+ function isAjax() { return $this->ajax; }
+}
+class DocumentControllerResponse {
+ public int $status = 200; public array $headers = []; public string $body = '';
+ function setHTTPResponseCode($code, $text) { $this->status = $code; }
+ function addHeader($key, $value) { $this->headers[$key] = $value; }
+ function addContent($html) { $this->body .= $html; }
+}
+class BasePawtucketController {
+ public $view;
+ function __construct(public $request, public $response) { $this->view = new class { private array $vars = []; function setVar($key, $value) { $this->vars[$key] = $value; } function getVar($key) { return $this->vars[$key]; } function render($path) { ob_start(); include dirname(__DIR__).'/views/'.$path; return ob_get_clean(); } }; }
+ function render($path, $raw) { checkDocumentText(!$raw, 'Direct document text must use the shared page shell.'); $this->response->addContent($this->view->render($path)); }
+}
+require dirname(__DIR__).'/controllers/DocumentTextController.php';
+$controller_request = new DocumentControllerRequest(); $response = new DocumentControllerResponse();
+(new DocumentTextController($controller_request, $response))->View(); $lazy_content = $response->body;
+checkDocumentText(str_contains($lazy_content, 'Synthetic long OCR text.') && !str_contains($lazy_content, '<details') && $response->headers['Cache-Control'] === 'private, no-store', 'Opening text must return the complete source with fresh checks and private headers.');
+$controller_request->ajax = false; $response = new DocumentControllerResponse(); (new DocumentTextController($controller_request, $response))->View();
+checkDocumentText(str_contains($response->body, '<h1>Document text</h1>'), 'The direct no-script URL must be a complete titled page.');
+$controller_request->method = 'POST'; $response = new DocumentControllerResponse(); (new DocumentTextController($controller_request, $response))->View();
+checkDocumentText($response->status === 405, 'Text endpoint must reject mutations.');
+$controller_request->method = 'GET'; $controller_request->params['object_id'] = 999; $response = new DocumentControllerResponse(); (new DocumentTextController($controller_request, $response))->View();
+checkDocumentText($response->status === 404 && $response->body === '', 'Missing objects must not expose document text.');
+if (($argv[1] ?? '') === '--lazy-fixtures') { print json_encode(['disclosure' => tadlObjectDocumentTextDisclosure($request, $lazy_object), 'content' => $lazy_content], JSON_THROW_ON_ERROR); exit; }
 echo 'Document text passed: '.$assertions.' assertions (synthetic PDF/import sources, native access and actual detail view).'.PHP_EOL;

@@ -1,7 +1,6 @@
 <?php
 /** Render actual forms with punctuation and markup, preserving native field names/CSRF. */
 ob_start(); require __DIR__.'/accessibility_test.php'; ob_end_clean();
-class ca_sets { function getSetsForUser($options) { return []; } }
 class SyntheticGroup { function get($key) { return 7; } }
 class LightboxFormRequest extends A11yRequest { function getUserID() { return 2; } }
 $value = "Researcher's \"notes\" & </textarea><script>window.invalid=true</script>";

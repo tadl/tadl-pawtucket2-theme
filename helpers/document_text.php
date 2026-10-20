@@ -79,11 +79,11 @@ function tadlObjectDocumentText($request, $object) {
 	return [];
 }
 
-function tadlObjectDocumentTextHTML($request, $object) {
+function tadlObjectDocumentTextHTML($request, $object, $disclosure = true) {
 	$entries = tadlObjectDocumentText($request, $object);
 	if (!$entries) { return ''; }
 	$escape = static function ($value) { return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); };
-	$html = '<details class="tadl-document-text"><summary>'.$escape(_t('Document text')).'</summary><div class="tadl-document-text-body">';
+	$html = $disclosure ? '<details class="tadl-document-text"><summary>'.$escape(_t('Document text')).'</summary><div class="tadl-document-text-body">' : '';
 	$html .= '<p class="tadl-document-text-source">'.$escape($entries[0]['source'] === 'imported'
 		? _t('Transcribed text') : _t('Text extracted from the PDF')).'</p>';
 	foreach ($entries as $index => $entry) {
@@ -92,5 +92,5 @@ function tadlObjectDocumentTextHTML($request, $object) {
 		}
 		$html .= '<div class="tadl-document-text-content">'.$escape($entry['text']).'</div>';
 	}
-	return $html.'</div></details>';
+	return $html.($disclosure ? '</div></details>' : '');
 }

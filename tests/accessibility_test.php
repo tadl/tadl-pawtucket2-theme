@@ -14,7 +14,7 @@ function caDetailLink($request, $label, $class, $table, $id) { return '<a href="
 function caGenerateCSRFToken($request) { return 'synthetic-token'; }
 function caGetContactConfig() { return new A11yConfig(['check_security' => 1]); }
 function caGetOption($key, $options, $default = null) { return $options[$key] ?? $default; }
-function caGetLightboxDisplayName() { return ['singular' => 'lightbox', 'plural' => 'lightboxes']; }
+function caGetLightboxDisplayName() { return ['singular' => 'lightbox', 'plural' => 'lightboxes', 'section_heading' => 'My lightboxes']; }
 function caHTMLHiddenInput($name, $attributes) { return '<input type="hidden" name="'.$name.'" value="synthetic-token">'; }
 function caGetPageCSSClasses() { return !empty($GLOBALS['a11yFront']) ? 'class="front"' : (!empty($GLOBALS['a11yGallery']) ? 'class="gallery"' : ''); }
 function caUcFirstUTF8Safe($text) { return ucfirst($text); }
@@ -41,7 +41,8 @@ class AssetLoadManager {
 			.'<script src="/native/ca/js/ca.genericpanel.js"></script>'
 			.'<script src="/themes/tadl/assets/pawtucket/js/user-features.js"></script>'
 			.'<script src="/themes/tadl/assets/pawtucket/js/lightbox-order.js"></script>'
-			.'<script src="/themes/tadl/assets/pawtucket/js/gallery-navigation.js"></script>';
+			.'<script src="/themes/tadl/assets/pawtucket/js/gallery-navigation.js"></script>'
+			.'<script src="/themes/tadl/assets/pawtucket/js/document-text.js"></script>';
 	}
 }
 define('pInteger', 1); define('pString', 2);
@@ -77,6 +78,7 @@ class CookieOptionsManager {
 	static function cookieManagerEnabled() { return false; }
 	static function showBanner() { return false; }
 }
+class ca_sets { function getSetsForUser($options) { return []; } }
 class ca_set_items { function __construct($id) {} function get(...$args) { return '<img src="/synthetic.svg" alt="Synthetic gallery item">'; } }
 class ca_objects {
 	function getPrimaryMediaForIDs($ids, ...$args) { return array_fill_keys($ids, ['tags' => ['mediumlarge' => '<img src="/synthetic.svg" alt="Synthetic featured item">']]); }
@@ -134,6 +136,10 @@ foreach (['set_list_html.php', 'set_detail_html.php'] as $file) {
 $html = (new A11yView(['user_groups' => [['group_id' => 1, 'name' => 'Synthetic group', 'access' => 1]], 'users' => [['user_id' => 2, 'name' => 'Synthetic user', 'email' => 'example@example.org', 'access' => 1, 'owner' => false]]]))->render('Lightbox/set_access_html.php');
 $xpath = a11yDocument($html);
 a11yCheck($xpath->query('//a/button|//button/a')->length === 0 && $xpath->query('//button[contains(@class,"btn-xs")]')->length === 4, 'Access changes must use buttons without nested interactive controls.');
+class LightboxListFixtureView extends A11yView {
+ function render($path) { return $path === 'Lightbox/set_list_item_placeholder_html.php' ? '<p>No synthetic lightboxes.</p>' : parent::render($path); }
+}
+$fixtures['lightbox-menu'] = (new LightboxListFixtureView(['set_ids' => [], 'set_config' => new A11yConfig()]))->render('Lightbox/set_list_html.php');
 $fixtures['share-lightbox'] = (new A11yView(['display_name' => 'lightbox', 'errors' => $errors, 'user_groups' => [['group_id' => 7, 'name' => 'Synthetic group']]]))->render('Lightbox/form_share_set_html.php');
 a11yLabels($fixtures['share-lightbox']);
 $clip_html = (new A11yView(['player_name' => 'synthetic-player', 'annotation_list' => ['Synthetic clip', '<b>Second clip</b>'], 'annotation_times' => [[0, 5], [5, 10]]]))->render('Details/annotations_html.php');

@@ -16,6 +16,11 @@ const fixtures = JSON.parse(rendered.stdout);
 const collectionHeaders = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'collection_detail_scripts_test.php'), '--staff-shortcut-fixtures'], {encoding:'utf8'});
 assert.equal(collectionHeaders.status, 0, collectionHeaders.stderr || collectionHeaders.stdout);
 Object.assign(fixtures, JSON.parse(collectionHeaders.stdout));
+const documentTextFixture = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'document_text_test.php'), '--lazy-fixtures'], {encoding:'utf8'});
+assert.equal(documentTextFixture.status, 0, documentTextFixture.stderr || documentTextFixture.stdout);
+const documentText = JSON.parse(documentTextFixture.stdout);
+fixtures['document-text'] = '<h1>Synthetic document</h1>' + documentText.disclosure;
+let documentTextRequests = 0;
 const artifacts = process.env.TADL_A11Y_ARTIFACT_DIR;
 if (artifacts) { fs.mkdirSync(artifacts, {recursive:true, mode:0o700}); }
 const reorderRequests = [];
@@ -37,6 +42,10 @@ const server = http.createServer((request, response) => {
         const header = name === 'featured' ? fixtures['front-header'] : name === 'gallery' ? fixtures['gallery-header'] : fixtures.header;
         response.end(fragment ? fixtures[name] : header + fixtures[name] + fixtures.footer);
         return;
+    }
+    if (url.pathname === '/DocumentText/View') {
+        documentTextRequests++; assert.equal(request.method, 'GET');
+        response.setHeader('Content-Type', 'text/html; charset=utf-8'); response.end(documentText.content); return;
     }
     if (url.pathname === '/Gallery/getSetItemRep') {
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -78,7 +87,7 @@ let browser;
     const reports = [];
     for (const width of [1280, 320]) {
         await page.setViewportSize({width, height:900});
-        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'lightbox-order', 'featured', 'notifications', 'collection-staff']) {
+        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'lightbox-order', 'lightbox-menu', 'document-text', 'featured', 'notifications', 'collection-staff']) {
             await page.goto(origin + '/' + name);
             if (name === 'gallery') { await page.locator('.galleryDetailNext').waitFor(); }
             await page.evaluate(axeSource);
@@ -140,6 +149,21 @@ let browser;
     assert(await page.locator('.galleryDetailNext').isDisabled(), 'A delayed older response must not replace the selected final item.');
     assert.equal(await page.locator('#galleryIcon3').getAttribute('aria-current'), 'true');
     await page.unroute('**/Gallery/getSetItem*');
+    await page.goto(origin + '/gallery'); await page.locator('.galleryDetailNext').waitFor();
+    await page.route('**/Gallery/getSetItemInfo?*', async route => {
+        if (new URL(route.request().url()).searchParams.get('item_id') === '2') { await route.fulfill({status:503,body:'Synthetic failure'}); }
+        else { await route.continue(); }
+    });
+    await page.locator('#galleryIcon2').click();
+    await page.waitForFunction(() => document.querySelector('#tadl-gallery-status').textContent.includes('could not be loaded'));
+    assert.equal(await page.locator('#galleryIcon1').getAttribute('aria-current'), 'true', 'A failed selection must preserve the previously matched media/information.');
+    assert.equal(await page.locator('#galleryDetailImageArea').getAttribute('aria-busy'), 'false');
+    await page.unroute('**/Gallery/getSetItemInfo?*');
+    await page.goto(origin + '/lightbox-menu');
+    await page.getByRole('button', {name:'Options', exact:true}).focus(); await page.keyboard.press('Enter');
+    assert.equal(await page.getByRole('button', {name:'Options', exact:true}).getAttribute('aria-expanded'), 'true');
+    await page.keyboard.press('ArrowDown');
+    assert(await page.locator('#main .dropdown-menu').evaluate(node => node.contains(document.activeElement)), 'Lightbox menu choices must be keyboard reachable.');
     // Exercise the actual native panel, the changed dialog template and its focus adapter.
     await page.goto(origin + '/contact');
     await page.evaluate(() => {
@@ -196,6 +220,14 @@ let browser;
     assert.equal(await page.locator('[data-tadl-slide="1"]').getAttribute('aria-hidden'), 'false');
     assert.equal(await page.locator('[data-tadl-slide="0"] a').getAttribute('tabindex'), '-1');
     assert((await page.locator('[data-tadl-slide-status]').textContent()).includes('2 through 2 of 4'));
+    await page.goto(origin + '/document-text');
+    assert.equal(documentTextRequests, 0, 'A closed disclosure must not request full text.');
+    await page.locator('.tadl-document-text summary').focus(); await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.querySelector('[data-document-text-loaded]'));
+    assert.equal(documentTextRequests, 1);
+    assert((await page.locator('[data-document-text-body]').textContent()).includes('Synthetic long OCR text.'));
+    await page.keyboard.press('Enter'); await page.keyboard.press('Enter');
+    assert.equal(documentTextRequests, 1, 'Reopening a loaded disclosure must reuse its existing text.');
     // Execute the actual adapted registration block with native jQuery hotkeys.
     await page.goto(origin + '/contact');
     await page.addScriptTag({url:origin + '/native/jquery/js/jquery.hotkeys.js'});

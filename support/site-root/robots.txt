@@ -35,6 +35,9 @@ Disallow: /index.php/Detail/download
 Disallow: /index.php/Detail/*/Download
 Disallow: /index.php/Detail/*/download
 
+Disallow: /DocumentText
+Disallow: /index.php/DocumentText
+
 # Viewer/AJAX data and search within media; keep normal /Detail/<type>/<id> pages.
 Disallow: /Detail/Get
 Disallow: /Detail/Search
