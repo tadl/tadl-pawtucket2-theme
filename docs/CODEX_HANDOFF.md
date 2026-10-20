@@ -65,6 +65,8 @@ changed during the accessibility work.
 
 The theme substitutes a reviewed TileViewer 3.0.2 keyboard adaptation through its asset loader. Shortcuts operate only while the canvas has focus; Tab retains browser navigation. The vendor README records provenance and upgrade requirements. Browser coverage uses the actual registration block with native jQuery hotkeys.
 
+Grid images now advertise same-representation small/medium/mediumlarge/large derivatives with native geometry checks and responsive `srcset`/`sizes`. Originals, icons and queued images are excluded. List images use a narrow source size. Normalized face suggestions and manual centers remain valid; no detector rerun or crop-ratio change is required. Collection thumbnails read 32 candidates per keyset window and stop when a usable permitted image is found.
+
 ## Completed work and useful commits
 
 | Commit | Result |

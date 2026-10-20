@@ -36,6 +36,7 @@ class FocusRepresentation {
 	function get($field) { return $this->record[$field] ?? 0; }
 	function getMediaUrl($field, $version) { return $this->record['url'][$version] ?? ''; }
 	function getMediaInfo($field) { return $this->record['info']; }
+	function hasMediaVersion($field, $version) { return isset($this->record['info'][$version]); }
 }
 $info = ['original' => ['WIDTH' => 800, 'HEIGHT' => 1000, 'MD5' => 'synthetic-original'],
 	'medium' => ['WIDTH' => 320, 'HEIGHT' => 400, 'FILENAME' => 'ca_object_representations_media_42_medium.jpg', 'MAGIC' => '123', 'MD5' => 'synthetic-medium']];
@@ -82,6 +83,17 @@ checkFocus(Datamodel::$loads === 1, 'Same representation loaded more than once i
 Datamodel::$records[43] = ['info' => $info + ['_CENTER' => ['x' => 0.8, 'y' => 0.6]], 'url' => ['medium' => str_replace('_42_', '_43_', $url)]];
 checkFocus(str_contains(tadlFocusThumbnail(str_replace('_42_', '_43_', $html)), 'object-position:80% 60%'), 'Second focal record must retain its own center');
 checkFocus(str_contains(tadlFocusThumbnail($html), 'object-position:40% 20%'), 'A -> B -> A must not overwrite the first cached focal record');
+$responsiveInfo = $info + ['_CENTER' => ['x' => 0.4, 'y' => 0.2]];
+$responsiveInfo['medium']['MIMETYPE'] = 'image/jpeg';
+$responsiveInfo['mediumlarge'] = ['WIDTH' => 640, 'HEIGHT' => 800, 'MIMETYPE' => 'image/jpeg'];
+$responsiveInfo['large'] = ['WIDTH' => 1200, 'HEIGHT' => 1200, 'MIMETYPE' => 'image/jpeg']; // Deliberately incompatible crop.
+$responsiveInfo['small'] = ['WIDTH' => 160, 'HEIGHT' => 200, 'MIMETYPE' => 'image/jpeg', 'USE_ICON' => true];
+$responsiveURL = str_replace('_42_', '_44_', $url);
+Datamodel::$records[44] = ['info' => $responsiveInfo, 'url' => ['medium' => $responsiveURL, 'mediumlarge' => '/synthetic/larger.jpg', 'large' => '/synthetic/cropped.jpg', 'small' => '/synthetic/icon.jpg']];
+$responsiveTag = tadlFocusThumbnail('<img src="'.$responsiveURL.'" alt="Synthetic portrait">');
+checkFocus(str_contains($responsiveTag, 'srcset=') && str_contains($responsiveTag, '/synthetic/larger.jpg 640w') && !str_contains($responsiveTag, 'cropped.jpg') && !str_contains($responsiveTag, 'icon.jpg'), 'Responsive sources must preserve geometry and exclude icons, queued sources, and originals.');
+checkFocus(str_contains($responsiveTag, 'data-tadl-focus=') && str_contains($responsiveTag, 'object-position:40% 20%'), 'Responsive derivatives must retain the normalized staff focal point.');
+checkFocus(str_contains(tadlFocusThumbnail('<img src="'.$responsiveURL.'">', '96px'), 'sizes="96px"'), 'List images need an appropriate narrow source size.');
 $stale = str_replace('123_', '999_', $html);
 checkFocus(tadlFocusThumbnail($stale) === $stale, 'Metadata attached to a stale/different derivative');
 foreach (['<div class="placeholder">Image</div>', '<img src="https://example.org/unrelated.jpg">', '', null] as $html) {

@@ -74,10 +74,10 @@ function tadlThumbnailFocusData(array $info, $version, $cacheDirectory = null) {
 }
 
 /** Only inspect the exact representation/version already present in a native image tag. */
-function tadlFocusThumbnail($html) {
+function tadlFocusThumbnail($html, $sizes = '(max-width: 767px) calc(100vw - 64px), (max-width: 1023px) 45vw, 32vw') {
 	if (!is_string($html) || !str_contains($html, '<img')) { return $html; }
 	static $representations = [];
-	return preg_replace_callback('~<img\b(?:[^>\'\"]+|\'[^\']*\'|\"[^\"]*\")*>~i', function ($match) use (&$representations) {
+	return preg_replace_callback('~<img\b(?:[^>\'\"]+|\'[^\']*\'|\"[^\"]*\")*>~i', function ($match) use (&$representations, $sizes) {
 		$doc = new DOMDocument();
 		$doc->loadHTML('<meta charset="UTF-8">'.$match[0], LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 		$img = $doc->getElementsByTagName('img')->item(0);
@@ -91,7 +91,29 @@ function tadlFocusThumbnail($html) {
 		$rep = $representations[$id];
 		if (!$rep || parse_url((string)$rep->getMediaUrl('media', $version), PHP_URL_PATH) !== $path) { return $match[0]; }
 		$info = $rep->getMediaInfo('media');
-		if (!is_array($info) || !($focus = tadlThumbnailFocusData($info, $version, tadlThumbnailFaceCacheDirectory()))) { return $match[0]; }
+        if (!is_array($info)) { return $match[0]; }
+        // All sources belong to the same permitted representation and preserve its
+        // geometry, so normalized manual/face coordinates remain valid across DPRs.
+        $base = $info[$version] ?? [];
+        $sources = [];
+        if ($sizes && !empty($base['WIDTH']) && !empty($base['HEIGHT']) && method_exists($rep, 'hasMediaVersion')) {
+            foreach (['small', 'medium', 'mediumlarge', 'large'] as $candidate) {
+                $media = $info[$candidate] ?? [];
+                if (!$rep->hasMediaVersion('media', $candidate) || empty($media['WIDTH']) || empty($media['HEIGHT'])
+                    || !empty($media['USE_ICON']) || !empty($media['QUEUED'])
+                    || !preg_match('!^image/!i', (string)($media['MIMETYPE'] ?? ''))
+                    || abs(($media['WIDTH'] / $media['HEIGHT']) / ($base['WIDTH'] / $base['HEIGHT']) - 1) > 0.01) { continue; }
+                if ($url = $rep->getMediaUrl('media', $candidate)) { $sources[(int)$media['WIDTH']] = $url.' '.(int)$media['WIDTH'].'w'; }
+            }
+        }
+        if (count($sources) > 1) {
+            ksort($sources, SORT_NUMERIC);
+            $img->setAttribute('srcset', join(', ', $sources));
+            $img->setAttribute('sizes', $sizes);
+            $img->setAttribute('loading', 'lazy');
+            $img->setAttribute('decoding', 'async');
+        }
+        if (!($focus = tadlThumbnailFocusData($info, $version, tadlThumbnailFaceCacheDirectory()))) { return $sources ? $doc->saveHTML($img) : $match[0]; }
 		$img->setAttribute('data-tadl-focus', json_encode($focus, JSON_THROW_ON_ERROR));
 		if (isset($focus['point'])) {
 			// Progressive fallback; JS centers this point precisely for the final box dimensions.

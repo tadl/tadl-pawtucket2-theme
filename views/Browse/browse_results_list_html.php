@@ -152,7 +152,7 @@
 							$vs_image = $vs_default_placeholder_tag;
 						}
 					}
-					$vs_rep_detail_link 	= caDetailLink($this->request, tadlFocusThumbnail($vs_image), '', $vs_table, $vn_id, null, ['aria-label' => _t('View %1', strip_tags($vs_record_label))]);
+					$vs_rep_detail_link 	= caDetailLink($this->request, tadlFocusThumbnail($vs_image, '96px'), '', $vs_table, $vn_id, null, ['aria-label' => _t('View %1', strip_tags($vs_record_label))]);
 				
 					$vs_expanded_info = $qr_res->getWithTemplate($vs_extended_info_template);
 					$vs_expanded_info = trim((string)$vs_expanded_info) !== ''
