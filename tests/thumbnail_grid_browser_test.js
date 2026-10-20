@@ -119,10 +119,20 @@ async function fixedCrop(card) {
                 const style = getComputedStyle(node);
                 return [style.backgroundColor, style.color, style.borderRadius, style.fontSize];
             }), ['rgba(34, 34, 34, 0.7)', 'rgb(255, 255, 255)', '0px', '14px'], 'Tags should have a softer translucent background, solid white text and square corners.');
-            assert(await tags.evaluateAll(nodes => nodes.every(node => {
-                const tag = node.getBoundingClientRect(), row = node.parentElement.getBoundingClientRect();
-                return tag.left >= row.left - 1 && tag.right <= row.right + 1;
-            })), 'Format tags must wrap inside their caption.');
+            assert(await tags.evaluateAll(nodes => nodes.every((node, index) => {
+                const tag = node.getBoundingClientRect(), group = node.parentElement.getBoundingClientRect();
+                const caption = node.parentElement.parentElement.getBoundingClientRect();
+                return tag.left >= caption.left - 1 && Math.abs(tag.right - group.right) < 1
+                    && group.right <= caption.right + 1
+                    && (index === 0 || tag.top > nodes[index - 1].getBoundingClientRect().bottom);
+            })), 'Format tags must stack vertically along the caption right edge.');
+            assert(await page.locator('#row1 .tadl-result-with-formats').evaluate((node, belowTitle) => {
+                const title = node.querySelector('a').getBoundingClientRect();
+                const tags = node.querySelector('ul').getBoundingClientRect();
+                const caption = node.getBoundingClientRect(), style = getComputedStyle(node);
+                const right = caption.right - parseFloat(style.paddingRight);
+                return Math.abs(tags.right - right) < 1 && (belowTitle ? tags.top >= title.bottom : title.right < tags.left);
+            }, name === 'formats-list' && width < 768), 'Title and tags must remain separate, with tags below the title on narrow List rows.');
             assert.equal(await page.locator('#row3 .tadl-representation-formats, #row3 small').count(), 0, 'Metadata-only items need no empty format or identifier row.');
             await page.addScriptTag({path:process.env.TADL_AXE_PATH || require.resolve('axe-core/axe.min.js')});
             const violations = await page.evaluate(async () => (await axe.run('#main', {runOnly:{type:'tag', values:['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']}})).violations);
@@ -136,7 +146,7 @@ async function fixedCrop(card) {
     await page.goto(origin + '/formats');
     await fixedCrop(page.locator('#row1'));
     assert.equal(await page.locator('#row1 .tadl-representation-format').count(), 6, 'Hovered cards must retain their format tags.');
-    console.log('Collection formats: compact gray/white tags, wrapping, metadata-only items and axe passed at 320–1600px.');
+    console.log('Collection formats: right-aligned vertical tags, readable titles, metadata-only items and axe passed at 320–1600px.');
     const touch = await browser.newContext({viewport:{width:390,height:844}, isMobile:true, hasTouch:true});
     await touch.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
     const touchPage = await touch.newPage(); await touchPage.goto(origin + '/wide');

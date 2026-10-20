@@ -3466,16 +3466,29 @@ div.tadl-finding-aid-controls .close {
     display: none !important;
 }
 
+.tadl-result-with-formats {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-content: start;
+    align-items: start;
+    gap: 12px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 .tadl-representation-formats {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-end;
     gap: 5px;
-    margin: 0 0 7px;
+    max-width: 100%;
+    margin: 0;
     padding: 0;
     list-style: none;
 }
 
 .tadl-representation-format {
+    max-width: 100%;
     padding: 3px 6px;
     border: 1px solid transparent;
     border-radius: 0;
@@ -3486,6 +3499,19 @@ div.tadl-finding-aid-controls .close {
     font-weight: 600;
     line-height: 1.2;
     letter-spacing: 0.03em;
+}
+
+@media (max-width: 767px) {
+    /* List thumbnails leave less caption space on phones; keep the title readable. */
+    .bResultListItemText.tadl-result-with-formats {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .bResultListItemText .tadl-representation-formats {
+        align-self: flex-end;
+    }
 }
 
 .tadl-add-lightbox {

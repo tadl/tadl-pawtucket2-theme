@@ -195,7 +195,9 @@ foreach (['tiles' => 'browse_results_images_html.php', 'list' => 'browse_results
 	formatCheck(!str_contains($html, 'SYN.') && str_contains($html, 'tadl-representation-format'), $name.': collection items should have formats in place of identifiers.');
 	$document = new DOMDocument(); @$document->loadHTML($html); $xpath = new DOMXPath($document);
 	formatCheck($xpath->query('//*[@id="row1"]//ul[@aria-label="File formats"]/li')->length === 6, $name.': public secondary formats must be deduplicated.');
+	formatCheck($xpath->query('//*[@id="row1"]//*[contains(@class,"tadl-result-with-formats")]/a[following-sibling::ul]')->length === 1, $name.': the title must precede its format list in reading order.');
 	formatCheck($xpath->query('//*[@id="row3"]//ul')->length === 0 && $xpath->query('//*[@id="row3"]//small')->length === 0, $name.': metadata-only items should start with the title.');
+	formatCheck($xpath->query('//*[@id="row3"]//*[contains(@class,"tadl-result-with-formats")]')->length === 0, $name.': metadata-only items must retain the full caption width.');
 	$inventory = array_filter(array_slice(FormatDb::$queries, $queries), static fn($q) => str_contains($q[0], 'SELECT DISTINCT oxr.object_id'));
 	formatCheck(count($inventory) === 1, $name.': one page needs one inventory query.');
 	formatCheck(str_contains((new FormatView(new FormatRequest(false)))->render($file), 'SYN.1'), $name.': ordinary search must retain identifiers.');

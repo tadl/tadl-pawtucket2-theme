@@ -771,13 +771,16 @@ below retain implementation details and historical verification evidence.
   responsive, focus, AJAX and direct touch checks using only local synthetic assets.
   CI runs it alongside the accessibility browser suite. No production deployment
   or face detection run was performed.
-- Collection item Tiles/List replace the object identifier line above the title
-  with square white-on-dark-gray original-format tags. Their 14px text is an
-  intentional exception to the interior page's 18px floor. The dark background
+- Collection item Tiles/List replace the object identifier line with square
+  white-on-dark-gray original-format tags stacked vertically to the right of
+  the title. Narrow List rows place the right-aligned stack beneath the title.
+  The title precedes the format list in reading order, and metadata-only items
+  keep the full caption width. Their 14px text is an intentional exception to the
+  interior page's 18px floor. The dark background
   uses 70% opacity (`rgba(34, 34, 34, 0.7)`) while the white text stays opaque.
   The collection AJAX context guard keeps ordinary search/browse identifiers
-  unchanged. Tags are a labeled,
-  noninteractive list; metadata-only items omit the row. Public secondary formats
+  unchanged. Tags are a labeled, noninteractive list; metadata-only items omit
+  the list. Public secondary formats
   are included and deduplicated; private pairs and derivatives/conversions are not.
   `helpers/representation_formats.php` reads scalar MIME/filename fields in batches
   of at most 500 displayed object IDs and shares the native bulk visibility checks.

@@ -131,6 +131,8 @@
 					}
 					$vs_record_label = trim((string)$qr_res->get("{$vs_table}.preferred_labels")) ?: _t('Untitled');
 					$vs_label_detail_link = caDetailLink($this->request, $vs_record_label, '', $vs_table, $vn_id);
+					$vs_caption_class = $vb_format_tags && $vs_result_metadata !== '' ? ' tadl-result-with-formats' : '';
+					$vs_caption = $vb_format_tags ? $vs_label_detail_link.$vs_result_metadata : $vs_result_metadata.$vs_label_detail_link;
 					$vs_thumbnail = "";
 					$vs_type_placeholder = "";
 					$vs_typecode = "";
@@ -161,8 +163,8 @@
 		<div class='bResultListItemCol col-xs-{$vn_col_span_xs} col-sm-{$vn_col_span_sm} col-md-{$vn_col_span}'>
 			<div class='bResultListItem' id='row{$vn_id}'>
 				<div class='bResultListItemContent'><div class='text-center bResultListItemImg'>{$vs_rep_detail_link}</div>
-					<div class='bResultListItemText'>
-						{$vs_result_metadata}{$vs_label_detail_link}
+					<div class='bResultListItemText{$vs_caption_class}'>
+						{$vs_caption}
 					</div><!-- end bResultListItemText -->
 				</div><!-- end bResultListItemContent -->
 				{$vs_expanded_info}
