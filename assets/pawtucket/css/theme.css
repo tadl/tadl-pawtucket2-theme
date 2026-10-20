@@ -1396,6 +1396,11 @@ h6 {
     min-width: 0;
 }
 
+.tadl-object-info .tadl-object-title {
+    font-size: calc(1em + 6px);
+    line-height: 1.35;
+}
+
 .tadl-image-downloads {
     position: relative;
     width: max-content;

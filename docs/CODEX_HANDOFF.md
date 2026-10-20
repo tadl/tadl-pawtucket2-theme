@@ -1029,7 +1029,8 @@ below retain implementation details and historical verification evidence.
   cache expires unused exports after seven days and serializes identical conversions.
   See `docs/IMAGE_DOWNLOADS.md` for execution limits and operational requirements.
 - The object title puts its collection on the first line and the arrow/object
-  label below. Representation filenames/titles are hidden; intentional media
+  label below, 6px larger (24px versus 18px at the default text size).
+  Representation filenames/titles are hidden; intentional media
   captions remain a separate field.
 - The gallery index features the first gallery once and lists the others under
   **More galleries**. Gallery detail keeps native AJAX item partials and direct
