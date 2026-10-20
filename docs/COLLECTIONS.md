@@ -19,7 +19,7 @@ The document viewer provides the download option.
 | --- | --- | --- |
 | Item scope | Selected collection and readable descendants | Objects directly attached to the selected collection |
 | Hierarchy browser | Hidden | Shown when enabled and readable children exist |
-| Result controls | Options, sorting, Tiles/List and paging | Same controls for multiple directly attached objects; a single qualifying object uses the existing inline preview |
+| Result controls | Options, sorting, Tiles/List and paging | Same controls for directly attached objects, including a single item |
 | Finding-aid scope | Top-level collection and readable descendants | Same scope as flat view |
 
 Both modes use the current **Only items with media / All items** preference and
@@ -27,6 +27,11 @@ native record, bundle and Pawtucket ACL permissions. Unavailable ancestors prune
 their whole branch. Distinct objects are not merged because their names or
 identifiers happen to match. The switch retains sort/display state and resets
 paging to the first page of the new scope.
+
+Single items use the regular collection-items section in both modes. Object
+images and video previews are never embedded in the collection's metadata
+columns. The shared results loader applies the current media preference and
+permissions before showing cards and totals.
 
 The overview groups description/source, scope/content and provenance separately
 from creators, dates, extent, language, subjects, rights, external links and related

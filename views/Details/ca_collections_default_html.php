@@ -37,10 +37,6 @@
 	$collection_mode = tadlCollectionContentsMode($this->request);
 	$va_related_object_ids = $collection_mode === 'hierarchy'
 		? (array)$t_item->get('ca_objects.object_id', array('returnAsArray' => true, 'checkAccess' => $va_access_values)) : [];
-	$vb_show_single_related_object = sizeof($va_related_object_ids) === 1;
-	if (tadlMediaPreference($this->request) === 'only') {
-		$vb_show_single_related_object = (sizeof($va_related_object_ids) === 1) && (bool)tadlMediaEligibleIDs('ca_objects', $va_related_object_ids, $va_access_values, $this->request);
-	}
 	$va_comments = $this->getVar("comments");
 	$vn_comments_enabled = 	$this->getVar("commentsEnabled");
 	$vn_share_enabled = 	$this->getVar("shareEnabled");
@@ -70,11 +66,6 @@
 		print tadlCollectionMetadataField($this->request, $t_item, 'Source of description', ['ca_collections.description_source']);
 		print tadlCollectionMetadataField($this->request, $t_item, 'Scope and content', ['ca_collections.collection_scope_content']);
 		print tadlCollectionMetadataField($this->request, $t_item, 'Provenance', ['ca_collections.provenance']);
-		if ($vb_show_single_related_object) {
-?>
-		{{{<ifcount code="ca_objects" min="1" max="1"><div class='unit'><unit relativeTo="ca_objects" delimiter=" "><l>^ca_object_representations.media.large</l><div class='caption'>Related Object: <l>^ca_objects.preferred_labels.name</l></div></unit></div></ifcount>}}}
-<?php
-		}
 		# Comment and Share Tools
 		if ($vn_comments_enabled | $vn_share_enabled) {
 			print '<div id="detailTools">';
@@ -181,7 +172,7 @@
 				</div><!-- end col -->
 			</div><!-- end row -->
 
-<?php if ($collection_mode === 'flat' || sizeof($va_related_object_ids) >= 2) { ?>
+<?php if ($collection_mode === 'flat' || sizeof($va_related_object_ids) >= 1) { ?>
 			<div class="row">
 				<div id="browseResultsContainer">
 					<?php print caBusyIndicatorIcon($this->request).' '.addslashes(_t('Loading...')); ?>

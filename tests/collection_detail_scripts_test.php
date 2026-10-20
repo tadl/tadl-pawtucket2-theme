@@ -285,6 +285,10 @@ foreach (array(
 	array('name' => 'multiple objects and hierarchy', 'table' => 'ca_collections', 'objects' => 2, 'hierarchy' => true, 'mode' => 'only', 'collectionView' => 'hierarchy'),
 	array('name' => 'all items and hierarchy', 'table' => 'ca_collections', 'objects' => 2, 'hierarchy' => true, 'mode' => 'all', 'collectionView' => 'hierarchy'),
 	array('name' => 'single object without hierarchy', 'table' => 'ca_collections', 'objects' => 1, 'hierarchy' => false, 'mode' => 'only', 'collectionView' => 'hierarchy'),
+	array('name' => 'single item without hierarchy and all items', 'table' => 'ca_collections', 'objects' => 1, 'hierarchy' => false, 'mode' => 'all', 'collectionView' => 'hierarchy'),
+	array('name' => 'single media item with hierarchy', 'table' => 'ca_collections', 'objects' => 1, 'hierarchy' => true, 'mode' => 'only', 'collectionView' => 'hierarchy'),
+	array('name' => 'single item with hierarchy and all items', 'table' => 'ca_collections', 'objects' => 1, 'hierarchy' => true, 'mode' => 'all', 'collectionView' => 'hierarchy'),
+	array('name' => 'hierarchy without direct items', 'table' => 'ca_collections', 'objects' => 0, 'hierarchy' => true, 'mode' => 'all', 'collectionView' => 'hierarchy'),
 	array('name' => 'flat root with only nested items', 'table' => 'ca_collections', 'objects' => 0, 'hierarchy' => false, 'mode' => 'only'),
 	array('name' => 'flat single item', 'table' => 'ca_collections', 'objects' => 1, 'hierarchy' => false, 'mode' => 'all'),
 	array('name' => 'invalid mode defaults to flat', 'table' => 'ca_collections', 'objects' => 0, 'hierarchy' => false, 'mode' => 'only', 'collectionView' => 'unknown')
@@ -293,7 +297,8 @@ foreach (array(
 	$GLOBALS['detailScriptShowHierarchy'] = $case['hierarchy'];
 	$html = (new DetailScriptView($case['objects'], [], ['collection_view' => $case['collectionView'] ?? 'flat']))->render($case['table']);
 	$contentsMode = ($case['collectionView'] ?? '') === 'hierarchy' ? 'hierarchy' : 'flat';
-	$hasGrid = $contentsMode === 'flat' || $case['objects'] >= 2;
+	$hasGrid = $contentsMode === 'flat' || $case['objects'] >= 1;
+	checkDetailScripts(!str_contains($html, 'Related Object:') && !str_contains($html, '^ca_object_representations.media'), $case['name'].': object media must not be embedded in collection metadata.');
 	checkDetailScripts(!preg_match('~navTop|navLeftRight|detailNavBg|\{\{\{(?:previousLink|nextLink)\}\}\}~', $html), $case['name'].': collection detail still reserves record-navigation columns.');
 	$navigationDom = new DOMDocument(); $navigationDom->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 	$navigationXPath = new DOMXPath($navigationDom);

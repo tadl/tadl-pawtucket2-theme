@@ -723,6 +723,14 @@ below retain implementation details and historical verification evidence.
   browse and authority AJAX routes stay native. Cache keys include collection and
   mode; the preference toggle preserves mode. Deploy the controller, helper and
   template together; no schema/index rebuild or additional dependency is required.
+- A hierarchy page with one directly linked object now uses the regular collection
+  results loader, matching flat mode and multiple-item collections. The former
+  Related Object media preview is removed from the metadata column, along with
+  its redundant page-level media eligibility lookup. Access, media preference,
+  format tags and Tiles/List remain handled by the shared results path. Empty
+  hierarchy branches retain their existing layout. Rendered regressions cover
+  single items with/without children in both preferences, empty hierarchy branches,
+  flat results, metadata exclusion and execution of the emitted AJAX loaders.
 - Collection result responses send `Cache-Control: private, no-store` and
   `X-Robots-Tag: noindex, follow`. The replacement root robots policy also excludes
   `/CollectionContents` (clean and index.php routes); installing that root file
