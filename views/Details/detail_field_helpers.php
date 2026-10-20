@@ -1,6 +1,7 @@
 <?php
 require_once(dirname(__DIR__, 2).'/helpers/browse_navigation.php');
 require_once(__DIR__.'/detail_preview_helpers.php');
+require_once(dirname(__DIR__, 2).'/helpers/rich_text.php');
 
 /** Reuse native result-context links, with an optional browse destination. */
 function tadlDetailNavigation($view, $browseAction = null, $browseLabel = '', $browseController = 'Browse') {
@@ -27,6 +28,7 @@ if (!function_exists('tadlDetailHasContent')) {
 /** Keep full native values intact and preserve links/formatting in rich previews. */
 if (!function_exists('tadlDetailExpandableValue')) {
 	function tadlDetailExpandableValue($value, $label, $entries = false) {
+		$value = tadlPresentationHTML($value);
 		$plain = preg_replace('~<(?:br\b[^>]*|/(?:p|div|li|h[1-6]|tr|dt|dd))>~i', ' ', (string)$value);
 		$plain = html_entity_decode(strip_tags($plain), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 		$plain = trim(preg_replace('/[\s\p{Z}\x{200B}\x{FEFF}]+/u', ' ', $plain));
@@ -57,7 +59,7 @@ if (!function_exists('tadlDetailField')) {
 			$template_options['checkAccess'] = caGetUserAccessValues($request);
 		}
 
-		$value = trim((string)$item->getWithTemplate($template, $template_options));
+		$value = trim(tadlPresentationHTML($item->getWithTemplate($template, $template_options)));
 		if (!tadlDetailHasContent($value)) { return ''; }
 		// Repeated linked native units are entries, rather than paragraphs to cut mid-role.
 		$entries = preg_match('/<unit\b/i', $template) && preg_match('/<(?:l|a)\b/i', $template);

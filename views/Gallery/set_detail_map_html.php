@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__.'/../../helpers/rich_text.php');
 /* ----------------------------------------------------------------------
  * themes/default/views/Gallery/set_detail_timeline_html.php :
  * ----------------------------------------------------------------------
@@ -31,7 +32,7 @@
 	<div class="row">
 		<div class="col-sm-12">
 			<H1><?php print $this->getVar("label")."</H1>"; ?>
-			<?php print ($this->getVar("description")) ? "<div class='setDescription'>".$this->getVar("description")."</div>" : ""; ?>
+			<?php print (tadlPresentationHTML($this->getVar("description"))) ? "<div class='setDescription'>".tadlPresentationHTML($this->getVar("description"))."</div>" : ""; ?>
 		</div>
 	</div>
 	<div class="row">

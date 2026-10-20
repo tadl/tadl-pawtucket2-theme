@@ -1,7 +1,8 @@
 <?php
+require_once(__DIR__.'/../../helpers/rich_text.php');
 	$pa_set_items = (array)$this->getVar('set_items');
 	$pn_set_id = (int)$this->getVar('set_id');
-	$ps_description = $this->getVar('description');
+	$ps_description = tadlPresentationHTML($this->getVar('description'));
 	$pn_set_item_id = (int)$this->getVar('set_item_id');
 	$vn_first_item_id = 0;
 	$vn_item_position = 0;
