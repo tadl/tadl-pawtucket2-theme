@@ -90,7 +90,7 @@ try {
 	assetCheck(strpos($rewritten, '/catalog/themes/tadl/assets/pawtucket/vendor/jquery.tileviewer.js?v=') !== false, 'Native asset ordering must load exactly the theme viewer adaptation.');
 	foreach (['views/pageFormat/pageHeader.php', 'views/Lightbox/present_html.php'] as $view) {
 		$source = file_get_contents(dirname(__DIR__).'/'.$view);
-		assetCheck(strpos($source, 'tadlAssetLoadHTML($this->request)') !== false && strpos($source, '/helpers/asset_versions.php') !== false, 'Every theme document must use the versioned loader.');
+		assetCheck(strpos($source, 'tadlAssetLoadHTML($this->request)') !== false && strpos($source, '/helpers/asset_versions.php') !== false && strpos($source, 'tadlFontLoadHTML()') !== false, 'Every theme document must use the versioned loader.');
 	}
 	echo "Asset versions passed: {$checks} assertions.\n";
 } finally {

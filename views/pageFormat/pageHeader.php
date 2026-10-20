@@ -242,6 +242,7 @@ if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$s
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0"/>
 	<link rel="icon" type="image/svg+xml" href="<?= htmlspecialchars($this->request->getThemeUrlPath().'/assets/pawtucket/graphics/favicon.svg', ENT_QUOTES, 'UTF-8'); ?>">
 	<?= MetaTagManager::getHTML(); ?>
+	<?= tadlFontLoadHTML(); ?>
 	<?= tadlAssetLoadHTML($this->request); ?>
 
 	<title><?= htmlspecialchars($window_title ?: $site_name, ENT_QUOTES, 'UTF-8'); ?></title>
