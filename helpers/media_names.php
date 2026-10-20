@@ -1,7 +1,7 @@
 <?php
 /** Name image links from their public record, preserving native callbacks and script bytes. */
 function tadlMediaImageNames($html, $label) {
- $label = trim(html_entity_decode(strip_tags((string)$label), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+ $label = trim(html_entity_decode((string)$label, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
  if ($label === '') { $label = _t('View image'); }
  $label = htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
  return preg_replace_callback('~<!--.*?-->|<(script|style)\b(?:[^>\'\"]+|\'[^\']*\'|\"[^\"]*\")*>.*?</\1\s*>|<[a-z][a-z0-9:-]*(?:[^>\'\"]+|\'[^\']*\'|\"[^\"]*\")*>~is', static function ($token) use ($label) {

@@ -124,11 +124,16 @@ $fallbackQueries = array_filter(array_slice(ThumbnailDb::$queries, $queries), st
 checkThumbnail(count($fallbackQueries) === 1, 'Resolved cards must skip object fallback queries.');
 foreach ($fallbackQueries as $query) { checkThumbnail($query['params'][0] === [10], 'Resolved collection was unnecessarily included in object fallbacks.'); }
 // Thousands of attached images must still produce just one media row/tag.
-foreach (range(1000,1999) as $id) { thumbnailObject($id,2,'Synthetic '.str_pad((string)$id,4,'0',STR_PAD_LEFT)); }
+foreach (range(30000,39999) as $id) { thumbnailObject($id,2,'Synthetic '.str_pad((string)$id,4,'0',STR_PAD_LEFT)); }
+$startQueries = count(ThumbnailDb::$queries);
 $images = tadlGetDescendantCollectionImages([2],$options);
 checkThumbnail(str_contains($images[2],'image-30.jpg'), 'A large collection changed the selected image.');
+checkThumbnail(array_sum(array_column(array_filter(array_slice(ThumbnailDb::$queries, $startQueries), static fn($query) => str_contains($query['sql'], 'parent_collection_id')), 'rows')) <= 32, 'Ten thousand candidates must stop after one bounded scalar window.');
 checkThumbnail(end(ThumbnailDb::$queries)['rows'] === 1, 'Thumbnail query returned every object instead of one row per card.');
 
+foreach (range(20000, 20039) as $id) { thumbnailObject($id, 6, '000-'.$id); }
+$GLOBALS['thumbnailDenied'] = ['ca_objects' => range(20000, 20039)];
+checkThumbnail(str_contains(tadlGetDescendantCollectionImages([6], $options)[6] ?? '', 'image-50.jpg'), 'Keyset windows must continue past denied candidates without losing the next readable image.');
 $GLOBALS['thumbnailDenied'] = ['ca_object_representations' => [5000,21]];
 $restricted = tadlGetCollectionImages([1], $options);
 checkThumbnail(str_contains($restricted[1] ?? '', 'image-20.jpg'), 'Collection primary and object primary must both respect front-only representation ACLs.');
