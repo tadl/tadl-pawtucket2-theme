@@ -18,13 +18,16 @@ class CollectionContentsController extends SearchController {
 			|| !tadlCollectionContentsReadable($this->request, $collection, $access)) {
 			$this->response->setHTTPResponseCode(404, 'Not Found'); return;
 		}
+		if (!(ApplicationPluginManager::checkPluginStatus('tadlPlaceContents')['available'] ?? false)) {
+			throw new RuntimeException('The scoped contents search plugin is unavailable.');
+		}
 		$mode = tadlCollectionContentsMode($this->request);
 		$sorts = (array)(caGetBrowseConfig()->getAssoc('browseTypes')['objects']['sortBy'] ?? []);
-		$sort = $this->request->getParameter('sort', pString);
-		$view = $this->request->getParameter('view', pString);
-		$direction = $this->request->getParameter('direction', pString);
+		$sort = (string)$this->request->getParameter('sort', pString);
+		$view = (string)$this->request->getParameter('view', pString);
+		$direction = (string)$this->request->getParameter('direction', pString);
 		$params = [
-			'search' => tadlCollectionContentsSearch(tadlCollectionContentsIDs($this->request, $collection, $mode === 'flat')),
+			'search' => 'collection_id:'.$id,
 			'collection_view' => $mode, 'tadl_collection_controls' => 1, 'tadl_collection_id' => $id,
 			'view' => in_array($view, ['images', 'list', 'pdf', 'xlsx', 'pptx'], true) ? $view : 'images',
 			'sort' => isset($sorts[$sort]) ? $sort : 'Identifier',

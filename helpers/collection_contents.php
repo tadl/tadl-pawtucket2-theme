@@ -155,27 +155,27 @@ function tadlCollectionContentsCounts($request, $collection) {
 	$counts = array_fill_keys(array_keys($nodes), 0);
 	$scope = tadlReadableIDs($request, 'ca_collections', array_keys($nodes), (array)caGetUserAccessValues($request), 'ca_objects');
 	if (!$scope) { return $counts; }
-	$browse = caGetBrowseInstance('ca_objects');
-	if (!$browse) { throw new RuntimeException('Unable to count collection contents.'); }
-	$browse->addCriteria('_search', [tadlCollectionContentsSearch($scope)]);
-	$browse->execute(['checkAccess' => caGetUserAccessValues($request), 'request' => $request, 'noCache' => true]);
-	$result = $browse->getResults();
-	if (!$result) { throw new RuntimeException('Unable to count collection contents.'); }
-	tadlFilterMediaResult($request, $result);
-	$visible = array_fill_keys($result->getPrimaryKeyValues(PHP_INT_MAX), true);
-	if (!$visible) { return $counts; }
+    // Read the indexed membership once, then let native Browse enforce object
+    // visibility. An intrinsic ID filter avoids one parsed OR term per archival unit.
+    $db = new Db(); $memberships = [];
+    foreach (array_chunk($scope, 500) as $chunk) {
+        $rows = $db->query('SELECT DISTINCT object_id, collection_id FROM ca_objects_x_collections WHERE collection_id IN (?)', [$chunk]);
+        if (!$rows) { throw new RuntimeException('Unable to count collection contents.'); }
+        while ($rows->nextRow()) { $memberships[(int)$rows->get('object_id')][] = (int)$rows->get('collection_id'); }
+    }
+    if (!$memberships) { return $counts; }
+    $browse = caGetBrowseInstance('ca_objects');
+    if (!$browse || !$browse->addCriteria('_search', ['*'])
+        || !$browse->addResultFilter('ca_objects.object_id', 'in', join(',', array_keys($memberships)))) {
+        throw new RuntimeException('Unable to restrict collection counts.');
+    }
+    $browse->execute(['checkAccess' => caGetUserAccessValues($request), 'request' => $request, 'noCache' => true]);
+    $result = $browse->getResults();
+    if (!$result) { throw new RuntimeException('Unable to count collection contents.'); }
+    tadlFilterMediaResult($request, $result);
+    $visible = array_fill_keys($result->getPrimaryKeyValues(PHP_INT_MAX), true);
+    $memberships = array_intersect_key($memberships, $visible);
 
-	// Fetch memberships in batches, without the native related-item limit or per-object model loads.
-	$db = new Db();
-	$memberships = [];
-	foreach (array_chunk($scope, 500) as $chunk) {
-		$rows = $db->query('SELECT DISTINCT object_id, collection_id FROM ca_objects_x_collections WHERE collection_id IN (?)', [$chunk]);
-		if (!$rows) { throw new RuntimeException('Unable to count collection contents.'); }
-		while ($rows->nextRow()) {
-			$objectID = (int)$rows->get('object_id');
-			if (isset($visible[$objectID])) { $memberships[$objectID][] = (int)$rows->get('collection_id'); }
-		}
-	}
 	foreach ($memberships as $collectionIDs) {
 		$seen = [];
 		foreach ($collectionIDs as $id) {
@@ -188,4 +188,24 @@ function tadlCollectionContentsCounts($request, $collection) {
 		}
 	}
 	return $counts;
+}
+
+/** Indexed relationship union, with object visibility/base criteria applied by native Browse. */
+function tadlCollectionContentsObjectIDs(array $scope) {
+    if (!$scope) { return []; }
+    $db = new Db(); $ids = [];
+    foreach (array_chunk($scope, 500) as $chunk) {
+        $rows = $db->query('SELECT DISTINCT object_id FROM ca_objects_x_collections WHERE collection_id IN (?)', [$chunk]);
+        if (!$rows) { throw new RuntimeException('Unable to read collection relationships.'); }
+        while ($rows->nextRow()) { $ids[(int)$rows->get('object_id')] = true; }
+    }
+    return array_keys($ids);
+}
+
+function tadlCollectionContentsResult($request, array $info) {
+    require_once(__DIR__.'/place_contents.php');
+    $id = (int)$request->getParameter('collection_id', pInteger);
+    $collection = Datamodel::getInstance('ca_collections', false);
+    $scope = $collection && $collection->load($id) ? tadlCollectionContentsIDs($request, $collection, tadlCollectionContentsMode($request) === 'flat') : [];
+    return tadlScopedObjectContentsResult($request, $info, tadlCollectionContentsObjectIDs($scope), 'tadl_collection_contents:'.$id.':'.tadlCollectionContentsMode($request));
 }

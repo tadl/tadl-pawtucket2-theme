@@ -106,11 +106,12 @@ class HierarchyObjectResult {
 function caGetBrowseInstance($table) {
  hierarchyCheck($table==='ca_objects','Counts must use native object visibility');
  return new class {
-  private $scope=[];
-  function addCriteria($facet,$terms) { preg_match_all('/collection_id:(\d+)/',$terms[0],$matches); $this->scope=array_map('intval',$matches[1]); }
+  private $scope=[]; private $filterIDs=null;
+  function addResultFilter($field,$operator,$ids) { $this->filterIDs=array_map('intval',explode(',',$ids)); return true; }
+  function addCriteria($facet,$terms) { preg_match_all('/collection_id:(\d+)/',$terms[0],$matches); $this->scope=array_map('intval',$matches[1]); return true; }
   function execute($options) { $GLOBALS['hierarchyBrowseCalls']++; hierarchyCheck($options['checkAccess']===[1] && $options['noCache']===true,'Count search lost access/freshness'); }
   function getResults() {
-   $ids=[];
+   $ids=$this->filterIDs??[];
    foreach ($this->scope as $id) { $ids=array_merge($ids,$GLOBALS['hierarchyObjects'][$id]??[]); }
    return new HierarchyObjectResult(array_unique($ids));
   }

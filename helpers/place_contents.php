@@ -28,10 +28,15 @@ function tadlPlaceContentsResult($request, array $info) {
 	$id = (int)$request->getParameter('place_id', pInteger);
 	$scope = tadlPlaceScopes($request, [$id])[$id] ?? [];
 	$ids = tadlPlaceObjectIDs($request, $scope);
+	return tadlScopedObjectContentsResult($request, $info, $ids, 'tadl_place_contents:'.$id);
+}
+
+/** Shared native object filtering for indexed place/collection relationship scopes. */
+function tadlScopedObjectContentsResult($request, array $info, array $ids, $context) {
 	$browse = caGetBrowseInstance('ca_objects');
 	// Intrinsic result filters are not part of the native browse cache key.
 	// Use a separate namespace and always recompute current permissions/membership.
-	$browse->setContext('tadl_place_contents:'.$id.':'.(int)$request->getUserID().':'.hash('sha256', join(',', $ids)));
+	$browse->setContext($context.':'.(int)$request->getUserID().':'.hash('sha256', join(',', $ids)));
 	if (!$browse->addCriteria('_search', ['*'])
 		|| !$browse->addResultFilter('ca_objects.object_id', 'in', join(',', $ids ?: [0]))) {
 		throw new RuntimeException('Unable to restrict place results.');

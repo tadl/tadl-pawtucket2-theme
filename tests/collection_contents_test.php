@@ -18,6 +18,7 @@ function caACLIsEnabled($record, $options) {
 	contentsCheck($options === ['forPawtucket' => true], 'Collection ACL must use the Pawtucket configuration.');
 	return $record->get('acl');
 }
+function caGetSearchConfig() { return new ContentsConfig(); }
 function caGetBrowseConfig() { return new ContentsConfig(); }
 class ContentsConfig {
 	function get($key) { return false; }
@@ -37,6 +38,9 @@ class ContentsRequest {
 		$this->get[$key] = $value;
 	}
 	function getRequestMethod() { return $this->method; }
+	function getController() { return 'CollectionContents'; }
+	function getAction() { return 'Objects'; }
+	function getUserID() { return 7; }
 	function isLoggedIn() { return $this->loggedIn; }
 }
 class ContentsResponse {
@@ -73,7 +77,7 @@ class Db {
 	static PDO $pdo;
 	static array $queries = [];
 	function query($sql, $params) {
-		$membership = $sql === 'SELECT DISTINCT object_id, collection_id FROM ca_objects_x_collections WHERE collection_id IN (?)';
+		$membership = in_array($sql, ['SELECT DISTINCT object_id, collection_id FROM ca_objects_x_collections WHERE collection_id IN (?)', 'SELECT DISTINCT object_id FROM ca_objects_x_collections WHERE collection_id IN (?)'], true);
 		contentsCheck($membership || in_array($sql, ['SELECT collection_id FROM ca_collections WHERE parent_id IN (?) AND access IN (?) AND deleted = 0', 'SELECT collection_id, parent_id FROM ca_collections WHERE parent_id IN (?) AND access IN (?) AND deleted = 0'], true), 'Traversal/membership query must stay scoped.');
 		contentsCheck(count($params) === ($membership ? 1 : 2) && count($params[0]) > 0 && count($params[0]) <= 500 && ($membership || $params[1]), 'Traversal/membership query must be bounded and fail closed.');
 		self::$queries[] = $params;
@@ -101,17 +105,27 @@ class ContentsBrowse {
 	static int $calls = 0;
 	private array $scope = [];
 	private array $access = [];
+	private array $filterIDs = [];
+	function setContext($context) {}
+	function addResultFilter($field, $operator, $ids) { contentsCheck($field === 'ca_objects.object_id' && $operator === 'in', 'Object scope must use the native intrinsic filter.'); $this->filterIDs = array_map('intval', explode(',', $ids)); return true; }
 	function addCriteria($facet, $terms) {
 		contentsCheck($facet === '_search' && count($terms) === 1, 'Counts must use a single native object union.');
 		preg_match_all('/collection_id:(\d+)/', $terms[0], $matches);
 		$this->scope = array_map('intval', $matches[1]);
+		return true;
 	}
 	function execute($options) {
 		self::$calls++;
 		contentsCheck($options['request'] instanceof ContentsRequest && $options['noCache'] === true, 'Counts must honor the current request and not reuse stale visibility.');
 		$this->access = $options['checkAccess'];
+		return true;
 	}
-	function getResults() {
+	function getResults($options = []) {
+		if ($this->filterIDs) {
+			$query = Db::$pdo->prepare('SELECT object_id FROM objects WHERE object_id IN ('.join(',', array_fill(0, count($this->filterIDs), '?')).') AND access IN ('.join(',', array_fill(0, count($this->access), '?')).') AND deleted = 0 AND readable = 1 ORDER BY object_id');
+			$query->execute(array_merge($this->filterIDs, $this->access));
+			return new ContentsObjectResult($query->fetchAll(PDO::FETCH_COLUMN));
+		}
 		$query = Db::$pdo->prepare('SELECT DISTINCT o.object_id FROM objects o JOIN ca_objects_x_collections m ON m.object_id = o.object_id WHERE m.collection_id IN ('.join(',', array_fill(0, count($this->scope), '?')).') AND o.access IN ('.join(',', array_fill(0, count($this->access), '?')).') AND o.deleted = 0 AND o.readable = 1 ORDER BY o.object_id');
 		$query->execute(array_merge($this->scope, $this->access));
 		return new ContentsObjectResult($query->fetchAll(PDO::FETCH_COLUMN));
@@ -133,11 +147,18 @@ function tadlMediaEligibleIDs($table, $ids, $access, $request) {
 	$query->execute(array_merge($ids, $access));
 	return $query->fetchAll(PDO::FETCH_COLUMN);
 }
+class BaseApplicationPlugin { function getRequest() { return $GLOBALS['collectionPluginRequest']; } }
+class ApplicationPluginManager { static bool $available = true; static function checkPluginStatus($name) { return ['available' => self::$available]; } }
+require dirname(__DIR__).'/plugins/tadlPlaceContents/tadlPlaceContentsPlugin.php';
 // The parent boundary captures exactly what the actual controller delegates to native search.
 class SearchController {
-	public array $calls = [];
+	public array $calls = []; public $scopedResult;
 	function __construct(public ContentsRequest $request, public ContentsResponse $response) {}
-	function __call($action, $args) { $this->calls[] = [$action, $args, $this->request->get]; }
+	function __call($action, $args) {
+		$this->calls[] = [$action, $args, $this->request->get];
+		$GLOBALS['collectionPluginRequest'] = $this->request;
+		$this->scopedResult = (new tadlPlaceContentsPlugin())->hookReplaceSearch(['search' => $action, 'browseInfo' => ['table' => 'ca_objects', 'sortBy' => ['Identifier' => 'ca_objects.idno']], 'result' => null])['result'];
+	}
 }
 $directory = sys_get_temp_dir().'/tadl-contents-test-'.bin2hex(random_bytes(8));
 mkdir($directory.'/controllers', 0700, true);
@@ -251,13 +272,20 @@ try {
 			'search' => '*', 'key' => 'unrelated', 'facets' => 'unrelated', 'facet' => '_search', 'id' => '*', '_advanced' => 1, 'n' => 99999]);
 		$response = new ContentsResponse(); $controller = new CollectionContentsController($request, $response); $controller->Objects();
 		$call = $controller->calls[0]; $params = $call[2];
+		contentsCheck($controller->scopedResult->ids === ($mode === 'hierarchy' ? [1] : [1,2,6]), 'Indexed collection scope must preserve direct/descendant membership and native object visibility.');
 		contentsCheck(count($controller->calls) === 1 && $call[0] === 'objects' && $call[1] === [[]], 'Controller must delegate to the native object search once.');
-		contentsCheck($params['search'] === tadlCollectionContentsSearch(tadlCollectionContentsIDs($request, $root, $mode !== 'hierarchy')), 'Caller query/key must never replace selected branch scope.');
+		contentsCheck($params['search'] === 'collection_id:1', 'Caller query/key must never replace selected branch scope.');
 		contentsCheck($params['collection_view'] === ($mode === 'hierarchy' ? 'hierarchy' : 'flat') && $params['tadl_collection_id'] === 1 && $params['tadl_collection_controls'] === 1, 'Loader must publish canonical collection mode and controls.');
 		contentsCheck($params['view'] === 'list' && $params['n'] === 24 && $params['sort'] === 'Title' && $params['direction'] === 'desc' && $params['s'] === 24, 'Sorting, paging and list view must survive canonicalization.');
 		contentsCheck($params['key'] === '' && $params['facets'] === '' && $params['facet'] === '' && $params['id'] === '' && $params['_advanced'] === 0, 'Native stale/refinement/advanced state must be cleared.');
 		contentsCheck($response->headers === ['Cache-Control' => 'private, no-store', 'X-Robots-Tag' => 'noindex, follow'], 'Collection result endpoint must be private and non-indexable.');
 	}
+    $wideRequest = new ContentsRequest(['collection_id' => 200]);
+    $wideController = new CollectionContentsController($wideRequest, new ContentsResponse()); $wideController->Objects();
+    contentsCheck($wideRequest->get['search'] === 'collection_id:200' && count($wideController->scopedResult->ids) === 602, 'A wide branch must retain all objects without constructing a compound text query.');
+    ApplicationPluginManager::$available = false; $failedClosed = false;
+    try { (new CollectionContentsController(new ContentsRequest(['collection_id' => 1]), new ContentsResponse()))->Objects(); } catch (RuntimeException $error) { $failedClosed = true; }
+    contentsCheck($failedClosed, 'An incomplete scoped-search plugin deployment must fail closed.'); ApplicationPluginManager::$available = true;
 	$request = new ContentsRequest(['collection_id' => 1, 'view' => 'invalid', 'sort' => 'invalid', 'direction' => 'invalid', 's' => -10]);
 	$controller = new CollectionContentsController($request, new ContentsResponse()); $controller->Objects();
 	contentsCheck($request->get['collection_view'] === 'flat' && $request->get['view'] === 'images' && $request->get['n'] === 9 && $request->get['sort'] === 'Identifier' && $request->get['direction'] === 'asc' && $request->get['s'] === 0, 'Default and invalid display state must use the supported first tile page.');
