@@ -457,3 +457,6 @@ $text_document = new DOMDocument(); $text_document->loadHTML($text_html, LIBXML_
 aidCheck($text_xpath->query('//h1')->length === 1 && $text_xpath->query('//dl/dt')->length > 0 && $text_xpath->query('//ol/li/ol/li')->length > 0, 'HTML finding aids must expose headings, terms/values and the full nested archival hierarchy.');
 $response = new AidResponse(); (new CollectionFindingAidController(new AidRequest(['collection_id' => 999]), $response))->Text();
 aidCheck($response->status === 404, 'Unavailable HTML finding aids must remain unavailable.');
+
+$root_level = $text_controller->view->getVar('finding_aid')['fields']['level']['value'] ?? '';
+aidCheck($root_level === '' || str_contains($text_html, '('.htmlspecialchars($root_level, ENT_QUOTES, 'UTF-8').')'), 'HTML must retain the root archival level provided in the equivalent PDF.');
