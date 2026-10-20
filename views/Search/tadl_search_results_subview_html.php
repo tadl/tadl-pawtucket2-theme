@@ -96,7 +96,7 @@
 <?php
 		if ($vb_media_cards) {
 ?>
-		<a class="tadl-search-card<?php print ($vs_table === 'ca_collections') ? ' tadl-search-card--collection' : ''; ?>" href="<?php print $vs_item_url; ?>" aria-label="<?= $vs_item_label; ?>"<?= $format_description_id ? ' aria-describedby="'.htmlspecialchars($format_description_id, ENT_QUOTES, 'UTF-8').'"' : ''; ?>>
+		<a class="tadl-search-card<?php print ($vs_table === 'ca_collections') ? ' tadl-search-card--collection' : ''; ?>" href="<?php print $vs_item_url; ?>" aria-label="<?= $vs_item_label; ?><?= !empty($va_formats[$va_item['id']]) ? ' ('.htmlspecialchars(join(', ', $va_formats[$va_item['id']]), ENT_QUOTES, 'UTF-8').')' : ''; ?>"<?= $format_description_id ? ' aria-describedby="'.htmlspecialchars($format_description_id, ENT_QUOTES, 'UTF-8').'"' : ''; ?>>
 			<span class="tadl-search-card-media" aria-hidden="true">
 <?php
 			if ($va_item['image']) {
