@@ -162,8 +162,11 @@ let browser;
     await page.goto(origin + '/lightbox-menu');
     await page.getByRole('button', {name:'Options', exact:true}).focus(); await page.keyboard.press('Enter');
     assert.equal(await page.getByRole('button', {name:'Options', exact:true}).getAttribute('aria-expanded'), 'true');
-    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Tab');
     assert(await page.locator('#main .dropdown-menu').evaluate(node => node.contains(document.activeElement)), 'Lightbox menu choices must be keyboard reachable.');
+    await page.evaluate(axeSource);
+    const openMenuFailures = await page.evaluate(async () => (await axe.run('#main', {runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']}})).violations.map(item => ({id:item.id, nodes:item.nodes.map(node => node.html)})));
+    assert.deepEqual(openMenuFailures, [], 'An open Lightbox menu must retain valid semantics.');
     // Exercise the actual native panel, the changed dialog template and its focus adapter.
     await page.goto(origin + '/contact');
     await page.evaluate(() => {

@@ -120,3 +120,6 @@ textarea.form-control { resize: vertical; }
         scroll-behavior: auto !important;
     }
 }
+
+/* Dropdown section headings are readable secondary text. */
+.dropdown-menu .dropdown-header { color: #555; font-size: inherit; }

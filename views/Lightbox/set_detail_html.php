@@ -99,8 +99,8 @@ if (!$vb_ajax) {	// !ajax
     //
 ?>
 				<div class="btn-group">
-					<button type="button" class="btn btn-default bGear dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span> <?= _t('Options'); ?></button>
-					<ul class="dropdown-menu" role="menu">
+					<button type="button" class="btn btn-default bGear dropdown-toggle" data-toggle="dropdown" aria-controls="tadl-lightbox-options" aria-expanded="false"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span> <?= _t('Options'); ?></button>
+					<ul class="dropdown-menu" id="tadl-lightbox-options">
 <?php
 						if(($vs_sort_control_type == "dropdown") && is_array($va_sorts = $this->getVar('sortBy')) && (sizeof($va_sorts) > 1)) {
 							print "<li class='dropdown-header'>"._t("Sort by:")."</li>\n";
