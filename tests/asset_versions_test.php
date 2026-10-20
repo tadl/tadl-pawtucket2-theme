@@ -97,3 +97,6 @@ try {
 	foreach ([$css, $js, $outside, $directory.'/assets/pawtucket/css/outside.css'] as $file) { unlink($file); }
 	foreach (['/assets/pawtucket/css', '/assets/pawtucket/js', '/assets/pawtucket', '/assets', ''] as $path) { rmdir($directory.$path); }
 }
+
+assetCheck(!str_contains(file_get_contents(dirname(__DIR__).'/assets/pawtucket/css/theme.css'), '@import'), 'Theme CSS must not delay font discovery with an import.');
+assetCheck(str_contains(tadlFontLoadHTML(), 'rel="preconnect"') && str_contains(tadlFontLoadHTML(), 'display=swap'), 'Fonts need connection hints and a visible fallback during loading.');

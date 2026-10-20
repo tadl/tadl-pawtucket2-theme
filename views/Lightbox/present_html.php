@@ -51,7 +51,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 		<?php print MetaTagManager::getHTML(); ?>
-		<?php print tadlAssetLoadHTML($this->request); ?>
+		<?php print tadlFontLoadHTML(); print tadlAssetLoadHTML($this->request); ?>
 
 		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
 		<script>

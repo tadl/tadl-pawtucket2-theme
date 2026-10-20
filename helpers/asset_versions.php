@@ -46,3 +46,10 @@ function tadlVersionThemeAssets($html, $theme_url, $theme_directory) {
 		}, $tag[0], 1).substr($token[0], strlen($tag[0]));
 	}, $html);
 }
+
+/** Discover fonts in the document head rather than after downloading the theme CSS. */
+function tadlFontLoadHTML() {
+	return '<link rel="preconnect" href="https://fonts.googleapis.com">'
+		.'<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+		.'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Merriweather+Sans:wght@400;700;800&amp;family=Open+Sans:wght@400;600;700&amp;display=swap">';
+}
