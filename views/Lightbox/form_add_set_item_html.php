@@ -60,9 +60,9 @@
 			print "</div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
 			print "<div class='form-group'><div class='col-sm-offset-4 col-sm-7'><H2 class='uppercase'>"._t("OR Create a New %1", ucfirst($vs_display_name))."</H2></div></div><!-- end form-group -->\n";
 		}
-		print "<div class='form-group'><label for='name' class='col-sm-4 control-label'>"._t("Name")."</label><div class='col-sm-7'><input type='text' name='name' id='name' placeholder='"._t("Your %1", $vs_display_name)."' class='form-control' value='".$vs_set_name."'></div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
+		print "<div class='form-group'><label for='name' class='col-sm-4 control-label'>"._t("Name")."</label><div class='col-sm-7'><input type='text' name='name' id='name' placeholder='"._t("Your %1", $vs_display_name)."' class='form-control' value='".htmlspecialchars((string)$vs_set_name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')."'></div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
 		#print $t_set->htmlFormElement("access","<div class='form-group'><label for='access' class='col-sm-4 control-label'>"._t("Display Option")."</label><div class='col-sm-7' class='form-control'>^ELEMENT</div><!-- end col-sm-7 --></div><!-- end form-group -->\n", array("classname" => "form-control"));
-		print "<div class='form-group'><label for='description' class='col-sm-4 control-label'>"._t("Description")."</label><div class='col-sm-7'><textarea name='".$vs_description_attribute."' id='description' class='form-control' rows='3'>".$vs_set_description."</textarea></div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
+		print "<div class='form-group'><label for='description' class='col-sm-4 control-label'>"._t("Description")."</label><div class='col-sm-7'><textarea name='".htmlspecialchars((string)$vs_description_attribute, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')."' id='description' class='form-control' rows='3'>".htmlspecialchars((string)$vs_set_description, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')."</textarea></div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
 
 ?>
 		<div class="form-group">
@@ -70,9 +70,9 @@
 				<button type="submit" class="btn btn-default"><?php print _t("Save"); ?></button>
 			</div><!-- end col-sm-7 -->
 		</div><!-- end form-group -->
-		<input type="hidden" name="object_id" value="<?php print $this->getVar("object_id"); ?>">
-		<input type="hidden" name="object_ids" value="<?php print $this->getVar("object_ids"); ?>">
-		<input type="hidden" name="saveLastResults" value="<?php print $this->getVar("saveLastResults"); ?>">
+		<input type="hidden" name="object_id" value="<?php print htmlspecialchars((string)$this->getVar("object_id"), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>">
+		<input type="hidden" name="object_ids" value="<?php print htmlspecialchars((string)$this->getVar("object_ids"), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>">
+		<input type="hidden" name="saveLastResults" value="<?php print htmlspecialchars((string)$this->getVar("saveLastResults"), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>">
 	</form>
 </div>
 

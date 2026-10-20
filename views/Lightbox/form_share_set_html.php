@@ -72,7 +72,7 @@
 			print "</select>\n";
 			print "</div><!-- end col-sm-7 --></div><!-- end form-group -->\n";
 			
-			print "<div class='form-group'><label for='message' class='col-sm-4 control-label'>"._t("Message")."</label><div class='col-sm-7'><textarea name='share_message' id='message' class='form-control'>".(($vs_message = $this->getVar("share_message")) ? $vs_message : "")."</textarea></div></div>\n";
+			print "<div class='form-group'><label for='message' class='col-sm-4 control-label'>"._t("Message")."</label><div class='col-sm-7'><textarea name='share_message' id='message' class='form-control'>".(($vs_message = $this->getVar("share_message")) ? htmlspecialchars((string)$vs_message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : "")."</textarea></div></div>\n";
 			
 		}else{
 			print "<input type='hidden' name='access' value='1'>";
