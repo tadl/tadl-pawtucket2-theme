@@ -490,7 +490,7 @@ prevented=stopped=false;
 listeners.keydown({key:'Escape',preventDefault(){prevented=true;},stopPropagation(){stopped=true;}});
 assert.equal(prevented,false); assert.equal(stopped,false); // Closed menus leave native Escape handling alone.
 listeners.keydown({key:'Tab',target:{closest(){return menu;}},stopPropagation(){stopped=true;}});
-assert.equal(stopped,true); // Tab remains a focus key inside the menu.
+assert.equal(stopped,false); // Tab remains native browser navigation; the viewer no longer binds it.
 const rotation = {};
 let placed=null;
 const column = {contains(node){return placed===node;},querySelector(){return rotation;},insertBefore(node,before){assert.equal(before,rotation);placed=node;},prepend(node){placed=node;}};

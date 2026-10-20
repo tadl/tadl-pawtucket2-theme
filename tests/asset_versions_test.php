@@ -82,6 +82,12 @@ try {
 	assetCheck(tadlVersionThemeAssets($input, '/catalog/themes/tadl', $directory.'/missing') === $input, 'Missing asset directory must preserve native HTML.');
 	$absolute = tadlVersionThemeAssets("<link href='https://static.example/themes/tadl/assets/pawtucket/css/theme.css'>", 'https://static.example/themes/tadl', $directory);
 	assetCheck(strpos(assetUrl($absolute, 'link', 'href'), '?v=') !== false, 'Configured absolute theme URLs must work.');
+	$viewer = file_get_contents(dirname(__DIR__).'/assets/pawtucket/vendor/jquery.tileviewer.js');
+	assetCheck(strpos($viewer, "jQuery(document).bind('keydown") === false && strpos($viewer, "jQuery(document).bind('keypress") === false, 'Viewer shortcuts must never register on document.');
+	assetCheck(strpos($viewer, "bind('keydown.tab'") === false && strpos($viewer, 'tabindex: 0') !== false, 'The canvas must be focusable and must preserve Tab.');
+	$native = "<script src='/catalog/assets/jquery/jquery-tileviewer/jquery.tileviewer.js'></script>";
+	$rewritten = tadlVersionThemeAssets($native, '/catalog/themes/tadl', dirname(__DIR__));
+	assetCheck(strpos($rewritten, '/catalog/themes/tadl/assets/pawtucket/vendor/jquery.tileviewer.js?v=') !== false, 'Native asset ordering must load exactly the theme viewer adaptation.');
 	foreach (['views/pageFormat/pageHeader.php', 'views/Lightbox/present_html.php'] as $view) {
 		$source = file_get_contents(dirname(__DIR__).'/'.$view);
 		assetCheck(strpos($source, 'tadlAssetLoadHTML($this->request)') !== false && strpos($source, '/helpers/asset_versions.php') !== false, 'Every theme document must use the versioned loader.');

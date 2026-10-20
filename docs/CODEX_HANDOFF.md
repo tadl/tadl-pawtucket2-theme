@@ -61,6 +61,10 @@ access filtering, permissions, submitted field names and source deployment polic
 remain in force. No account, catalogue, server mail or production cache state was
 changed during the accessibility work.
 
+## 2026-10-20 audit remediation
+
+The theme substitutes a reviewed TileViewer 3.0.2 keyboard adaptation through its asset loader. Shortcuts operate only while the canvas has focus; Tab retains browser navigation. The vendor README records provenance and upgrade requirements. Browser coverage uses the actual registration block with native jQuery hotkeys.
+
 ## Completed work and useful commits
 
 | Commit | Result |

@@ -6,11 +6,6 @@ document.addEventListener('click', function (event) {
 }, true);
 
 document.addEventListener('keydown', function (event) {
-    // TileViewer's Tab shortcut must not block keyboard use of a download menu.
-    if (event.key === 'Tab' && event.target.closest('details.tadl-image-downloads')) {
-        event.stopPropagation();
-        return;
-    }
     if (event.key !== 'Escape') { return; }
     const menus = document.querySelectorAll('details.tadl-image-downloads[open]');
     if (!menus.length) { return; }

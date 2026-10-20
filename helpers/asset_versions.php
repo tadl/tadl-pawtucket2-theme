@@ -20,6 +20,11 @@ function tadlVersionThemeAssets($html, $theme_url, $theme_directory) {
 		$attribute_name = strtolower($tag[1]) === 'link' ? 'href' : 'src';
 		return preg_replace_callback('~\s+'.$attribute_name.'\s*=\s*([\'\"])(.*?)\1~is', function ($attribute) use ($asset_directory, $asset_prefix, $attribute_name, &$versions) {
 			$url = html_entity_decode($attribute[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+			// Substitute the reviewed keyboard adaptation without loading two viewers.
+			if ($attribute_name === 'src' && preg_match('~/assets/jquery/jquery-tileviewer/jquery\.tileviewer\.js(?:\?|$)~', $url)
+				&& is_file($asset_directory.'/pawtucket/vendor/jquery.tileviewer.js')) {
+				$url = $asset_prefix.'pawtucket/vendor/jquery.tileviewer.js';
+			}
 			$fragment_parts = explode('#', $url, 2);
 			$url_parts = explode('?', $fragment_parts[0], 2);
 			if (strpos($url_parts[0], $asset_prefix) !== 0) { return $attribute[0]; }

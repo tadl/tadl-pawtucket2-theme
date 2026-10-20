@@ -183,6 +183,28 @@ let browser;
     assert.equal(await page.locator('[data-tadl-slide="1"]').getAttribute('aria-hidden'), 'false');
     assert.equal(await page.locator('[data-tadl-slide="0"] a').getAttribute('tabindex'), '-1');
     assert((await page.locator('[data-tadl-slide-status]').textContent()).includes('2 through 2 of 4'));
+    // Execute the actual adapted registration block with native jQuery hotkeys.
+    await page.goto(origin + '/contact');
+    await page.addScriptTag({url:origin + '/native/jquery/js/jquery.hotkeys.js'});
+    const viewerSource = fs.readFileSync(path.join(theme, 'assets/pawtucket/vendor/jquery.tileviewer.js'), 'utf8');
+    const keyboardBlock = viewerSource.slice(viewerSource.indexOf('// Scope shortcuts'), viewerSource.indexOf('// Touch events'));
+    await page.evaluate(block => {
+        const canvas = document.createElement('canvas');
+        const after = document.createElement('button'); after.id = 'after-canvas'; after.textContent = 'After image';
+        document.querySelector('#main').append(canvas, after);
+        window.viewerCalls = 0;
+        const view = {canvas, change_zoom() {window.viewerCalls++;}, get_destination_from_center_with_rotation() {return {x:0,y:0};}, pan() {window.viewerCalls++;}};
+        const options = {id:'synthetic'}; const layer = {level:0};
+        eval(block);
+    }, keyboardBlock);
+    await page.locator('canvas').focus();
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await page.evaluate(() => window.viewerCalls), 1);
+    await page.keyboard.press('Tab');
+    assert.equal(await page.locator(':focus').getAttribute('id'), 'after-canvas');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('n');
+    assert.equal(await page.evaluate(() => window.viewerCalls), 1, 'Viewer shortcuts must be inactive outside its canvas.');
     assert.deepEqual(errors, [], 'Unexpected browser errors');
     console.log(reports.join('\n'));
     console.log('Keyboard checks passed: skip link, errors, cookies, gallery AJAX, modal focus/Tab/Escape/restoration, mobile navigation and lightbox reorder/rollback.');
