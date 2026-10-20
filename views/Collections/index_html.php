@@ -30,7 +30,7 @@
 		$qr_collections->seek($vn_start);
 	}
 
-	$va_collection_images = tadlGetDescendantCollectionImages($va_collection_ids, [
+	$va_collection_images = tadlGetCollectionImages($va_collection_ids, [
 		'request' => $this->request, 'version' => 'small',
 		'checkAccess' => $va_access_values
 	]);

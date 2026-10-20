@@ -200,3 +200,5 @@ foreach (['images','list'] as $view) {
 	checkThumbnail(str_contains($html,'Placeholder') && !str_contains($html,'image-32.jpg'), $view.': missing media did not render a safe placeholder.');
 }
 echo 'Collection thumbnails passed: '.$assertions.' assertions (actual SQL, bounded media rows, stable order, access/deletion, primary precedence and fallbacks).'.PHP_EOL;
+
+checkThumbnail(str_contains(file_get_contents(dirname(__DIR__).'/views/Collections/index_html.php'), 'tadlGetCollectionImages($va_collection_ids'), 'Collection index must share primary/direct/descendant image selection with search and browse.');
