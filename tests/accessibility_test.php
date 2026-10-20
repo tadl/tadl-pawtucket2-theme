@@ -136,6 +136,9 @@ $xpath = a11yDocument($html);
 a11yCheck($xpath->query('//a/button|//button/a')->length === 0 && $xpath->query('//button[contains(@class,"btn-xs")]')->length === 4, 'Access changes must use buttons without nested interactive controls.');
 $fixtures['share-lightbox'] = (new A11yView(['display_name' => 'lightbox', 'errors' => $errors, 'user_groups' => [['group_id' => 7, 'name' => 'Synthetic group']]]))->render('Lightbox/form_share_set_html.php');
 a11yLabels($fixtures['share-lightbox']);
+$clip_html = (new A11yView(['player_name' => 'synthetic-player', 'annotation_list' => ['Synthetic clip', '<b>Second clip</b>'], 'annotation_times' => [[0, 5], [5, 10]]]))->render('Details/annotations_html.php');
+$clip_xpath = a11yDocument($clip_html);
+a11yCheck($clip_xpath->query('//button[@type="button" and contains(@class,"tadl-featured-clip")]')->length === 2 && $clip_xpath->query('//h2')->length === 1, 'Featured clips need named keyboard buttons and a section heading.');
 $fixtures['cookies'] = (new A11yView([
 	'config' => new A11yConfig(),
 	'cookiesByCategory' => [
