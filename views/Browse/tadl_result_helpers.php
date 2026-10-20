@@ -7,6 +7,18 @@ function tadlBrowseResultCollectionID($request) {
 	return max(0, (int)$request->getParameter('tadl_collection_id', pInteger));
 }
 
+/** Match native page/Back restoration without reading media or moving the result cursor. */
+function tadlBrowseResultPageIDs($result, $start, $pageSize, $rowID = 0) {
+	$ids = array_values($result->getPrimaryKeyValues());
+	$length = $pageSize;
+	if ($rowID) {
+		$position = array_search($rowID, $ids);
+		$length = $position === false || $position < $start ? count($ids) - $start
+			: ((int)floor(($position - $start) / $pageSize) + 1) * $pageSize;
+	}
+	return array_slice($ids, $start, $length);
+}
+
 function tadlBrowseResultLink($request, $label, $class, $params) {
 	if (in_array($request->getController(), ['FamilyContents', 'PlaceContents'], true)) {
 		$params = array_intersect_key($params, array_flip(['view', 'sort', 'direction', 's']));

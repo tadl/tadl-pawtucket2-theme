@@ -15,13 +15,15 @@ function fixture(file, argument) {
 }
 const shell = fixture('accessibility_test.php', '--fixtures');
 const cards = fixture('object_thumbnail_test.php', '--grid-fixtures');
+const formatCards = fixture('representation_formats_test.php', '--fixtures');
 const server = http.createServer((request, response) => {
     const url = new URL(request.url, 'http://localhost');
-    if (['/wide', '/sidebar', '/list'].includes(url.pathname)) {
+    if (['/wide', '/sidebar', '/list', '/formats', '/formats-list'].includes(url.pathname)) {
         const scripts = ['thumbnail-focus', 'thumbnail-preview'].map(name => `<script src="/themes/tadl/assets/pawtucket/js/${name}.js"></script>`).join('');
         const header = shell.header.replace('</head>', scripts + '</head>');
         const tiles = '<section class="tadl-authority-items"><h2>Related items</h2><div class="row">' + cards.tiles + '</div></section>';
-        const content = url.pathname === '/list' ? cards.list : url.pathname === '/sidebar'
+        const content = url.pathname === '/formats' ? formatCards.tiles : url.pathname === '/formats-list' ? formatCards.list
+            : url.pathname === '/list' ? cards.list : url.pathname === '/sidebar'
             ? '<div class="tadl-authority-layout">' + tiles + '<aside class="tadl-authority-sidebar"><h2>Record information</h2><p>Synthetic metadata.</p></aside></div>'
             : tiles.replace(' class="tadl-authority-items"', '');
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -142,6 +144,36 @@ async function expanded(page, card) {
     await page.mouse.move(1, 1); await closed(page.locator('#row100'));
     await page.goto(origin + '/list'); await page.locator('.bResultListItemImg').first().hover();
     assert.equal(await page.locator('.tadl-thumbnail-preview-active').count(), 0, 'List view must remain unchanged.');
+    for (const width of [320, 390, 768, 1280, 1600]) {
+        await page.setViewportSize({width, height:1000});
+        for (const name of ['formats', 'formats-list']) {
+            await page.goto(origin + '/' + name); await page.mouse.move(1, 1);
+            assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name} ${width}px must not overflow.`);
+            const tags = page.locator('#row1 .tadl-representation-format');
+            assert.equal(await tags.count(), 6, 'Each original format appears once.');
+            assert.deepEqual(await tags.first().evaluate(node => {
+                const style = getComputedStyle(node);
+                return [style.backgroundColor, style.color, style.borderRadius];
+            }), ['rgb(34, 34, 34)', 'rgb(255, 255, 255)', '0px'], 'Tags should be white on black with square corners.');
+            assert(await tags.evaluateAll(nodes => nodes.every(node => {
+                const tag = node.getBoundingClientRect(), row = node.parentElement.getBoundingClientRect();
+                return tag.left >= row.left - 1 && tag.right <= row.right + 1;
+            })), 'Format tags must wrap inside their caption.');
+            assert.equal(await page.locator('#row3 .tadl-representation-formats, #row3 small').count(), 0, 'Metadata-only items need no empty format or identifier row.');
+            await page.addScriptTag({path:process.env.TADL_AXE_PATH || require.resolve('axe-core/axe.min.js')});
+            const violations = await page.evaluate(async () => (await axe.run('#main', {runOnly:{type:'tag', values:['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']}})).violations);
+            assert.deepEqual(violations.map(item => item.id), [], `${name} ${width}px accessibility violations.`);
+            if (process.env.TADL_A11Y_ARTIFACT_DIR) {
+                fs.mkdirSync(process.env.TADL_A11Y_ARTIFACT_DIR, {recursive:true});
+                await page.screenshot({path:path.join(process.env.TADL_A11Y_ARTIFACT_DIR, `collection-${name}-${width}.png`)});
+            }
+        }
+    }
+    await page.goto(origin + '/formats');
+    await page.locator('#row1 .bResultItemImg').hover(); await expanded(page, page.locator('#row1'));
+    assert.equal(await page.locator('#row1 .tadl-representation-format').count(), 6, 'Expanded previews must retain their format tags.');
+    await page.mouse.move(1, 1); await closed(page.locator('#row1'));
+    console.log('Collection formats: square black/white tags, wrapping, metadata-only items, axe and hover previews passed at 320–1600px.');
     const touch = await browser.newContext({viewport:{width:390,height:844}, isMobile:true, hasTouch:true});
     await touch.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
     const touchPage = await touch.newPage(); await touchPage.goto(origin + '/wide');

@@ -1,6 +1,6 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-19. This document carries the recent coding context to another
+Updated: 2026-10-20. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
@@ -51,7 +51,7 @@ with synthetic native boundaries. `tests/accessibility_browser_test.js` uses
 native static jQuery/Bootstrap/panel/sortable assets; it exercises axe, 320px and
 desktop reflow, text sizing/spacing, keyboard controls, AJAX focus, modal return,
 cookie selection and reorder rollback without a database or external requests.
-The ordinary suite count is now 36. CI adds pinned Playwright/axe browser checks;
+The ordinary suite count is now 37. CI adds pinned Playwright/axe browser checks;
 local tool configuration and pending acceptance work are in the guide.
 
 The new `css/accessibility.css` is intentionally loaded after existing theme
@@ -198,6 +198,7 @@ deployment, live catalog permissions or full-page performance.
 | Styling | `assets/pawtucket/css/theme.css`, with the existing `main.css` foundation |
 | Thumbnail focus | `helpers/thumbnail_focus.php`, `assets/pawtucket/js/thumbnail-focus.js`, shared result/collection views; `support/detect-thumbnail-faces.php`, `support/thumbnail-faces/`; `docs/THUMBNAIL_FOCUS.md` |
 | Object thumbnail fallback | `helpers/object_thumbnails.php`, Browse Tiles/List views and multisearch previews |
+| Collection item format tags | `helpers/representation_formats.php`, Browse Tiles/List views and `tadl_result_helpers.php`; accessible original formats replace item identifiers only in collection results |
 | Shareable thumbnail tools | `support/package-thumbnail-faces.py`, `support/thumbnail-faces/share/`; allowlisted runtime export to a sibling `thumbnail-faces/` directory/ZIP, with independent setup/integration guides, snippets, license and tests |
 | Asset cache versions | `helpers/asset_versions.php`, shared header and standalone Lightbox presentation |
 | Collection finding aids | `controllers/CollectionFindingAidController.php`, `helpers/finding_aid.php`, `conf/finding_aid.conf`, PDF/binary detail views; `docs/FINDING_AIDS.md` |
@@ -770,6 +771,23 @@ below retain implementation details and historical verification evidence.
   All 36 portable suites and the dedicated browser checks passed, with changed-file
   PHP/JavaScript syntax and whitespace checks. No production deployment or face
   detection run was performed.
+- Collection item Tiles/List replace the object identifier line above the title
+  with square white-on-black original-format tags. The collection AJAX context
+  guard keeps ordinary search/browse identifiers unchanged. Tags are a labeled,
+  noninteractive list; metadata-only items omit the row. Public secondary formats
+  are included and deduplicated; private pairs and derivatives/conversions are not.
+  `helpers/representation_formats.php` reads scalar MIME/filename fields in batches
+  of at most 500 displayed object IDs and shares the native bulk visibility checks.
+  MIME/bundle restrictions and filename-field permissions remain enforced. Missing
+  or unknown MIME values can use a safe filename extension; no filename is output.
+  `tadlBrowseResultPageIDs()` matches ordinary paging and native Back target blocks
+  without moving the result cursor. There is no media-descriptor decoding, new
+  dependency, schema change or face-cache rebuild.
+  `tests/representation_formats_test.php` covers actual SQLite queries, private
+  pairs, metadata permissions, object/representation restrictions, batch bounds,
+  normalization, Back scope and both rendered result templates. The thumbnail
+  browser suite adds tag wrapping/style, axe and preview preservation at 320,
+  390, 768, 1280 and 1600px. No production deployment was performed.
 - Object, collection, person, organization, place and event Detail pages use
   `tadlDetailNavigation()` beside their headings: native context **Prev / Next**
   links plus the corresponding Browse action, with no Back button. Object details
@@ -1141,6 +1159,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/object_detail_video_poster_test.php` | Covers, playback, player fallback and access |
 | `tests/authority_detail_test.php` | Authority types/layout, related groups, access and loaders |
 | `tests/result_context_heading_test.php` | Results context, headings, removable criteria, empty flat/deferred/media-filtered facets, hierarchy-response fallback and Subjects browse/refine rendering |
+| `tests/representation_formats_test.php` | Scalar original-format inventory, private pairs, native object/representation visibility, MIME/filename bundle permissions, bounded batches, normalization/escaping, page/Back scope and actual collection Tiles/List metadata |
 | `tests/object_detail_metadata_test.php` | Empty/populated rich-text fields and fallback values; structured TGM pairing, safe links, escaping and permissions |
 | `tests/detail_read_more_test.php` | Shared long-field previews and native disclosures, complete rich values/links, short/empty fields, Unicode boundaries, safe preview/labels, permission-preserving reads and long/short media captions; actual collection integration is also covered by collection_detail_scripts_test.php |
 | `tests/document_text_test.php` | media_content/transcription/pdf_text precedence and permission fallbacks, empty/missing fields and imported HTML, private pairs, native record/bundle/Pawtucket ACL boundaries, safe text/labels, Unicode/line/page breaks, multiple-PDF ordering and actual full-width detail template placement |

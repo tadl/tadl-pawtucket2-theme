@@ -3501,6 +3501,27 @@ div.tadl-finding-aid-controls .close {
     display: none !important;
 }
 
+.tadl-representation-formats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 0 0 7px;
+    padding: 0;
+    list-style: none;
+}
+
+.tadl-representation-format {
+    padding: 3px 6px;
+    border: 1px solid #222;
+    border-radius: 0;
+    color: #fff;
+    background: #222;
+    font-size: max(var(--tadl-text-min, 0px), 12px);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.03em;
+}
+
 .tadl-add-lightbox {
     display: inline-flex;
     align-items: center;

@@ -87,6 +87,15 @@ in the visitor's cookie/session rather than these URLs, so shared links follow
 the recipient's preference. Incoming search expressions, browse keys and facet
 state cannot replace the controller's selected collection scope.
 
+Collection item cards in Tiles and List show small square, white-on-black format
+tags above their titles, replacing the object identifier line. Each readable
+original format appears once, such as **PDF**, **TIFF** or **JPEG**, including
+accessible secondary representations. Private paired PDFs/JPEGs, deleted
+representations, generated previews and download conversions do not add tags.
+Items without representation formats start with their title. Tags describe the
+attached files; they are not download buttons. Ordinary Search/Browse results
+and object-detail identifiers keep their existing presentation.
+
 In the hierarchy browser, expanding a left-column container loads its branch in
 the right panel and records `#collection-<id>` in browser history. Normal detail
 URLs remain available as non-JavaScript and modified-click fallbacks. Sibling
@@ -160,6 +169,15 @@ each card has a usable image. Search/browse Tiles and List HTML is rendered fres
 the theme does not save or reuse shared result HTML even when a native cache
 backend treats a zero lifetime as persistent.
 
+`helpers/representation_formats.php` fetches scalar original MIME types and,
+when permitted, original filenames for only the displayed object IDs. It never
+loads full media descriptors for tags. Inventory queries batch up to 500 object
+IDs, and the shared visibility helper applies object/representation access,
+type/source restrictions, bundles and Pawtucket ACLs. The original MIME type
+takes precedence; a filename extension provides a fallback for legacy or unknown
+types. Repeated formats are deduplicated and sorted alphabetically. Paging and
+native Back restoration use the same displayed-ID scope as the result templates.
+
 The main integration points are the collection detail view,
 `controllers/CollectionContentsController.php`, `helpers/collection_contents.php`,
 the hierarchy views/helpers under `views/Collections/`, shared result helpers under
@@ -176,6 +194,7 @@ php tests/collection_contents_test.php
 php tests/collection_hierarchy_test.php
 php tests/collection_detail_scripts_test.php
 php tests/result_context_heading_test.php
+php tests/representation_formats_test.php
 php tests/finding_aid_test.php
 ```
 

@@ -9,7 +9,7 @@ This repository contains the complete `tadl` theme. Install it in an existing Pa
 | Feature | Visitor experience |
 | --- | --- |
 | Responsive catalogue | Image tiles and list views, consistent detail metadata, mobile navigation, and expandable long descriptions that preserve links and formatting. |
-| Collection browsing | A flat list of everything in a collection and its readable descendants, with an optional hierarchy view, bold titles for branches containing digitized media, alphabetical ordering, sorting, and pagination. |
+| Collection browsing | A flat list of everything in a collection and its readable descendants, with an optional hierarchy view, bold titles for branches containing digitized media, original-format tags on item cards, alphabetical ordering, sorting, and pagination. |
 | Connected records | Browse people, organizations, families, places, and events. Place results include descendant places; family results include objects linked to directly related people and organizations. |
 | Media preference | Visitors choose **All items** or **Only items with media**. The choice is remembered and applies before result counts and pagination. New visitors start with All items. |
 | Search | Header, advanced, and query-builder searches use GET so links and browser Back work without a form-resubmission prompt. Detail Prev / Next follows the result order. |

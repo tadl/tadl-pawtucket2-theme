@@ -58,7 +58,11 @@
 	require_once(__DIR__.'/tadl_result_helpers.php');
 	require_once(__DIR__.'/../../helpers/thumbnail_focus.php');
 	require_once(__DIR__.'/../../helpers/object_thumbnails.php');
+	require_once(__DIR__.'/../../helpers/representation_formats.php');
 	$vn_page_size = tadlBrowseResultPageSize('list');
+	$vb_format_tags = $vs_table === 'ca_objects' && tadlBrowseResultCollectionID($this->request) > 0;
+	$va_formats = $vb_format_tags ? tadlObjectRepresentationFormats($this->request,
+		tadlBrowseResultPageIDs($qr_res, $vn_start, $vn_page_size, $vn_row_id), $va_access_values) : [];
 
 	$o_icons_conf = caGetIconsConfig();
 	$va_object_type_specific_icons = $o_icons_conf->getAssoc("placeholders");
@@ -118,8 +122,13 @@
 				}
 
 				
-					$vs_identifier = trim((string)$qr_res->get("{$vs_table}.idno"));
-					$vs_idno_detail_link = $vs_identifier !== '' ? caDetailLink($this->request, htmlspecialchars($vs_identifier, ENT_QUOTES, 'UTF-8'), '', $vs_table, $vn_id) : '';
+					if ($vb_format_tags) {
+						$vs_result_metadata = tadlRepresentationFormatTags($va_formats[$vn_id] ?? []);
+					} else {
+						$vs_identifier = trim((string)$qr_res->get("{$vs_table}.idno"));
+						$vs_idno_detail_link = $vs_identifier !== '' ? caDetailLink($this->request, htmlspecialchars($vs_identifier, ENT_QUOTES, 'UTF-8'), '', $vs_table, $vn_id) : '';
+						$vs_result_metadata = "<small>{$vs_idno_detail_link}</small><br/>";
+					}
 					$vs_record_label = trim((string)$qr_res->get("{$vs_table}.preferred_labels")) ?: _t('Untitled');
 					$vs_label_detail_link = caDetailLink($this->request, $vs_record_label, '', $vs_table, $vn_id);
 					$vs_thumbnail = "";
@@ -153,7 +162,7 @@
 			<div class='bResultListItem' id='row{$vn_id}'>
 				<div class='bResultListItemContent'><div class='text-center bResultListItemImg'>{$vs_rep_detail_link}</div>
 					<div class='bResultListItemText'>
-						<small>{$vs_idno_detail_link}</small><br/>{$vs_label_detail_link}
+						{$vs_result_metadata}{$vs_label_detail_link}
 					</div><!-- end bResultListItemText -->
 				</div><!-- end bResultListItemContent -->
 				{$vs_expanded_info}
