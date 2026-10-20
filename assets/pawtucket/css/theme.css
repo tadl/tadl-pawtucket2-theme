@@ -1535,6 +1535,26 @@ h6 {
     z-index: 300;
 }
 
+/* PDF.js includes padding/borders outside its measured thumbnail dimensions.
+   Restore that geometry where Bootstrap's global border-box and .thumbnail
+   card styles would otherwise narrow the pane and clip the page previews. */
+#caMediaOverlayContent #thumbnailView,
+#caMediaOverlayContent #thumbnailView .thumbnailSelectionRing,
+#caMediaOverlayContent #thumbnailView .thumbnailImage {
+    box-sizing: content-box;
+}
+
+#caMediaOverlayContent #thumbnailView .thumbnail {
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+#caMediaOverlayContent #thumbnailView .thumbnail[data-loaded] {
+    border: 0;
+}
+
 /* Keep PDF.js scrolling inside the document, below the finding-aid title bar. */
 #caMediaPanelContentArea:has(> .tadl-finding-aid-viewer) {
     margin-top: 0;

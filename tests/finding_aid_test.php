@@ -440,12 +440,17 @@ if (!$autoload) {
 }
 if (($argv[1] ?? '') === '--viewer-fixture') {
 	aidCheck((bool)$autoload, 'Browser fixture requires real Composer dependencies.');
+	// Enough pages to exercise the actual sidebar's vertical scrollbar.
+	$browser_data = $data;
+	$browser_data['fields']['description']['value'] = str_repeat("Synthetic narrative for the sidebar regression. Each paragraph is readable text used to exercise multi-page finding aids.\n\n", 160);
+	$view->setVar('finding_aid', $browser_data);
+	$browser_pdf = tadlFindingAidPDF($view->render('Details/finding_aid_pdf_html.php'));
 	$viewers = [];
 	foreach (['GET', 'POST'] as $method) {
 		$response = new AidResponse(); (new CollectionFindingAidController(new AidRequest(['collection_id' => 42], $method), $response))->Viewer();
 		$viewers[$method] = ['status' => $response->status, 'headers' => $response->headers, 'body' => $response->body];
 	}
-	print json_encode(['viewers' => $viewers, 'pdf' => base64_encode($inline_controller->view->getVar('finding_aid_bytes'))], JSON_THROW_ON_ERROR);
+	print json_encode(['viewers' => $viewers, 'pdf' => base64_encode($browser_pdf)], JSON_THROW_ON_ERROR);
 } else {
 	echo "Finding aid passed: {$GLOBALS['assertions']} assertions (".($autoload?'real Dompdf':'synthetic renderer').").\n";
 }

@@ -86,6 +86,48 @@ function checkViewerLayout(layout, phase) {
     assert.equal(layout.page.overflow, 'hidden', `${phase}: the background page must not retain a second scrollbar.`);
     assert.equal(layout.page.width, layout.page.viewport, `${phase}: the background scrollbar must not reserve a gutter beside the modal.`);
 }
+async function checkThumbnailSidebar(page, width) {
+    if (!await page.locator('#outerContainer').evaluate(node => node.classList.contains('sidebarOpen'))) {
+        await page.locator('#sidebarToggle').click();
+    }
+    await page.waitForFunction(() => {
+        const container = document.getElementById('outerContainer');
+        return container.classList.contains('sidebarOpen') &&
+            document.getElementById('sidebarContainer').getBoundingClientRect().left >= container.getBoundingClientRect().left;
+    });
+    await page.locator('#thumbnailView .thumbnailImage').first().waitFor({state:'visible'});
+    const layout = await page.evaluate(() => {
+        const pane = document.getElementById('thumbnailView');
+        const rect = node => {
+            const {left, right, width} = node.getBoundingClientRect();
+            return {left, right, width};
+        };
+        return {
+            sidebar: rect(document.getElementById('sidebarContent')),
+            pane: {...rect(pane), clientWidth:pane.clientWidth, scrollWidth:pane.scrollWidth, clientHeight:pane.clientHeight, scrollHeight:pane.scrollHeight},
+            ring: rect(pane.querySelector('.thumbnailSelectionRing')),
+            image: rect(pane.querySelector('.thumbnailImage'))
+        };
+    });
+    if (process.env.TADL_A11Y_ARTIFACT_DIR) {
+        fs.mkdirSync(process.env.TADL_A11Y_ARTIFACT_DIR, {recursive:true});
+        await page.screenshot({path:path.join(process.env.TADL_A11Y_ARTIFACT_DIR, `finding-aid-sidebar-${width}.png`)});
+    }
+    assert(Math.abs(layout.pane.width - layout.sidebar.width) <= 1, `${width}px: thumbnail pane must fill the sidebar: ${JSON.stringify(layout)}`);
+    assert(layout.image.left >= layout.pane.left && layout.image.right <= layout.pane.left + layout.pane.clientWidth, `${width}px: the full thumbnail must remain visible: ${JSON.stringify(layout)}`);
+    assert(layout.image.left >= layout.ring.left && layout.image.right <= layout.ring.right, `${width}px: thumbnail must fit its selection frame: ${JSON.stringify(layout)}`);
+    assert(layout.pane.scrollWidth <= layout.pane.clientWidth + 1, `${width}px: thumbnail sidebar must not scroll horizontally: ${JSON.stringify(layout)}`);
+    assert(layout.pane.scrollHeight > layout.pane.clientHeight, `${width}px: exercise a sidebar with enough pages to scroll.`);
+    const lastPage = await page.evaluate(() => PDFViewerApplication.pdfDocument.numPages);
+    await page.locator('#thumbnailView .thumbnail').last().click();
+    await page.waitForFunction(lastPage => PDFViewerApplication.page === lastPage, lastPage);
+    await page.locator('#sidebarToggle').click();
+    await page.waitForFunction(() => {
+        const container = document.getElementById('outerContainer');
+        return !container.classList.contains('sidebarOpen') &&
+            document.getElementById('sidebarContainer').getBoundingClientRect().right <= container.getBoundingClientRect().left;
+    });
+}
 (async () => {
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const origin = 'http://127.0.0.1:' + server.address().port;
@@ -125,7 +167,9 @@ function checkViewerLayout(layout, phase) {
         assert.equal(await page.locator('#caMediaPanel').getAttribute('aria-hidden'), 'false');
         assert(await page.locator('#caMediaPanel').evaluate(node => node.contains(document.activeElement)));
         const pages = await page.evaluate(() => PDFViewerApplication.pdfDocument.numPages);
-        assert(pages >= 2);
+        assert(pages >= 8, 'Use a long finding aid to exercise scrolling the thumbnail sidebar.');
+        await checkThumbnailSidebar(page, width);
+        checkViewerLayout(await viewerLayout(page), `${width}px sidebar closed`);
         const scale = await page.evaluate(() => PDFViewerApplication.pdfViewer.currentScale);
         await page.locator('#zoomIn').click();
         await page.waitForFunction(scale => PDFViewerApplication.pdfViewer.currentScale > scale, scale);
@@ -160,7 +204,7 @@ function checkViewerLayout(layout, phase) {
     assert.deepEqual(errors, [], 'Native document viewer JavaScript errors.');
     assert.deepEqual(viewerMethods, ['POST', 'POST', 'POST', 'POST'], 'Exercise the native media-panel transport on every opening.');
     assert.equal(pdfRequests, 4, 'Each opening should request the PDF once without pre-generating or caching it.');
-    console.log('Finding-aid browser passed: loading/rendered/zoomed layout, single document scroller, background scroll lock/restoration, title/identifier, native PDF.js paging/search/download, close/reopen and focus restoration at 1280/390px.');
+    console.log('Finding-aid browser passed: loading/rendered/zoomed layout, unclipped thumbnail sidebar and page selection, single document scroller, background scroll lock/restoration, title/identifier, native PDF.js paging/search/download, close/reopen and focus restoration at 1280/390px.');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
     if (browser) { await browser.close(); }
     server.close();

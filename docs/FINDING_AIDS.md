@@ -136,6 +136,10 @@ links use sentence case, ordinary detail-link styling and `rel="nofollow"`.
 View is a text link with `aria-haspopup="dialog"`, and invokes the existing
 `caMediaPanel` only on an ordinary unmodified activation. Its direct PDF `href`
 remains usable without JavaScript, through context menus and with modifier keys.
+The shared PDF viewer restores PDF.js's content-box thumbnail sizing and removes
+Bootstrap card decoration within the sidebar. This keeps the scrolling pane at
+the full sidebar width and the complete page previews inside their selection
+frames, for both finding aids and object PDFs.
 
 - `controllers/CollectionFindingAidController.php`: PDF actions and viewer markup
   sharing selected unit validation, configured login requirements, safe filename
@@ -209,7 +213,10 @@ phone widths. It holds the PDF response to check the loading state, then checks
 rendered/zoomed geometry for overlapping bars and extra outer scrollbars, plus
 title/identifier display and layout cleanup on close. A long, already-scrolled
 collection fixture checks background scroll locking, scrollbar-gutter removal,
-wheel handling and scroll-position restoration. Viewer responses use the
+wheel handling and scroll-position restoration. A long synthetic PDF exercises
+the expanded thumbnail sidebar: full pane width, unclipped pages and selection
+frames, no horizontal overflow, vertical scrolling and selection of the last page.
+Viewer responses use the
 actual controller's status, headers and markup for each request method, including
 the native panel's POST. It never
 bootstraps the catalogue or contacts a production site.

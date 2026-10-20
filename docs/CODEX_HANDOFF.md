@@ -95,6 +95,13 @@ fixtures, real Dompdf/HTMLPurifier and syntax checks. No production deployment,
 account/catalogue writes, cache purge, Apache reload/restart or face-cache rebuild
 was performed. The updated site-root robots policy remains a separate operator merge.
 
+The PDF sidebar follow-up fixes Bootstrap's global border-box sizing and thumbnail
+card styles narrowing PDF.js's scrolling pane by 60px and clipping page previews.
+Scoped theme CSS restores the native thumbnail dimensions and selection frames
+for finding aids and object PDFs. The native PDF browser regression now uses a
+long synthetic document and verifies the full sidebar width, no horizontal
+overflow, vertical scrolling and last-page selection at 1280/390px.
+
 ## Completed work and useful commits
 
 | Commit | Result |
