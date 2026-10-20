@@ -6,7 +6,7 @@ function tadlPresentationHTML($html) {
  if (function_exists('caGetHTMLPurifier') && class_exists('HTMLPurifier_Config')) {
   $purifier = caGetHTMLPurifier();
   $config = HTMLPurifier_Config::inherit($purifier->config);
-  $config->set('HTML.ForbiddenAttributes', (array)$purifier->config->get('HTML.ForbiddenAttributes') + ['style' => true, 'face' => true, 'size' => true, 'color' => true, 'align' => true]);
+  $config->set('HTML.ForbiddenAttributes', array_replace((array)$purifier->config->get('HTML.ForbiddenAttributes'), ['style' => true, 'face' => true, 'size' => true, 'color' => true, 'align' => true]));
   return $purifier->purify($html, $config);
  }
  // Synthetic/native-boundary rendering also preserves byte-for-byte semantic markup.

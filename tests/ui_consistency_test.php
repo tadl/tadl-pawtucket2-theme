@@ -135,7 +135,7 @@ fclose($pipes[0]); $output = stream_get_contents($pipes[1]); $errors = stream_ge
 fclose($pipes[1]); fclose($pipes[2]);
 uiCheck(proc_close($process) === 0, 'Viewer keyboard regressions failed: '.$errors);
 echo $output;
-echo "UI consistency passed: {$assertions} assertions (six actual advanced forms, native widget references and gallery metadata).\n";
+echo "UI consistency passed: {$assertions} assertions (".count($forms)." actual advanced forms, native widget references and gallery metadata).\n";
 
 $search_config = file_get_contents(dirname(__DIR__).'/conf/search.conf');
 uiCheck(substr_count($search_config, 'families = {') === 2 && substr_count($search_config, 'restrictToTypes = [fam]') === 2, 'Families must be available in overview and full/advanced search with native family type restrictions.');

@@ -18,7 +18,7 @@ function tadlHomeFAQGroups($request) {
 	// Keep native sanitization settings, but let the theme style saved rich text.
 	$forbiddenAttributes = $purifier->config->get('HTML.ForbiddenAttributes');
 	$answerConfig = HTMLPurifier_Config::inherit($purifier->config);
-	$answerConfig->set('HTML.ForbiddenAttributes', $forbiddenAttributes + ['style' => true]);
+	$answerConfig->set('HTML.ForbiddenAttributes', array_replace((array)$forbiddenAttributes, ['style' => true]));
 	foreach ($entries as $entry) {
 		// Always public-only, even for staff; draft content never leaks to the home page.
 		if ((int)$entry->get('access') !== 1 || $entry->get('deleted') || !$entry->isReadable($request, 'ca_site_pages_content')
