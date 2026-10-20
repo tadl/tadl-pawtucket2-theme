@@ -117,8 +117,8 @@ async function fixedCrop(card) {
             assert.equal(await tags.count(), 6, 'Each original format appears once.');
             assert.deepEqual(await tags.first().evaluate(node => {
                 const style = getComputedStyle(node);
-                return [style.backgroundColor, style.color, style.borderRadius];
-            }), ['rgb(34, 34, 34)', 'rgb(255, 255, 255)', '0px'], 'Tags should be white on black with square corners.');
+                return [style.backgroundColor, style.color, style.borderRadius, style.fontSize];
+            }), ['rgb(56, 56, 56)', 'rgb(255, 255, 255)', '0px', '14px'], 'Tags should be compact, white on dark gray, and square-cornered.');
             assert(await tags.evaluateAll(nodes => nodes.every(node => {
                 const tag = node.getBoundingClientRect(), row = node.parentElement.getBoundingClientRect();
                 return tag.left >= row.left - 1 && tag.right <= row.right + 1;
@@ -136,7 +136,7 @@ async function fixedCrop(card) {
     await page.goto(origin + '/formats');
     await fixedCrop(page.locator('#row1'));
     assert.equal(await page.locator('#row1 .tadl-representation-format').count(), 6, 'Hovered cards must retain their format tags.');
-    console.log('Collection formats: square black/white tags, wrapping, metadata-only items and axe passed at 320–1600px.');
+    console.log('Collection formats: compact gray/white tags, wrapping, metadata-only items and axe passed at 320–1600px.');
     const touch = await browser.newContext({viewport:{width:390,height:844}, isMobile:true, hasTouch:true});
     await touch.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
     const touchPage = await touch.newPage(); await touchPage.goto(origin + '/wide');

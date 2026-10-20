@@ -3477,11 +3477,12 @@ div.tadl-finding-aid-controls .close {
 
 .tadl-representation-format {
     padding: 3px 6px;
-    border: 1px solid #222;
+    border: 1px solid #383838;
     border-radius: 0;
     color: #fff;
-    background: #222;
-    font-size: max(var(--tadl-text-min, 0px), 12px);
+    background: #383838;
+    /* Secondary labels intentionally sit below the interior page's 18px floor. */
+    font-size: 14px;
     font-weight: 600;
     line-height: 1.2;
     letter-spacing: 0.03em;

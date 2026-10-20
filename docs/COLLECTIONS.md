@@ -87,8 +87,9 @@ in the visitor's cookie/session rather than these URLs, so shared links follow
 the recipient's preference. Incoming search expressions, browse keys and facet
 state cannot replace the controller's selected collection scope.
 
-Collection item cards in Tiles and List show small square, white-on-black format
-tags above their titles, replacing the object identifier line. Each readable
+Collection item cards in Tiles and List show small square, white-on-dark-gray
+format tags above their titles, replacing the object identifier line. Their 14px
+text is intentionally smaller than the page's 18px body text. Each readable
 original format appears once, such as **PDF**, **TIFF** or **JPEG**, including
 accessible secondary representations. Private paired PDFs/JPEGs, deleted
 representations, generated previews and download conversions do not add tags.

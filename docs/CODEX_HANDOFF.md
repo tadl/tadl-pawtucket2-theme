@@ -764,8 +764,11 @@ below retain implementation details and historical verification evidence.
   CI runs it alongside the accessibility browser suite. No production deployment
   or face detection run was performed.
 - Collection item Tiles/List replace the object identifier line above the title
-  with square white-on-black original-format tags. The collection AJAX context
-  guard keeps ordinary search/browse identifiers unchanged. Tags are a labeled,
+  with square white-on-dark-gray original-format tags. Their 14px text is an
+  intentional exception to the interior page's 18px floor; the `#383838` fill
+  matches the former `#222` at 90% opacity on white without fading the text.
+  The collection AJAX context guard keeps ordinary search/browse identifiers
+  unchanged. Tags are a labeled,
   noninteractive list; metadata-only items omit the row. Public secondary formats
   are included and deduplicated; private pairs and derivatives/conversions are not.
   `helpers/representation_formats.php` reads scalar MIME/filename fields in batches
