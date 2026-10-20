@@ -46,7 +46,7 @@ $current_sort_dir 					= $this->getVar('direction');
 	<h1>
 		<?php print ucfirst($vs_lightbox_section_heading); ?>
 		<div class="btn-group">
-			<span class="glyphicon glyphicon-cog bGear" data-toggle="dropdown"></span>
+			<button type="button" class="btn btn-default bGear dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span> <?= _t('Options'); ?></button>
 			<ul class="dropdown-menu" role="menu">
 				<li><a href='#' onclick='caMediaPanel.showPanel("<?php print caNavUrl($this->request, '', '*', 'setForm', array()); ?>"); return false;' ><?php print _t("New %1", ucfirst($vs_lightbox_displayname)); ?></a></li>
 				<li class="divider"></li>

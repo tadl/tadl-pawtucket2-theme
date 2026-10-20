@@ -979,43 +979,15 @@ a.browseRemoveFacet img {
 .lbItemContainerList .lbItem{
 	margin-bottom:15px;
 }
-.lbItem:hover{
-	cursor:move;
-	z-index:1000;
+.lbItem:hover, .lbItem:focus-within {
+	position: relative;
 }
-.lbItemContainer .lbItem:hover{
-	position:absolute;
-}
-.lbItemContainerList .lbItem:hover{
-	width:100%;
-}
-@media (min-width: 768px) {
-	.lbItemContainer .lbItem:hover{
-		padding:15px;
-		width:110%;
-		left:-5%;
-		top:-5%;
-	}
-}
-.lbItemContent{
-	height:250px;
-	overflow:hidden;
-}
-.lbItemContainerList .lbItemContent{
-	height:72px;
-}
-.lbItemContainer .lbItem:hover .lbItemContent{
-	min-height:250px;
-	height:auto;
-}
-.lbItemContainer .lbExpandedInfo, .lbSetExpandedInfo{
-	width:100%;
-	z-index:100;
-	display:none;
-	color:#757575;
-}
-.lbItem:hover .lbExpandedInfo, .lbSet:hover .lbSetExpandedInfo{
-	display:inline;
+.lbItemContent { height: auto; min-height: 250px; }
+.lbItemContainerList .lbItemContent { min-height: 72px; }
+.lbItemContainer .lbExpandedInfo, .lbSetExpandedInfo {
+	width: 100%;
+	display: block;
+	color: #757575;
 }
 .lbExpandedInfo HR, .lbSetExpandedInfo HR{
 	margin-bottom:5px;
@@ -1030,9 +1002,7 @@ a.browseRemoveFacet img {
 	margin-bottom:5px;
 	overflow:hidden;
 }
-.lbItem:hover .lbItemImg{
-	max-height:600px;
-}
+
 .lbItemImg img{
 	width:100%;
 	height:auto;

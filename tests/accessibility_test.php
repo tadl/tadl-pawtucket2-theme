@@ -126,6 +126,13 @@ $fixtures['media-dialog'] = (new A11yView(['viewer' => 'TileViewer', 'hideOverla
 $xpath = a11yLabels($fixtures['login-dialog']);
 a11yCheck($xpath->query('//button[@type="button" and @aria-label="Close dialog"]')->length === 1, 'Dialog close must be a named native button.');
 $errors = array_fill_keys(['general', 'name', 'description', 'group_id', 'user', 'access'], null);
+foreach (['set_list_html.php', 'set_detail_html.php'] as $file) {
+	$source = file_get_contents(dirname(__DIR__).'/views/Lightbox/'.$file);
+	a11yCheck(str_contains($source, 'class="btn btn-default bGear dropdown-toggle"') && !str_contains($source, 'class="glyphicon glyphicon-cog bGear"'), 'Lightbox options must be a named native button.');
+}
+$html = (new A11yView(['user_groups' => [['group_id' => 1, 'name' => 'Synthetic group', 'access' => 1]], 'users' => [['user_id' => 2, 'name' => 'Synthetic user', 'email' => 'example@example.org', 'access' => 1, 'owner' => false]]]))->render('Lightbox/set_access_html.php');
+$xpath = a11yDocument($html);
+a11yCheck($xpath->query('//a/button|//button/a')->length === 0 && $xpath->query('//button[contains(@class,"btn-xs")]')->length === 2, 'Access changes must use buttons without nested interactive controls.');
 $fixtures['share-lightbox'] = (new A11yView(['display_name' => 'lightbox', 'errors' => $errors, 'user_groups' => [['group_id' => 7, 'name' => 'Synthetic group']]]))->render('Lightbox/form_share_set_html.php');
 a11yLabels($fixtures['share-lightbox']);
 $fixtures['cookies'] = (new A11yView([

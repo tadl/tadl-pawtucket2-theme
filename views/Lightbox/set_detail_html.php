@@ -99,7 +99,7 @@ if (!$vb_ajax) {	// !ajax
     //
 ?>
 				<div class="btn-group">
-					<span class="glyphicon glyphicon-cog bGear" data-toggle="dropdown"></span>
+					<button type="button" class="btn btn-default bGear dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span> <?= _t('Options'); ?></button>
 					<ul class="dropdown-menu" role="menu">
 <?php
 						if(($vs_sort_control_type == "dropdown") && is_array($va_sorts = $this->getVar('sortBy')) && (sizeof($va_sorts) > 1)) {
