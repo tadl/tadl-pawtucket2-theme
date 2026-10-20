@@ -146,3 +146,22 @@ function tadlFindingAidPDF($html) {
 	return is_string($bytes) && strlen($bytes) > 1024 && strncmp($bytes, '%PDF-', 5) === 0
 		&& substr(rtrim($bytes), -5) === '%%EOF' ? $bytes : null;
 }
+
+/** Cache only immutable PDF bytes after rebuilding the current access-filtered description. */
+function tadlFindingAidCachedPDF(array $data, $rendererKey, callable $generate, $timeout = 86400) {
+ unset($data['generated']); // A reused PDF retains its actual generation timestamp.
+ $key = hash('sha256', serialize(['schema' => 1, 'renderer' => $rendererKey, 'description' => $data]));
+ $valid = static fn($bytes) => is_string($bytes) && strlen($bytes) > 1024 && str_starts_with($bytes, '%PDF-') && str_ends_with(rtrim($bytes), '%%EOF');
+ $enabled = $timeout > 0 && class_exists('ExternalCache');
+ if ($enabled) {
+  try { $bytes = ExternalCache::fetch($key, 'tadlFindingAidPDF'); if ($valid($bytes)) { return $bytes; } }
+  catch (Throwable $error) { /* Cache availability must not prevent document generation. */ }
+ }
+ $bytes = $generate();
+ if (!$valid($bytes)) { return null; }
+ if ($enabled && strlen($bytes) <= 8 * 1024 * 1024) {
+  try { ExternalCache::save($key, $bytes, 'tadlFindingAidPDF', min(86400, (int)$timeout)); }
+  catch (Throwable $error) { /* The validated response can still be served. */ }
+ }
+ return $bytes;
+}

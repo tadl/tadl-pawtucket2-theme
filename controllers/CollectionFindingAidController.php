@@ -84,7 +84,13 @@ class CollectionFindingAidController extends BasePawtucketController {
 		try {
 			$data = tadlFindingAidData($this->request, $collection, $config);
 			$this->view->setVar('finding_aid', $data);
-			$bytes = tadlFindingAidPDF($this->view->render('Details/finding_aid_pdf_html.php'));
+			$renderer_file = class_exists('Dompdf\Dompdf') ? (new ReflectionClass('Dompdf\Dompdf'))->getFileName() : null;
+            $renderer_key = hash_file('sha256', __DIR__.'/../views/Details/finding_aid_pdf_html.php').hash_file('sha256', __DIR__.'/../helpers/finding_aid.php')
+                .($renderer_file && is_file($renderer_file) ? hash_file('sha256', $renderer_file) : 'unavailable');
+            $timeout = $config->get('pdf_cache_timeout');
+            $bytes = tadlFindingAidCachedPDF($data, $renderer_key, function () {
+                return tadlFindingAidPDF($this->view->render('Details/finding_aid_pdf_html.php'));
+            }, $timeout === null ? 86400 : max(0, (int)$timeout));
 		} catch (Throwable $error) { $bytes = null; $failure = $error; }
 		if (!$bytes) {
 			tadlLogExportFailure('finding_aid', ['collection_id' => $id, 'format' => 'pdf'], $failure);
