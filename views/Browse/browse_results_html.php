@@ -88,6 +88,9 @@
 	if ($o_browse = $this->getVar('browse')) { $va_all_facets = $o_browse->getInfoForFacets(); }
 	require_once(__DIR__.'/tadl_result_helpers.php');
 	require_once(__DIR__.'/tadl_result_context_helpers.php');
+	$preferred_view = tadlDisplayView($this->request, $vs_current_view);
+	if (in_array($preferred_view, ['images', 'list'], true) && isset($va_views[$preferred_view])) { $vs_current_view = $preferred_view; }
+	$this->setVar('view', $vs_current_view);
 	// Family/place results have a fixed relationship scope, with sort/view/paging controls.
 	$vs_refine_html = !$vb_ajax && !in_array($this->request->getController(), ['FamilyContents', 'PlaceContents'], true)
 		? $this->render('Browse/browse_refine_subview_html.php') : '';
@@ -109,11 +112,13 @@
 		// This summary is outside the cached cards and reflects the media-filtered result.
 		print '<p class="tadl-related-results-summary" data-tadl-result-count="'.(int)$vn_result_size.'">'.htmlspecialchars(tadlResultItemCount($vn_result_size), ENT_QUOTES, 'UTF-8').'</p>';
 	}
-	$vn_tadl_page_size = tadlBrowseResultPageSize($vs_current_view);
+	$vn_tadl_page_size = tadlBrowseResultPageSize($vs_current_view, $this->request, $vn_result_size);
 	if ($vn_tadl_page_size) {
 		$vn_start = min(max(0, $vn_start), max(0, ((int)ceil($vn_result_size / $vn_tadl_page_size) - 1) * $vn_tadl_page_size));
 		$this->setVar('start', $vn_start);
+		$this->setVar('tadl_page_size', $vn_tadl_page_size);
 	}
+	$per_page_picker = $vn_tadl_page_size ? tadlBrowsePerPagePicker($this->request, $vn_result_size, $vn_tadl_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $vn_is_advanced) : '';
 	tadlMediaResultContext($this, $qr_res, $vs_find_type, $vb_is_search ? $this->getVar('browse_type') : null);
 	if ($this->request->getParameter('source', pString) === 'multisearch') {
 		tadlMediaResultContext($this, $qr_res, 'multisearch', $this->getVar('browse_type'));
@@ -121,8 +126,10 @@
 	$vs_tadl_result_view_controls = tadlBrowseResultViewControls($this->request, $va_views, $vs_current_view, $vs_browse_key, $vs_current_sort, $vs_sort_dir, $vn_hits_per_block_param, $vn_is_advanced ? true : false);
 	if ($vb_collection_controls) {
 		print '<div class="tadl-collection-results-toolbar">';
+		print '<div class="tadl-collection-results-intro">';
 		print '<div class="tadl-collection-results-heading"><h2>'._t('Collection items').'</h2>';
 		print '<p class="tadl-related-results-summary" data-tadl-result-count="'.(int)$vn_result_size.'">'.htmlspecialchars(tadlResultItemCount($vn_result_size), ENT_QUOTES, 'UTF-8').'</p></div>';
+		print $per_page_picker.'</div>';
 		print '<div class="tadl-collection-results-options">'.$vs_tadl_result_options.$vs_tadl_result_view_controls.'</div>';
 		if ($vn_tadl_page_size) {
 			print '<div class="tadl-results-top-pager">'.tadlBrowseResultPager($this->request, $vn_result_size, $vn_start, $vn_tadl_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $vn_is_advanced ? true : false, 'top').'</div>';
@@ -172,7 +179,7 @@ if (!$vb_ajax) {	// !ajax
 		</H1>
 		<?php if ($va_result_context) { print '<p class="tadl-results-context-count">'.htmlspecialchars(tadlResultItemCount($vn_result_size), ENT_QUOTES, 'UTF-8').'</p>'; } ?>
 		<div class="tadl-results-title-actions">
-			<?php print $vs_tadl_result_options; ?>
+			<?php print $vs_tadl_result_options.$per_page_picker; ?>
 <?php
 			if ($vb_has_filters) {
 ?>

@@ -236,7 +236,7 @@ $window_title = $meta_title;
 if ($window_title && ($window_title !== $site_name)) { $window_title .= ' | '.$site_name; }
 
 ?><!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-tadl-cookie-path="<?= htmlspecialchars(rtrim($this->request->getBaseUrlPath(), '/').'/', ENT_QUOTES, 'UTF-8'); ?>">
 	<head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0"/>

@@ -3281,12 +3281,50 @@ div.tadl-finding-aid-controls .close {
 
 .tadl-collection-results-toolbar {
     display: grid;
-    grid-template-columns: minmax(120px, 1fr) auto auto;
+    grid-template-columns: minmax(220px, 1fr) auto auto;
     align-items: center;
     gap: 16px;
     padding-top: 20px;
     margin-bottom: 24px;
     border-top: 1px solid var(--tadl-border);
+}
+
+.tadl-per-page {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    font-size: inherit;
+    font-weight: 400;
+}
+
+.tadl-per-page select {
+    min-width: 72px;
+    min-height: 38px;
+    padding: 4px 8px;
+    border: 1px solid var(--tadl-primary-dark);
+    border-radius: var(--tadl-radius);
+    background: #fff;
+    color: var(--tadl-primary-dark);
+    font: inherit;
+}
+
+.tadl-per-page .btn {
+    min-height: 38px;
+    font: inherit;
+}
+
+.tadl-display-preferences-ready .tadl-per-page .btn {
+    display: none;
+}
+
+.tadl-collection-results-intro {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    min-width: 0;
 }
 
 .tadl-collection-results-heading h2 {

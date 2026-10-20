@@ -114,7 +114,7 @@ try {
     $GLOBALS['deniedBundles']=['ca_objects:ca_places']; placeCheck(tadlPlaceObjectIDs($request,$scope)===[], 'Denied object relationships must expose no items.'); $GLOBALS['deniedBundles']=[];
     $request=new PlaceRequest(['place_id'=>1,'view'=>'list','sort'=>'Title','direction'=>'desc','s'=>24,'search'=>'*','key'=>'stale','facet'=>'_search','id'=>'*']);
     $response=new PlaceResponse(); $controller=new PlaceContentsController($request,$response); $controller->Objects(); $params=$controller->calls[0][2];
-    placeCheck($params['search'] === 'place_id:1' && $params['view']==='list' && $params['s']===24 && $params['sort']==='Title' && $params['direction']==='desc' && $params['n']===24, 'Place controller must delegate a short root reference, paging, view and sorting.');
+    placeCheck($params['search'] === 'place_id:1' && $params['view']==='list' && $params['s']===24 && $params['sort']==='Title' && $params['direction']==='desc' && $params['n']===25, 'Place controller must delegate a short root reference, paging, view and sorting.');
     $result=$controller->calls[0][3]; [$browse,$options]=end(PlaceBrowse::$executed);
     placeCheck($result->browse===$browse && $browse->criteria===['_search'=>['*']] && $browse->filters===[['ca_objects.object_id','in','100,101,102']], 'Native replacement must use the exact relationship IDs, never a compound Lucene search.');
     placeCheck($options['noCache'] && $options['dontCheckFacetAvailability'] && $options['request']===$request && $options['checkAccess']===[1] && str_starts_with($browse->context,'tadl_place_contents:1:7:'), 'Native access must remain request-scoped without result-cache reuse or unused facets.');

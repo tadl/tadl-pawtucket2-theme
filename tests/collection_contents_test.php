@@ -25,6 +25,7 @@ class ContentsConfig {
 	function getAssoc($key) { return ['objects' => ['sortBy' => ['Identifier' => 'ca_objects.idno', 'Title' => 'ca_object_labels.name']]]; }
 }
 class ContentsRequest {
+	public array $cookies = [];
 	public array $access = [1];
 	public object $user;
 	public object $config;
@@ -33,6 +34,7 @@ class ContentsRequest {
 		$this->user = new stdClass(); $this->config = new ContentsConfig();
 	}
 	function getParameter($key, $type, $options = []) { return $this->get[$key] ?? $this->path[$key] ?? null; }
+	function getParameters($sources) { return $sources === ['COOKIE'] ? $this->cookies : array_merge($this->path, $this->get); }
 	function setParameter($key, $value, $source) {
 		contentsCheck($source === 'GET', 'Canonical parameters must override caller PATH/GET state.');
 		$this->get[$key] = $value;
@@ -276,7 +278,7 @@ try {
 		contentsCheck(count($controller->calls) === 1 && $call[0] === 'objects' && $call[1] === [[]], 'Controller must delegate to the native object search once.');
 		contentsCheck($params['search'] === 'collection_id:1', 'Caller query/key must never replace selected branch scope.');
 		contentsCheck($params['collection_view'] === ($mode === 'hierarchy' ? 'hierarchy' : 'flat') && $params['tadl_collection_id'] === 1 && $params['tadl_collection_controls'] === 1, 'Loader must publish canonical collection mode and controls.');
-		contentsCheck($params['view'] === 'list' && $params['n'] === 24 && $params['sort'] === 'Title' && $params['direction'] === 'desc' && $params['s'] === 24, 'Sorting, paging and list view must survive canonicalization.');
+		contentsCheck($params['view'] === 'list' && $params['n'] === 25 && $params['sort'] === 'Title' && $params['direction'] === 'desc' && $params['s'] === 24, 'Sorting, paging and list view must survive canonicalization.');
 		contentsCheck($params['key'] === '' && $params['facets'] === '' && $params['facet'] === '' && $params['id'] === '' && $params['_advanced'] === 0, 'Native stale/refinement/advanced state must be cleared.');
 		contentsCheck($response->headers === ['Cache-Control' => 'private, no-store', 'X-Robots-Tag' => 'noindex, follow'], 'Collection result endpoint must be private and non-indexable.');
 	}
@@ -288,7 +290,7 @@ try {
     contentsCheck($failedClosed, 'An incomplete scoped-search plugin deployment must fail closed.'); ApplicationPluginManager::$available = true;
 	$request = new ContentsRequest(['collection_id' => 1, 'view' => 'invalid', 'sort' => 'invalid', 'direction' => 'invalid', 's' => -10]);
 	$controller = new CollectionContentsController($request, new ContentsResponse()); $controller->Objects();
-	contentsCheck($request->get['collection_view'] === 'flat' && $request->get['view'] === 'images' && $request->get['n'] === 9 && $request->get['sort'] === 'Identifier' && $request->get['direction'] === 'asc' && $request->get['s'] === 0, 'Default and invalid display state must use the supported first tile page.');
+	contentsCheck($request->get['collection_view'] === 'flat' && $request->get['view'] === 'images' && $request->get['n'] === 18 && $request->get['sort'] === 'Identifier' && $request->get['direction'] === 'asc' && $request->get['s'] === 0, 'Default and invalid display state must use the supported first tile page.');
 	foreach ([['collection_id' => 0, 'expected' => 400], ['collection_id' => 999, 'expected' => 404], ['collection_id' => 8, 'expected' => 404], ['collection_id' => 12, 'expected' => 404]] as $params) {
 		$response = new ContentsResponse(); $controller = new CollectionContentsController(new ContentsRequest($params), $response); $controller->Objects();
 		contentsCheck($response->code === $params['expected'] && !$controller->calls, 'Invalid or unreadable root must fail before native search.');

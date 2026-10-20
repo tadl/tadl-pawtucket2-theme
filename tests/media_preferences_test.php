@@ -132,6 +132,8 @@ class ResultContext {
     function setResultList($ids) { $this->values['ids'] = $ids; $this->setSearchHistory(count($ids)); }
     function setSearchHistory($count) { $this->values['count'] = $count; }
     function setParameter($key, $value) { $this->values[$key] = $value; }
+    function setItemsPerPage($count) { $this->values['per_page'] = $count; }
+    function setCurrentView($view) { $this->values['view'] = $view; }
     function saveContext() { self::$saved[$this->table.':'.$this->type.':'.$this->block] = $this->values; }
 }
 class TestConfig {
@@ -621,33 +623,42 @@ testAssert(tadlAuthorityMediaEligibleIDs($aclPlacesRequest, 'ca_places', range(3
 testAssert(count($GLOBALS['mediaACLCalls']) - $beforeACLCalls === 4 && count(Db::$queries) - $queryCount === 7 && Db::$mediaRows - $beforeMediaRows === 0, 'Places must batch ACL checks and reuse shared media across chunks.');
 $GLOBALS['mediaACL'] = [];
 foreach ($authorityBrowses as $route => [$table, $primaryKey, $singular, $plural]) {
-    foreach (['images' => 9, 'list' => 24] as $displayView => $pageSize) {
-        foreach (['only', 'all'] as $mode) {
-            $expected = $mode === 'only' ? $largeAuthorityExpected[$table] : range(30000, 30600);
-            $count = count($expected);
-            $result = new SearchResult($table, range(30000, 30600));
-            $view = new TestView(testMediaRequest($mode, ['view' => $displayView, 's' => $pageSize], 'Browse', $route), [
-                'result' => $result, 'criteria' => [], 'facets' => [], 'table' => $table, 'primaryKey' => $primaryKey,
-                't_instance' => new TestModel($table), 'browse_type' => $route,
-                'browseInfo' => ['table' => $table, 'labelSingular' => $singular, 'labelPlural' => $plural],
-                'config' => new TestConfig(['cache_timeout' => 0]), 'access_values' => [1], 'options' => [],
-                'view' => $displayView, 'views' => ['images' => [], 'list' => []], 'key' => 'synthetic-authority-key',
-                'sort' => 'Name', 'sort_direction' => 'asc', 'sortBy' => ['Name' => $table.'.preferred_labels'],
-                'start' => $pageSize, 'hits_per_block' => $pageSize, 'export_formats' => []
-            ]);
-            $html = $view->render('Browse/browse_results_html.php');
-            testAssert(str_contains($html, $count.' '.$plural) && str_contains($html, 'Page 2 of '.ceil($count / $pageSize)), $route.' '.$mode.': actual heading/pager retained pre-filter counts.');
-            $document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
-            $xpath = new DOMXPath($document);
-            $cards = $xpath->query('//div[@id and starts-with(@id,"row")]');
-            $firstID = $expected[$pageSize];
-            testAssert($cards->length === $pageSize && $cards->item(0)->getAttribute('id') === 'row'.$firstID, $route.' '.$mode.': actual cards use the wrong page offset or size.');
-            testAssert(ResultContext::$saved[$table.':browse:']['count'] === $count && ResultContext::$saved[$table.':browse:']['ids'] === $expected, $route.' '.$mode.': actual detail context has the wrong count or IDs.');
-            testAssert($xpath->query('//div[@id="row'.$firstID.'"]//a[starts-with(@href,"/Detail/'.substr($table, 3).'/'.$firstID.'")]')->length > 0, $route.': cards link to the wrong detail table.');
-            testAssert(!str_contains($html, 'media=') && !str_contains($html, '/media/'), $route.': pager leaked the preference into URLs.');
+    foreach (['images', 'list'] as $displayView) {
+        foreach ($displayView === 'list' ? [25, 50, 100] : [9, 18, 72] as $pageSize) {
+            foreach (['only', 'all'] as $mode) {
+                $expected = $mode === 'only' ? $largeAuthorityExpected[$table] : range(30000, 30600);
+                $count = count($expected);
+                $result = new SearchResult($table, range(30000, 30600));
+                $request = testMediaRequest($mode, ['view' => $displayView, 's' => $pageSize, 'per_page' => $pageSize], 'Browse', $route);
+                if ($mode === 'all' && $pageSize === ($displayView === 'list' ? 25 : 18)) {
+                    $request->params = ['s' => $pageSize];
+                    $request->cookies['tadlDisplayPreferences'] = json_encode(['view' => $displayView, ($displayView === 'list' ? 'list_per_page' : 'images_per_page') => (string)$pageSize]);
+                }
+                $view = new TestView($request, [
+                    'result' => $result, 'criteria' => [], 'facets' => [], 'table' => $table, 'primaryKey' => $primaryKey,
+                    't_instance' => new TestModel($table), 'browse_type' => $route,
+                    'browseInfo' => ['table' => $table, 'labelSingular' => $singular, 'labelPlural' => $plural],
+                    'config' => new TestConfig(['cache_timeout' => 0]), 'access_values' => [1], 'options' => [],
+                    'view' => 'images', 'views' => ['images' => [], 'list' => []], 'key' => 'synthetic-authority-key',
+                    'sort' => 'Name', 'sort_direction' => 'asc', 'sortBy' => ['Name' => $table.'.preferred_labels'],
+                    'start' => $pageSize, 'hits_per_block' => $pageSize, 'export_formats' => []
+                ]);
+                $html = $view->render('Browse/browse_results_html.php');
+                testAssert(str_contains($html, $count.' '.$plural) && str_contains($html, 'Page 2 of '.ceil($count / $pageSize)), $route.' '.$mode.': actual heading/pager retained pre-filter counts.');
+                $document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+                $xpath = new DOMXPath($document);
+                $cards = $xpath->query('//div[@id and starts-with(@id,"row")]');
+                $firstID = $expected[$pageSize];
+                testAssert($cards->length === $pageSize && $cards->item(0)->getAttribute('id') === 'row'.$firstID, $route.' '.$mode.': actual cards use the wrong page offset or size.');
+                testAssert(ResultContext::$saved[$table.':browse:']['count'] === $count && ResultContext::$saved[$table.':browse:']['ids'] === $expected, $route.' '.$mode.': actual detail context has the wrong count or IDs.');
+                testAssert(ResultContext::$saved[$table.':browse:']['view'] === $displayView && ResultContext::$saved[$table.':browse:']['per_page'] === $pageSize, $route.': detail/back context must reflect the rendered view and page size, including remembered preferences.');
+                testAssert($xpath->query('//div[@id="row'.$firstID.'"]//a[starts-with(@href,"/Detail/'.substr($table, 3).'/'.$firstID.'")]')->length > 0, $route.': cards link to the wrong detail table.');
+                testAssert(!str_contains($html, 'media=') && !str_contains($html, '/media/'), $route.': pager leaked the preference into URLs.');
+            }
         }
     }
 }
+
 testPerson(70000); testObject(70000); testPersonObject(70000, 70000);
 testRepresentation(70000, 1, 0, 'stub'); testRelation(70000, 70000);
 testRepresentation(70001, 1, 0, 'pdf'); testRelation(70000, 70001, 0);
@@ -702,7 +713,7 @@ foreach (range(600,629) as $id) { testCollection($id, 0, 0, 0); testCollectionOb
 $collectionConfig = new TestConfig(['collections_intro_text' => 'Synthetic introduction']);
 foreach (['only' => [10, 1, 609], 'all' => [30, 9, 609]] as $mode => $expected) {
     $result = new SearchResult('ca_collections', range(600,629));
-    $view = new TestView(testMediaRequest($mode, ['page' => 2, 'view' => 'tiles'], 'Collections', 'Index'), ['collection_results' => $result, 'collections_config' => $collectionConfig, 'section_name' => 'Example collections']);
+    $view = new TestView(testMediaRequest($mode, ['page' => 2, 'view' => 'tiles', 'per_page' => 9], 'Collections', 'Index'), ['collection_results' => $result, 'collections_config' => $collectionConfig, 'section_name' => 'Example collections']);
     $html = $view->render(TEST_THEME.'/views/Collections/index_html.php');
     testAssert(strpos($html, $expected[0].' collections') !== false, $mode.': collection index uses unfiltered count.');
     testAssert(substr_count($html, 'data-collection-item') === $expected[1], $mode.': collection index rendered wrong page size.');
@@ -742,7 +753,7 @@ foreach (['people' => 'ca_entities', 'organizations' => 'ca_entities', 'places' 
     tadlMediaResultContext($orderedView, $orderedResult, 'browse');
     testAssert(ResultContext::$saved[$table.':browse:']['ids'] === $orderedIDs, $route.': Prev/Next context must preserve logical browse order rather than sort database IDs.');
 }
-$latePageView = new TestView(testMediaRequest('all', ['page' => 123, 'view' => 'tiles'], 'Collections', 'Index'), ['collection_results' => new SearchResult('ca_collections', range(2000,3999)), 'collections_config' => $collectionConfig, 'section_name' => 'Example collections']);
+$latePageView = new TestView(testMediaRequest('all', ['page' => 62, 'view' => 'tiles'], 'Collections', 'Index'), ['collection_results' => new SearchResult('ca_collections', range(2000,3999)), 'collections_config' => $collectionConfig, 'section_name' => 'Example collections']);
 $html = $latePageView->render(TEST_THEME.'/views/Collections/index_html.php');
 testAssert(strpos($html, '/Detail/collections/3098') !== false, 'Late collection index rendered the wrong page.');
 testAssert(in_array(3098, ResultContext::$saved['ca_collections:collections:']['ids'], true), 'Collection index saved detail context before calculating the page offset.');

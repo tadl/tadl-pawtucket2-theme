@@ -47,7 +47,7 @@ function tadlMediaPreferenceCookieOptions($request) {
 function tadlMediaPreferenceUrl($request) {
 	$params = array_intersect_key($request->getParameters(array('PATH', 'GET')), array_flip(array(
 		'search', 'key', 'facets', 'facet', 'id', 'removeCriterion', 'removeID', 'clear',
-		'view', 'sort', 'direction', 'n', '_advanced', 'source', 'label',
+		'view', 'sort', 'direction', 'n', 'per_page', '_advanced', 'source', 'label',
 		'collection_id', 'collection_view', 'object_id', 'entity_id', 'place_id', 'occurrence_id', 'set_id'
 	)));
 	$params = array_filter($params, function ($value) { return is_scalar($value); });
@@ -66,6 +66,13 @@ function tadlMediaResultContext($view, $result, $findType, $block = null) {
 	$context->setResultList($ids);
 	$context->setSearchHistory($result->numHits());
 	$context->setParameter('media', null);
+	if ($view->getVar('tadl_page_size') && method_exists($context, 'setItemsPerPage')) {
+		$context->setItemsPerPage((int)$view->getVar('tadl_page_size'));
+		$context->setParameter('n', (int)$view->getVar('tadl_page_size'));
+	}
+	if (in_array($view->getVar('view'), ['images', 'list', 'tiles'], true) && method_exists($context, 'setCurrentView')) {
+		$context->setCurrentView($view->getVar('view'));
+	}
 	$context->saveContext();
 	$result->seek(0);
 }

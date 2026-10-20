@@ -141,7 +141,7 @@ try {
 	$response = new FamilyResponse(); $controller = new FamilyContentsController($request, $response); $controller->Objects();
 	$params = $controller->calls[0][2];
 	familyCheck($controller->calls[0][0] === 'objects' && $params['search'] === tadlFamilyContentsSearch([1,2,3,9]), 'Endpoint must replace caller search/key with the current family scope and delegate native object search.');
-	familyCheck($params['view'] === 'list' && $params['sort'] === 'Title' && $params['direction'] === 'desc' && $params['s'] === 24 && $params['n'] === 24, 'Family paging and explicit display/sort choices must survive.');
+	familyCheck($params['view'] === 'list' && $params['sort'] === 'Title' && $params['direction'] === 'desc' && $params['s'] === 24 && $params['n'] === 25, 'Family paging and explicit display/sort choices must survive.');
 	familyCheck($params['key'] === '' && $params['facet'] === '' && $params['id'] === '' && $params['_advanced'] === 0, 'Stale scope/refinement state must not override a family.');
 	familyCheck($response->headers === ['Cache-Control'=>'private, no-store','X-Robots-Tag'=>'noindex, follow'], 'Family results must be private and non-indexable.');
 	FamilyDB::$pdo->exec('DELETE FROM ca_entities_x_entities WHERE entity_left_id=1 AND entity_right_id=3');

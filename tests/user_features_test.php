@@ -1,5 +1,6 @@
 <?php
 /** Native auth/ORM/URL boundaries; actual theme helpers, forms and result views. */
+define('pString', 'string');
 error_reporting(E_ALL);
 set_error_handler(static function ($severity, $message, $file, $line) {
 	if (!(error_reporting() & $severity)) { return false; }
@@ -45,6 +46,7 @@ class FeatureUser {
 	function isStandardUser() { return $this->userclass === 0; }
 }
 class FeatureRequest {
+	function getParameter($key, $type) { return null; }
 	public FeatureConfig $config;
 	public FeatureUser $user;
 	function __construct(public bool $loggedIn = false, public bool $ajax = false, int $userclass = 1) {

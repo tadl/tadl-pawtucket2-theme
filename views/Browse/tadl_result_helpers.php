@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__.'/../../helpers/display_preferences.php');
 /** Collection contents use ordinary detail URLs; other results retain native routes. */
 function tadlBrowseResultCollectionID($request) {
 	if (!method_exists($request, 'getParameter') || !method_exists($request, 'getController')
@@ -19,19 +20,33 @@ function tadlBrowseResultPageIDs($result, $start, $pageSize, $rowID = 0) {
 	return array_slice($ids, $start, $length);
 }
 
-function tadlBrowseResultLink($request, $label, $class, $params) {
+function tadlBrowseResultRoute($request, $params) {
+	$params += ['per_page' => tadlResultPageChoice($request, $params['view'] ?? null)];
 	if (in_array($request->getController(), ['FamilyContents', 'PlaceContents'], true)) {
-		$params = array_intersect_key($params, array_flip(['view', 'sort', 'direction', 's']));
+		$params = array_intersect_key($params, array_flip(['view', 'sort', 'direction', 's', 'n', 'per_page']));
 		$key = $request->getController() === 'FamilyContents' ? 'entity_id' : 'place_id';
 		$params[$key] = (int)$request->getParameter($key, pInteger);
-		return caNavLink($request, $label, $class, '', $request->getController(), 'Objects', $params);
+		return ['', $request->getController(), 'Objects', $params];
 	}
 	if ($id = tadlBrowseResultCollectionID($request)) {
-		$params = array_intersect_key($params, array_flip(['view', 'sort', 'direction', 's']));
-		if ($request->getParameter('collection_view', pString) === 'hierarchy') { $params['collection_view'] = 'hierarchy'; }
-		return caNavLink($request, $label, $class, '', 'Detail', 'collections/'.$id, $params);
+		$params = array_intersect_key($params, array_flip(['view', 'sort', 'direction', 's', 'n', 'per_page']));
+		$params['collection_view'] = $request->getParameter('collection_view', pString) === 'hierarchy' ? 'hierarchy' : 'flat';
+		return ['', 'Detail', 'collections/'.$id, $params];
 	}
-	return caNavLink($request, $label, $class, '*', '*', '*', $params);
+	return ['*', '*', '*', $params];
+}
+
+function tadlBrowseResultLink($request, $label, $class, $params) {
+	[$module, $controller, $action, $params] = tadlBrowseResultRoute($request, $params);
+	$attributes = in_array($params['view'] ?? '', ['images', 'list'], true) ? ['data-tadl-view' => $params['view']] : [];
+	return caNavLink($request, $label, $class, $module, $controller, $action, $params, $attributes);
+}
+
+function tadlBrowsePerPagePicker($request, $total, $size, $key, $view, $sort, $direction, $advanced) {
+	[$module, $controller, $action, $params] = tadlBrowseResultRoute($request, [
+		'key' => $key, 'view' => $view, 'sort' => $sort, 'direction' => $direction, '_advanced' => $advanced ? 1 : 0, 's' => 0
+	]);
+	return tadlPerPagePicker($request, $total, $size, [$module, $controller, $action], $params);
 }
 
 if (!function_exists('tadlBrowseResultPager')) {
@@ -91,12 +106,11 @@ if (!function_exists('tadlBrowseResultPager')) {
 }
 
 if (!function_exists('tadlBrowseResultPageSize')) {
-	function tadlBrowseResultPageSize($ps_view) {
+	function tadlBrowseResultPageSize($ps_view, $request = null, $total = null) {
 		switch($ps_view) {
 			case 'images':
-				return 9;
 			case 'list':
-				return 24;
+				return $request ? tadlResultPageSize($request, $total, $ps_view) : ($ps_view === 'list' ? 25 : 18);
 			default:
 				return null;
 		}
@@ -134,7 +148,8 @@ if (!function_exists('tadlBrowseResultViewControls')) {
 						'key' => $ps_browse_key,
 						'sort' => $ps_sort,
 						'direction' => $ps_sort_dir,
-						'n' => tadlBrowseResultPageSize($vs_view) ?: $pn_hits_per_block,
+						'n' => (int)tadlPreferredPageChoice($po_request, $vs_view),
+						'per_page' => tadlPreferredPageChoice($po_request, $vs_view),
 						'_advanced' => $pb_is_advanced ? 1 : 0,
 						's' => 0
 					)

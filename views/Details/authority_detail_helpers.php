@@ -1,6 +1,7 @@
 <?php
 require_once(__DIR__.'/detail_field_helpers.php');
 require_once(__DIR__.'/../../helpers/family_contents.php');
+require_once(__DIR__.'/../../helpers/display_preferences.php');
 
 function tadlAuthorityText($value) {
 	return trim(html_entity_decode(strip_tags((string)$value), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
@@ -84,14 +85,14 @@ function tadlAuthorityDetailInfo($request, $item, $table) {
 	$info['identifier'] = tadlAuthorityText($item->getWithTemplate('^'.$table.'.idno', $options));
 	$info['items_url'] = caNavUrl($request, '', 'Search', 'objects', [
 		'search' => $info['key'].':'.(int)$item->get($info['key']),
-		'view' => 'images', 's' => 0, '_advanced' => 0, 'clear' => 1
+		'view' => tadlDisplayPreferences($request)['view'] ?? 'images', 's' => 0, '_advanced' => 0, 'clear' => 1
 	]);
 	if ($table === 'ca_entities' && $info['browse'] === 'families') {
-		$info['items_url'] = caNavUrl($request, '', 'FamilyContents', 'Objects', ['entity_id' => (int)$item->get('entity_id'), 'view' => 'images']);
+		$info['items_url'] = caNavUrl($request, '', 'FamilyContents', 'Objects', ['entity_id' => (int)$item->get('entity_id'), 'view' => tadlDisplayPreferences($request)['view'] ?? 'images']);
 		$info['items_note'] = _t('Includes items linked to this family and its directly related people and organizations.');
 	}
 	if ($table === 'ca_places') {
-		$info['items_url'] = caNavUrl($request, '', 'PlaceContents', 'Objects', ['place_id' => (int)$item->get('place_id'), 'view' => 'images']);
+		$info['items_url'] = caNavUrl($request, '', 'PlaceContents', 'Objects', ['place_id' => (int)$item->get('place_id'), 'view' => tadlDisplayPreferences($request)['view'] ?? 'images']);
 		$info['items_note'] = _t('Includes items linked to this place and its descendant places.');
 	}
 	return $info;

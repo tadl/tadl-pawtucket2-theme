@@ -1,5 +1,6 @@
 <?php
 require_once(__CA_APP_DIR__.'/controllers/SearchController.php');
+require_once(__DIR__.'/../helpers/display_preferences.php');
 require_once(__DIR__.'/../helpers/place_contents.php');
 
 /** Rebuild the place scope on every page; delegate object search/access to Pawtucket. */
@@ -23,7 +24,7 @@ class PlaceContentsController extends SearchController {
 		}
 		$sorts = (array)(caGetBrowseConfig()->getAssoc('browseTypes')['objects']['sortBy'] ?? []);
 		$sort = (string)$this->request->getParameter('sort', pString);
-		$view = (string)$this->request->getParameter('view', pString);
+		$view = tadlDisplayView($this->request);
 		$direction = (string)$this->request->getParameter('direction', pString);
 		$params = [
 			// The theme's hookReplaceSearch resolves descendants through SQL. Keep
@@ -33,7 +34,7 @@ class PlaceContentsController extends SearchController {
 			'sort' => isset($sorts[$sort]) ? $sort : 'Identifier',
 			'direction' => in_array($direction, ['asc', 'desc'], true) ? $direction : 'asc',
 			's' => max(0, (int)$this->request->getParameter('s', pInteger)),
-			'n' => $view === 'list' ? 24 : 9,
+			'n' => tadlResultPageSize($this->request), 'per_page' => tadlResultPageChoice($this->request),
 			'_advanced' => 0, 'key' => '', 'facets' => '', 'search_refine' => '',
 			'removeCriterion' => '', 'removeID' => '', 'facet' => '', 'id' => '',
 			'source' => '', 'getFacet' => 0, 'label' => '', 'values' => ''

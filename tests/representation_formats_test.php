@@ -7,6 +7,7 @@ set_error_handler(static function ($severity, $message, $file, $line) {
 });
 define('__CA_BUNDLE_ACCESS_READONLY__', 1);
 define('pInteger', 'integer');
+define('pString', 'string');
 $checks = 0;
 function formatCheck($condition, $message) { $GLOBALS['checks']++; if (!$condition) { throw new RuntimeException($message); } }
 function _t($text, ...$values) { foreach ($values as $i => $value) { $text = str_replace('%'.($i + 1), (string)$value, $text); } return $text; }

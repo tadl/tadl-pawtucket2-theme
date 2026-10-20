@@ -8,13 +8,18 @@ conforms. The remaining acceptance work below is part of reaching that target.
 ## October 20 follow-up
 
 [Audit remediation](AUDIT_REMEDIATION.md) records the later 26-issue source pass.
-The current suite has 42 PHP programs, with 12 browser page states at 320/1280px,
+The current suite has 43 PHP programs, with 12 browser page states at 320/1280px,
 an open Lightbox menu, gallery race/failure tests, canvas-scoped native keyboard
 shortcuts and lazy document text. Grid regressions cover 320–1600px; native PDF.js
 checks include scrolling, paging/search/download and focus restoration. The viewer
 provides a semantic HTML finding-aid alternative; the Dompdf PDF is still untagged.
 The older counts below describe the October 16 checkpoint, not current coverage.
 Full deployed/content/process and assistive-technology acceptance remains required.
+The per-page picker uses a labeled native select that updates results on change,
+with an Apply button for the no-JavaScript GET fallback. Its separate browser regression
+covers 320–1600px reflow, automated A/AA checks on the result controls, paging and
+cross-page display preferences. Subsequent collection pages omit repeated metadata
+and retain a link back to the complete description.
 
 ## Coverage and evidence
 
@@ -189,6 +194,8 @@ PHP/DOM/mbstring, Playwright 1.62.1, axe-core 4.14.0 and Chromium installed:
 ```sh
 TADL_REFERENCE_ROOT=/path/to/pawtucket2 \
   node tests/accessibility_browser_test.js
+TADL_REFERENCE_ROOT=/path/to/pawtucket2 \
+  node tests/display_preferences_browser_test.js
 ```
 
 Use `NODE_PATH` if the tools are installed in a separate directory, `TADL_AXE_PATH`

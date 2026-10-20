@@ -1,6 +1,6 @@
 # Collection pages
 
-Collection details default to a flat list of the selected collection's objects
+Collection details initially show a flat list of the selected collection's objects
 and every readable descendant's objects. The catalogue hierarchy is preserved;
 this is a presentation choice. An object linked to several nodes appears once
 in the flat results. Selecting a subcollection includes only that branch, not
@@ -12,6 +12,7 @@ When readable children exist and the browser is enabled in configuration,
 **Collection hierarchy view** appears beneath **View finding aid**. It opens
 the hierarchy browser and restores directly attached items on the collection page.
 **Flat collection view** returns to the flat list. Leaf collections omit the switch.
+The chosen mode is remembered for subsequent collections with a hierarchy.
 Both view-switch links have an eye icon; **View finding aid** has a document icon.
 The document viewer provides the download option.
 
@@ -66,15 +67,16 @@ and anonymous visitors receive no editor link.
 
 ## Navigation and URL state
 
-Ordinary links, reloads and browser Back retain the collection overview. Paging,
+Ordinary links, reloads and browser Back retain collection context. Paging,
 sorting and Tiles/List stay on `/Detail/collections/<id>` rather than switching
 the visitor to a standalone Search page. The page loads its results through
 `/CollectionContents/Objects/collection_id/<id>`.
 
 | Parameter | Meaning |
 | --- | --- |
-| `collection_view` | `flat` by default; exact `hierarchy` selects hierarchy mode |
+| `collection_view` | Explicit `flat` or `hierarchy`; otherwise the remembered mode, initially `flat` |
 | `view` | `images` for Tiles or `list` |
+| `per_page` | Tiles: `9`, `18`, …, `72`; List: `25`, `50`, `100`; `all` within the current view's limit |
 | `sort` / `direction` | Configured object sort label and `asc` or `desc` |
 | `s` | Nonnegative result offset; zero starts the first page |
 
@@ -83,11 +85,29 @@ For example, with an invented collection ID:
 ```text
 /Detail/collections/42
 /Detail/collections/42?collection_view=hierarchy
-/Detail/collections/42?collection_view=flat&view=list&sort=Title&direction=asc&s=24
+/Detail/collections/42?collection_view=flat&view=list&per_page=25&sort=Title&direction=asc&s=25
 ```
 
-Tiles use nine results per page; List uses 24. Missing/invalid mode defaults to
-flat, and unsupported display state is normalized. The media preference remains
+Tiles initially use **18 items per page**. The picker beside the count offers
+9-item steps up to 72, the equivalent of 24 rows in the desktop three-column grid.
+These steps stay the same on mobile and tablet. List view has its own **25-item
+default**, with 25, 50 and 100 as its numeric choices.
+
+Choices above the current filtered total are omitted; **All** replaces the exact
+total when it is at most 72 for Tiles or 100 for List, including totals that do
+not fill the last grid row. Changing the picker updates results immediately and
+starts at the first page with the same scope and sorting. Without JavaScript,
+an **Apply** button submits the ordinary GET form.
+
+The `tadlDisplayPreferences` cookie remembers Tiles/List, each view's numeric page size and
+flat/hierarchy mode for one year, scoped to the current host and application path.
+Explicit links override these defaults. **All** applies to the current results;
+choosing it remembers **18** for the next Tiles view or **25** for the next List
+view. An All request exceeding its view's limit also displays that safe default.
+Switching between Tiles and List restores each view's own numeric preference.
+Cookies cannot restore a search, change access,
+or lift the page-size limit. Missing or invalid stored values use safe defaults.
+The media preference remains
 in the visitor's cookie/session rather than these URLs, so shared links follow
 the recipient's preference. Incoming search expressions, browse keys and facet
 state cannot replace the controller's selected collection scope.
@@ -97,6 +117,10 @@ pages omit the description, facts and related-record fields without fetching
 their values again. They retain the collection title/identifier, finding aid,
 hierarchy controls and navigation, with **About this collection** linking back
 to the first page using the same display and sort settings.
+
+The same picker and display preferences apply to full Search/Browse result pages
+and the collection index. Six-item search overview previews retain their purpose
+as previews rather than becoming paged results.
 
 Collection item cards in Tiles and List show small square, white-on-dark-gray
 format tags stacked at the right of their titles, replacing the object identifier

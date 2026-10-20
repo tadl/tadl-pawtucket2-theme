@@ -1,5 +1,6 @@
 <?php
 /** Actual collection thumbnail SQL, in-memory SQLite and synthetic native tags/models. */
+define('pString', 'string');
 error_reporting(E_ALL);
 set_error_handler(function ($severity, $message, $file, $line) {
 	if (!(error_reporting() & $severity)) { return false; }
@@ -166,6 +167,7 @@ class ThumbnailConfig {
 	function getAssoc($name) { return []; }
 }
 class ThumbnailRequest {
+	function getParameter($key, $type) { return null; }
 	function isAjax() { return false; }
 }
 class ThumbnailResult {

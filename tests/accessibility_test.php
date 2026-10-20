@@ -42,7 +42,8 @@ class AssetLoadManager {
 			.'<script src="/themes/tadl/assets/pawtucket/js/user-features.js"></script>'
 			.'<script src="/themes/tadl/assets/pawtucket/js/lightbox-order.js"></script>'
 			.'<script src="/themes/tadl/assets/pawtucket/js/gallery-navigation.js"></script>'
-			.'<script src="/themes/tadl/assets/pawtucket/js/document-text.js"></script>';
+			.'<script src="/themes/tadl/assets/pawtucket/js/document-text.js"></script>'
+			.'<script src="/themes/tadl/assets/pawtucket/js/display-preferences.js"></script>';
 	}
 }
 define('pInteger', 1); define('pString', 2);
@@ -58,6 +59,7 @@ class A11yRequest {
 	function getParameters(...$args) { return []; }
 	function getAction() { return 'Index'; }
 	function getRequestUrl() { return '/Contact/Form'; }
+	function getBaseUrlPath() { return ''; }
 	function getThemeUrlPath() { return '/themes/tadl'; }
 	function getThemeDirectoryPath() { return dirname(__DIR__); }
 	function isAjax() { return $this->ajax; }

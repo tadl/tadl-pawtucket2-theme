@@ -45,9 +45,11 @@ class DetailScriptUser {
 }
 class DetailScriptRequest {
     public DetailScriptUser $user;
+    public array $cookies = [];
     public function __construct(public array $params = [], public bool $loggedIn = false, int $userclass = 1) { $this->user = new DetailScriptUser($userclass); }
     public function isLoggedIn() { return $this->loggedIn; }
     public function getParameter($name, $type, $options = []) { return $this->params[$name] ?? null; }
+    public function getParameters($sources) { return $sources === ['COOKIE'] ? $this->cookies : $this->params; }
 }
 class DetailScriptConfig {
     public function getAssoc($name) { return ['objects' => ['sortBy' => ['Identifier' => 'idno', 'Title' => 'name']]]; }
@@ -156,6 +158,10 @@ foreach (['flat', 'hierarchy'] as $mode) {
 }
 $first_page = (new DetailScriptView(0, ['ca_collections.description' => 'First page description'], ['s' => 0]))->render('ca_collections');
 checkDetailScripts(str_contains($first_page, 'First page description') && !str_contains($first_page, 'About this collection'), 'The first page must retain full metadata without a redundant details link.');
+$sticky_view = new DetailScriptView(2);
+$sticky_view->request->cookies['tadlDisplayPreferences'] = json_encode(['view'=>'list', 'list_per_page'=>'50', 'collection_view'=>'hierarchy']);
+$sticky_html = str_replace('\\/', '/', $sticky_view->render('ca_collections'));
+checkDetailScripts(str_contains($sticky_html, '/collection_view/hierarchy/view/list/sort/Identifier/direction/asc/s/0/n/50/per_page/50') && str_contains($sticky_html, 'data-tadl-collection-view="flat"'), 'Collection details must apply remembered mode, view and size to the actual result loader and switch.');
 $finding_document = new DOMDocument(); $finding_document->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_NONET);
 $finding_xpath = new DOMXPath($finding_document);
 $finding_view = $finding_xpath->query('//div[@class="exportCollection"]/a[contains(@href,"/CollectionFindingAid/View/")]')->item(0);
@@ -203,8 +209,8 @@ checkDetailScripts(str_contains($html, '<div class="tadl-long-field-full">'.$lon
 
 // Reload/direct collection links forward only supported result state, never a supplied search/key.
 foreach ([
-    [['view' => 'list', 'sort' => 'Title', 'direction' => 'desc', 's' => 24, 'search' => 'unrelated', 'key' => 'unrelated'], '/view/list/sort/Title/direction/desc/s/24/n/24'],
-    [['view' => 'unknown', 'sort' => 'unknown', 'direction' => 'unknown', 's' => -9], '/view/images/sort/Identifier/direction/asc/s/0/n/9']
+    [['view' => 'list', 'sort' => 'Title', 'direction' => 'desc', 's' => 24, 'search' => 'unrelated', 'key' => 'unrelated'], '/view/list/sort/Title/direction/desc/s/24/n/25'],
+    [['view' => 'unknown', 'sort' => 'unknown', 'direction' => 'unknown', 's' => -9], '/view/images/sort/Identifier/direction/asc/s/0/n/18']
 ] as [$params, $suffix]) {
     $html = (new DetailScriptView(2, [], $params))->render('ca_collections');
     checkDetailScripts(str_contains(str_replace('\\/', '/', $html), '/CollectionContents/Objects/collection_id/42/collection_view/flat'.$suffix), 'Collection loader failed to validate/forward its own result state.');
@@ -327,7 +333,7 @@ foreach (array(
 		'name' => $case['name'],
 		'scripts' => $scripts[1],
 		'hierarchyUrl' => $case['hierarchy'] ? '/synthetic/Collections/collectionHierarchy/collection_id/42' : null,
-		'objectsUrl' => $hasGrid ? '/synthetic/CollectionContents/Objects/collection_id/42/collection_view/'.$contentsMode.'/view/images/sort/Identifier/direction/asc/s/0/n/9' : null,
+		'objectsUrl' => $hasGrid ? '/synthetic/CollectionContents/Objects/collection_id/42/collection_view/'.$contentsMode.'/view/images/sort/Identifier/direction/asc/s/0/n/18/per_page/18' : null,
 		'loadingHtml' => $GLOBALS['detailScriptIcon'].' '.$GLOBALS['detailScriptLoading']
 	);
 }

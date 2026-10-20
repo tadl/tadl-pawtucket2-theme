@@ -1,5 +1,25 @@
 # Accounts, lightboxes and home-page FAQ
 
+## Catalogue display preferences
+
+Collection pages, the collection index and full Browse/Search results remember
+Tiles/List, separate numeric page sizes and the flat/hierarchy collection view.
+New visitors start with 18 tiles, 25 list items and flat collections. Tile choices
+advance by nine to 72; List choices are 25, 50 and 100. **All** is available only
+within that view's limit, and selecting it remembers 18 (Tiles) or 25 (List) for
+the next collection. An explicit link can override the remembered default.
+Switching views restores each view's own size. Changing the per-page selector
+updates results immediately and restarts at the first page. Without JavaScript,
+an **Apply** button submits the same GET form.
+
+`helpers/display_preferences.php` validates the small `tadlDisplayPreferences`
+cookie; `js/display-preferences.js` saves user choices through delegated link and
+form events, including controls loaded by AJAX. The cookie lasts one year, uses
+the application path and SameSite=Lax, and is Secure on HTTPS. It contains only
+display settings, applies to the current hostname, and does not change access or
+store search expressions. If storage is unavailable, ordinary navigation and GET
+forms still work. No login, schema change or cache clearing is required.
+
 ## Current account pilot
 
 The theme uses Pawtucket's existing `LoginReg` and `Lightbox` controllers, with

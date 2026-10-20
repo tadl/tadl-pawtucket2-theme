@@ -1,8 +1,11 @@
 <?php
 require_once(__DIR__.'/record_access.php');
+require_once(__DIR__.'/display_preferences.php');
 
 function tadlCollectionContentsMode($request) {
-	return $request->getParameter('collection_view', pString) === 'hierarchy' ? 'hierarchy' : 'flat';
+	$explicit = $request->getParameter('collection_view', pString);
+	if ($explicit === null || $explicit === '') { $explicit = tadlDisplayPreferences($request)['collection_view'] ?? 'flat'; }
+	return $explicit === 'hierarchy' ? 'hierarchy' : 'flat';
 }
 
 /** Keep collection traversal within native record, bundle and Pawtucket ACL access. */

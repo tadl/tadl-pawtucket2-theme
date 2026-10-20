@@ -41,7 +41,7 @@
 <?php
 						foreach($va_browse_types as $vs_browse_name => $va_browse_type){
 							if(!$va_browse_type["dontShowInBrowseMenu"]){
-								$va_browse_params = tadlBrowseEntryParameters($vs_browse_name, $va_browse_type);
+								$va_browse_params = tadlBrowseEntryParameters($vs_browse_name, $va_browse_type, $this->request);
 								print "<li>".caNavLink($this->request, caUcFirstUTF8Safe($va_browse_type['displayName']), '', '', 'Browse', $vs_browse_name, $va_browse_params, ['rel' => 'nofollow'])."</li>";
 							}
 						}
@@ -51,7 +51,7 @@
 <?php				
 				}else{
 ?>
-					<li <?php print ($this->request->getController() == "Browse") ? 'class="active"' : ''; ?>><?php print caNavLink($this->request, ($o_config->get("browse_menu_button_text") ? $o_config->get("browse_menu_button_text") : _t("Browse")), "", "", "Browse", key($va_browse_types), tadlBrowseEntryParameters(key($va_browse_types), current($va_browse_types)), ['rel' => 'nofollow']); ?></li>
+					<li <?php print ($this->request->getController() == "Browse") ? 'class="active"' : ''; ?>><?php print caNavLink($this->request, ($o_config->get("browse_menu_button_text") ? $o_config->get("browse_menu_button_text") : _t("Browse")), "", "", "Browse", key($va_browse_types), tadlBrowseEntryParameters(key($va_browse_types), current($va_browse_types), $this->request), ['rel' => 'nofollow']); ?></li>
 <?php
 				}
 				break;

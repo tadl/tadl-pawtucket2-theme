@@ -48,7 +48,7 @@
 		&& tadlCollectionHasHierarchy($this->request, $t_item);
 	$vb_show_hierarchy_viewer = $collection_has_hierarchy && $collection_mode === 'hierarchy';
 
-	$collection_view = $this->request->getParameter('view', pString, ['forcePurify' => true]);
+	$collection_view = tadlDisplayView($this->request);
 	if (!in_array($collection_view, ['images', 'list'], true)) { $collection_view = 'images'; }
 	$collection_sorts = (array)(caGetBrowseConfig()->getAssoc('browseTypes')['objects']['sortBy'] ?? []);
 	$collection_sort = $this->request->getParameter('sort', pString, ['forcePurify' => true]);
@@ -59,7 +59,7 @@
 		'collection_id' => (int)$t_item->get('collection_id'), 'collection_view' => $collection_mode,
 		'view' => $collection_view, 'sort' => $collection_sort, 'direction' => $collection_direction,
 		's' => max(0, (int)$this->request->getParameter('s', pInteger)),
-		'n' => $collection_view === 'list' ? 24 : 9
+		'n' => tadlResultPageSize($this->request), 'per_page' => tadlResultPageChoice($this->request)
 	];
 	$collection_show_metadata = $collection_result_params['s'] === 0;
 	$collection_fields = $collection_facts = '';
@@ -155,7 +155,7 @@
 						$switch_params['collection_view'] = $collection_mode === 'flat' ? 'hierarchy' : 'flat';
 						$switch_url = caNavUrl($this->request, '', 'Detail', 'collections/'.(int)$t_item->get('collection_id'), $switch_params);
 						$switch_label = $collection_mode === 'flat' ? _t('Collection hierarchy view') : _t('Flat collection view');
-						print '<div class="tadl-collection-view-switch"><a href="'.htmlspecialchars($switch_url, ENT_QUOTES, 'UTF-8').'"><span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span> '.htmlspecialchars($switch_label, ENT_QUOTES, 'UTF-8').'</a></div>';
+						print '<div class="tadl-collection-view-switch"><a data-tadl-collection-view="'.$switch_params['collection_view'].'" href="'.htmlspecialchars($switch_url, ENT_QUOTES, 'UTF-8').'"><span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span> '.htmlspecialchars($switch_label, ENT_QUOTES, 'UTF-8').'</a></div>';
 					}
 ?>
 				</div>

@@ -59,7 +59,7 @@
 	require_once(__DIR__.'/../../helpers/thumbnail_focus.php');
 	require_once(__DIR__.'/../../helpers/object_thumbnails.php');
 	require_once(__DIR__.'/../../helpers/representation_formats.php');
-	$vn_page_size = tadlBrowseResultPageSize('images');
+	$vn_page_size = tadlBrowseResultPageSize('images', $this->request, $qr_res->numHits());
 	$vb_format_tags = $vs_table === 'ca_objects';
 	$va_formats = $vb_format_tags ? tadlObjectRepresentationFormats($this->request,
 		tadlBrowseResultPageIDs($qr_res, $vn_start, $vn_page_size, $vn_row_id), $va_access_values) : [];

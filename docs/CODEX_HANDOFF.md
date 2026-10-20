@@ -108,6 +108,23 @@ and navigation, and adds **About this collection** back to the first page with
 the current view/mode/sort retained. This applies to flat and hierarchy modes;
 the collection hierarchy browser itself remains available in hierarchy mode.
 
+Paged collection/Search/Browse results and the collection index now default to
+18 tiles or 25 list items. The labeled GET picker offers fixed 9-item tile steps
+through 72 at every viewport width, or 25/50/100 in List. All appears only within
+the view's numeric limit. Changing the selector immediately updates results,
+resets the offset and preserves current scope/view/sort. An Apply button is available
+without JavaScript. The validated
+`tadlDisplayPreferences` cookie remembers separate numeric sizes, Tiles/List and collection
+mode for one year on the application path/current host. Explicit URL choices win.
+Selecting All shows the current small result set and stores its safe default for
+the next one: 18 for Tiles, 25 for List. All requested for a larger set falls back
+to the same default. Switching views restores each view's own size. Malformed preferences cannot
+restore arbitrary searches or expand access. Keep the helper, new asset/config,
+shared result views and scoped controller forwarding together when deploying.
+The 43 PHP suites include bounded-size and cookie tests; the new browser suite
+checks 320–1600px layout, automatic changes/no-script GET, paging, mode/view
+persistence and All fallback.
+
 ## Completed work and useful commits
 
 | Commit | Result |

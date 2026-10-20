@@ -8,7 +8,7 @@ function tadlDetailNavigation($view, $browseAction = null, $browseLabel = '', $b
 	$escape = static fn($text) => htmlspecialchars((string)$text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 	$links = (string)$view->getVar('previousLink').(string)$view->getVar('nextLink');
 	if ($browseAction !== null) {
-		$browseParams = $browseController === 'Browse' ? tadlBrowseEntryParameters($browseAction) : [];
+		$browseParams = $browseController === 'Browse' ? tadlBrowseEntryParameters($browseAction, null, $view->request) : [];
 		$links .= caNavLink($view->request, $escape($browseLabel), '', '', $browseController, $browseAction, $browseParams);
 	}
 	if ($links === '') { return ''; }

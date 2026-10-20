@@ -1,5 +1,6 @@
 <?php
 /** Synthetic native model boundaries and actual result-view rendering. */
+define('pString', 'string');
 error_reporting(E_ALL);
 set_error_handler(function ($severity, $message, $file, $line) {
 	if (!(error_reporting() & $severity)) { return false; }
@@ -87,7 +88,7 @@ class ObjectThumbnailConfig {
 	function get($key) { return $key === 'cache_timeout' ? 0 : null; }
 	function getAssoc($key) { return []; }
 }
-class ObjectThumbnailRequest { function isAjax() { return false; } }
+class ObjectThumbnailRequest { function isAjax() { return false; } function getParameter($key, $type) { return null; } }
 class ObjectThumbnailResult {
 	private bool $done = false;
 	function numHits() { return 1; }

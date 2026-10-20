@@ -162,7 +162,7 @@ foreach ([['place_facet', 42, 'Synthetic Harbor'], ['entity_facet', 42, 'Synthet
 	checkContext(str_contains($html, '<p class="tadl-results-context-count">45 items</p>'), $facet.': missing accurate count subtitle.');
 	checkContext(str_contains($html, 'removeCriterion='.$facet.'&amp;removeID='.$id) && str_contains($html, 'key=synthetic-key'), $facet.': criterion removal/key changed.');
 	checkContext(!str_contains($html, 'Native label must not be trusted'), $facet.': unsafe native label used.');
-	checkContext(str_contains($html, 'aria-label=\'Results pagination above results\'') && str_contains($html, 'Page 1 of 5'), $facet.': top pagination must retain page state and identify its position.');
+	checkContext(str_contains($html, 'aria-label=\'Results pagination above results\'') && str_contains($html, 'Page 1 of 3'), $facet.': top pagination must retain page state and identify its position.');
 }
 foreach (['entity_id:42' => 'Synthetic Person', 'place_id:42' => 'Synthetic Harbor', 'occurrence_id:42' => 'Synthetic Exhibition', 'collection_id:42' => 'Synthetic Collection', ' ca_places.place_id : 42 ' => 'Synthetic Harbor'] as $query => $label) {
 	$criteria = [contextCriterion('_search', $query, 'Raw display query: '.$query), contextCriterion('type_facet', 3, 'Synthetic type')];
@@ -218,7 +218,7 @@ foreach ([0, 1, 8] as $filteredCount) {
 $html = (new ContextView(new ContextRequest('Browse', true), [], 45))->render('Browse/browse_results_html.php');
 checkContext(!str_contains($html, 'tadl-related-results-summary'), 'Browse AJAX must not gain Search-only related summary.');
 foreach ([['Search', 'flat'], ['CollectionContents', 'flat'], ['CollectionContents', 'hierarchy']] as [$controller, $mode]) {
-foreach (['images' => 9, 'list' => 24] as $view => $pageSize) {
+foreach (['images' => 18, 'list' => 25] as $view => $pageSize) {
 	$html = (new ContextView(new ContextRequest($controller, true, 45, ['tadl_collection_controls' => 1, 'tadl_collection_id' => 42, 'collection_view' => $mode]), [], 90, ['view' => $view]))->render('Browse/browse_results_html.php');
 	$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 	$xpath = new DOMXPath($document);
@@ -228,7 +228,7 @@ foreach (['images' => 9, 'list' => 24] as $view => $pageSize) {
 	checkContext(str_contains($html, '/Detail/collections/42?') && str_contains($html, 'sort=Identifier') && !str_contains($html, 'tadl_collection_controls=') && !str_contains($html, '/Search/'), 'Collection view/page links must retain the collection detail route and sort.');
 }
 // Both pagers and sort/view actions stay on the collection for later pages.
-foreach (['images' => 9, 'list' => 24] as $view => $pageSize) {
+foreach (['images' => 18, 'list' => 25] as $view => $pageSize) {
     $request = new ContextRequest($controller, true, 45, ['tadl_collection_controls' => 1, 'tadl_collection_id' => 42, 'collection_view' => $mode]);
     $html = (new ContextView($request, [], 90, ['view' => $view, 'start' => $pageSize, 'sort' => 'Title', 'sort_direction' => 'desc']))->render('Browse/browse_results_html.php');
     $document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
@@ -343,7 +343,7 @@ foreach ([
 	$html = $view->render('Browse/browse_results_html.php');
 	checkContext(!str_contains($html, "id='bRefineButton'") && !str_contains($html, "id='bRefine'"), 'Empty filters left a sidebar or toggle.');
 	checkContext(str_contains($html, "<div class='col-sm-12'>"), 'Results did not reclaim empty sidebar space.');
-	checkContext(str_contains($html, 'data-synthetic-cards') && str_contains($html, 'Page 1 of 5'), 'Empty filters changed results or pagination.');
+	checkContext(str_contains($html, 'data-synthetic-cards') && str_contains($html, 'Page 1 of 3'), 'Empty filters changed results or pagination.');
 }
 $facets = contextFacetDefinitions();
 $facets['entity_facet']['content'] = [['id' => 42, 'label' => 'Synthetic Studio']];

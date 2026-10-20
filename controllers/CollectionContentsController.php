@@ -1,5 +1,6 @@
 <?php
 require_once(__CA_APP_DIR__.'/controllers/SearchController.php');
+require_once(__DIR__.'/../helpers/display_preferences.php');
 require_once(__DIR__.'/../helpers/collection_contents.php');
 
 /** Reuse native search/ACLs/exports; callers supply a collection, never a query. */
@@ -24,7 +25,7 @@ class CollectionContentsController extends SearchController {
 		$mode = tadlCollectionContentsMode($this->request);
 		$sorts = (array)(caGetBrowseConfig()->getAssoc('browseTypes')['objects']['sortBy'] ?? []);
 		$sort = (string)$this->request->getParameter('sort', pString);
-		$view = (string)$this->request->getParameter('view', pString);
+		$view = tadlDisplayView($this->request);
 		$direction = (string)$this->request->getParameter('direction', pString);
 		$params = [
 			'search' => 'collection_id:'.$id,
@@ -33,7 +34,7 @@ class CollectionContentsController extends SearchController {
 			'sort' => isset($sorts[$sort]) ? $sort : 'Identifier',
 			'direction' => in_array($direction, ['asc', 'desc'], true) ? $direction : 'asc',
 			's' => max(0, (int)$this->request->getParameter('s', pInteger)),
-			'n' => $view === 'list' ? 24 : 9,
+			'n' => tadlResultPageSize($this->request), 'per_page' => tadlResultPageChoice($this->request),
 			'_advanced' => 0, 'key' => '', 'facets' => '', 'search_refine' => '',
 			'removeCriterion' => '', 'removeID' => '', 'facet' => '', 'id' => '',
 			'source' => '', 'getFacet' => 0, 'label' => '', 'values' => ''

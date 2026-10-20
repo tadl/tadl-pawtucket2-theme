@@ -8,18 +8,21 @@
 	$va_access_values = caGetUserAccessValues($this->request);
 	$va_collection_ids = [];
 	$vn_collection_count = 0;
-	$vs_collection_view = $this->request->getParameter('view', pString, ['forcePurify' => true]);
+	$vs_collection_view = tadlDisplayView($this->request, Session::getVar('tadlCollectionsView') ?: 'tiles');
+	if ($vs_collection_view === 'images') { $vs_collection_view = 'tiles'; }
 	if (!in_array($vs_collection_view, ['tiles', 'list'], true)) {
 		$vs_collection_view = Session::getVar('tadlCollectionsView');
 	}
 	if (!in_array($vs_collection_view, ['tiles', 'list'], true)) { $vs_collection_view = 'tiles'; }
 	Session::setVar('tadlCollectionsView', $vs_collection_view);
-	$vn_page_size = $vs_collection_view === 'list' ? 30 : 9;
 	$vn_collection_count = $qr_collections ? (int)$qr_collections->numHits() : 0;
+	$vn_page_size = tadlResultPageSize($this->request, $vn_collection_count, $vs_collection_view);
 	$vn_total_pages = max(1, (int)ceil($vn_collection_count / $vn_page_size));
 	$vn_page = min($vn_total_pages, max(1, (int)$this->request->getParameter('page', pInteger)));
 	$vn_start = ($vn_page - 1) * $vn_page_size;
 	$this->setVar('start', $vn_start);
+	$this->setVar('tadl_page_size', $vn_page_size);
+	$this->setVar('view', $vs_collection_view);
 	tadlMediaResultContext($this, $qr_collections, 'collections');
 
 	if($qr_collections && $qr_collections->numHits()) {
@@ -47,6 +50,7 @@
 ?>
 				<div class="tadl-collections-tools" aria-label="<?php print _t('Collection display options'); ?>">
 					<div class="tadl-collections-count"><?php print _t('%1 collections', $vn_collection_count); ?></div>
+					<?= tadlPerPagePicker($this->request, $vn_collection_count, $vn_page_size, ['', 'Collections', 'Index'], ['view' => $vs_collection_view, 'page' => 1]); ?>
 					<div class="tadl-collections-view-buttons">
 <?php
 		foreach (['tiles' => ['glyphicon-th', _t('Tiles')], 'list' => ['glyphicon-list', _t('List')]] as $vs_view => $va_view_info) {
@@ -54,7 +58,7 @@
 			if ($vs_collection_view === $vs_view) {
 				print '<span class="btn btn-default tadl-collection-view-toggle active" aria-current="true">'.$vs_content.'</span>';
 			} else {
-				print caNavLink($this->request, $vs_content, 'btn btn-default tadl-collection-view-toggle', '', 'Collections', 'Index', ['view' => $vs_view, 'page' => 1]);
+				print caNavLink($this->request, $vs_content, 'btn btn-default tadl-collection-view-toggle', '', 'Collections', 'Index', ['view' => $vs_view, 'page' => 1, 'per_page' => tadlPreferredPageChoice($this->request, $vs_view)], ['data-tadl-view' => $vs_view === 'tiles' ? 'images' : 'list']);
 			}
 		}
 ?>
@@ -109,6 +113,6 @@
 	<script type="text/javascript">
 		// Keep the initial history entry tied to its rendered page and view.
 		if (window.history && window.history.replaceState) {
-			window.history.replaceState(null, '', <?php print json_encode(caNavUrl($this->request, '', 'Collections', 'Index', ['page' => $vn_page, 'view' => $vs_collection_view]), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?> + window.location.hash);
+			window.history.replaceState(null, '', <?php print json_encode(caNavUrl($this->request, '', 'Collections', 'Index', ['page' => $vn_page, 'view' => $vs_collection_view, 'per_page' => tadlResultPageChoice($this->request, $vs_collection_view)]), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?> + window.location.hash);
 		}
 	</script>
