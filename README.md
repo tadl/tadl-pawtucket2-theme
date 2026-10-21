@@ -8,14 +8,16 @@ This repository contains the complete `tadl` theme. Install it in an existing Pa
 
 | Feature | Visitor experience |
 | --- | --- |
-| Responsive catalogue | Image tiles and list views with original-format tags on object results, consistent 3:2 search/grid thumbnails, collapsible filter sidebars, mobile navigation, and expandable long descriptions that preserve links and formatting. |
-| Collection browsing | A flat list of everything in a collection and its readable descendants, with an optional hierarchy view, bold titles for branches containing digitized media, original-format tags on item cards, alphabetical ordering, sorting, and pagination. |
+| Responsive catalogue | Image tiles and list views with compact, square file-format tags stacked to the right of object titles, consistent 3:2 search/grid thumbnails, collapsible filter sidebars, mobile navigation, and expandable long descriptions that preserve links and formatting. |
+| Collection browsing | A flat list of everything in a collection and its readable descendants, with an optional hierarchy view, bold titles for branches containing digitized media, alphabetical ordering, sorting, and pagination. Subsequent item pages omit repeated descriptive metadata. |
+| Featured galleries | Large, uncropped photos beside object metadata, with Previous/Next controls, a thumbnail strip, and media-viewer/download actions beneath the photo. The layout stacks on phones. |
 | Connected records | Browse people, organizations, families, places, and events. Place results include descendant places; family results include objects linked to directly related people and organizations. |
 | Media preference | Visitors choose **All items** or **Only items with media**. The choice is remembered and applies before result counts and pagination. New visitors start with All items. |
 | Display preferences | Paged collection, Browse and Search views start with 18 tiles or 25 list items. Grids of collection records offer nine-item steps up to 90 and remember their own page size; other result grids go up to 72. List offers 25, 50 or 100. View, separate page sizes and flat/hierarchy choices are remembered. “All” applies only to a small result set and remembers the safe default for the next set. |
 | Sorting | **Sort by Title** (or the current field) opens a compact list of clickable fields. The active field has a direction tag on the right: ↑ ascending (first to last), ↓ descending (last to first). Click it again to reverse the order. Sorting also works without JavaScript. |
-| Search | Header, advanced, and query-builder searches use GET so links and browser Back work without a form-resubmission prompt. Detail Prev / Next follows the result order. |
-| Media and downloads | Native image, PDF, audio, and video viewers; original and generated image download choices; accessible secondary-image thumbnails when the primary representation is unavailable. Available formats depend on Pawtucket's media processing configuration. |
+| Search | Header, advanced, and query-builder searches use GET so links and browser Back work without a form-resubmission prompt. Native facets filter results by object type and other configured catalogue fields. |
+| Record navigation | **Previous / Next** follows the current result order, with contextual tooltips and accessible labels. Object buttons sit above the metadata, aligned right on desktop and centered on phones. |
+| Media and downloads | Native image, PDF, audio, and video viewers with compact Close buttons; original and generated image download choices; accessible secondary-image thumbnails when the primary representation is unavailable. PDF title controls sit above the document toolbar. Available formats depend on Pawtucket's media processing configuration. |
 | Document text | A copyable text section for accessible PDFs, using extracted text first and imported transcription fields as fallbacks. |
 | Finding aids | View or download a descriptive collection PDF with its complete readable hierarchy and each level's recorded extent, description, dates, creators, and other public metadata. Individually catalogued objects are not required. |
 | Researcher accounts | Native login, profiles, password reset, lightboxes, and sharing, plus staff-only shortcuts to objects and archival units in Providence. Anonymous visitors see no login link. |
@@ -26,7 +28,9 @@ This repository contains the complete `tadl` theme. Install it in an existing Pa
 Catalogue result lists are rendered in the initial HTML. Search, browse, collection contents, related-item previews and gallery previews do not need a second request to load their cards. Paging uses ordinary links, including in lightboxes and the collection hierarchy browser. Tiles/List, collection view and page-size preferences persist between views; basic result navigation also works without JavaScript. Media viewers and account/editing dialogs still use the native interactive features.
 
 Where a Search or Browse page has filters, a sidebar button hides them and lets results fill the available width. **Filters** beside Tiles/List reopens the sidebar. Selected filters stay above the results. The sidebar starts open on desktop and closed on phones, and remembers an explicit choice with the other display preferences. Without JavaScript, the filter links remain visible.
-Additional facet values use separate **View X more / View less** buttons. Large lists offer **View all X** to open the native filter chooser.
+Additional facet values use separate **View X more / View less** buttons. Large lists offer **View all X** to open an alphabetized filter chooser with letter shortcuts, scrollable choices, and keyboard access.
+
+File-format tags describe the accessible original representations attached to an object, such as JPEG, TIFF, or PDF. They can show multiple formats for one object. The **Object type** filter instead uses the catalogue's classification, such as Still image or Document; it does not infer an object's type from its files.
 
 The shared interface includes keyboard navigation, visible focus, reduced-motion support, responsive reflow, and accessible alternatives to dragging lightbox items. See the [accessibility guide](docs/ACCESSIBILITY.md) for coverage and remaining manual checks; installing the theme does not establish whole-site WCAG conformance.
 
@@ -93,6 +97,8 @@ Metadata examples include `ca_collections.adminbiohist`, `date.dates_value`, `ca
 
 Native record access, representation access, bundle permissions, and Pawtucket ACLs still determine what visitors can read. **All items** includes records without media; it does not make private records public. Publish the intended records and representations through your normal catalogue workflow.
 
+For the public **Object type** filter, the intended entries in Providence's `object_types` list must also be enabled and public. If the filter is missing, check those entries and the native `ca_objects.type_id` facet in Pawtucket's application `app/conf/browse.conf`. Only types with matching accessible objects are offered. Publishing a type entry does not change access on its objects or representations.
+
 ## Set up optional features
 
 ### FAQ content
@@ -106,6 +112,12 @@ After setup, staff edit category, question, answer, order, and public access in 
 Bookmark `/LoginReg/LoginForm` beneath your Pawtucket base URL. Existing accounts can sign in even though the anonymous navigation has no login link. Self-registration is disabled by default; the public catalogue remains open.
 
 Signed-in users get **My account** and **Add to lightbox** on object details. Result thumbnails omit that button. Staff Providence shortcuts on object and collection details are limited to native full-access accounts; Providence has its own login session and permissions. See [accounts and user features](docs/USER_FEATURES.md) before changing account settings or enabling additional native workflows.
+
+### Galleries
+
+Create a public set of the type configured by `gallery_set_type` in `conf/gallery.conf` (shipped as `public_presentation`), add readable objects and representations, and arrange the items in the set. The homepage's featured set is omitted from the gallery index by default; `omit_front_page_set_from_gallery` controls that choice.
+
+Gallery photos use the selected representation's existing `large` image derivative when available, falling back to Pawtucket's normal preview otherwise. They fill the image area without cropping or stretching, with a height limit for tall images. The theme does not generate larger derivatives during page loads; their resolution comes from your media-processing configuration. Visitors can open the media viewer for closer inspection or follow the photo to its object record.
 
 ### Contact mail and Turnstile
 
