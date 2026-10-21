@@ -3320,7 +3320,7 @@ div.tadl-finding-aid-controls .close {
     font-weight: 400;
 }
 
-.tadl-sort-field { overflow-wrap: anywhere; }
+.tadl-sort-field { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 
 .tadl-sort-choice {
     display: flex;
@@ -3347,7 +3347,18 @@ div.tadl-finding-aid-controls .close {
     font-weight: 700;
 }
 
-.tadl-sort-direction { flex: 0 0 auto; }
+.tadl-sort-direction {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 1.5em;
+    height: 1.5em;
+    margin-left: auto;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    line-height: 1;
+}
 .tadl-filter-reset { text-decoration: underline; }
 
 .tadl-results-tools {

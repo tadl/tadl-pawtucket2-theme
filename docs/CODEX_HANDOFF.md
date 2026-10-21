@@ -26,8 +26,10 @@ The shared Search/Browse/collection-item toolbar now displays **Sort by Title**
 (or the current field) in a standard white theme button. Its native `details`
 disclosure has one clickable row per configured field. Selecting another field
 uses its configured default direction (ascending if unspecified); clicking the
-current field reverses direction. Only the active row displays ↑/↓ for its current
-direction, with `aria-current` and the standard selected-control styling.
+current field reverses direction. Only the active row displays a small outlined
+direction tag at the right edge, centered vertically with its label: ↓ ascending
+(first to last), ↑ descending (last to first), with `aria-current` and the standard
+selected-control styling.
 Contextual names/tooltips announce the current direction and reversal action.
 Each choice sets field and direction in one ordinary GET,
 resets the offset and preserves scope, filters, view, page size and native context.

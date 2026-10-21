@@ -154,7 +154,17 @@ let browser;
         assert(menu.x >= 0 && menu.x + menu.width <= width + 1, `${width}px: the open sort dropdown must fit the viewport.`);
         assert.equal(await disclosure.locator('[aria-current=true]').getAttribute('aria-label'), 'Sort by Title. Currently Descending; activate for Ascending.');
         assert.equal(await disclosure.locator('a').count(),5,'Each sort field must have one full-row link.');
-        assert.equal(await disclosure.locator('.tadl-sort-direction').textContent(),'↓');
+        assert.equal(await disclosure.locator('.tadl-sort-direction').textContent(),'↑');
+        const indicator = await disclosure.locator('.tadl-sort-direction').evaluate(node=>{
+            const box=node.getBoundingClientRect(), row=node.parentElement.getBoundingClientRect();
+            const label=node.previousElementSibling.getBoundingClientRect(), style=getComputedStyle(node);
+            return {right:row.right-box.right, center:Math.abs(box.y+box.height/2-label.y-label.height/2),
+                gap:box.x-label.right, width:box.width, height:box.height, border:style.borderTopWidth, borderStyle:style.borderTopStyle};
+        });
+        assert(Math.abs(indicator.right-12)<=1 && indicator.center<=1 && indicator.gap>=7,
+            `${width}px: the direction tag must sit at the row's right edge, vertically centered with the label.`);
+        assert(Math.abs(indicator.width-indicator.height)<=1 && indicator.border==='1px' && indicator.borderStyle==='solid',
+            'The direction indicator must have a square outline.');
         for (const link of await disclosure.locator('a').all()) {
             const box = await link.boundingBox();
             assert(box.width >= menu.width - 12 && box.height >= 24, 'The whole sort row must be a usable touch target.');
