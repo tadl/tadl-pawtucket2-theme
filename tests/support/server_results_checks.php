@@ -37,6 +37,8 @@ foreach (['images'=>[9,18,72], 'list'=>[25,50,100]] as $display => $sizes) {
         testAssert(str_contains($html,'/Detail/collections/888888/') && !str_contains($html,'.load(') && !str_contains($html,'.jscroll(') && !str_contains($html,'Loading'), 'Server collection paging must use normal detail URLs without loaders.');
         $context = ResultContext::$saved['ca_objects:search:objects'];
         testAssert($context['count'] === 144 && $context['per_page'] === $size && $context['view'] === $display && $context['search'] === 'collection_id:888888' && $context['history_search'] === 'collection_id:888888' && ResultContext::$lastFind['ca_objects'] === ['search','objects',false], 'Server-rendered collections must activate their filtered native detail navigation context.');
+        $return = $context['tadl_result_return'];
+        testAssert($return['kind'] === 'collection' && str_contains($return['url'], '/Detail/collections/888888/') && str_contains($return['url'], '/view/'.$display.'/') && str_contains($return['url'], '/s/'.$size.'/') && str_contains($return['url'], '/n/'.$size.'/per_page/'.$size.'/collection_view/flat'), 'The saved object return must restore the actual containing collection, view, offset and page size.');
     }
 }
 $outer = testMediaRequest('all', ['search'=>'unrelated','key'=>'stale','getFacet'=>1,'tadl_collection_controls'=>1,'place_id'=>9,'sort'=>'invalid','view'=>'invalid','direction'=>'invalid'], 'Detail', 'collections');
@@ -58,6 +60,7 @@ testAssert(str_contains($html,'data-tadl-result-count="6"') && !str_contains($ht
 $inner->setParameter('per_page','9');
 $html = tadlServerObjectResults(new TestView($request,[]),$inner,new SearchResult('ca_objects',range(1000,1020)),'authority',caGetInfoForBrowseType('objects'),'entity_id:42');
 testAssert(str_contains($html,'/search/entity_id%3A42') && str_contains($html,'/s/9'), 'Ordinary preview paging must carry its query without relying on session state.');
+testAssert(ResultContext::$saved['ca_objects:search:objects']['tadl_result_return']['kind'] === 'results' && str_contains(ResultContext::$saved['ca_objects:search:objects']['tadl_result_return']['url'], '/Search/objects/') && str_contains(ResultContext::$saved['ca_objects:search:objects']['tadl_result_return']['url'], '/search/entity_id%3A42'), 'A subsequent related search must replace the previous collection return with its own query.');
 
 // Render the actual lightbox page, including its bounded loop and native actions.
 class Timer {}

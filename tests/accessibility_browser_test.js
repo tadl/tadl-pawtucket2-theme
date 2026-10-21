@@ -16,6 +16,13 @@ const fixtures = JSON.parse(rendered.stdout);
 const collectionHeaders = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'collection_detail_scripts_test.php'), '--staff-shortcut-fixtures'], {encoding:'utf8'});
 assert.equal(collectionHeaders.status, 0, collectionHeaders.stderr || collectionHeaders.stdout);
 Object.assign(fixtures, JSON.parse(collectionHeaders.stdout));
+const navigationFixtures = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'browse_navigation_test.php'), '--fixtures'], {encoding:'utf8'});
+assert.equal(navigationFixtures.status, 0, navigationFixtures.stderr || navigationFixtures.stdout);
+for (const [name, navigation] of Object.entries(JSON.parse(navigationFixtures.stdout))) {
+    fixtures[name] = '<div class="row tadl-object-detail"><div class="col-xs-12 tadl-object-main"><div class="container tadl-object-content"><div class="row">'
+        + '<div class="col-sm-6 col-md-6 col-lg-6 tadl-object-media"><img src="/synthetic.svg" alt="Synthetic catalogue image" width="600" height="400" style="max-width:100%;height:auto"></div>'
+        + '<div class="col-sm-6 col-md-6 col-lg-6 tadl-object-info tadl-detail-metadata">' + navigation + '<h1>Synthetic object</h1></div></div></div></div></div>';
+}
 const sortFixtures = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'result_context_heading_test.php'), '--sort-fixtures'], {encoding:'utf8'});
 assert.equal(sortFixtures.status, 0, sortFixtures.stderr || sortFixtures.stdout);
 Object.assign(fixtures, JSON.parse(sortFixtures.stdout));
@@ -102,7 +109,7 @@ let browser;
     const reports = [];
     for (const width of [1280, 320]) {
         await page.setViewportSize({width, height:900});
-        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'featured', 'notifications', 'collection-staff', 'sort-results']) {
+        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'featured', 'notifications', 'collection-staff', 'sort-results', 'object-return', 'object-return-only']) {
             await page.goto(origin + '/' + name);
             if (name === 'gallery') { await page.locator('.galleryDetailNext').waitFor(); }
             await page.evaluate(async () => {
@@ -117,6 +124,31 @@ let browser;
             });
             assert.deepEqual(result, [], `${name} at ${width}px: ${JSON.stringify(result)}`);
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name}: horizontal page overflow at ${width}px`);
+            if (name.startsWith('object-return')) {
+                const links = page.locator('.tadl-record-nav a');
+                assert.equal(await links.count(), name === 'object-return' ? 3 : 1);
+                assert((await links.first().textContent()).startsWith('Back to '));
+                const column = await page.locator('.tadl-object-info').boundingBox();
+                const paddingRight = await page.locator('.tadl-object-info').evaluate(node => parseFloat(getComputedStyle(node).paddingRight));
+                const rows = new Map();
+                for (let index = 0; index < await links.count(); index++) {
+                    const link = links.nth(index), box = await link.boundingBox();
+                    const row = rows.get(box.y) || {left:box.x, right:box.x + box.width};
+                    row.left = Math.min(row.left, box.x); row.right = Math.max(row.right, box.x + box.width); rows.set(box.y, row);
+                    await link.focus();
+                    assert(await link.evaluate(node => node === document.activeElement), 'Every navigation action must be keyboard focusable.');
+                    assert.equal(await link.locator('.small').evaluate(node => getComputedStyle(node).textDecorationLine), 'underline');
+                }
+                for (const row of rows.values()) {
+                    if (width < 768) { assert(Math.abs((row.left + row.right) / 2 - (column.x + column.width / 2)) < 2, 'Each wrapped object navigation row must remain centered on phones.'); }
+                    else { assert(Math.abs(row.right - column.x - column.width + paddingRight) < 2, 'Object navigation must remain right-aligned on desktop.'); }
+                }
+                await links.first().focus();
+                if (await links.count() > 1) {
+                    await page.keyboard.press('Tab'); assert(await links.nth(1).evaluate(node => node === document.activeElement), 'Previous must follow Back in keyboard order.');
+                    await page.keyboard.press('Tab'); assert(await links.nth(2).evaluate(node => node === document.activeElement), 'Next must follow Previous in keyboard order.');
+                }
+            }
             if (name === 'collection-staff') {
                 const navigation = await page.locator('.tadl-record-nav').boundingBox();
                 const editor = await page.locator('.tadl-providence-collection').boundingBox();

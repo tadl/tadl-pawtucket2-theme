@@ -487,13 +487,26 @@ before media filtering/pagination; result-context storage preserves that order,
 so detail **Prev / Next** follows it. Search and MultiSearch relevance defaults
 remain unchanged. An already-open detail context keeps its existing order until
 the visitor enters a browse again.
-Object details intentionally omit **Browse objects**, showing only native
-**Prev / Next** when available. The toolbar is right-aligned at the top of the
+Object details intentionally omit **Browse objects**. A matching result context
+adds **Back to collection** or **Back to results** before native **Prev / Next**;
+native gallery/lightbox contexts use their corresponding labels. The toolbar is
+right-aligned at the top of the
 metadata column above the title, leaving the photo at the top of the body region.
 On phones (below 768px), the object toolbar is centered beneath the media.
-Its tooltips and ARIA labels identify the previous/next object. Direct object
-visits without result context omit the empty toolbar. Other detail types retain
+Its tooltips and ARIA labels identify the return destination and previous/next
+object. Direct object
+visits without matching result context omit the empty toolbar; single-item result
+sets still offer a return button. Other detail types retain
 their Browse destination.
+Search/Browse result renders save their normal pager route in the native object
+context after page-size/offset validation. Collection routes return to the same
+archival unit and flat/hierarchy mode; all saved routes preserve view, sort,
+direction, offset, page size and applicable search/browse criteria. Each result
+render replaces this metadata, and multisearch copies clear it so the overview
+uses its native return URL. Detail reads stored metadata only, confirms object
+membership, escapes attributes and accepts catalogue-relative URLs. Native contexts
+without theme metadata use `resultsURL`. This is an ordinary link and works
+without JavaScript or browser-history guessing.
 Detail navigation places its arrows outside the labels: **‹ Previous** and
 **Next ›**. Icons are decorative; hover/focus underlines only the label, including
 inside object metadata, without changing the contextual tooltips or ARIA names.
@@ -511,6 +524,10 @@ hover/focus decoration at desktop/mobile widths, including inside metadata;
 media eligibility/context, authority, document-text,
 account and results suites cover the integration boundaries. No deployment or
 production record changes were performed for this source change.
+Return navigation also covers collection/search source replacement, safe native
+fallbacks, single-item sets and no-context visits; the accessibility browser suite
+checks keyboard order, responsive wrapping, alignment, axe, enlarged text and text
+spacing at 320px and 1280px.
 
 ### Families and related-member objects
 
@@ -1077,8 +1094,9 @@ below retain implementation details and historical verification evidence.
   390, 768, 1280 and 1600px. No production deployment was performed.
 - Object, collection, person, organization, place and event Detail pages use
   `tadlDetailNavigation()`: native context **Prev / Next**
-  links plus the corresponding Browse action, with no Back button. Object details
-  are the exception: only Prev/Next, with no toolbar when both are unavailable.
+  links plus the corresponding Browse action. Object details instead have a
+  contextual return link before Prev/Next, with no generic Browse action and no
+  toolbar when all actions are unavailable.
   Object navigation sits above its metadata heading; the other toolbars sit beside
   their headings. The toolbars align right (object navigation centers on phones)
   and wrap when space is limited;
@@ -1152,8 +1170,9 @@ below retain implementation details and historical verification evidence.
 - Multi-representation objects use side arrows and a position counter. Changing
   slides stops active media; thumbnails remain functional. Avoid colliding with
   native callback/count variable names.
-- Object pages omit the rectangular **Back/Previous/Next** navigation blocks on
-  desktop and mobile. Media-switching arrows/counter and thumbnail controls remain.
+- Object pages omit the old outer **Back/Previous/Next** navigation columns on
+  desktop and mobile; the current compact toolbar sits above the metadata.
+  Media-switching arrows/counter and thumbnail controls remain.
   The desktop layout has no empty right navigation column.
 - Object image and PDF actions sit in a centered row below the media/counter, before
   annotations and thumbnails, matching gallery actions below their image.

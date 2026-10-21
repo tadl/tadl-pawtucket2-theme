@@ -73,6 +73,10 @@ function tadlMediaResultContext($view, $result, $findType, $block = null) {
 	$context->setResultList($ids);
 	$context->setSearchHistory($result->numHits());
 	$context->setParameter('media', null);
+	if ($result->tableName() === 'ca_objects') {
+		// Replace this on every result render so another search cannot inherit a collection return link.
+		$context->setParameter('tadl_result_return', $findType === 'multisearch' ? null : $view->getVar('tadl_result_return'));
+	}
 	if ($view->getVar('tadl_page_size') && method_exists($context, 'setItemsPerPage')) {
 		$context->setItemsPerPage((int)$view->getVar('tadl_page_size'));
 		$context->setParameter('n', (int)$view->getVar('tadl_page_size'));

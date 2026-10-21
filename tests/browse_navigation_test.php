@@ -29,8 +29,9 @@ class BrowseNavigationRequest {
 }
 class BrowseNavigationView {
 	public $request;
-	function __construct() { $this->request = new BrowseNavigationRequest(); }
+	function __construct(public array $values = []) { $this->request = new BrowseNavigationRequest(); }
 	function getVar($name) {
+		if (array_key_exists($name, $this->values)) { return $this->values[$name]; }
 		$direction = ['previousLink' => 'previous', 'nextLink' => 'next'][$name] ?? null;
 		return $direction ? '<a href="/synthetic/'.$direction.'">'.$GLOBALS['detailNavigation'][$name].'</a>' : null;
 	}
@@ -39,6 +40,18 @@ class BrowseNavigationView {
 		try { include dirname(__DIR__).'/views/pageFormat/browseMenu.php'; return ob_get_clean(); }
 		catch (Throwable $error) { ob_end_clean(); throw $error; }
 	}
+}
+class ResultContext {
+	static public array $ids = [42];
+	static public $return = null;
+	static public string $type = 'search';
+	static function getResultContextForLastFind($request, $table) { return new self(); }
+	function getResultList() { return self::$ids; }
+	function getParameter($name, $storedOnly = false) {
+		browseCheck($name === 'tadl_result_return' && $storedOnly, 'Return navigation must read stored context without accepting request overrides.');
+		return self::$return;
+	}
+	function findType() { return self::$type; }
 }
 function browseLinks($html) {
 	$document = new DOMDocument();
@@ -124,6 +137,41 @@ foreach (['objects'=>'object', 'collections'=>'collection', 'people'=>'person', 
 }
 $directObjectView = new class extends BrowseNavigationView { function getVar($name) { return null; } };
 browseCheck(tadlDetailNavigation($directObjectView) === '', 'Objects without result context must omit the empty navigation wrapper.');
+$returnView = new BrowseNavigationView([
+	'item' => new class { function getPrimaryKey() { return 42; } },
+	'resultsURL' => '/Search/objects?key=synthetic-key&row_id=42'
+]);
+$navigationFixtures = [];
+foreach ([
+	[null, 'search', '/Search/objects?key=synthetic-key&row_id=42', 'Back to results'],
+	[null, 'multisearch', '/Search/objects?key=synthetic-key&row_id=42', 'Back to results'],
+	[null, 'gallery', '/Search/objects?key=synthetic-key&row_id=42', 'Back to gallery'],
+	[null, 'lightbox', '/Search/objects?key=synthetic-key&row_id=42', 'Back to lightbox'],
+	[['url'=>'/Detail/collections/77?view=list&s=50&per_page=25&collection_view=hierarchy', 'kind'=>'collection'], 'search', '/Detail/collections/77?view=list&s=50&per_page=25&collection_view=hierarchy', 'Back to collection'],
+	[['url'=>'/Browse/objects?key=synthetic-key&view=images&s=18&per_page=18', 'kind'=>'results'], 'browse', '/Browse/objects?key=synthetic-key&view=images&s=18&per_page=18', 'Back to results']
+] as [$target, $type, $url, $label]) {
+	ResultContext::$return = $target; ResultContext::$type = $type;
+	$html = tadlDetailNavigation($returnView);
+	if ($target && $target['kind'] === 'collection') { $navigationFixtures['object-return'] = $html; }
+	$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+	$links = (new DOMXPath($document))->query('//nav/a'); $back = $links->item(0);
+	browseCheck($links->length === 3 && $back->getAttribute('class') === 'tadl-record-return' && $back->textContent === $label && $back->getAttribute('href') === $url, 'The contextual return must precede Previous/Next and preserve the full source URL.');
+	browseCheck($back->getAttribute('title') === $label && $back->getAttribute('aria-label') === $label && $back->firstChild->getAttribute('class') === 'small', 'The return button must have contextual tooltip/accessibility text and the shared label styling.');
+}
+$returnView->values['previousLink'] = $returnView->values['nextLink'] = '';
+$navigationFixtures['object-return-only'] = tadlDetailNavigation($returnView);
+browseCheck(str_contains(tadlDetailNavigation($returnView), 'Back to results'), 'Single-item result sets must still offer a return button.');
+ResultContext::$ids = [41,43];
+browseCheck(tadlDetailNavigation($returnView) === '', 'An unrelated last result set must not supply a return button on a direct visit.');
+ResultContext::$ids = [42];
+foreach (['https://example.org/', '//example.org/', '/\\example.org/', '/Search/objects'."\n".'bad', 'javascript:alert(1)'] as $unsafeURL) {
+	ResultContext::$return = ['url'=>$unsafeURL, 'kind'=>'collection'];
+	browseCheck(tadlDetailNavigation($returnView) === '', 'Return URLs must stay within the catalogue and reject ambiguous URL syntax.');
+}
+ResultContext::$return = ['url'=>'/Search/objects?search=%22%3E%3Cscript%3E&view=list', 'kind'=>'<script>'];
+$html = tadlDetailNavigation($returnView);
+browseCheck(str_contains($html, '&amp;view=list') && !str_contains($html, '<script>') && str_contains($html, 'Back to results'), 'Return URL attributes must be escaped and labels must come from the fixed contextual vocabulary.');
+browseCheck(!str_contains(tadlDetailNavigation($returnView, 'collections', 'Browse collections', 'Browse', 'collections'), 'tadl-record-return'), 'Other record types must retain their existing navigation.');
 browseCheck(tadlBrowseEntryParameters('unknown') === [], 'An unconfigured destination must retain its ordinary native link.');
 browseCheck(tadlBrowseEntryParameters('places', ['sortBy' => ['Custom' => 'synthetic_field'], 'sortDirection' => ['Custom' => 'DESC']]) === ['sort' => 'Custom', 'direction' => 'desc'], 'Entry links must follow site configuration instead of hardcoded names.');
 browseCheck(tadlBrowseEntryParameters('places', ['sortBy' => ['Custom' => 'synthetic_field'], 'sortDirection' => ['Custom' => 'invalid']])['direction'] === 'asc', 'Invalid directions fall back to native ascending order.');
@@ -147,4 +195,5 @@ if ($parser = getenv('TADL_TEST_CONFIGURATION')) {
 		}
 	}
 }
-echo "Browse navigation passed: {$checks} assertions.\n";
+if (in_array('--fixtures', $argv, true)) { echo json_encode($navigationFixtures, JSON_THROW_ON_ERROR); }
+else { echo "Browse navigation passed: {$checks} assertions.\n"; }

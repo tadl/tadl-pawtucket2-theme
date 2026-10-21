@@ -809,6 +809,7 @@ $request->ajax = true;
 $lastFind = ResultContext::$lastFind;
 tadlMediaResultContext(new TestView($request, []), $result, 'multisearch', 'objects');
 testAssert(ResultContext::$lastFind === $lastFind, 'Copying result IDs to a multisearch context must not replace the active full-results context.');
+testAssert(ResultContext::$saved['ca_objects:multisearch:objects']['tadl_result_return'] === null, 'A multisearch overview must use its native return URL rather than inherit a full-results destination.');
 foreach (['dontSetFind', 'getFacet'] as $parameter) {
     $request->params = [$parameter=>1];
     tadlMediaResultContext(new TestView($request, []), $result, 'search', 'objects');

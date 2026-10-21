@@ -122,6 +122,17 @@
 		$this->setVar('tadl_page_size', $vn_tadl_page_size);
 	}
 	$per_page_picker = $vn_tadl_page_size ? tadlBrowsePerPagePicker($this->request, $vn_result_size, $vn_tadl_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $vn_is_advanced) : '';
+	if ($vs_table === 'ca_objects') {
+		$return_route = tadlBrowseResultRoute($this->request, [
+			'key' => $vs_browse_key, 'view' => $vs_current_view, 'sort' => $vs_current_sort,
+			'direction' => $vs_sort_dir, 's' => $vn_start, 'n' => $vn_tadl_page_size,
+			'_advanced' => $vn_is_advanced ? 1 : 0
+		]);
+		$this->setVar('tadl_result_return', [
+			'url' => caNavUrl($this->request, ...$return_route),
+			'kind' => tadlBrowseResultCollectionID($this->request) ? 'collection' : 'results'
+		]);
+	}
 	tadlMediaResultContext($this, $qr_res, $vs_find_type, $vb_is_search ? $this->getVar('browse_type') : null);
 	if ($this->request->getParameter('source', pString) === 'multisearch') {
 		tadlMediaResultContext($this, $qr_res, 'multisearch', $this->getVar('browse_type'));
