@@ -428,6 +428,49 @@ foreach ($galleryItems as $position => $item) {
 		'scripts' => array_map(static function ($script) { return $script->textContent; }, iterator_to_array($xpath->query('//script')))
 	];
 }
+// Gallery may enlarge only its existing readable image representation, with a
+// native fallback for installations where the large derivative is unavailable.
+$galleryPreview = new class('ca_object_representations', 303) extends DownloadModel {
+	public array $versions = [];
+	public string $tag = '';
+	public array $requestedVersions = [];
+	function hasMediaVersion($field, $version) { return isset($this->versions[$version]); }
+	function getMediaInfo($field, $version, $key = null) {
+		if ($version === 'INPUT') { return parent::getMediaInfo($field, $version, $key); }
+		return $this->versions[$version] ?? null;
+	}
+	function getMediaTag($field, $version) { $this->requestedVersions[] = $version; return $this->tag; }
+};
+$largeImageInfo = ['MIMETYPE' => 'image/jpeg', 'FILENAME' => 'synthetic-large.jpg'];
+$largeImageTag = '<img src="/synthetic/large-gallery.jpg" width="1200" height="800" alt="Synthetic large gallery image">';
+$view->values['rep_object'] = $galleryPreview;
+foreach ([
+	'available' => ['large' => true],
+	'missing' => ['versions' => []],
+	'queued' => ['info' => ['QUEUED' => 1]],
+	'icon' => ['info' => ['USE_ICON' => 1]],
+	'skipped' => ['info' => ['SKIP' => 1]],
+	'non-image derivative' => ['info' => ['MIMETYPE' => 'video/mp4']],
+	'missing file' => ['info' => ['FILENAME' => '']],
+	'empty tag' => ['tag' => '', 'requested' => true],
+	'video' => ['mime' => 'video/mp4'],
+	'PDF' => ['mime' => 'application/pdf'],
+	'media permission denied' => ['denied' => ['media']],
+] as $scenario => $options) {
+	$galleryPreview->info = ['MIMETYPE' => $options['mime'] ?? 'image/tiff'];
+	$galleryPreview->values['denied'] = $options['denied'] ?? [];
+	$galleryPreview->versions = $options['versions'] ?? ['large' => array_replace($largeImageInfo, $options['info'] ?? [])];
+	$galleryPreview->tag = $options['tag'] ?? $largeImageTag;
+	$galleryPreview->requestedVersions = [];
+	$html = $renderGallery->call($view);
+	$expectLarge = $options['large'] ?? false;
+	checkDownload(str_contains($html, '/synthetic/large-gallery.jpg') === $expectLarge, $scenario.': gallery selected the wrong preview size.');
+	checkDownload($expectLarge || str_contains($html, '/synthetic/gallery-303.jpg'), $scenario.': native gallery fallback was lost.');
+	checkDownload($galleryPreview->requestedVersions === (($expectLarge || ($options['requested'] ?? false)) ? ['large'] : []), $scenario.': unavailable or denied large media was requested.');
+	checkDownload(str_contains($html, '/Detail/objects?object_id=44'), $scenario.': gallery image lost its object link.');
+}
+unset($view->values['rep_object']);
+checkDownload(str_contains($renderGallery->call($view), '/synthetic/gallery-303.jpg'), 'An absent native representation must keep the supplied preview.');
 $actionsScript = file_get_contents(dirname(__DIR__).'/views/Details/image_actions_script.php');
 $menusScript = file_get_contents(dirname(__DIR__).'/assets/pawtucket/js/image-downloads.js');
 preg_match('~<script>(.*?)</script>~s', $actionsScript, $scriptMatch);

@@ -1230,7 +1230,11 @@ below retain implementation details and historical verification evidence.
   **More galleries**. Gallery detail keeps native AJAX item partials and direct
   thumbnail-link fallbacks. Thumbnails align beneath the media column; the gallery
   description belongs beneath the information column.
-- Gallery detail images retain their aspect ratio with a 650px height limit.
+- Gallery detail images use the accessible selected representation's usable
+  `large` derivative instead of the native `mediumlarge` preview when available.
+  Missing, queued, skipped or icon derivatives and non-image originals retain
+  the native preview. Images fill the media column with `object-fit: contain`
+  and a 650px height limit, preserving the full image and its aspect ratio.
   The image stage owns the centered side arrows; its separate action row follows
   below. The viewer and open Download menu grow in normal flow, keeping controls
   clear of the thumbnails on desktop and phones.

@@ -29,9 +29,22 @@
 			$vs_rep_toolbar = tadlImageToolbar($this->request, $t_download_object, (int)$pn_rep_id, $vs_rep_toolbar);
 		}
 	}
+	$vs_rep = $this->getVar('rep');
+	// Reuse the representation already selected and access-checked by Gallery.
+	$t_gallery_rep = $this->getVar('rep_object');
+	if ($t_gallery_rep && $t_gallery_rep->isReadable($this->request, 'media')
+		&& preg_match('!^image/!i', (string)$t_gallery_rep->getMediaInfo('media', 'INPUT', 'MIMETYPE'))
+		&& $t_gallery_rep->hasMediaVersion('media', 'large')) {
+		$va_large_media = $t_gallery_rep->getMediaInfo('media', 'large');
+		if (is_array($va_large_media) && empty($va_large_media['USE_ICON']) && empty($va_large_media['QUEUED'])
+			&& empty($va_large_media['SKIP']) && preg_match('!^image/!i', (string)($va_large_media['MIMETYPE'] ?? ''))
+			&& (!empty($va_large_media['FILENAME']) || !empty($va_large_media['EXTERNAL_URL']))) {
+			$vs_rep = $t_gallery_rep->getMediaTag('media', 'large') ?: $vs_rep;
+		}
+	}
 	require_once(__DIR__.'/../../helpers/media_names.php');
 	$media_label = isset($t_download_object) && method_exists($t_download_object, 'getLabelForDisplay') && $t_download_object->isReadable($this->request, 'preferred_labels') ? $t_download_object->getLabelForDisplay() : _t('View item record');
-	print caDetailLink($this->request, tadlMediaImageNames($this->getVar("rep"), $media_label), '', $ps_table, $pn_row_id)."</div>";
+	print caDetailLink($this->request, tadlMediaImageNames($vs_rep, $media_label), '', $ps_table, $pn_row_id)."</div>";
 	if ($vs_rep_toolbar) {
 		print '<div class="tadl-gallery-media-actions" role="group" aria-label="'.htmlspecialchars(_t('Media actions'), ENT_QUOTES, 'UTF-8').'">'.$vs_rep_toolbar.'</div>';
 	}
