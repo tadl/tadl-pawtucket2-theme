@@ -32,6 +32,10 @@ with its label: ↑ ascending (first to last), ↓ descending (last to first), w
 `aria-current` and the standard selected-control styling.
 The solid Font Awesome arrow is centered inside the badge. Scoped sort-menu rules
 prevent detail-page link styling from underlining the arrow on hover or focus.
+Sort rows use a 1.5 line height: at the default 18px label size each row is 43px
+tall. The former 1.4 line height produced fractional rows and a reproducible
+one-pixel difference in arrow painting between Title and Relevance. Keeping rows
+on the same pixel grid removes that drift without per-field icon offsets.
 Contextual names/tooltips announce the current direction and reversal action.
 Each choice sets field and direction in one ordinary GET,
 resets the offset and preserves scope, filters, view, page size and native context.

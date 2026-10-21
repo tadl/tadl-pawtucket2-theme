@@ -3330,7 +3330,8 @@ div.tadl-finding-aid-controls .close {
     padding: 8px 12px;
     border-radius: var(--tadl-radius);
     color: var(--tadl-primary-dark);
-    line-height: 1.4;
+    /* Whole-pixel rows at the default 18px size keep direction icons on the same pixel grid. */
+    line-height: 1.5;
     text-decoration: none;
 }
 

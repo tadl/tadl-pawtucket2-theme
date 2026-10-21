@@ -152,6 +152,12 @@ let browser;
         assert.equal(await page.locator(':focus').getAttribute('aria-label'), 'Sort by Identifier, Ascending', 'Direction choices must use normal Tab order.');
         const menu = await disclosure.locator('ul').boundingBox();
         assert(menu.x >= 0 && menu.x + menu.width <= width + 1, `${width}px: the open sort dropdown must fit the viewport.`);
+        const rows=await disclosure.locator('.tadl-sort-choice').evaluateAll(nodes=>nodes.map(node=>{
+            const box=node.getBoundingClientRect();return {y:box.y,height:box.height};
+        }));
+        assert(rows.every(row=>Math.abs(row.height-Math.round(row.height))<.01
+            && Math.abs(row.y-rows[0].y-Math.round(row.y-rows[0].y))<.01),
+            'Sort rows must share a pixel alignment so Title and Relevance do not paint the same arrow at different vertical offsets.');
         assert.equal(await disclosure.locator('[aria-current=true]').getAttribute('aria-label'), 'Sort by Title. Currently Descending; activate for Ascending.');
         assert.equal(await disclosure.locator('a').count(),5,'Each sort field must have one full-row link.');
         assert.equal(await disclosure.locator('.tadl-sort-direction .fa-arrow-down').count(),1);
