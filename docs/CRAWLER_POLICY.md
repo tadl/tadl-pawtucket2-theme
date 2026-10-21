@@ -1,12 +1,24 @@
 # Crawler policy
 
-The theme discourages crawlers from generating downloads and traversing dynamic
-searches while leaving public archive records discoverable. These are voluntary
-crawler hints, not authentication or rate limits. Native access and ACL checks
-still control downloads.
+The theme disables catalogue result exports and discourages crawlers from
+generating other downloads and traversing dynamic searches while leaving public
+archive records discoverable. The result-export guard is enforced for every
+visitor; robots directives are voluntary hints, not authentication or rate limits.
+Native access and ACL checks still control permitted downloads.
+
+- Search, Browse, CollectionContents, PlaceContents and FamilyContents reject
+  requests with `view=pdf`, `view=xlsx`, `view=pptx`, a nonempty `export_format`,
+  or a numeric nonzero `download` flag with **HTTP 410 Gone**. The guard runs
+  before native Search/Browse loading or scoped-result controller construction,
+  so old links cannot trigger the result query or export generator. PATH, query
+  and POST parameters use native request precedence. The response has a clear
+  retirement message and `X-Robots-Tag: noindex, nofollow`.
+  Theme controller shims and `helpers/result_exports.php` implement this without
+  core changes. Object media downloads, finding aids, document text and native
+  account Lightbox exports keep their own access checks and behavior.
 
 - Image download menus, native PDF/video/media toolbar actions, viewer controls,
-  collection finding aids and result/lightbox export links use `rel="nofollow"`.
+  collection finding aids and Lightbox export links use `rel="nofollow"`.
   Native callbacks and existing `rel` tokens remain intact.
   Advanced Search and Browse navigation links also use `nofollow`.
 - Search, MultiSearch, Browse, CollectionContents, FamilyContents and PlaceContents HTML pages
@@ -15,8 +27,8 @@ still control downloads.
   Account/lightbox pages use `noindex, nofollow`.
 - The theme's image, finding-aid, native representation and attribute/ZIP binary
   views send `X-Robots-Tag: noindex, nofollow`. Download headers, bytes and access
-  checks otherwise retain their existing behavior. Native search/lightbox export
-  generators are covered by the crawl restrictions rather than a core patch.
+  checks otherwise retain their existing behavior. Lightbox exports are covered
+  by the crawl restrictions; catalogue result exports are refused by the guard above.
 - `support/site-root/robots.txt` blocks dynamic search/browse, download, viewer
   data and account routes in both clean and `/index.php/` URL forms. Public
   `/Detail/objects/...`, collection/authority records, `/Collections`, `/Gallery`,
@@ -81,3 +93,7 @@ belongs at the origin's `/robots.txt`.
 `rel` values, page policies, actual download HTTP headers/bytes and URL matching
 for the replacement robots file. `tests/image_download_test.php` additionally
 checks the actual object/gallery/viewer menus across image, PDF and video media.
+`php tests/result_exports_test.php` verifies early refusal across all five result
+controllers, normal-result and unrelated-download preservation, and actual HTTP
+GET/POST/HEAD responses in clean and `/index.php/` URL forms, using synthetic
+controller/request boundaries without a database or export generator.

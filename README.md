@@ -27,6 +27,8 @@ This repository contains the complete `tadl` theme. Install it in an existing Pa
 
 Catalogue result lists are rendered in the initial HTML. Search, browse, collection contents, related-item previews and gallery previews do not need a second request to load their cards. Paging uses ordinary links, including in lightboxes and the collection hierarchy browser. Tiles/List, collection view and page-size preferences persist between views; basic result navigation also works without JavaScript. Media viewers and account/editing dialogs still use the native interactive features.
 
+Catalogue result exports to PDF, Excel, and PowerPoint are disabled, including direct requests to old export URLs. Search, Browse, and collection/place/family result pages reject export requests with HTTP 410 before running the result query. Finding-aid and individual-media downloads remain available; Lightbox exports retain their native account and set permissions.
+
 Where a Search or Browse page has filters, a sidebar button hides them and lets results fill the available width. **Filters** beside Tiles/List reopens the sidebar. Selected filters stay above the results. The sidebar starts open on desktop and closed on phones, and remembers an explicit choice with the other display preferences. Without JavaScript, the filter links remain visible.
 Additional facet values use separate **View X more / View less** buttons. Large lists offer **View all X** to open an alphabetized filter chooser with letter shortcuts, scrollable choices, and keyboard access.
 

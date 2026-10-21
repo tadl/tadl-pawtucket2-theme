@@ -11,7 +11,7 @@ $cssPath = dirname(__DIR__, 2).'/assets/pawtucket/css/error.css';
 $cssURL = $themeURL.'/assets/pawtucket/css/error.css';
 if (is_readable($cssPath)) { $cssURL .= '?v='.substr(hash_file('sha256', $cssPath), 0, 16); }
 $escape = static fn($value) => htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-$title = $status === 404 ? 'Page not found' : 'Page unavailable';
+$title = match ($status) { 404 => 'Page not found', 410 => 'Result exports unavailable', default => 'Page unavailable' };
 $errorRequest = class_exists('AppController', false) && AppController::instanceExists() ? AppController::getInstance()->getRequest() : null;
 ?><!doctype html>
 <html lang="en">

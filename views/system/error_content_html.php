@@ -1,10 +1,21 @@
-<?php /* Shared full-page recovery content; $url, $escape and $translate are supplied by the helper. */ ?>
+<?php
+/* Shared full-page recovery content; $url, $escape and $translate are supplied by the helper. */
+$status_label = match ($status) { 404 => 'Error 404', 410 => 'Error 410', default => 'Page unavailable' };
+$heading = match ($status) {
+	404 => "We couldn't find that page",
+	410 => 'Result exports are no longer available',
+	default => 'We could not load this page'
+};
+$description = match ($status) {
+	404 => 'The link may have changed, or the page may no longer be available. Try a search or explore our collections to find what you need.',
+	410 => 'You can still browse the catalogue, view finding aids, and download individual media files.',
+	default => 'Please try again later. You can also return to the Local History Collection.'
+};
+?>
 <section class="tadl-error-content" aria-labelledby="tadl-error-heading">
-	<p class="tadl-error-status"><?= $escape($translate($status === 404 ? 'Error 404' : 'Page unavailable')) ?></p>
-	<h1 id="tadl-error-heading"><?= $escape($translate($status === 404 ? "We couldn't find that page" : 'We could not load this page')) ?></h1>
-	<p class="tadl-error-description"><?= $escape($translate($status === 404
-		? 'The link may have changed, or the page may no longer be available. Try a search or explore our collections to find what you need.'
-		: 'Please try again later. You can also return to the Local History Collection.')) ?></p>
+	<p class="tadl-error-status"><?= $escape($translate($status_label)) ?></p>
+	<h1 id="tadl-error-heading"><?= $escape($translate($heading)) ?></h1>
+	<p class="tadl-error-description"><?= $escape($translate($description)) ?></p>
 	<?php if ($status === 404) { ?>
 	<form class="tadl-error-search" role="search" aria-label="<?= $escape($translate('Search the Local History Collection')) ?>" method="get" action="<?= $escape($url('MultiSearch', 'Index')) ?>">
 		<label for="tadl-error-search-input"><?= $escape($translate('Search local history')) ?></label>

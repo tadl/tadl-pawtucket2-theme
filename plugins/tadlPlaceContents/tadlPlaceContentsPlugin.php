@@ -2,7 +2,7 @@
 require_once(__DIR__.'/../../helpers/place_contents.php');
 require_once(__DIR__.'/../../helpers/collection_contents.php');
 
-/** Keep native SearchController rendering/exports while replacing indexed place and collection contents. */
+/** Keep native SearchController rendering while replacing indexed place and collection contents. */
 class tadlPlaceContentsPlugin extends BaseApplicationPlugin {
 	protected $description = 'Resolve descendant place/collection object results without a compound text search.';
 

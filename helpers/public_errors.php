@@ -2,8 +2,10 @@
 
 /** A deliberately indistinguishable response for missing or non-public records. */
 class TadlPublicNotFoundException extends RuntimeException {}
+class TadlResultExportDisabledException extends RuntimeException {}
 
 function tadlPublicErrorStatus($exception = null, $routingFailure = false, $status = 200) {
+	if ($exception instanceof TadlResultExportDisabledException) { return 410; }
 	if ($exception instanceof TadlPublicNotFoundException) { return 404; }
 	if ($status >= 400 && $status <= 599) { return $status; }
 	return $routingFailure ? 404 : 500;

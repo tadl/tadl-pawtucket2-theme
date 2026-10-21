@@ -101,7 +101,16 @@ resets the offset and preserves scope, filters, view, page size and native conte
 This replaces the old inline sort bar too, regardless of `sortControlType`.
 
 Catalogue result export links and export-format discovery in embedded collection
-results have been removed. **Start over** appears beside active filters instead
+results have been removed. Search/Browse theme shims and the scoped
+CollectionContents/PlaceContents/FamilyContents constructors also reject retired
+exports before native loading or parent construction. `helpers/result_exports.php`
+blocks PDF/XLSX/PPTX views, nonempty `export_format` and nonzero numeric `download`
+flags using the native parsed request, including PATH/GET/POST requests. A typed
+exception maps to HTTP 410 with a short, safe retirement page and noindex headers.
+Normal result views, individual media, finding aids, document text and account
+Lightbox exports keep their own behavior. `tests/result_exports_test.php` covers
+early dispatch/constructor boundaries and real HTTP responses without a database.
+**Start over** appears beside active filters instead
 of inside sorting. Existing finding aids, object media downloads and account
 Lightbox management remain separate controls. The Collections index retains its
 configured alphabetical order. Earlier Options/export notes below are historical.
@@ -1433,6 +1442,7 @@ php -r 'foreach (["dom", "pdo_sqlite", "json", "mbstring", "fileinfo"] as $exten
 | `tests/asset_versions_test.php` | Stable/changed CSS and JS URLs, preserved timestamps, native loader options, subdirectory/absolute theme URLs, escaping, inline-code preservation and path boundaries |
 | `tests/theme_deploy_test.php` | Actual deployment shell with synthetic SSH/rsync boundaries, source paths with spaces, cache preservation, transfer failure handling and no remote shell/service operations |
 | `tests/production_hardening_test.php` | Native Gallery guard shim, public/missing/private/user set boundaries, real HTTP error headers/statuses and safe export diagnostics |
+| `tests/result_exports_test.php` | Retired catalogue export guards before native load/construction, PATH/GET/POST precedence, normal-result and unrelated-download preservation, HTTP 410 GET/POST/HEAD responses and safe recovery content |
 | `tests/media_preferences_test.php` | Eligibility SQL, lazy collection/authority descriptor fetching, related-object access/deletion/ACL/bundle checks, People/Organizations/Places/Events Tiles/List counts/paging/detail context, table cache isolation, route scope, invalid-media exhaustion, filtered result adapter, server-composed collection/authority fragments and complete lightbox paging |
 | `tests/browse_navigation_test.php` | Configured logical browse defaults, actual single/multiple-target menu and detail Browse links, native Prev/Next preservation, Subjects entry reset, configurable directions and optional native configuration parsing |
 | `tests/family_contents_test.php` | Actual SQLite family/member scopes, bidirectional/subtype/deduplicated relationships, one-hop limits, root/member access/type/source/bundle/ACL checks, batched wide families, endpoint validation/current scope and native search delegation |

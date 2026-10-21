@@ -1,10 +1,16 @@
 <?php
 require_once(__CA_APP_DIR__.'/controllers/SearchController.php');
+require_once(__DIR__.'/../helpers/result_exports.php');
 require_once(__DIR__.'/../helpers/display_preferences.php');
 require_once(__DIR__.'/../helpers/collection_contents.php');
 
-/** Reuse native search/ACLs/exports; callers supply a collection, never a query. */
+/** Reuse native search/ACLs; callers supply a collection, never a query. */
 class CollectionContentsController extends SearchController {
+	public function __construct($request, $response, $view_paths = null) {
+		tadlGuardResultExportRequest($request);
+		parent::__construct($request, $response, $view_paths);
+	}
+
 	public function Objects() {
 		if ($this->request->getRequestMethod() !== 'GET') {
 			$this->response->addHeader('Allow', 'GET');
@@ -30,7 +36,7 @@ class CollectionContentsController extends SearchController {
 		$params = [
 			'search' => 'collection_id:'.$id,
 			'collection_view' => $mode, 'tadl_collection_controls' => 1, 'tadl_collection_id' => $id,
-			'view' => in_array($view, ['images', 'list', 'pdf', 'xlsx', 'pptx'], true) ? $view : 'images',
+			'view' => in_array($view, ['images', 'list'], true) ? $view : 'images',
 			'sort' => isset($sorts[$sort]) ? $sort : 'Identifier',
 			'direction' => in_array($direction, ['asc', 'desc'], true) ? $direction : 'asc',
 			's' => max(0, (int)$this->request->getParameter('s', pInteger)),

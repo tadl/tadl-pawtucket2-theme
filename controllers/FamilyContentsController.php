@@ -1,10 +1,16 @@
 <?php
 require_once(__CA_APP_DIR__.'/controllers/SearchController.php');
+require_once(__DIR__.'/../helpers/result_exports.php');
 require_once(__DIR__.'/../helpers/display_preferences.php');
 require_once(__DIR__.'/../helpers/family_contents.php');
 
 /** Rebuild the family scope on every page; delegate object search/access to Pawtucket. */
 class FamilyContentsController extends SearchController {
+	public function __construct($request, $response, $view_paths = null) {
+		tadlGuardResultExportRequest($request);
+		parent::__construct($request, $response, $view_paths);
+	}
+
 	public function Objects() {
 		if ($this->request->getRequestMethod() !== 'GET') {
 			$this->response->addHeader('Allow', 'GET');
@@ -26,7 +32,7 @@ class FamilyContentsController extends SearchController {
 		$direction = (string)$this->request->getParameter('direction', pString);
 		$params = [
 			'search' => tadlFamilyContentsSearch($scope),
-			'view' => in_array($view, ['images', 'list', 'pdf', 'xlsx', 'pptx'], true) ? $view : 'images',
+			'view' => in_array($view, ['images', 'list'], true) ? $view : 'images',
 			'sort' => isset($sorts[$sort]) ? $sort : 'Identifier',
 			'direction' => in_array($direction, ['asc', 'desc'], true) ? $direction : 'asc',
 			's' => max(0, (int)$this->request->getParameter('s', pInteger)),

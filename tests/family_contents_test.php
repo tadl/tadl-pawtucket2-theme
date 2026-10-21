@@ -81,6 +81,7 @@ class FamilyRequest {
 		$this->config = new class { function get($key) { return false; } };
 	}
 	function getUserID() { return 7; }
+	function getController() { return 'FamilyContents'; }
 	function getParameter($key, $type, $options = []) { return $this->params[$key] ?? null; }
 	function setParameter($key, $value, $source) { familyCheck($source === 'GET', 'Scope must override caller request state.'); $this->params[$key] = $value; }
 	function getRequestMethod() { return $this->method; }
