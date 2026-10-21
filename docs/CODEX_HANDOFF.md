@@ -61,6 +61,13 @@ restart is required. Source checks do not establish a deployed page-response tim
 covers cold/warm 1,201-record batches, order independence, selective invalidation,
 fresh access/deletion, malformed payloads and cache failures.
 
+The header media selector is a native `details` disclosure showing the current
+choice, with the two existing CSRF-protected POST buttons inside. It works without
+JavaScript; the shared disclosure handler adds Escape/focus restoration and
+outside-click/focus dismissal. The open header menu sits above the main navigation.
+Browser checks cover phone/desktop layout, keyboard use, open-menu axe checks and
+an actual no-JavaScript POST from synthetic fixtures.
+
 ## Collapsible filter sidebars
 
 Full Search/Browse result pages with populated facets have a scoped

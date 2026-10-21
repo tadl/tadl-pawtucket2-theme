@@ -355,20 +355,55 @@ h6 {
 
 .tadl-media-preference {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    justify-content: flex-end;
     margin-top: 9px;
 }
 
-.tadl-media-preference-option {
-    display: inline-flex;
-    flex: 1 1 auto;
+.tadl-header:has(.tadl-media-preference-menu[open]) {
+    z-index: 1001;
+}
+
+.tadl-media-preference-menu {
+    position: relative;
+    max-width: 100%;
+}
+
+.tadl-media-preference-menu > summary {
+    display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+    gap: 12px;
+    list-style: none;
+    white-space: normal;
+}
+
+.tadl-media-preference-menu > summary::-webkit-details-marker {
+    display: none;
+}
+
+.tadl-media-preference-choices {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 1001;
+    width: max-content;
+    max-width: min(290px, calc(100vw - 30px));
+    padding: 4px;
+    border: 1px solid var(--tadl-border);
+    border-radius: 4px;
+    background: #fff;
+    box-shadow: 0 8px 20px rgba(11, 47, 87, 0.15);
+}
+
+.tadl-media-preference-option {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: flex-start;
     gap: 5px;
     min-height: 38px;
     padding: 6px 9px;
-    border: 1px solid rgba(11, 47, 87, 0.3);
+    border: 1px solid transparent;
     border-radius: 4px;
     background: #fff;
     color: var(--tadl-primary-dark);

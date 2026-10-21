@@ -25,11 +25,11 @@
     });
 })(jQuery);
 
-/* Sorting remains a native disclosure with ordinary links when JavaScript is off. */
+/* Native sorting/media disclosures also work when JavaScript is off. */
 (function () {
     'use strict';
     function closeOutside(event) {
-        document.querySelectorAll('.tadl-results-sort[open]').forEach(function (menu) {
+        document.querySelectorAll('.tadl-results-sort[open], .tadl-media-preference-menu[open]').forEach(function (menu) {
             if (!menu.contains(event.target)) { menu.open = false; }
         });
     }
@@ -38,7 +38,7 @@
     // Own the keyup before Pawtucket's document-level viewer Escape handlers.
     document.addEventListener('keyup', function (event) {
         if (event.key !== 'Escape') { return; }
-        var menu = event.target.closest('.tadl-results-sort[open]');
+        var menu = event.target.closest('.tadl-results-sort[open], .tadl-media-preference-menu[open]');
         if (!menu) { return; }
         event.preventDefault();
         event.stopPropagation();

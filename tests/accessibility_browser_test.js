@@ -194,6 +194,45 @@ let browser;
             reports.push(`${name} ${width}px: axe, reflow, enlarged text and spacing passed`);
         }
     }
+    for (const width of [320,1280]) {
+        await page.setViewportSize({width,height:1000});
+        await page.goto(origin + '/contact');
+        if (width === 320) { await page.locator('.navbar-toggle').click(); }
+        const mediaMenu = page.locator('.tadl-media-preference-menu:visible');
+        const mediaToggle = mediaMenu.locator('summary');
+        await page.evaluate(async () => { await document.fonts.ready; await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))); });
+        assert.equal(await mediaMenu.count(), 1, 'Only the visible header must expose its media selector.');
+        await mediaToggle.focus(); await page.keyboard.press('Enter'); await page.keyboard.press('Tab');
+        assert.equal(await page.locator(':focus').getAttribute('value'), 'only', 'Media options must use native button Tab order.');
+        const bounds = await mediaMenu.locator('.tadl-media-preference-choices').boundingBox();
+        assert(bounds.x >= 0 && bounds.x + bounds.width <= width + 1, 'Media choices must fit the phone and desktop viewport.');
+        await page.addScriptTag({content:axeSource});
+        const mediaAxe = await page.evaluate(() => axe.run(document.querySelector('.tadl-media-preference-menu'), {runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}}));
+        assert.deepEqual(mediaAxe.violations, [], 'Open media selector must pass axe.');
+        if (artifacts) { await page.screenshot({path:path.join(artifacts, `media-selector-${width}.png`)}); }
+        await page.keyboard.press('Escape');
+        assert.equal(await mediaMenu.evaluate(node => node.open), false, 'Escape must close the media selector.');
+        assert(await mediaToggle.evaluate(node => node === document.activeElement), 'Escape must restore the selector toggle.');
+        await mediaToggle.click(); await page.locator('#main h1').first().click();
+        assert.equal(await mediaMenu.evaluate(node => node.open), false, 'An outside click must dismiss the media selector.');
+    }
+    {
+        const plainContext = await browser.newContext({javaScriptEnabled:false});
+        await plainContext.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
+        await plainContext.route('**/MediaPreference/Set', route => route.fulfill({contentType:'text/html',body:'Synthetic preference saved'}));
+        const plainPage = await plainContext.newPage();
+        await plainPage.goto(origin + '/contact');
+        const plainMenu = plainPage.locator('.tadl-media-preference-menu:visible');
+        await plainMenu.locator('summary').click();
+        const [submission] = await Promise.all([
+            plainPage.waitForRequest(request => request.method() === 'POST' && request.url().endsWith('/MediaPreference/Set')),
+            plainMenu.locator('button[value="only"]').click()
+        ]);
+        const fields = new URLSearchParams(submission.postData());
+        assert.equal(fields.get('tadlMediaPreference'),'only', 'Media selector must submit the chosen mode without JavaScript.');
+        assert(fields.get('csrfToken') && fields.get('returnTo'), 'Media selector must preserve CSRF protection and its return route.');
+        await plainContext.close();
+    }
     for (const width of [320,390,768,1024,1600]) {
         await page.setViewportSize({width,height:1000});
         await page.goto(origin + '/sort-results');

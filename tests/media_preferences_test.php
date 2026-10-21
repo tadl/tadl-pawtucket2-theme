@@ -489,6 +489,9 @@ testAssert($xpath->query('//button[@aria-pressed="true"]')->length === 1, 'Selec
 testAssert($xpath->query('//button[@aria-pressed="true"]')->item(0)->textContent === '✓Only items with media', 'Wrong selected label.');
 testAssert($xpath->query('//input[@name="csrfToken" and @value="synthetic-csrf-token"]')->length === 1, 'Toggle must include the native CSRF token.');
 testAssert($xpath->query('//input[@name="media"]')->length === 0, 'Toggle leaked preference into query-style input.');
+testAssert($xpath->query('//details[not(@open)]/summary')->length === 1
+    && $xpath->query('//summary')->item(0)->getAttribute('aria-label') === 'Items shown: Only items with media', 'Media menu must start collapsed and label its current preference.');
+testAssert($xpath->query('//details//button[@type="submit"]')->length === 2, 'Both native POST choices must be inside the media disclosure.');
 
 $GLOBALS['g_request'] = testMediaRequest('only');
 $objectIDs = tadlMediaEligibleIDs('ca_objects', range(1, 13), [1]);
