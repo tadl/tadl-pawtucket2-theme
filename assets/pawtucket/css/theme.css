@@ -3883,7 +3883,7 @@ html.tadl-display-preferences-ready .tadl-filter-layout[data-tadl-filter-state="
     color: #fff;
     background: rgba(34, 34, 34, 0.7);
     /* Secondary labels intentionally sit below the interior page's 18px floor. */
-    font-size: 14px;
+    font-size: 10px;
     font-weight: 600;
     line-height: 1.2;
     letter-spacing: 0.03em;

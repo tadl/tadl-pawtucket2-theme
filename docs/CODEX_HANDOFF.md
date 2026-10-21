@@ -1037,7 +1037,7 @@ below retain implementation details and historical verification evidence.
   white-on-dark-gray original-format tags stacked vertically to the right of
   the title. Narrow List rows place the right-aligned stack beneath the title.
   The title precedes the format list in reading order, and metadata-only items
-  keep the full caption width. Their 14px text is an intentional exception to the
+  keep the full caption width. Their 10px text is an intentional exception to the
   interior page's 18px floor. The dark background
   uses 70% opacity (`rgba(34, 34, 34, 0.7)`) while the white text stays opaque.
   Six-object search previews and lightbox Tiles/List also show these tags.

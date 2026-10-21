@@ -120,7 +120,7 @@ async function fixedCrop(card) {
             assert.deepEqual(await tags.first().evaluate(node => {
                 const style = getComputedStyle(node);
                 return [style.backgroundColor, style.color, style.borderRadius, style.fontSize];
-            }), ['rgba(34, 34, 34, 0.7)', 'rgb(255, 255, 255)', '0px', '14px'], 'Tags should have a softer translucent background, solid white text and square corners.');
+            }), ['rgba(34, 34, 34, 0.7)', 'rgb(255, 255, 255)', '0px', '10px'], 'Tags should have a softer translucent background, solid white text and square corners.');
             assert(await tags.evaluateAll(nodes => nodes.every((node, index) => {
                 const tag = node.getBoundingClientRect(), group = node.parentElement.getBoundingClientRect();
                 const caption = node.parentElement.parentElement.getBoundingClientRect();
