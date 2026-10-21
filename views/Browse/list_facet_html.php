@@ -96,7 +96,7 @@
 		<div class="tadl-facet-browser">
 			<div class="tadl-facet-browser-header">
 				<h2 id="bScrollListLabel"><?php print $escape_facet($va_facet_info['label_plural']); ?><span class="bFilterCount"> <?php print $escape_facet(_t('(%1 total)', count($va_facet_content))); ?></span></h2>
-				<button type="button" class="tadl-dialog-close" id="bMorePanelClose" data-tadl-facet-close aria-label="<?php print $escape_facet(_t('Close filter choices')); ?>"><span class="glyphicon glyphicon-remove-circle" aria-hidden="true"></span></button>
+				<button type="button" class="tadl-dialog-close" id="bMorePanelClose" data-tadl-facet-close aria-label="<?php print $escape_facet(_t('Close filter choices')); ?>"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></button>
 			</div>
 <?php
 		if ($vb_alphabetical && $va_groups) {
