@@ -30,8 +30,8 @@ current field reverses direction. Only the active row displays a compact pale
 direction badge with a smaller solid navy arrow at the right edge, centered vertically
 with its label: ↑ ascending (first to last), ↓ descending (last to first), with
 `aria-current` and the standard selected-control styling.
-The existing Font Awesome arrow has a one-pixel upward adjustment inside the badge
-for optical centering.
+The solid Font Awesome arrow is centered inside the badge. Scoped sort-menu rules
+prevent detail-page link styling from underlining the arrow on hover or focus.
 Contextual names/tooltips announce the current direction and reversal action.
 Each choice sets field and direction in one ordinary GET,
 resets the offset and preserves scope, filters, view, page size and native context.

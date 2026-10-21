@@ -3322,7 +3322,7 @@ div.tadl-finding-aid-controls .close {
 
 .tadl-sort-field { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 
-.tadl-sort-choice {
+.tadl-sort-menu .tadl-sort-choice {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -3334,14 +3334,14 @@ div.tadl-finding-aid-controls .close {
     text-decoration: none;
 }
 
-.tadl-sort-choice:hover,
-.tadl-sort-choice:focus {
+.tadl-sort-menu .tadl-sort-choice:hover,
+.tadl-sort-menu .tadl-sort-choice:focus {
     background: #eef4f8;
     color: var(--tadl-primary-dark);
     text-decoration: none;
 }
 
-.tadl-sort-choice[aria-current="true"] {
+.tadl-sort-menu .tadl-sort-choice[aria-current="true"] {
     background: var(--tadl-primary-dark);
     color: #fff;
     font-weight: 700;
@@ -3363,8 +3363,6 @@ div.tadl-finding-aid-controls .close {
     line-height: 1;
 }
 .tadl-sort-direction .fa {
-    position: relative;
-    top: -1px;
     font-size: 1em;
 }
 .tadl-filter-reset { text-decoration: underline; }

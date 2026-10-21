@@ -155,8 +155,10 @@ let browser;
         assert.equal(await disclosure.locator('[aria-current=true]').getAttribute('aria-label'), 'Sort by Title. Currently Descending; activate for Ascending.');
         assert.equal(await disclosure.locator('a').count(),5,'Each sort field must have one full-row link.');
         assert.equal(await disclosure.locator('.tadl-sort-direction .fa-arrow-down').count(),1);
-        assert.equal(await disclosure.locator('.tadl-sort-direction .fa').evaluate(node=>getComputedStyle(node).top),'-1px',
-            'The solid arrow must be nudged up within its badge.');
+        const arrowBox=await disclosure.locator('.tadl-sort-direction .fa').boundingBox();
+        const badgeBox=await disclosure.locator('.tadl-sort-direction').boundingBox();
+        assert(Math.abs(arrowBox.y+arrowBox.height/2-badgeBox.y-badgeBox.height/2)<=1,
+            'The solid arrow must be centered within its badge.');
         const indicator = await disclosure.locator('.tadl-sort-direction').evaluate(node=>{
             const box=node.getBoundingClientRect(), row=node.parentElement.getBoundingClientRect();
             const labelNode=node.previousElementSibling, label=labelNode.getBoundingClientRect(), style=getComputedStyle(node);
@@ -175,6 +177,17 @@ let browser;
             const box = await link.boundingBox();
             assert(box.width >= menu.width - 12 && box.height >= 24, 'The whole sort row must be a usable touch target.');
         }
+        await page.locator('#main').evaluate(node=>node.classList.add('detail'));
+        const currentChoice=disclosure.locator('[aria-current=true]');
+        for (const state of ['hover','focus']) {
+            await currentChoice[state]();
+            assert.deepEqual(await currentChoice.evaluate(node=>[node,node.querySelector('.tadl-sort-direction'),node.querySelector('.fa')]
+                .map(element=>getComputedStyle(element).textDecorationLine)),['none','none','none'],
+                'Detail-page link rules must not underline the direction badge on hover or focus.');
+            assert.equal(await currentChoice.evaluate(node=>getComputedStyle(node).color),'rgb(255, 255, 255)',
+                'The selected sort row must keep its contrasting label when hovered or focused in a detail page.');
+        }
+        await page.locator('#main').evaluate(node=>node.classList.remove('detail'));
         await page.evaluate(axeSource);
         // The floating list temporarily covers page controls; the closed-page
         // scan above checks those targets, and this scan checks the open list.
