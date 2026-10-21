@@ -167,6 +167,18 @@ class ResultContext {
     function setCurrentSortDirection($value) { $this->values['direction'] = $value; }
     function setAsLastFind($setAction = true) { self::$lastFind[$this->table] = [$this->type, $this->block, $setAction]; }
     function saveContext() { self::$saved[$this->table.':'.$this->type.':'.$this->block] = $this->values; }
+    static function getResultContextForLastFind($request, $table) {
+        [$type, $block] = self::$lastFind[$table];
+        $context = new self($request, $table, $type, $block);
+        $context->values = self::$saved[$table.':'.$type.':'.$block];
+        return $context;
+    }
+    function getResultList() { return $this->values['ids']; }
+    function findType() { return $this->type; }
+    function getParameter($name, $storedOnly = false) {
+        testAssert($storedOnly, 'Return navigation must use stored context, not request overrides.');
+        return $this->values[$name] ?? null;
+    }
 }
 class View extends TestView {
     function __construct($request, $paths) { parent::__construct($request, []); }
@@ -914,6 +926,7 @@ $known = []; tadlReadMediaUsability(new Db(), [990000], [1], $known);
 testAssert(!$known[990000] && Db::$mediaRows === $before + 1, 'A descriptor change must immediately invalidate usability.');
 
 require __DIR__.'/support/server_results_checks.php';
+require __DIR__.'/support/result_navigation_checks.php';
 if (($argv[1] ?? '') === '--server-render') {
     $input = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
     print testServerCollectionHTML($input['params'] ?? [], $input['cookies'] ?? []);

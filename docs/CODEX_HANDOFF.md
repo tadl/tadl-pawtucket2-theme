@@ -496,17 +496,22 @@ On phones (below 768px), the object toolbar is centered beneath the media.
 Its tooltips and ARIA labels identify the return destination and previous/next
 object. Direct object
 visits without matching result context omit the empty toolbar; single-item result
-sets still offer a return button. Other detail types retain
-their Browse destination.
-Browse collections precedes Previous/Next, matching the order of the contextual
-return link on object pages. Authority pages retain their existing button order.
-Search/Browse result renders save their normal pager route in the native object
+sets still offer a return button. Authority and collection details also use a
+matching saved context: **Back to people**, **Back to organizations**, **Back to
+families**, **Back to places**, **Back to events**, **Back to collections**, or
+**Back to results**. The return link precedes Previous/Next and replaces the generic
+Browse link. Previous/Next does not change the originating destination. Without a
+matching context, these details retain their general Browse link (Browse
+collections precedes Previous/Next; authority fallbacks retain their prior order).
+Search/Browse result renders save their normal pager route in the native record
 context after page-size/offset validation. Collection routes return to the same
 archival unit and flat/hierarchy mode; all saved routes preserve view, sort,
-direction, offset, page size and applicable search/browse criteria. Each result
-render replaces this metadata, and multisearch copies clear it so the overview
-uses its native return URL. Detail reads stored metadata only, confirms object
-membership, escapes attributes and accepts catalogue-relative URLs. Native contexts
+direction, offset, page size, letter selection and applicable search/browse criteria.
+The dedicated collection index saves its page number and independent page-size
+preference as well. Each result render replaces this metadata, and multisearch
+copies clear it so the overview uses its native return URL. Detail reads stored
+metadata only, confirms membership in the displayed record's table, escapes
+attributes and accepts catalogue-relative URLs. Native contexts
 without theme metadata use `resultsURL`. This is an ordinary link and works
 without JavaScript or browser-history guessing.
 Detail navigation places its arrows outside the labels: **‹ Previous** and
@@ -530,6 +535,11 @@ Return navigation also covers collection/search source replacement, safe native
 fallbacks, single-item sets and no-context visits; the accessibility browser suite
 checks keyboard order, responsive wrapping, alignment, axe, enlarged text and text
 spacing at 320px and 1280px.
+`tests/support/result_navigation_checks.php` renders actual page-two authority
+result sets and verifies the saved return through three subsequent detail records,
+including families, both display modes, letter/sort settings, and collection-index
+page restoration. Actual authority templates and browser fixtures cover the same
+return labels, destinations and keyboard order.
 
 ### Families and related-member objects
 
@@ -1096,9 +1106,9 @@ below retain implementation details and historical verification evidence.
   390, 768, 1280 and 1600px. No production deployment was performed.
 - Object, collection, person, organization, place and event Detail pages use
   `tadlDetailNavigation()`: native context **Prev / Next**
-  links plus the corresponding Browse action. Object details instead have a
-  contextual return link before Prev/Next, with no generic Browse action and no
-  toolbar when all actions are unavailable.
+  links preceded by a contextual return link when the record belongs to the saved
+  result set. Without matching context, non-object details retain their general
+  Browse action; object pages omit the toolbar when all actions are unavailable.
   Object navigation sits above its metadata heading; the other toolbars sit beside
   their headings. The toolbars align right (object navigation centers on phones)
   and wrap when space is limited;

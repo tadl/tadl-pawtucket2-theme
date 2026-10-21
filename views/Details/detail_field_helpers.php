@@ -15,11 +15,17 @@ function tadlDetailNavigationLink($html, $label) {
 	return $document->saveHTML($link);
 }
 
-/** Return only to the result set containing this object, never an unrelated last search. */
-function tadlObjectResultsReturnLink($view) {
+/** Return only to the result set containing this record, never an unrelated last search. */
+function tadlDetailResultsReturnLink($view, $recordType) {
 	if (!$view->getVar('resultsURL')) { return ''; }
+	$table = [
+		'objects' => 'ca_objects', 'collections' => 'ca_collections',
+		'people' => 'ca_entities', 'organizations' => 'ca_entities', 'families' => 'ca_entities',
+		'places' => 'ca_places', 'occurrences' => 'ca_occurrences'
+	][$recordType] ?? null;
+	if (!$table) { return ''; }
 	$item = $view->getVar('item');
-	$context = ResultContext::getResultContextForLastFind($view->request, 'ca_objects');
+	$context = ResultContext::getResultContextForLastFind($view->request, $table);
 	if (!$item || !$context || !in_array($item->getPrimaryKey(), (array)$context->getResultList())) { return ''; }
 	// Read stored metadata only; request parameters must not override the return destination.
 	$return = $context->getParameter('tadl_result_return', true);
@@ -28,6 +34,12 @@ function tadlObjectResultsReturnLink($view) {
 	$kind = is_array($return) ? ($return['kind'] ?? '') : $context->findType();
 	$label = [
 		'collection' => _t('Back to collection'),
+		'collections' => _t('Back to collections'),
+		'people' => _t('Back to people'),
+		'organizations' => _t('Back to organizations'),
+		'families' => _t('Back to families'),
+		'places' => _t('Back to places'),
+		'occurrences' => _t('Back to events'),
 		'gallery' => _t('Back to gallery'),
 		'lightbox' => _t('Back to lightbox')
 	][$kind] ?? _t('Back to results');
@@ -48,10 +60,11 @@ function tadlDetailNavigation($view, $browseAction = null, $browseLabel = '', $b
 		'places' => [_t('Go to previous place'), _t('Go to next place')],
 		'occurrences' => [_t('Go to previous event'), _t('Go to next event')]
 	][$recordType] ?? [_t('Go to previous record'), _t('Go to next record')];
-	$links = ($recordType === 'objects' ? tadlObjectResultsReturnLink($view) : '')
+	$returnLink = tadlDetailResultsReturnLink($view, $recordType);
+	$links = $returnLink
 		.tadlDetailNavigationLink((string)$view->getVar('previousLink'), $labels[0])
 		.tadlDetailNavigationLink((string)$view->getVar('nextLink'), $labels[1]);
-	if ($browseAction !== null) {
+	if ($browseAction !== null && $returnLink === '') {
 		$browseParams = $browseController === 'Browse' ? tadlBrowseEntryParameters($browseAction, null, $view->request) : [];
 		$browseLink = caNavLink($view->request, $escape($browseLabel), '', '', $browseController, $browseAction, $browseParams);
 		$links = $recordType === 'collections' ? $browseLink.$links : $links.$browseLink;

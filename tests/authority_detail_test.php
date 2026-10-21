@@ -82,6 +82,8 @@ class AuthorityBrowse {
 	}
 }
 class AuthorityItem {
+	public int $id = 42;
+	function getPrimaryKey() { return $this->id; }
 	public array $relationReads = [];
 	public array $templateReads = [];
 	public array $intrinsicReads = [];
@@ -111,7 +113,7 @@ class AuthorityItem {
 			if ($name === 'ca_entities.address') { checkAuthority(($options['convertLineBreaks'] ?? null) === false, 'Address lines must be escaped before adding HTML line breaks.'); }
 			return [42 => $name === 'ca_entities.address' ? $this->addresses : $this->occupations];
 		}
-		if (in_array($name, ['entity_id', 'place_id', 'occurrence_id'], true)) { return 42; }
+		if (in_array($name, ['entity_id', 'place_id', 'occurrence_id'], true)) { return $this->id; }
 		if ($name === 'ca_objects.object_id') { return $this->objectCount ? range(101, 100 + $this->objectCount) : []; }
 		throw new RuntimeException('Unexpected intrinsic read: '.$name);
 	}
@@ -138,7 +140,7 @@ class AuthorityView {
 	function setVar($name, $value) { $this->extra[$name] = $value; }
 	function render($file = null) {
 		if ($file === 'Details/related_items_html.php') {
-			checkAuthority($this->getVar('tadl_related_scope') === ['table'=>$this->item->table, 'id'=>42, 'family'=>in_array($this->item->typeID, [30,31], true)], 'Related fragment must receive the selected authority scope.');
+			checkAuthority($this->getVar('tadl_related_scope') === ['table'=>$this->item->table, 'id'=>$this->item->getPrimaryKey(), 'family'=>in_array($this->item->typeID, [30,31], true)], 'Related fragment must receive the selected authority scope.');
 			return '<p data-server-related="true">Synthetic server results</p>';
 		}
 		ob_start();
@@ -149,6 +151,19 @@ class AuthorityView {
 			ob_end_clean();
 			throw $error;
 		}
+	}
+}
+class ResultContext {
+	static public string $table;
+	static public array $return;
+	static function getResultContextForLastFind($request, $table) {
+		checkAuthority($table === self::$table, 'Detail return navigation must read the displayed authority table context.');
+		return new self();
+	}
+	function getResultList() { return [42,43,44,45]; }
+	function getParameter($name, $storedOnly = false) {
+		checkAuthority($name === 'tadl_result_return' && $storedOnly, 'Authority returns must use stored context without request overrides.');
+		return self::$return;
 	}
 }
 require dirname(__DIR__).'/views/Details/authority_detail_helpers.php';
@@ -172,6 +187,26 @@ foreach (['ca_entities' => ['people', 'Browse people'], 'ca_places' => ['places'
 }
 $directVisit = tadlDetailNavigation(new AuthorityView(new AuthorityRequest(), new AuthorityItem()), 'people', 'Browse people');
 checkAuthority(authorityDocument($directVisit)->query('//nav/a')->length === 1, 'A direct visit must retain Browse without inventing previous/next targets.');
+$navigationFixtures = [];
+foreach ([['people','ca_entities',10], ['organizations','ca_entities',20], ['families','ca_entities',30], ['places','ca_places',0], ['occurrences','ca_occurrences',0]] as [$route,$table,$type]) {
+	ResultContext::$table = $table;
+	ResultContext::$return = ['kind'=>$route, 'url'=>'/Browse/'.$route.'?key=synthetic-key&view=images&sort=Name&direction=asc&s=18&per_page=18'];
+	$label = $route === 'occurrences' ? 'Back to events' : 'Back to '.$route;
+	foreach ([42,43,44,45] as $id) {
+		$item = new AuthorityItem($table,$type); $item->id = $id;
+		$item->fields['^'.$table.'.preferred_labels.'.($table === 'ca_entities' ? 'displayname' : 'name')] = 'Synthetic '.$route.' record';
+		$html = (new AuthorityView(new AuthorityRequest(),$item,[
+			'resultsURL'=>'/Browse/'.$route.'?key=synthetic-key',
+			'previousLink'=>'<a href="/synthetic/previous">Previous</a>',
+			'nextLink'=>'<a href="/synthetic/next">Next</a>'
+		]))->render();
+		$links = authorityDocument($html)->query('//header/nav/a');
+		checkAuthority(array_map(static fn($link) => $link->textContent, iterator_to_array($links)) === [$label,'Previous','Next']
+			&& $links->item(0)->getAttribute('href') === ResultContext::$return['url'],
+			'Actual authority pages must retain the contextual page-two return before Previous/Next through repeated navigation.');
+		$navigationFixtures['authority-return-'.$route] = $html;
+	}
+}
 $place = new AuthorityItem('ca_places');
 $hierarchyTemplate = '<unit relativeTo="ca_places.hierarchy" delimiter=" &gt; "><l>^ca_places.preferred_labels.name%htmlEncode=1</l></unit>';
 $place->fields[$hierarchyTemplate] = '<a href="/synthetic/Detail/places/19">Synthetic region</a> &gt; <a href="/synthetic/Detail/places/42">Synthetic place</a>';
@@ -397,4 +432,4 @@ $GLOBALS['authorityUrlOverride'] = "/synthetic/Search/objects?search=place_id:42
 $html = (new AuthorityView(new AuthorityRequest(), new AuthorityItem('ca_places')))->render();
 checkAuthority(!str_contains($html, '<script>'), 'Hostile links must remain escaped HTML without a loader script.');
 checkAuthority(authorityDocument($html)->query('//a[contains(@class,"tadl-authority-all-items")]')->item(0)->getAttribute('href') === $GLOBALS['authorityUrlOverride'], 'Fallback URL changed while escaping HTML attributes.');
-echo json_encode(['status'=>'passed', 'assertions'=>$GLOBALS['authorityAssertions'], 'templates'=>'actual authority layouts; independent server-result integration covers result fragments'], JSON_PRETTY_PRINT).PHP_EOL;
+echo json_encode(in_array('--navigation-fixtures', $argv, true) ? $navigationFixtures : ['status'=>'passed', 'assertions'=>$GLOBALS['authorityAssertions'], 'templates'=>'actual authority layouts; independent server-result integration covers result fragments'], JSON_PRETTY_PRINT).PHP_EOL;

@@ -23,6 +23,13 @@
 	$this->setVar('start', $vn_start);
 	$this->setVar('tadl_page_size', $vn_page_size);
 	$this->setVar('view', $vs_collection_view);
+	$this->setVar('tadl_result_return', [
+		'url' => caNavUrl($this->request, '', 'Collections', 'Index', [
+			'page' => $vn_page, 'view' => $vs_collection_view,
+			'per_page' => tadlResultPageChoice($this->request, $vs_collection_view)
+		]),
+		'kind' => 'collections'
+	]);
 	tadlMediaResultContext($this, $qr_collections, 'collections');
 
 	if($qr_collections && $qr_collections->numHits()) {

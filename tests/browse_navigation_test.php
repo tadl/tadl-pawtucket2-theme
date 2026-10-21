@@ -174,7 +174,8 @@ foreach (['https://example.org/', '//example.org/', '/\\example.org/', '/Search/
 ResultContext::$return = ['url'=>'/Search/objects?search=%22%3E%3Cscript%3E&view=list', 'kind'=>'<script>'];
 $html = tadlDetailNavigation($returnView);
 browseCheck(str_contains($html, '&amp;view=list') && !str_contains($html, '<script>') && str_contains($html, 'Back to results'), 'Return URL attributes must be escaped and labels must come from the fixed contextual vocabulary.');
-browseCheck(!str_contains(tadlDetailNavigation($returnView, 'collections', 'Browse collections', 'Browse', 'collections'), 'tadl-record-return'), 'Other record types must retain their existing navigation.');
+ResultContext::$ids = [];
+browseCheck(!str_contains(tadlDetailNavigation($returnView, 'collections', 'Browse collections', 'Browse', 'collections'), 'tadl-record-return'), 'Records outside the active result set must retain their generic Browse destination.');
 browseCheck(tadlBrowseEntryParameters('unknown') === [], 'An unconfigured destination must retain its ordinary native link.');
 browseCheck(tadlBrowseEntryParameters('places', ['sortBy' => ['Custom' => 'synthetic_field'], 'sortDirection' => ['Custom' => 'DESC']]) === ['sort' => 'Custom', 'direction' => 'desc'], 'Entry links must follow site configuration instead of hardcoded names.');
 browseCheck(tadlBrowseEntryParameters('places', ['sortBy' => ['Custom' => 'synthetic_field'], 'sortDirection' => ['Custom' => 'invalid']])['direction'] === 'asc', 'Invalid directions fall back to native ascending order.');

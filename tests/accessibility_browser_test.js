@@ -16,6 +16,10 @@ const fixtures = JSON.parse(rendered.stdout);
 const collectionHeaders = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'collection_detail_scripts_test.php'), '--staff-shortcut-fixtures'], {encoding:'utf8'});
 assert.equal(collectionHeaders.status, 0, collectionHeaders.stderr || collectionHeaders.stdout);
 Object.assign(fixtures, JSON.parse(collectionHeaders.stdout));
+const authorityNavigation = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'authority_detail_test.php'), '--navigation-fixtures'], {encoding:'utf8'});
+assert.equal(authorityNavigation.status, 0, authorityNavigation.stderr || authorityNavigation.stdout);
+const authorityNavigationFixtures = JSON.parse(authorityNavigation.stdout);
+Object.assign(fixtures, authorityNavigationFixtures);
 const navigationFixtures = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'browse_navigation_test.php'), '--fixtures'], {encoding:'utf8'});
 assert.equal(navigationFixtures.status, 0, navigationFixtures.stderr || navigationFixtures.stdout);
 for (const [name, navigation] of Object.entries(JSON.parse(navigationFixtures.stdout))) {
@@ -109,7 +113,7 @@ let browser;
     const reports = [];
     for (const width of [1280, 320]) {
         await page.setViewportSize({width, height:900});
-        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'featured', 'notifications', 'collection-staff', 'sort-results', 'object-return', 'object-return-only']) {
+        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'featured', 'notifications', 'collection-staff', 'sort-results', 'object-return', 'object-return-only', ...Object.keys(authorityNavigationFixtures)]) {
             await page.goto(origin + '/' + name);
             if (name === 'gallery') { await page.locator('.galleryDetailNext').waitFor(); }
             await page.evaluate(async () => {
@@ -124,6 +128,15 @@ let browser;
             });
             assert.deepEqual(result, [], `${name} at ${width}px: ${JSON.stringify(result)}`);
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name}: horizontal page overflow at ${width}px`);
+            if (name.startsWith('authority-return-')) {
+                const links = page.locator('.tadl-record-nav a');
+                assert.equal(await links.count(), 3);
+                assert((await links.first().textContent()).startsWith('Back to '));
+                assert((await links.first().getAttribute('href')).includes('&s=18&per_page=18'));
+                await links.first().focus();
+                await page.keyboard.press('Tab'); assert(await links.nth(1).evaluate(node => node === document.activeElement));
+                await page.keyboard.press('Tab'); assert(await links.nth(2).evaluate(node => node === document.activeElement));
+            }
             if (name.startsWith('object-return')) {
                 const links = page.locator('.tadl-record-nav a');
                 assert.equal(await links.count(), name === 'object-return' ? 3 : 1);
