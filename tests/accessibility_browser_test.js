@@ -329,6 +329,97 @@ let browser;
     assert(await filterPage.getByRole('button',{name:'Hide filters',exact:true}).evaluate(node=>node===document.activeElement),
         'A closed More choices panel without its original opener must focus the visible sidebar control.');
     await filterContext.close();
+    // Exercise the native alphabetical chooser at realistic scale, not a one-item stub.
+    const facetContext=await browser.newContext({reducedMotion:'reduce'});
+    await facetContext.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
+    const facetPage=await facetContext.newPage();
+    facetPage.on('pageerror',error=>errors.push(error.message));
+    for (const viewport of [{width:1600,height:1000},{width:768,height:1000},{width:390,height:844},{width:320,height:568},{width:844,height:390}]) {
+        await facetContext.clearCookies();
+        await facetPage.setViewportSize(viewport);
+        await facetPage.goto(origin+'/filters/search?large=1');
+        if (await facetPage.locator('#bRefineButton').isVisible()) { await facetPage.locator('#bRefineButton').click(); }
+        const opener=facetPage.getByRole('link',{name:'People and organizations: View all 4015',exact:true});
+        await opener.focus(); await facetPage.keyboard.press('Enter');
+        const dialog=facetPage.getByRole('dialog'), close=dialog.getByRole('button',{name:'Close filter choices',exact:true});
+        await close.waitFor();
+        await facetPage.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));});
+        assert.equal(await dialog.getAttribute('aria-labelledby'),'bScrollListLabel');
+        assert.equal(await dialog.getAttribute('aria-modal'),'true');
+        assert(await close.evaluate(node=>node===document.activeElement),'Opening full filter choices must focus its close button.');
+        assert.equal(await dialog.locator('#bScrollList a').count(),4015,'Large chooser must retain every filter value.');
+        const dimensions=await dialog.evaluate(panel=>{
+            const index=panel.querySelector('#bLetterBar'),list=panel.querySelector('#bScrollList');
+            const rect=node=>node.getBoundingClientRect().toJSON();
+            return {panel:rect(panel),index:rect(index),list:rect(list),panelScroll:panel.scrollHeight-panel.clientHeight,
+                listScroll:list.scrollHeight-list.clientHeight,indexScroll:index.scrollHeight-index.clientHeight};
+        });
+        assert(dimensions.panel.x>=0 && dimensions.panel.right<=viewport.width+1 && dimensions.panel.bottom<=viewport.height+1,'Filter drawer must fit the viewport.');
+        assert(dimensions.list.y>=dimensions.index.bottom-1 && dimensions.list.height>=120,'Choices must start below the alphabet and have usable space, including in landscape.');
+        assert(dimensions.panelScroll<=1 && dimensions.indexScroll<=1 && dimensions.listScroll>1000,'Only the choice list may scroll vertically.');
+        assert.equal(await facetPage.evaluate(()=>getComputedStyle(document.documentElement).overflowY),'hidden','The open chooser must lock background scrolling.');
+        assert(await facetPage.locator('header.tadl-header').evaluate(node=>node.hasAttribute('inert')),'Background controls must be inert while choosing a filter.');
+        const pageScroll=await facetPage.evaluate(()=>scrollY);
+        const scrollTop=()=>dialog.locator('#bScrollList').evaluate(node=>node.scrollTop);
+        for (const letter of ['Z','É','<','2','(']) {
+            const jump=dialog.locator('#bLetterBar').getByRole('link',{name:letter,exact:true});
+            const target=await jump.getAttribute('href');
+            await jump.click();
+            assert.equal(await facetPage.locator(':focus').getAttribute('id'),target.slice(1),'Letter jumps must focus their matching heading, including punctuation and Unicode.');
+            const heading=await dialog.locator(target).boundingBox();
+            const list=await dialog.locator('#bScrollList').boundingBox();
+            assert(heading.y>=list.y && heading.y<list.y+40,'Letter navigation must scroll the matching group to the top of the choices.');
+            assert.equal(await facetPage.evaluate(()=>scrollY),pageScroll,'Letter jumps must not scroll the document.');
+        }
+        assert.equal(await scrollTop(),0,'The first letter must return to the beginning of the choices.');
+        // Tab wraps without moving the drawer/header off screen, even at the final value.
+        await close.focus(); await facetPage.keyboard.press('Shift+Tab');
+        assert(await dialog.locator('#bScrollList a').last().evaluate(node=>node===document.activeElement),'Shift+Tab must reach the final choice instead of background controls.');
+        await facetPage.keyboard.press('Tab');
+        assert(await close.evaluate(node=>node===document.activeElement),'Tab after the final choice must wrap to Close.');
+        assert((await close.boundingBox()).y>=0,'Close must remain visible after scrolling to the end.');
+        if (viewport.width===1600 || viewport.width===320) {
+            await facetPage.evaluate(axeSource);
+            const failures=await facetPage.evaluate(async()=> (await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa','best-practice']}})).violations.map(item=>({id:item.id,nodes:item.nodes.map(node=>node.html)})));
+            assert.deepEqual(failures,[],`Large filter chooser axe failures at ${viewport.width}px`);
+        }
+        if (artifacts) { await facetPage.screenshot({path:path.join(artifacts,`facet-browser-${viewport.width}x${viewport.height}.png`)}); }
+        await facetPage.keyboard.press('Escape');
+        assert(await dialog.isHidden(),'Escape must close the large chooser.');
+        assert(await opener.evaluate(node=>node===document.activeElement),'Closing must return focus to the exact View all launcher.');
+        assert(await facetPage.locator('#bRefine').isVisible(),'Closing the chooser must not collapse the underlying filters.');
+        assert.equal(await facetPage.evaluate(()=>caUI.panelCount),0,'Chooser Escape must not invoke a native viewer close.');
+        assert.equal(await facetPage.locator('header.tadl-header').getAttribute('inert'),null,'Closing must restore background controls.');
+        assert.notEqual(await facetPage.evaluate(()=>getComputedStyle(document.documentElement).overflowY),'hidden','Closing must release background scrolling.');
+        await opener.click(); await close.waitFor();
+        assert.equal(await scrollTop(),0,'Reopening choices must reset the inner scroll.');
+        await close.click();
+        reports.push(`4015-choice filter browser ${viewport.width}x${viewport.height}: bounded layout, scrolling, letter jumps, keyboard and focus restoration passed`);
+    }
+    await facetPage.setViewportSize({width:320,height:1000});
+    await facetPage.goto(origin+'/filters/search?large=1');
+    if (await facetPage.locator('#bRefineButton').isVisible()) { await facetPage.locator('#bRefineButton').click(); }
+    await facetPage.getByRole('link',{name:'People and organizations: View all 4015',exact:true}).click();
+    await facetPage.getByRole('dialog').waitFor();
+    await facetPage.evaluate(()=>{
+        const nodes=Array.from(document.querySelectorAll('#bMorePanel *')).map(node=>[node,parseFloat(getComputedStyle(node).fontSize)]);
+        nodes.forEach(([node,size])=>node.style.fontSize=(size*2)+'px');
+    });
+    await facetPage.addStyleTag({content:'#bMorePanel * {line-height:1.5;letter-spacing:.12em;word-spacing:.16em}'});
+    const reflow=await facetPage.locator('#bMorePanel').evaluate(panel=>{
+        const list=panel.querySelector('#bScrollList');
+        return {page:document.documentElement.scrollWidth<=innerWidth+1,panel:panel.scrollWidth<=panel.clientWidth+1,
+            list:list.scrollWidth<=list.clientWidth+1,height:list.clientHeight,close:panel.querySelector('#bMorePanelClose').getBoundingClientRect().right};
+    });
+    assert(reflow.page && reflow.panel && reflow.list && reflow.height>=120 && reflow.close<=320,'The large chooser must retain readable choices and Close with enlarged/spaced text.');
+    if (artifacts) { await facetPage.screenshot({path:path.join(artifacts,'facet-browser-enlarged.png')}); }
+    // Selecting a value still uses the native GET route and preserves the browse key/view.
+    const finalChoice=facetPage.locator('#bScrollList a').last();
+    const chosen=new URL(await finalChoice.getAttribute('href'),origin);
+    assert.equal(chosen.searchParams.get('id'),'4015'); assert.equal(chosen.searchParams.get('facet'),'entity_facet');
+    assert.equal(chosen.searchParams.get('key'),'synthetic-key'); assert.equal(chosen.searchParams.get('view'),'images');
+    await finalChoice.click(); await facetPage.waitForURL(chosen.href);
+    await facetContext.close();
     for (const width of [320,1600]) {
         const noScript=await browser.newContext({javaScriptEnabled:false,viewport:{width,height:1000}});
         await noScript.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());

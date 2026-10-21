@@ -41,9 +41,6 @@
 	$vn_items_per_page =	$this->getVar('limit');
 	$vn_facet_size =		$this->getVar('facet_size');
 	
-	$va_letter_bar = array();
-	$vs_facet_list = "";	
-	
 	$vn_c = 0;
 	
 
@@ -81,50 +78,47 @@
 		}
 		
 	} else {
-		foreach($va_facet_content as $vn_id => $va_item) {
-		    $vs_content_count = (isset($va_item['content_count']) && ($va_item['content_count'] > 0)) ? " (".$va_item['content_count'].")" : "";
-			
-			if($va_facet_info["group_mode"]== "alphabetical"){
-				$vs_first_letter = "";
-				if(is_array($va_facet_info["order_by_label_fields"]) && sizeof($va_facet_info["order_by_label_fields"])){
-					$vs_first_letter = mb_strtoupper(mb_substr($va_item[$va_facet_info["order_by_label_fields"][0]], 0, 1));
+		$escape_facet = static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+		$vb_alphabetical = ($va_facet_info['group_mode'] ?? '') === 'alphabetical';
+		$va_groups = [];
+		foreach ($va_facet_content as $va_item) {
+			$vs_first_letter = '';
+			if ($vb_alphabetical) {
+				$vs_sort_field = $va_facet_info['order_by_label_fields'][0] ?? '';
+				foreach ([$va_item[$vs_sort_field] ?? '', $va_item['label_sort_'] ?? '', $va_item['label']] as $vs_sort_label) {
+					$vs_first_letter = mb_strtoupper(mb_substr(trim((string)$vs_sort_label), 0, 1));
+					if ($vs_first_letter !== '') { break; }
 				}
-				if(!$vs_first_letter){
-					$vs_first_letter = mb_strtoupper(mb_substr($va_item['label_sort_'], 0, 1));
-				}
-				if(!$vs_first_letter){
-					$vs_first_letter = mb_strtoupper(mb_substr($va_item["label"], 0, 1));
-				}
-				if(!in_array($vs_first_letter, $va_letter_bar)){
-					$va_letter_bar[$vs_first_letter] = $vs_first_letter;
-					$vs_facet_list .= "<div id='facetList".$vs_first_letter."'><strong>".$vs_first_letter."</strong></div>";
-				}
-			}			
-			$vs_facet_list .= "<div>".caNavLink($this->request, $va_item['label'].$vs_content_count, '', '*', '*', '*', array('facet' => $vs_facet_name, 'id' => $va_item['id'], 'view' => $vs_view, 'key' => $vs_key))."</div>\n";
-			$vn_c++;
-		}
-		print "<button type='button' class='pull-right tadl-dialog-close' id='bMorePanelClose' aria-label='"._t('Close filter choices')."' onclick='var panel = jQuery(\"#bMorePanel\").hide(); var opener = panel.data(\"tadlOpener\"); if (opener && opener.isConnected) { jQuery(opener).focus(); } else { jQuery(\"#bRefineClose:visible, #bRefineButton:visible\").first().focus(); } return false;'><span class='glyphicon glyphicon-remove-circle' aria-hidden='true'></span></button>";
-		print "<H1 id='bScrollListLabel'>".$va_facet_info["label_plural"]."<span class='bFilterCount'> (".sizeof($va_facet_content)." total)</span></H1>";
-		if($va_facet_info["group_mode"]== "alphabetical"){
-			print "<div id='bLetterBar'>";
-			foreach($va_letter_bar as $vs_letter){
-				print "<a href='#' onclick='jumpToLetter(\"facetList".$vs_letter."\"); return false;'>".$vs_letter."</a><br/>";
 			}
-			print "</div><!-- end bLetterBar -->";
+			$va_groups[$vs_first_letter][] = $va_item;
 		}
-		print "<div id='bScrollList'>".$vs_facet_list."</div><!-- end bScrollList -->";
-		print "<div style='clear:both;'></div>";
-		if($va_facet_info["group_mode"]== "alphabetical"){
 ?>
-		<script type="text/javascript">		
-			function jumpToLetter(jumpToItemID){
-				jQuery("#bScrollList").scrollTop(0);
-				var position = jQuery("#" + jumpToItemID).position();
-				var scrollListPosition = jQuery("#bScrollList").position();
-				jQuery("#bScrollList").scrollTop(position.top - scrollListPosition.top - 5);
-			}
-		</script>
+		<div class="tadl-facet-browser">
+			<div class="tadl-facet-browser-header">
+				<h2 id="bScrollListLabel"><?php print $escape_facet($va_facet_info['label_plural']); ?><span class="bFilterCount"> <?php print $escape_facet(_t('(%1 total)', count($va_facet_content))); ?></span></h2>
+				<button type="button" class="tadl-dialog-close" id="bMorePanelClose" data-tadl-facet-close aria-label="<?php print $escape_facet(_t('Close filter choices')); ?>"><span class="glyphicon glyphicon-remove-circle" aria-hidden="true"></span></button>
+			</div>
 <?php
+		if ($vb_alphabetical && $va_groups) {
+			print '<nav id="bLetterBar" aria-label="'.$escape_facet(_t('Jump to a letter')).'">';
+			$vn_group = 0;
+			foreach ($va_groups as $vs_letter => $va_items) {
+				// Numeric IDs also work for punctuation, non-Latin letters and CSS metacharacters.
+				print '<a href="#tadl-facet-group-'.$vn_group++.'" data-tadl-facet-jump>'.$escape_facet($vs_letter).'</a>';
+			}
+			print '</nav>';
 		}
+		print '<div id="bScrollList" tabindex="0" role="region" aria-labelledby="bScrollListLabel">';
+		$vn_group = 0;
+		foreach ($va_groups as $vs_letter => $va_items) {
+			if ($vb_alphabetical) {
+				print '<h3 id="tadl-facet-group-'.$vn_group++.'" tabindex="-1">'.$escape_facet($vs_letter).'</h3>';
+			}
+			foreach ($va_items as $va_item) {
+				$vs_content_count = !empty($va_item['content_count']) && $va_item['content_count'] > 0 ? ' ('.(int)$va_item['content_count'].')' : '';
+				print '<div>'.caNavLink($this->request, $escape_facet($va_item['label']).$vs_content_count, '', '*', '*', '*', ['facet'=>$vs_facet_name, 'id'=>$va_item['id'], 'view'=>$vs_view, 'key'=>$vs_key])."</div>\n";
+			}
+		}
+		print '</div></div>';
 	}
 ?>

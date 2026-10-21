@@ -447,15 +447,60 @@ checkContext(!str_contains($html, 'tadl-subject-index-list'), 'Selected subject 
 $html = (new ContextView(new ContextRequest(), [], 45))->render('Browse/browse_results_html.php');
 checkContext(!str_contains($html, 'Browse Subjects') && !str_contains($html, 'tadl-subject-browse'), 'Subject layout leaked onto normal object browse.');
 
+function syntheticFacetChoices($total) {
+	$letters=array_merge(['(','2','9'],range('A','Z'),['É','<']);
+	$items=[];
+	for ($index=1;$index<=$total;$index++) {
+		$letter=$letters[(int)floor(($index-1)*count($letters)/$total)];
+		$label=$letter.' Synthetic choice '.str_pad((string)$index,4,'0',STR_PAD_LEFT);
+		$items[]=['id'=>$index,'label'=>$label,'surname'=>$label,'label_sort_'=>$label,'content_count'=>$index%3+1];
+	}
+	return $items;
+}
+// Render the real full-choice template, including unsafe-looking catalogue labels.
+$facetItems = [
+	['id'=>1, 'label'=>'Zulu <script>synthetic</script> & "choice"', 'surname'=>'Zulu', 'content_count'=>2],
+	['id'=>2, 'label'=>'Émile', 'label_sort_'=>'Émile'],
+	['id'=>3, 'label'=>'(Unknown)'],
+	['id'=>4, 'label'=>'2nd choice'],
+	['id'=>5, 'label'=>'Another Zulu', 'surname'=>'Zebra'],
+];
+foreach (['alphabetical', 'list'] as $mode) {
+	$html=(new ContextView(new ContextRequest(),[],45,[
+		'facet_content'=>$facetItems,'facet_name'=>'entity_facet','isNav'=>false,'start'=>0,'limit'=>100,'facet_size'=>5,
+		'facet_info'=>['group_mode'=>$mode,'label_plural'=>'People <b> & "groups"','order_by_label_fields'=>['surname']]
+	]))->render('Browse/list_facet_html.php');
+	$document=new DOMDocument(); $document->loadHTML('<meta charset="utf-8">'.$html,LIBXML_NONET|LIBXML_NOERROR|LIBXML_NOWARNING); $xpath=new DOMXPath($document);
+	checkContext($xpath->query('//*[@class="tadl-facet-browser"]')->length===1 && $xpath->query('//*[@id="bScrollList"]//a')->length===5,'The full chooser must retain every native filter choice.');
+	checkContext($xpath->query('//script|//b|//br|//*[@onclick]')->length===0 && str_contains($html,'&lt;script&gt;'),'Full-choice labels/headings must be escaped and use no inline scripts or forced letter line breaks.');
+	checkContext($xpath->query('//button[@data-tadl-facet-close and @aria-label="Close filter choices"]')->length===1,'Every full chooser must retain its native close button.');
+	$letters=$xpath->query('//nav[@id="bLetterBar"]/a');
+	checkContext($letters->length===($mode==='alphabetical'?4:0),'Only alphabetical facets must have a compact letter index.');
+	foreach ($letters as $index=>$letter) {
+		$id='tadl-facet-group-'.$index;
+		checkContext($letter->getAttribute('href')==='#'.$id && $xpath->query('//h3[@id="'.$id.'" and @tabindex="-1"]')->item(0)->textContent===$letter->textContent,'Every letter, including punctuation and Unicode, needs a matching safe anchor and focus target.');
+	}
+	if ($mode==='alphabetical') {
+		checkContext(array_map(static fn($node)=>$node->textContent,iterator_to_array($letters))===['Z','É','(','2'],'Grouping must use the configured name, sort-label fallback and plain-label fallback.');
+	}
+	foreach ($xpath->query('//*[@id="bScrollList"]//a') as $link) {
+		parse_str(parse_url($link->getAttribute('href'),PHP_URL_QUERY),$params);
+		checkContext($params['facet']==='entity_facet' && $params['key']==='synthetic-key' && $params['view']==='images' && in_array((int)$params['id'],range(1,5),true),'Full choices must preserve the native facet, record ID, browse key and view.');
+	}
+}
 if (($argv[1] ?? '') === '--filter-fixture') {
 	$input = json_decode(stream_get_contents(STDIN), true, flags:JSON_THROW_ON_ERROR);
 	$filterFacets = contextFacetDefinitions();
 	$filterFacets['entity_facet']['content'] = array_map(static fn($index)=>['id'=>42+$index,'label'=>'Synthetic person '.$index],range(1,12));
+	if (!empty($input['params']['large'])) { $filterFacets['entity_facet']['content']=syntheticFacetChoices(4015); }
 	$filterFacets['place_facet']['content'] = [['id'=>42, 'label'=>'Synthetic Harbor', 'count'=>9]];
 	if (!empty($input['params']['getFacet'])) {
+		$people=($input['params']['facet'] ?? '')==='entity_facet';
 		print (new ContextView(new ContextRequest(), [], 163, [
-			'facet_content'=>[['id'=>42,'label'=>'Synthetic choice']], 'facet_name'=>'type_facet',
-			'facet_info'=>['group_mode'=>'list','label_plural'=>'Object types'], 'isNav'=>false, 'limit'=>100, 'facet_size'=>1
+			'facet_content'=>$people?syntheticFacetChoices(4015):array_map(static fn($id)=>['id'=>$id,'label'=>'Synthetic category '.$id],range(1,70)),
+			'facet_name'=>$people?'entity_facet':'type_facet',
+			'facet_info'=>['group_mode'=>$people?'alphabetical':'list','label_plural'=>$people?'People':'Object types','order_by_label_fields'=>['surname']],
+			'isNav'=>false, 'limit'=>100, 'facet_size'=>$people?4015:70
 		]))->render('Browse/list_facet_html.php');
 		exit;
 	}

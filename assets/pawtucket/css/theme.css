@@ -3423,6 +3423,78 @@ div.tadl-finding-aid-controls .close {
 }
 .tadl-filter-layout #bRefineClose { flex: 0 0 auto; padding: 6px; }
 .tadl-filter-layout #bMorePanelClose { display: inline-flex; }
+
+/* A bounded drawer: the alphabet wraps above one independently scrolling list. */
+#bMorePanel.tadl-facet-list-panel {
+    width: min(560px, 100%);
+    min-width: 0;
+    left: auto;
+    padding: 0;
+    overflow: hidden;
+}
+.tadl-facet-browser {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+}
+.tadl-facet-browser-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px;
+    flex: 0 0 auto;
+}
+.tadl-facet-browser-header h2 { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+#bMorePanel.tadl-facet-list-panel #bScrollListLabel { font-size: 26px; color: var(--tadl-primary-dark); font-weight: 700; }
+#bMorePanel.tadl-facet-list-panel .bFilterCount { display: inline-block; font-size: max(var(--tadl-text-min, 0px), .75em); }
+#bMorePanel.tadl-facet-list-panel #bMorePanelClose { display: inline-flex; flex: 0 0 auto; }
+#bMorePanel.tadl-facet-list-panel #bLetterBar {
+    display: flex;
+    flex-wrap: wrap;
+    flex: 0 0 auto;
+    float: none;
+    gap: 4px;
+    margin: 0;
+    padding: 0 16px 12px;
+    border-bottom: 1px solid var(--tadl-border);
+}
+#bMorePanel.tadl-facet-list-panel #bLetterBar a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 2px 6px;
+    line-height: 1.4;
+    border: 1px solid var(--tadl-border);
+    border-radius: 3px;
+}
+#bMorePanel.tadl-facet-list-panel #bLetterBar a:hover,
+#bMorePanel.tadl-facet-list-panel #bLetterBar a:focus { color: #fff; background: var(--tadl-primary-dark); }
+#bMorePanel.tadl-facet-list-panel #bScrollList {
+    float: none;
+    flex: 1 1 0;
+    width: auto;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 12px 16px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    overflow-wrap: anywhere;
+}
+#bMorePanel.tadl-facet-list-panel #bScrollList h3 { margin: 16px 0 8px; font-size: 1em; font-weight: 700; color: var(--tadl-primary-dark); }
+#bMorePanel.tadl-facet-list-panel #bScrollList h3:first-child { margin-top: 0; }
+#bMorePanel.tadl-facet-list-panel #bScrollList a { display: inline-block; line-height: 1.5; font-size: 1em; }
+html:has(#bMorePanel.tadl-facet-list-panel[aria-hidden="false"]) { overflow: hidden; }
+@media (max-height: 480px) {
+    #bMorePanel.tadl-facet-list-panel #bLetterBar { flex-wrap: nowrap; overflow-x: auto; }
+    #bMorePanel.tadl-facet-list-panel #bLetterBar a { flex: 0 0 auto; }
+}
 .tadl-filter-layout #bRefineButton { font-weight: 800; text-transform: uppercase; }
 .tadl-filter-layout #bRefineButton svg { flex: 0 0 auto; }
 .tadl-filter-layout #bRefineClose[hidden],

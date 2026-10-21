@@ -2,7 +2,53 @@
     'use strict';
     const name = 'tadlDisplayPreferences';
     const allowed = {view:['images', 'list'], collection_view:['flat', 'hierarchy'], filters:['open', 'closed'], images_per_page:Array.from({length:8}, (_, index) => String((index + 1) * 9)), collections_images_per_page:Array.from({length:10}, (_, index) => String((index + 1) * 9)), list_per_page:['25', '50', '100']};
+    const facetPanels = new WeakMap();
     document.documentElement.classList.add('tadl-display-preferences-ready');
+    function restoreFacetOpener(panel) {
+        const opener = window.jQuery(panel).data('tadlOpener');
+        if (opener?.isConnected && opener.getClientRects().length) { opener.focus(); }
+        else { window.jQuery('#bRefineClose:visible, #bRefineButton:visible').first().focus(); }
+    }
+    function closeFacetChoices(panel) {
+        if (panel.getAttribute('aria-hidden') === 'true') { return; }
+        window.jQuery(panel).hide();
+        const controller = facetPanels.get(panel);
+        if (controller) { controller.finallyCallback(); }
+        else { restoreFacetOpener(panel); }
+    }
+    function openFacetChoices(panel) {
+        const list = panel.querySelector('.tadl-facet-browser');
+        panel.classList.toggle('tadl-facet-list-panel', !!list);
+        if (!list) {
+            // Hierarchical facets retain their separate native viewer.
+            panel.setAttribute('role', 'region');
+            panel.removeAttribute('aria-modal');
+            panel.removeAttribute('aria-labelledby');
+            panel.removeAttribute('aria-hidden');
+            window.jQuery(panel).show().focus();
+            return;
+        }
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-modal', 'true');
+        panel.setAttribute('aria-labelledby', 'bScrollListLabel');
+        let controller = facetPanels.get(panel);
+        if (!controller) {
+            controller = {finallyCallback:() => restoreFacetOpener(panel)};
+            window.tadlAccessiblePanel(controller, panel);
+            facetPanels.set(panel, controller);
+            // Close on keyup, so the same Escape cannot close the underlying
+            // sidebar or invoke the native media viewer after focus is restored.
+            ['keydown', 'keyup'].forEach(type => panel.addEventListener(type, event => {
+                if (event.key !== 'Escape' || !panel.classList.contains('tadl-facet-list-panel')) { return; }
+                event.preventDefault();
+                event.stopPropagation();
+                if (type === 'keyup') { closeFacetChoices(panel); }
+            }, true));
+        }
+        window.jQuery(panel).show();
+        panel.querySelector('#bScrollList').scrollTop = 0;
+        controller.onOpenCallback();
+    }
     function save(changes) {
         let preferences = {};
         try {
@@ -65,6 +111,18 @@
     if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initializeFilters); }
     else { initializeFilters(); }
     document.addEventListener('click', event => {
+        const facetClose = event.target.closest('[data-tadl-facet-close]');
+        if (facetClose) { closeFacetChoices(facetClose.closest('#bMorePanel')); return; }
+        const facetJump = event.target.closest('[data-tadl-facet-jump]');
+        if (facetJump) {
+            const heading = document.getElementById(facetJump.getAttribute('href').slice(1));
+            const scroller = facetJump.closest('.tadl-facet-browser').querySelector('#bScrollList');
+            if (!heading || !scroller.contains(heading)) { return; }
+            event.preventDefault();
+            scroller.scrollTop += heading.getBoundingClientRect().top - scroller.getBoundingClientRect().top - parseFloat(getComputedStyle(scroller).paddingTop);
+            heading.focus({preventScroll:true});
+            return;
+        }
         const facetToggle = event.target.closest('[data-tadl-facet-toggle]');
         if (facetToggle) {
             const values = document.getElementById(facetToggle.getAttribute('aria-controls'));
@@ -82,8 +140,9 @@
         const facetChoices = event.target.closest('[data-tadl-facet-choices]');
         if (facetChoices && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
             event.preventDefault();
-            window.jQuery('#bMorePanel').data('tadlOpener', facetChoices).load(facetChoices.href, function () {
-                window.jQuery(this).show().focus();
+            window.jQuery('#bMorePanel').data('tadlOpener', facetChoices).load(facetChoices.href, function (response, status) {
+                if (status !== 'success' && status !== 'notmodified') { location.assign(facetChoices.href); return; }
+                openFacetChoices(this);
             });
             return;
         }

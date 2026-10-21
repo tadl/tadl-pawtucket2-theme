@@ -33,6 +33,13 @@ Selected filter chips remain visible while results expand to full width. Phone
 filters open in document flow; without JavaScript their links remain visible.
 The accessibility browser suite checks expanded/collapsed states at 320–1600px,
 remembered choices, responsive defaults, enlarged text, and More choices focus.
+The full-choice drawer keeps its heading, Close and compact alphabet above a
+single scrolling list. It fits phone and short landscape viewports; letter
+navigation scrolls the list and focuses the matching heading, including for
+punctuation and Unicode. As a labeled modal it keeps background controls inert,
+locks document scrolling, traps Tab and restores the launcher on Close/Escape.
+The browser suite includes 4,015 alphabetical and 70 nonalphabetical choices,
+enlarged/spaced text, native GET selection and automated axe checks.
 
 ## Coverage and evidence
 

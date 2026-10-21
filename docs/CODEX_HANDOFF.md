@@ -59,6 +59,26 @@ GET URL as a fallback; ordinary clicks open the existing chooser. Delegated even
 also cover hierarchy replacements without rebinding handlers. Label/attribute
 escaping and the 7/8/60/61 boundaries have standalone tests.
 
+Large alphabetical/nonalphabetical choice lists use the shared
+`list_facet_html.php` drawer. Its header and close control stay above a compact,
+wrapping alphabet index; only the full-width values list scrolls vertically.
+The drawer fits the viewport, including phones. In short landscape viewports the
+alphabet scrolls horizontally to preserve space for choices. Scoped overrides
+replace the native floats, fixed list widths and percentage height. Numeric group
+anchors support punctuation and Unicode without interpolating labels into CSS
+selectors; letter jumps scroll only the values list and focus the group heading.
+Labels/headings are escaped, and native facet/key/view URLs remain intact.
+
+`display-preferences.js` initializes this chooser as a labeled modal using the
+existing `tadlAccessiblePanel` adapter: background controls are inert, document
+scrolling is locked, Tab stays inside, and Close/Escape restores the launcher (or
+the visible sidebar control if it disappeared). Escape is consumed before native
+media handlers and never collapses the sidebar. Hierarchical facet viewers retain
+their separate native lifecycle. The browser suite now renders 4,015 synthetic
+alphabetical choices and 70 nonalphabetical choices instead of a one-item stub;
+it checks phone/tablet/desktop/short landscape layout, enlarged text, list-only
+scrolling, Unicode/punctuation jumps, keyboard focus, native selection and axe.
+
 ## Compact catalogue sorting
 
 The shared Search/Browse/collection-item toolbar now displays **Sort by Title**
