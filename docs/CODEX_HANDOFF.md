@@ -27,9 +27,11 @@ The shared Search/Browse/collection-item toolbar now displays **Sort by Title**
 disclosure has one clickable row per configured field. Selecting another field
 uses its configured default direction (ascending if unspecified); clicking the
 current field reverses direction. Only the active row displays a compact pale
-direction badge with a smaller navy arrow at the right edge, centered vertically
-with its label: ↓ ascending (first to last), ↑ descending (last to first), with
+direction badge with a smaller solid navy arrow at the right edge, centered vertically
+with its label: ↑ ascending (first to last), ↓ descending (last to first), with
 `aria-current` and the standard selected-control styling.
+The existing Font Awesome arrow has a one-pixel upward adjustment inside the badge
+for optical centering.
 Contextual names/tooltips announce the current direction and reversal action.
 Each choice sets field and direction in one ordinary GET,
 resets the offset and preserves scope, filters, view, page size and native context.

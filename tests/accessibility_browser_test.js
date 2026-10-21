@@ -154,7 +154,9 @@ let browser;
         assert(menu.x >= 0 && menu.x + menu.width <= width + 1, `${width}px: the open sort dropdown must fit the viewport.`);
         assert.equal(await disclosure.locator('[aria-current=true]').getAttribute('aria-label'), 'Sort by Title. Currently Descending; activate for Ascending.');
         assert.equal(await disclosure.locator('a').count(),5,'Each sort field must have one full-row link.');
-        assert.equal(await disclosure.locator('.tadl-sort-direction').textContent(),'↑');
+        assert.equal(await disclosure.locator('.tadl-sort-direction .fa-arrow-down').count(),1);
+        assert.equal(await disclosure.locator('.tadl-sort-direction .fa').evaluate(node=>getComputedStyle(node).top),'-1px',
+            'The solid arrow must be nudged up within its badge.');
         const indicator = await disclosure.locator('.tadl-sort-direction').evaluate(node=>{
             const box=node.getBoundingClientRect(), row=node.parentElement.getBoundingClientRect();
             const labelNode=node.previousElementSibling, label=labelNode.getBoundingClientRect(), style=getComputedStyle(node);

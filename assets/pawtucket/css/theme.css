@@ -3362,6 +3362,11 @@ div.tadl-finding-aid-controls .close {
     font-weight: 600;
     line-height: 1;
 }
+.tadl-sort-direction .fa {
+    position: relative;
+    top: -1px;
+    font-size: 1em;
+}
 .tadl-filter-reset { text-decoration: underline; }
 
 .tadl-results-tools {
