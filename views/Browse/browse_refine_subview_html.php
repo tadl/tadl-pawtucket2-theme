@@ -33,6 +33,7 @@
 	$vs_view			= $this->getVar('view');
 	$vs_browse_type		= $this->getVar('browse_type');
 	$o_browse			= $this->getVar('browse');
+	$vb_collapsible_filters = (bool)$this->getVar('tadl_collapsible_filters');
 	require_once(__DIR__.'/tadl_result_context_helpers.php');
 	
 	$vn_facet_display_length_initial = 7;
@@ -51,9 +52,16 @@
 	
 	if(is_array($va_facets) && sizeof($va_facets)){
 		print "<div id='bMorePanel' role='region' aria-label='"._t('Filter choices')."' tabindex='-1'><!-- long lists of facets are loaded here --></div>";
-		print "<div id='bRefine'>";
-		print "<button type='button' class='pull-right tadl-dialog-close' id='bRefineClose' aria-label='"._t("Close filters")."' onclick='jQuery(\"#bRefine\").hide(); jQuery(\"#bRefineButton\").attr(\"aria-expanded\", \"false\").focus(); return false;'><span class='glyphicon glyphicon-remove-circle' aria-hidden='true'></span></button>";
-		print "<H2>"._t("Filter by")."</H2>";
+		print "<div id='bRefine'".($vb_collapsible_filters ? ' role="region" aria-labelledby="bRefineHeading"' : '').">";
+		if ($vb_collapsible_filters) {
+			$vs_hide_filters_label = htmlspecialchars(_t('Hide filters'), ENT_QUOTES, 'UTF-8');
+			print '<div class="tadl-filter-heading"><h2 id="bRefineHeading">'._t('Filter by').'</h2>';
+			print '<button type="button" class="btn btn-default tadl-filter-collapse" id="bRefineClose" aria-controls="bRefine" aria-expanded="true" aria-label="'.$vs_hide_filters_label.'" title="'.$vs_hide_filters_label.'" hidden>';
+			print '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18M6 12h5m-3-3 3 3-3 3"/></svg></button></div>';
+		} else {
+			print "<button type='button' class='pull-right tadl-dialog-close' id='bRefineClose' aria-label='"._t("Close filters")."' onclick='jQuery(\"#bRefine\").hide(); jQuery(\"#bRefineButton\").attr(\"aria-expanded\", \"false\").focus(); return false;'><span class='glyphicon glyphicon-remove-circle' aria-hidden='true'></span></button>";
+			print "<H2>"._t("Filter by")."</H2>";
+		}
 		foreach($va_facets as $vs_facet_name => $va_facet_info) {
 			print "<h3>".htmlspecialchars(tadlResultFacetHeading($va_facet_info), ENT_QUOTES, 'UTF-8')."</h3>";
 			if (caGetOption('deferred_load', $va_facet_info, false) || (($va_facet_info['group_mode'] ?? '') === 'hierarchical')) {
@@ -84,6 +92,7 @@
 			}
 		}
 		print "</div><!-- end bRefine -->\n";
+		if (!$vb_collapsible_filters) {
 ?>
 	<script type="text/javascript">
 		jQuery(document).ready(function() {
@@ -103,6 +112,7 @@
             }
 		});
 	</script>
-<?php	
+<?php
+		}
 	}
 ?>

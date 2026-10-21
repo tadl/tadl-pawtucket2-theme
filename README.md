@@ -8,7 +8,7 @@ This repository contains the complete `tadl` theme. Install it in an existing Pa
 
 | Feature | Visitor experience |
 | --- | --- |
-| Responsive catalogue | Image tiles and list views with original-format tags on object results, consistent 3:2 search/grid thumbnails, mobile navigation, and expandable long descriptions that preserve links and formatting. |
+| Responsive catalogue | Image tiles and list views with original-format tags on object results, consistent 3:2 search/grid thumbnails, collapsible filter sidebars, mobile navigation, and expandable long descriptions that preserve links and formatting. |
 | Collection browsing | A flat list of everything in a collection and its readable descendants, with an optional hierarchy view, bold titles for branches containing digitized media, original-format tags on item cards, alphabetical ordering, sorting, and pagination. |
 | Connected records | Browse people, organizations, families, places, and events. Place results include descendant places; family results include objects linked to directly related people and organizations. |
 | Media preference | Visitors choose **All items** or **Only items with media**. The choice is remembered and applies before result counts and pagination. New visitors start with All items. |
@@ -24,6 +24,8 @@ This repository contains the complete `tadl` theme. Install it in an existing Pa
 | Contact and recovery | A contact form with named Reply-To addresses and distinct subject references, optional Cloudflare Turnstile, and helpful error pages with search and browse links. |
 
 Catalogue result lists are rendered in the initial HTML. Search, browse, collection contents, related-item previews and gallery previews do not need a second request to load their cards. Paging uses ordinary links, including in lightboxes and the collection hierarchy browser. Tiles/List, collection view and page-size preferences persist between views; basic result navigation also works without JavaScript. Media viewers and account/editing dialogs still use the native interactive features.
+
+Where a Search or Browse page has filters, a sidebar button hides them and lets results fill the available width. **Filters** beside Tiles/List reopens the sidebar. Selected filters stay above the results. The sidebar starts open on desktop and closed on phones, and remembers an explicit choice with the other display preferences. Without JavaScript, the filter links remain visible.
 
 The shared interface includes keyboard navigation, visible focus, reduced-motion support, responsive reflow, and accessible alternatives to dragging lightbox items. See the [accessibility guide](docs/ACCESSIBILITY.md) for coverage and remaining manual checks; installing the theme does not establish whole-site WCAG conformance.
 

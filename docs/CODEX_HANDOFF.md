@@ -20,6 +20,33 @@ Changes belong here rather than in upstream CollectiveAccess. The surrounding
 workspace has reference checkouts of Pawtucket and Providence at local tag
 `2.0.10`; that is a local source fact, not a verified current production version.
 
+## Collapsible filter sidebars
+
+Full Search/Browse result pages with populated facets have a scoped
+`data-tadl-filter-layout`. A sidebar icon button hides the complete filter column,
+expanding results to full width; **Filters** beside Tiles/List reopens it. Applied
+criteria remain visible above the cards. Fixed-scope Family/Place contents and
+embedded result fragments retain their existing absence of refinements.
+
+`display-preferences.js` owns visibility, synchronized `aria-expanded`, focus
+handoff and scoped Escape behavior. Explicit choices persist as validated
+`filters=open|closed` in the existing display cookie and appear in initial server
+HTML; this affects layout only. With no saved choice, desktop starts open and
+phones closed, following resize without saving those responsive defaults.
+On phones the open panel appears above results in document flow. Without
+JavaScript, all filters remain visible and inert disclosure buttons stay hidden.
+
+The shared sidebar replaces the native fixed-width scrolling script with CSS
+sticky positioning and bounded scrolling on desktop. The legacy standalone
+refine partial used by Lightbox remains unchanged. Native filter links, hierarchy
+loading and the more-choices panel retain their existing access/query behavior;
+the More choices close button is visible on desktop too, with a visible-control
+focus fallback if its original opener disappears. Show/hide never reloads cards
+or facets. Tests cover empty panels, initial cookie
+state, full-width reflow, selected filters, Search/Browse/view navigation,
+keyboard focus/Escape, sticky positioning, no-script access and expanded/closed
+axe checks at phone through desktop widths.
+
 ## Compact catalogue sorting
 
 The shared Search/Browse/collection-item toolbar now displays **Sort by Title**

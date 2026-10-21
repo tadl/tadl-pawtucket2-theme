@@ -3377,6 +3377,73 @@ div.tadl-finding-aid-controls .close {
     margin-top: 6px;
 }
 
+.tadl-results-display-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    max-width: 100%;
+}
+
+.tadl-results-display-controls .tadl-results-view-buttons { width: auto; max-width: 100%; flex-wrap: wrap; }
+.tadl-results-display-controls .tadl-result-view-toggle.btn { flex: 0 0 auto; white-space: nowrap; }
+.tadl-filter-layout > .tadl-results-content { min-width: 0; }
+.tadl-filter-layout::before,
+.tadl-filter-layout::after { display: none; }
+
+/* Replace the native phone overlay and fixed-width scroll script with one layout. */
+.tadl-filter-layout #bRefine {
+    display: block;
+    position: relative;
+    inset: auto;
+    z-index: auto;
+    width: auto;
+    height: auto !important;
+    margin: 0;
+    overflow: auto !important;
+}
+
+.tadl-filter-layout #bRefine .tadl-filter-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 0;
+}
+
+.tadl-filter-heading h2 { margin-bottom: 0; }
+.tadl-filter-layout #bRefineClose,
+.tadl-filter-layout #bRefineButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    min-width: 38px;
+    gap: 6px;
+}
+.tadl-filter-layout #bRefineClose { flex: 0 0 auto; padding: 6px; }
+.tadl-filter-layout #bMorePanelClose { display: inline-flex; }
+.tadl-filter-layout #bRefineButton { font-weight: 800; text-transform: uppercase; }
+.tadl-filter-layout #bRefineButton .fa { color: inherit !important; position: static; }
+.tadl-filter-layout #bRefineClose[hidden],
+.tadl-filter-layout #bRefineButton[hidden] { display: none; }
+
+html.tadl-display-preferences-ready .tadl-filter-layout[data-tadl-filter-state="closed"] > .tadl-filter-sidebar { display: none; }
+html.tadl-display-preferences-ready .tadl-filter-layout[data-tadl-filter-state="closed"] > .tadl-results-content { width: 100%; margin-left: 0; }
+
+@media (min-width: 768px) {
+    .tadl-filter-layout { display: flex; align-items: stretch; }
+    /* Keep the fixed More choices panel outside the sticky element's stacking context. */
+    .tadl-filter-layout #bRefine { position: sticky; top: 16px; max-height: calc(100vh - 32px); }
+}
+
+@media (max-width: 767px) {
+    .tadl-filter-layout { display: flex; flex-direction: column; }
+    .tadl-filter-layout > .tadl-results-content { order: 2; width: 100%; }
+    .tadl-filter-layout > .tadl-filter-sidebar { order: 1; width: 100%; margin-bottom: 24px; }
+    html.tadl-display-preferences-ready .tadl-filter-layout[data-tadl-filter-state="auto"] > .tadl-filter-sidebar { display: none; }
+}
+
 .tadl-collection-results-toolbar {
     display: grid;
     grid-template-columns: minmax(220px, 1fr) auto auto;

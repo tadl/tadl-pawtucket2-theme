@@ -77,6 +77,12 @@ displayCheck(tadlResultPageSize(new DisplayRequest([], ['tadlDisplayPreferences'
 foreach (['invalid', 'null', '[]', str_repeat('x',513), '{"view":["list"],"images_per_page":999999}'] as $bad) {
 	displayCheck(tadlDisplayPreferences(new DisplayRequest([], ['tadlDisplayPreferences'=>$bad])) === [], 'Malformed cookies must safely fall back.');
 }
+foreach (['open','closed'] as $state) {
+	displayCheck(tadlDisplayPreferences(new DisplayRequest([], ['tadlDisplayPreferences'=>json_encode(['filters'=>$state])])) === ['filters'=>$state], 'Explicit filter visibility must be a validated display preference.');
+}
+foreach (['invalid', true, ['open']] as $state) {
+	displayCheck(tadlDisplayPreferences(new DisplayRequest([], ['tadlDisplayPreferences'=>json_encode(['filters'=>$state])])) === [], 'Invalid filter preferences must fall back to the responsive default.');
+}
 $cookies = ['tadlDisplayPreferences'=>json_encode(['images_per_page'=>'27', 'collections_images_per_page'=>'90', 'list_per_page'=>'50'])];
 foreach ([['Collections','Index','tiles'], ['Search','collections','images'], ['Browse','collections','images']] as [$controller,$action,$view]) {
 	$request = new DisplayRequest(['view'=>$view], $cookies, $controller, $action);

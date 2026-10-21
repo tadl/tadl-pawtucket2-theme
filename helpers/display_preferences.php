@@ -6,7 +6,7 @@ function tadlDisplayPreferences($request) {
 	$preferences = is_string($value) && strlen($value) <= 512 ? json_decode($value, true) : null;
 	if (!is_array($preferences)) { return []; }
 	$valid = [];
-	foreach (['view' => ['images', 'list'], 'collection_view' => ['flat', 'hierarchy'], 'images_per_page' => array_map('strval', range(9, 72, 9)), 'collections_images_per_page' => array_map('strval', range(9, 90, 9)), 'list_per_page' => ['25', '50', '100']] as $key => $allowed) {
+	foreach (['view' => ['images', 'list'], 'collection_view' => ['flat', 'hierarchy'], 'filters' => ['open', 'closed'], 'images_per_page' => array_map('strval', range(9, 72, 9)), 'collections_images_per_page' => array_map('strval', range(9, 90, 9)), 'list_per_page' => ['25', '50', '100']] as $key => $allowed) {
 		if (isset($preferences[$key]) && is_scalar($preferences[$key]) && in_array((string)$preferences[$key], $allowed, true)) {
 			$valid[$key] = (string)$preferences[$key];
 		}

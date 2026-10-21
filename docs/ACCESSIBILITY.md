@@ -23,6 +23,13 @@ and retain a link back to the complete description.
 Detail navigation uses the full visible word **Previous**, so it is included in
 contextual accessible names such as **Go to previous collection** (WCAG 2.5.3).
 
+Search/Browse filter sidebars support a labeled collapse button and a **Filters**
+button beside Tiles/List, synchronized expanded state, focus handoff and Escape.
+Selected filter chips remain visible while results expand to full width. Phone
+filters open in document flow; without JavaScript their links remain visible.
+The accessibility browser suite checks expanded/collapsed states at 320–1600px,
+remembered choices, responsive defaults, enlarged text, and More choices focus.
+
 ## Coverage and evidence
 
 - Inventoried all theme view areas, helpers, controllers, styles and scripts.

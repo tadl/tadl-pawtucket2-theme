@@ -31,6 +31,18 @@ let failOrder = false;
 const server = http.createServer((request, response) => {
     const url = new URL(request.url, 'http://localhost');
     const name = url.pathname.slice(1);
+    if (url.pathname.startsWith('/filters/') || url.pathname === '/synthetic/objects') {
+        const cookies={};
+        for (const part of (request.headers.cookie || '').split('; ')) {
+            const separator=part.indexOf('=');
+            if (separator>0) { cookies[part.slice(0,separator)]=decodeURIComponent(part.slice(separator+1)); }
+        }
+        const rendered=spawnSync(process.env.PHP_BINARY || 'php',[path.join(__dirname,'result_context_heading_test.php'),'--filter-fixture'],
+            {input:JSON.stringify({cookies,params:Object.fromEntries(url.searchParams),controller:url.pathname.endsWith('/browse')?'Browse':'Search'}),encoding:'utf8'});
+        assert.equal(rendered.status,0,rendered.stderr || rendered.stdout);
+        response.setHeader('Content-Type','text/html; charset=utf-8');
+        response.end(url.searchParams.has('getFacet')?rendered.stdout:fixtures.header+rendered.stdout+fixtures.footer); return;
+    }
     if (url.pathname.startsWith('/Lightbox/AjaxReorderItems/')) {
         assert.equal(request.method, 'POST');
         assert(url.pathname.includes('/csrfToken/synthetic-token/row_ids/'));
@@ -215,6 +227,106 @@ let browser;
         await disclosure.locator('a').last().focus(); await page.keyboard.press('Tab');
         assert.equal(await disclosure.evaluate(node=>node.open),false, 'Tabbing to a neighboring control must dismiss the overlay so that control stays visible.');
     }
+    const filterContext=await browser.newContext();
+    await filterContext.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
+    const filterPage=await filterContext.newPage();
+    const filterRequests=[];
+    filterPage.on('request',request=>{if(request.url().startsWith(origin) && ['xhr','fetch'].includes(request.resourceType()))filterRequests.push(request.url());});
+    filterPage.on('pageerror',error=>errors.push(error.message));
+    for (const width of [320,390,768,1024,1600]) {
+        await filterContext.clearCookies();
+        await filterPage.setViewportSize({width,height:1000});
+        await filterPage.goto(origin+'/filters/search');
+        const layout=filterPage.locator('[data-tadl-filter-layout]');
+        const sidebar=filterPage.locator('.tadl-filter-sidebar');
+        const content=filterPage.locator('.tadl-results-content');
+        const show=filterPage.getByRole('button',{name:'Show filters',exact:true});
+        const hide=filterPage.getByRole('button',{name:'Hide filters',exact:true});
+        if (width<768) {
+            assert(await sidebar.isHidden(),'Phone filters must start collapsed.');
+            await show.click();
+        }
+        assert(await sidebar.isVisible(),'Desktop filters must start open; phone filters must reopen.');
+        assert.equal(await hide.getAttribute('aria-expanded'),'true');
+        const expanded=await content.boundingBox();
+        const sidebarBox=await sidebar.boundingBox();
+        const tilesBox=await filterPage.locator('.tadl-result-view-toggle.active').boundingBox();
+        assert(tilesBox.height<48,'At the normal text size each view icon and label must stay on one line.');
+        if (width>=768) {
+            assert(sidebarBox.x>=expanded.x+expanded.width-1,'Expanded filters must sit to the right of results.');
+        } else {
+            assert(sidebarBox.y+sidebarBox.height<=expanded.y+1,'Phone filters must open above the results, without a modal overlay.');
+        }
+        await filterPage.evaluate(axeSource);
+        const expandedIssues=await filterPage.evaluate(async()=>(await axe.run('#main',{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}})).violations.map(item=>({id:item.id,nodes:item.nodes.map(node=>node.html)})));
+        assert.deepEqual(expandedIssues,[],`${width}px: expanded filters must pass accessibility checks.`);
+        if (artifacts) await filterPage.screenshot({path:path.join(artifacts,`filters-expanded-${width}.png`)});
+        if (width===1600) {
+            await filterPage.evaluate(()=>scrollTo(0,600));
+            assert(Math.abs((await filterPage.locator('#bRefine').boundingBox()).y-16)<2,'The expanded sidebar must remain reachable while results scroll.');
+            await filterPage.evaluate(()=>scrollTo(0,0));
+        }
+        await hide.click();
+        assert(await sidebar.isHidden(),'Collapsing filters must hide the entire sidebar column.');
+        assert(await show.evaluate(node=>node===document.activeElement),'Collapsing must restore focus to Show filters.');
+        assert.equal(await show.getAttribute('aria-expanded'),'false');
+        const collapsed=await content.boundingBox(), whole=await layout.boundingBox();
+        assert(Math.abs(collapsed.width-whole.width)<2,'Collapsed results must reclaim the complete layout width.');
+        if (width>=768) assert(collapsed.width>expanded.width,'Desktop cards must gain the sidebar space.');
+        assert(await filterPage.locator('.tadl-filter-chip').isVisible(),'Selected filters must remain visible when the sidebar is closed.');
+        assert(await filterPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${width}px: collapsed controls must reflow.`);
+        const closedIssues=await filterPage.evaluate(async()=>(await axe.run('#main',{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}})).violations.map(item=>({id:item.id,nodes:item.nodes.map(node=>node.html)})));
+        assert.deepEqual(closedIssues,[],`${width}px: collapsed filters must pass accessibility checks.`);
+        if (artifacts) await filterPage.screenshot({path:path.join(artifacts,`filters-collapsed-${width}.png`)});
+        await show.focus(); await filterPage.keyboard.press('Enter');
+        assert(await hide.evaluate(node=>node===document.activeElement),'Opening must move focus to the sidebar control.');
+        await filterPage.keyboard.press('Escape');
+        assert(await sidebar.isHidden(),'Escape in filters must collapse the panel.');
+        assert.equal(await filterPage.evaluate(()=>caUI.panelCount),0,'Filter Escape must not invoke native media-panel closing.');
+        await filterPage.goto(origin+'/filters/browse');
+        assert(await sidebar.isHidden(),'The sidebar preference must survive Search-to-Browse navigation.');
+        assert((await filterPage.content()).includes('data-tadl-filter-state="closed"'),'Initial server HTML must retain the saved preference.');
+        await filterPage.getByRole('link',{name:'List',exact:true}).click();
+        await filterPage.waitForURL('**/synthetic/objects?**');
+        assert(await sidebar.isHidden(),'Changing view must preserve filter visibility.');
+        const preferences=JSON.parse(decodeURIComponent((await filterContext.cookies()).find(cookie=>cookie.name==='tadlDisplayPreferences').value));
+        assert.equal(preferences.filters,'closed'); assert.equal(preferences.view,'list');
+        if (width===320) {
+            await filterPage.evaluate(()=>{
+                const sizes=Array.from(document.querySelectorAll('#main *')).map(node=>[node,parseFloat(getComputedStyle(node).fontSize)]);
+                sizes.forEach(([node,size])=>node.style.fontSize=(size*2)+'px');
+            });
+            assert(await filterPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Collapsed filters and view controls must reflow with enlarged text.');
+        }
+    }
+    await filterContext.clearCookies();
+    await filterPage.setViewportSize({width:1600,height:1000});
+    await filterPage.goto(origin+'/filters/search');
+    await filterPage.setViewportSize({width:390,height:1000});
+    await filterPage.waitForFunction(()=>document.querySelector('.tadl-filter-sidebar').hidden);
+    await filterPage.setViewportSize({width:1600,height:1000});
+    await filterPage.waitForFunction(()=>!document.querySelector('.tadl-filter-sidebar').hidden);
+    assert.equal((await filterContext.cookies()).length,0,'Responsive defaults must not become an explicit preference.');
+    assert.deepEqual(filterRequests,[],'Expanding or collapsing filters must not fetch results or facets again.');
+    await filterPage.getByRole('link',{name:'and 63 more',exact:true}).click();
+    await filterPage.getByRole('button',{name:'Close filter choices',exact:true}).waitFor();
+    await filterPage.evaluate(()=>jQuery('#bMorePanel').data('tadlOpener',null));
+    await filterPage.getByRole('button',{name:'Close filter choices',exact:true}).click();
+    assert(await filterPage.getByRole('button',{name:'Hide filters',exact:true}).evaluate(node=>node===document.activeElement),
+        'A closed More choices panel without its original opener must focus the visible sidebar control.');
+    await filterContext.close();
+    for (const width of [320,1600]) {
+        const noScript=await browser.newContext({javaScriptEnabled:false,viewport:{width,height:1000}});
+        await noScript.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
+        const fallback=await noScript.newPage();
+        await fallback.goto(origin+'/filters/search');
+        assert(await fallback.locator('#bRefine').isVisible(),'Filters must remain usable without JavaScript, including on phones.');
+        assert(await fallback.locator('#bRefineButton').isHidden() && await fallback.locator('#bRefineClose').isHidden(),'No-script pages must not expose nonfunctional disclosure controls.');
+        assert(await fallback.locator('#bRefine a').count()>0);
+        assert(await fallback.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+        await noScript.close();
+    }
+    reports.push('Filter sidebar passed: full-width collapse, Search/Browse persistence, responsive defaults, keyboard focus/Escape, no-script access and no result requests.');
     await page.setViewportSize({width:1280, height:900});
     await page.goto(origin + '/contact');
     await page.keyboard.press('Tab');

@@ -98,8 +98,9 @@ class ContextBrowse {
 class ContextRequest {
 	public array $access = [1];
 	public string $mediaMode = 'only';
-	function __construct(public string $controller = 'Browse', public bool $ajax = false, public ?int $filteredCount = null, public array $params = []) {}
+	function __construct(public string $controller = 'Browse', public bool $ajax = false, public ?int $filteredCount = null, public array $params = [], public array $cookies = []) {}
 	function getParameter($name, $type, $options = []) { return $this->params[$name] ?? ($type === pInteger ? 0 : null); }
+	function getParameters($sources) { return $sources === ['COOKIE'] ? $this->cookies : $this->params; }
 	function getController() { return $this->controller; }
 	function isAjax() { return $this->ajax; }
 	function getUserID() { return 7; }
@@ -110,7 +111,8 @@ class ContextResult {
 	function getPrimaryKeyValues() { return $this->count ? range(1, $this->count) : []; }
 }
 class ContextConfig {
-	function get($key) { return $key === 'cache_timeout' ? 0 : null; }
+	function __construct(private array $values = []) {}
+	function get($key) { return $this->values[$key] ?? ($key === 'cache_timeout' ? 0 : null); }
 }
 class ExternalCache {
 	static array $keys = [];
@@ -134,6 +136,13 @@ class ContextView {
 	function setVar($name, $value) { $this->values[$name] = $value; }
 	function render($file) {
 		if (preg_match('~Browse/browse_results_(images|list)_html.php~', $file)) {
+			if ($this->getVar('filter_fixture')) {
+				$output = '<div class="tadl-results-grid">';
+				for ($index = 1; $index <= 9; $index++) {
+					$output .= '<article class="bResultItem"><div class="bResultItemImg"><a href="/Detail/objects/'.$index.'"><img src="/synthetic.svg" alt="Synthetic archive item '.$index.'"></a></div><div class="bResultItemText"><a href="/Detail/objects/'.$index.'">Synthetic archive item '.$index.'</a></div></article>';
+				}
+				return $output.'</div>';
+			}
 			return '<div data-synthetic-cards="true"></div><a class="jscroll-next" href="/synthetic/next?key=synthetic-key">Next</a>';
 		}
 		ob_start();
@@ -379,7 +388,7 @@ foreach ([
 	$view = new ContextView(new ContextRequest(), [], 45, $extra);
 	checkContext(trim($view->render('Browse/browse_refine_subview_html.php')) === '', 'Empty facets emitted a panel, heading or loader.');
 	$html = $view->render('Browse/browse_results_html.php');
-	checkContext(!str_contains($html, "id='bRefineButton'") && !str_contains($html, "id='bRefine'"), 'Empty filters left a sidebar or toggle.');
+	checkContext(!str_contains($html, 'bRefineButton') && !str_contains($html, "id='bRefine'"), 'Empty filters left a sidebar or toggle.');
 	checkContext(str_contains($html, "<div class='col-sm-12'>"), 'Results did not reclaim empty sidebar space.');
 	checkContext(str_contains($html, 'data-synthetic-cards') && str_contains($html, 'Page 1 of 3'), 'Empty filters changed results or pagination.');
 }
@@ -388,8 +397,16 @@ $facets['entity_facet']['content'] = [['id' => 42, 'label' => 'Synthetic Studio'
 $facets['place_facet']['content'] = [];
 $html = (new ContextView(new ContextRequest(), [], 45, ['facets' => $facets]))->render('Browse/browse_results_html.php');
 checkContext(str_contains($html, '<h3>People and organizations</h3>') && !str_contains($html, '<h3>Places</h3>'), 'Mixed facets retained an empty heading or lost populated filters.');
-checkContext(str_contains($html, "id='bRefineButton'") && str_contains($html, "id='bRefine'"), 'Populated facets lost their panel or toggle.');
+checkContext(str_contains($html, 'id="bRefineButton"') && str_contains($html, "id='bRefine'"), 'Populated facets lost their panel or toggle.');
 checkContext(str_contains($html, "col-sm-8 col-md-8 col-lg-8"), 'Populated sidebar lost its allocated column.');
+$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $xpath = new DOMXPath($document);
+checkContext($xpath->query('//div[@data-tadl-filter-layout and @data-tadl-filter-state="auto"]')->length === 1, 'Fresh sidebar state must defer to the responsive default.');
+checkContext($xpath->query('//div[@class="tadl-results-display-controls"]/div[contains(@class,"tadl-results-view-buttons")]/following-sibling::button[@id="bRefineButton"]')->length === 1, 'Filters must follow Tiles/List in the display controls.');
+checkContext($xpath->query('//button[@id="bRefineClose" and @aria-controls="bRefine" and @hidden]')->length === 1 && !str_contains($html, 'panelWidth'), 'The sidebar needs a progressive collapse control without the legacy fixed-width scrolling script.');
+foreach (['open','closed'] as $state) {
+	$html = (new ContextView(new ContextRequest(cookies:['tadlDisplayPreferences'=>json_encode(['filters'=>$state])]), [], 45, ['facets'=>$facets]))->render('Browse/browse_results_html.php');
+	checkContext(str_contains($html, 'data-tadl-filter-state="'.$state.'"'), 'The validated sidebar preference must be present in initial HTML.');
+}
 
 $subjectFacets = ['term_facet' => ['type' => 'authority', 'table' => 'ca_list_items', 'label_singular' => 'Subject', 'group_mode' => 'alphabetical', 'content' => [
 	['id' => 42, 'label' => 'Synthetic bridges'], ['id' => 43, 'label' => 'Archives <script>x</script> & maps'],
@@ -410,7 +427,23 @@ checkContext(!str_contains($html, 'tadl-subject-index-list'), 'Selected subject 
 $html = (new ContextView(new ContextRequest(), [], 45))->render('Browse/browse_results_html.php');
 checkContext(!str_contains($html, 'Browse Subjects') && !str_contains($html, 'tadl-subject-browse'), 'Subject layout leaked onto normal object browse.');
 
-if (($argv[1] ?? '') === '--sort-fixtures') {
+if (($argv[1] ?? '') === '--filter-fixture') {
+	$input = json_decode(stream_get_contents(STDIN), true, flags:JSON_THROW_ON_ERROR);
+	$filterFacets = contextFacetDefinitions();
+	$filterFacets['entity_facet']['content'] = [['id'=>42, 'label'=>'Synthetic Studio', 'count'=>9]];
+	$filterFacets['place_facet']['content'] = [['id'=>42, 'label'=>'Synthetic Harbor', 'count'=>9]];
+	if (!empty($input['params']['getFacet'])) {
+		print (new ContextView(new ContextRequest(), [], 163, [
+			'facet_content'=>[['id'=>42,'label'=>'Synthetic choice']], 'facet_name'=>'type_facet',
+			'facet_info'=>['group_mode'=>'list','label_plural'=>'Object types'], 'isNav'=>false, 'limit'=>100, 'facet_size'=>1
+		]))->render('Browse/list_facet_html.php');
+		exit;
+	}
+	$filterFacets['type_facet']['content'] = array_map(static fn($id)=>['id'=>$id,'label'=>'Synthetic category '.$id],range(1,70));
+	print (new ContextView(new ContextRequest($input['controller'] ?? 'Search', params:$input['params'] ?? [], cookies:$input['cookies'] ?? []), [contextCriterion('entity_facet',42)], 163, [
+		'facets'=>$filterFacets, 'filter_fixture'=>true, 'config'=>new ContextConfig(['result_col_class'=>'col-sm-9', 'refine_col_class'=>'col-sm-3'])
+	]))->render('Browse/browse_results_html.php');
+} elseif (($argv[1] ?? '') === '--sort-fixtures') {
 	print json_encode(['sort-results'=>(new ContextView(new ContextRequest('Search'), [], 163, [
 		'sortBy'=>['Identifier'=>'ca_objects.idno', 'Title'=>'ca_object_labels.name', 'Date'=>'ca_objects.date.dates_value', 'Relevance'=>'_natural', 'Entity'=>'ca_entity_labels.surname'],
 		'sort'=>'Title', 'sort_direction'=>'desc'

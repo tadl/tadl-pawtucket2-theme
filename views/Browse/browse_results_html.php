@@ -94,10 +94,12 @@
 	$preferred_view = tadlDisplayView($this->request, $vs_current_view);
 	if (in_array($preferred_view, ['images', 'list'], true) && isset($va_views[$preferred_view])) { $vs_current_view = $preferred_view; }
 	$this->setVar('view', $vs_current_view);
+	$this->setVar('tadl_collapsible_filters', true);
 	// Family/place results have a fixed relationship scope, with sort/view/paging controls.
 	$vs_refine_html = !$vb_fragment && !in_array($this->request->getController(), ['FamilyContents', 'PlaceContents'], true)
 		? $this->render('Browse/browse_refine_subview_html.php') : '';
 	$vb_has_filters = trim($vs_refine_html) !== '';
+	$vs_filter_state = tadlDisplayPreferences($this->request)['filters'] ?? 'auto';
 	$va_result_context = null;
 	$vs_facet_description = null;
 	if (!$vb_fragment) {
@@ -144,8 +146,8 @@ if (!$vb_fragment) {	// full page
 <?php if ($vb_subject_browse) { ?>
 <p><?php print caNavLink($this->request, _t('Browse all subjects'), '', '', 'Browse', 'subjects', ['clear' => 1]); ?></p>
 <?php } ?>
-<div style="clear:both;" class="row<?= $vb_subject_browse ? ' tadl-subject-browse' : ''; ?>">
-	<div class='<?php print !$vb_has_filters ? "col-sm-12" : (($vs_result_col_class) ? $vs_result_col_class : "col-sm-8 col-md-8 col-lg-8"); ?>'>
+<div style="clear:both;" class="row<?= $vb_subject_browse ? ' tadl-subject-browse' : ''; ?><?= $vb_has_filters ? ' tadl-filter-layout' : ''; ?>"<?php if ($vb_has_filters) { print ' data-tadl-filter-layout data-tadl-filter-state="'.$vs_filter_state.'"'; } ?>>
+	<div class='<?php print !$vb_has_filters ? "col-sm-12" : (($vs_result_col_class ?: "col-sm-8 col-md-8 col-lg-8").' tadl-results-content'); ?>'>
 		<div class="tadl-results-header">
 			<div class="tadl-results-title-block">
 		<H1>
@@ -160,13 +162,6 @@ if (!$vb_fragment) {	// full page
 		<?php if ($va_result_context) { print '<p class="tadl-results-context-count">'.htmlspecialchars(tadlResultItemCount($vn_result_size), ENT_QUOTES, 'UTF-8').'</p>'; } ?>
 		<div class="tadl-results-title-actions">
 			<?php print $vs_tadl_result_options.$per_page_picker; ?>
-<?php
-			if ($vb_has_filters) {
-?>
-			<button type='button' id='bRefineButton' class='tadl-results-action tadl-results-filter' aria-controls='bRefine' aria-expanded='<?= $vb_subject_browse ? 'true' : 'false'; ?>' aria-label='<?php print _t("Toggle filters"); ?>' onclick='var expanded = jQuery("#bRefine").is(":visible"); jQuery("#bRefine").toggle(); jQuery(this).attr("aria-expanded", expanded ? "false" : "true"); return false;'><i class="fa fa-filter" aria-hidden="true"></i><span class="tadl-results-action-label"><?php print _t('Filters'); ?></span></button>
-<?php
-			}
-?>
 		</div>
 		<div class='bCriteria tadl-active-filters'>
 <?php
@@ -199,7 +194,14 @@ if (!$vb_fragment) {	// full page
 			</div>
 			<div class="tadl-results-tools">
 <?php
-		print $vs_tadl_result_view_controls;
+		if ($vs_tadl_result_view_controls || $vb_has_filters) {
+			print '<div class="tadl-results-display-controls">'.$vs_tadl_result_view_controls;
+			if ($vb_has_filters) {
+				$vs_show_filters_label = htmlspecialchars(_t('Show filters'), ENT_QUOTES, 'UTF-8');
+				print '<button type="button" id="bRefineButton" class="btn btn-default tadl-results-filter" aria-controls="bRefine" aria-expanded="false" aria-label="'.$vs_show_filters_label.'" title="'.$vs_show_filters_label.'" hidden><i class="fa fa-filter" aria-hidden="true"></i> '._t('Filters').'</button>';
+			}
+			print '</div>';
+		}
 		if ($vn_tadl_page_size) {
 			print "<div class='tadl-results-top-pager'>";
 			print tadlBrowseResultPager($this->request, $vn_result_size, $vn_start, $vn_tadl_page_size, $vs_browse_key, $vs_current_view, $vs_current_sort, $vs_sort_dir, $vn_is_advanced ? true : false, 'top');
@@ -238,7 +240,7 @@ if (!$vb_fragment) {	// full page
 		</div><!-- end row -->
 	</div><!-- end col-8 -->
 	<?php if ($vb_has_filters): ?>
-	<div class="<?php print ($vs_refine_col_class) ? $vs_refine_col_class : "col-sm-4 col-md-3 col-md-offset-1 col-lg-3 col-lg-offset-1"; ?>">
+	<div class="tadl-filter-sidebar <?php print ($vs_refine_col_class) ? $vs_refine_col_class : "col-sm-4 col-md-3 col-md-offset-1 col-lg-3 col-lg-offset-1"; ?>">
 <?php
 		print $vs_refine_html;
 ?>			
