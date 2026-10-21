@@ -157,14 +157,18 @@ let browser;
         assert.equal(await disclosure.locator('.tadl-sort-direction').textContent(),'↑');
         const indicator = await disclosure.locator('.tadl-sort-direction').evaluate(node=>{
             const box=node.getBoundingClientRect(), row=node.parentElement.getBoundingClientRect();
-            const label=node.previousElementSibling.getBoundingClientRect(), style=getComputedStyle(node);
+            const labelNode=node.previousElementSibling, label=labelNode.getBoundingClientRect(), style=getComputedStyle(node);
             return {right:row.right-box.right, center:Math.abs(box.y+box.height/2-label.y-label.height/2),
-                gap:box.x-label.right, width:box.width, height:box.height, border:style.borderTopWidth, borderStyle:style.borderTopStyle};
+                gap:box.x-label.right, width:box.width, height:box.height, border:style.borderTopWidth,
+                font:parseFloat(style.fontSize), labelFont:parseFloat(getComputedStyle(labelNode).fontSize),
+                background:style.backgroundColor, color:style.color};
         });
         assert(Math.abs(indicator.right-12)<=1 && indicator.center<=1 && indicator.gap>=7,
             `${width}px: the direction tag must sit at the row's right edge, vertically centered with the label.`);
-        assert(Math.abs(indicator.width-indicator.height)<=1 && indicator.border==='1px' && indicator.borderStyle==='solid',
-            'The direction indicator must have a square outline.');
+        assert(Math.abs(indicator.width-indicator.height)<=1 && indicator.border==='0px' && indicator.font<indicator.labelFont,
+            'The direction badge must be smaller than the label, with no outline.');
+        assert.equal(indicator.background,'rgba(255, 255, 255, 0.88)');
+        assert.equal(indicator.color,'rgb(11, 47, 87)', 'The inverse badge must use a navy arrow on a pale background.');
         for (const link of await disclosure.locator('a').all()) {
             const box = await link.boundingBox();
             assert(box.width >= menu.width - 12 && box.height >= 24, 'The whole sort row must be a usable touch target.');

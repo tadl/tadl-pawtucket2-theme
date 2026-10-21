@@ -3352,11 +3352,14 @@ div.tadl-finding-aid-controls .close {
     flex: 0 0 auto;
     align-items: center;
     justify-content: center;
-    width: 1.5em;
-    height: 1.5em;
+    width: 1.4em;
+    height: 1.4em;
     margin-left: auto;
-    border: 1px solid currentColor;
     border-radius: 2px;
+    background: rgba(255, 255, 255, .88);
+    color: var(--tadl-primary-dark);
+    font-size: .75em;
+    font-weight: 600;
     line-height: 1;
 }
 .tadl-filter-reset { text-decoration: underline; }
