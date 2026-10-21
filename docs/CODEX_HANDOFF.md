@@ -498,8 +498,8 @@ object. Direct object
 visits without matching result context omit the empty toolbar; single-item result
 sets still offer a return button. Other detail types retain
 their Browse destination.
-Browse destinations precede Previous/Next, matching the order of the contextual
-return link on object pages.
+Browse collections precedes Previous/Next, matching the order of the contextual
+return link on object pages. Authority pages retain their existing button order.
 Search/Browse result renders save their normal pager route in the native object
 context after page-size/offset validation. Collection routes return to the same
 archival unit and flat/hierarchy mode; all saved routes preserve view, sort,

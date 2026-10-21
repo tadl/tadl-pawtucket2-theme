@@ -121,6 +121,9 @@ foreach (array_keys($expected) as $index => $type) {
 $nav = tadlDetailNavigation($view, 'index', 'Browse collections', 'Collections', 'collections');
 browseCheck(str_contains($nav, 'href="/synthetic/Collections/index"') && !str_contains($nav, '?sort='), 'Dedicated collection index keeps its own native configuration.');
 browseCheck(str_contains($nav, '/synthetic/previous') && str_contains($nav, '/synthetic/next'), 'Default entry sorting must not replace native Prev/Next links.');
+$document = new DOMDocument(); $document->loadHTML($nav, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+$collectionLinks = (new DOMXPath($document))->query('//nav/a');
+browseCheck(array_map(static fn($link) => $link->textContent, iterator_to_array($collectionLinks)) === ['Browse collections', 'Previous', 'Next'], 'Collection navigation must place Browse collections before the native Previous/Next links.');
 $objectNav = tadlDetailNavigation($view);
 browseCheck(str_contains($objectNav, '/synthetic/previous') && str_contains($objectNav, '/synthetic/next') && browseLinks($objectNav)->length === 0, 'Object navigation must retain Prev/Next without a Browse destination.');
 foreach (['objects'=>'object', 'collections'=>'collection', 'people'=>'person', 'organizations'=>'organization', 'families'=>'family', 'places'=>'place', 'occurrences'=>'event', 'unknown'=>'record'] as $type => $singular) {

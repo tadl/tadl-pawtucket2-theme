@@ -53,7 +53,8 @@ function tadlDetailNavigation($view, $browseAction = null, $browseLabel = '', $b
 		.tadlDetailNavigationLink((string)$view->getVar('nextLink'), $labels[1]);
 	if ($browseAction !== null) {
 		$browseParams = $browseController === 'Browse' ? tadlBrowseEntryParameters($browseAction, null, $view->request) : [];
-		$links = caNavLink($view->request, $escape($browseLabel), '', '', $browseController, $browseAction, $browseParams).$links;
+		$browseLink = caNavLink($view->request, $escape($browseLabel), '', '', $browseController, $browseAction, $browseParams);
+		$links = $recordType === 'collections' ? $browseLink.$links : $links.$browseLink;
 	}
 	if ($links === '') { return ''; }
 	return '<nav class="tadl-record-nav" aria-label="'.$escape(_t('Record navigation')).'">'
