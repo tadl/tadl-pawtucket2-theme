@@ -158,7 +158,7 @@ The theme extends Pawtucket through its native theme mechanism. PHP views provid
 | `support/` | Explicit maintenance/setup tools, deployment helper, and optional detector. |
 | `docs/` and `tests/` | Feature guides and synthetic regression checks. |
 
-Eligible records are filtered before theme counts and pagination, with batched lookups where appropriate. Keep `do_content_caching = 0` in `conf/app.conf` and collection `cache_timeout = 0`: rendered pages depend on the visitor's media preference and permissions, which native shared HTML cache keys do not fully represent. Other application caching can continue normally. PDF bytes and media-descriptor validity have separate content-keyed native caches; current access checks still run for every request.
+Eligible records are filtered before theme counts and pagination, with batched lookups where appropriate. Keep `do_content_caching = 0` in `conf/app.conf` and collection `cache_timeout = 0`: rendered pages depend on the visitor's media preference and permissions, which native shared HTML cache keys do not fully represent. Other application caching can continue normally. PDF bytes and media-descriptor validity have separate content-keyed native caches; current access checks still run for every request. Media validity uses batches of up to 500 representations per cache lookup, avoiding a separate cache request for every object when filtering a large catalogue. Current descriptor fingerprints are checked on every request, so media changes take effect immediately.
 
 ## Updating and deploying
 

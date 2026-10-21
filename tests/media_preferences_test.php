@@ -75,9 +75,19 @@ function caGetIconsConfig() { return new TestConfig(['placeholder_media_icon' =>
 class ca_list_items {}
 class ExternalCache {
     static array $values = [];
-    static function fetch($key, $group = null) { return self::$values[$group][$key] ?? null; }
+    static int $fetches = 0, $saves = 0;
+    static bool $failReads = false, $failWrites = false;
+    static function fetch($key, $group = null) {
+        self::$fetches++;
+        if (self::$failReads) { throw new RuntimeException('Synthetic cache unavailable'); }
+        return self::$values[$group][$key] ?? null;
+    }
     static function contains($key, $group = null) { return false; }
-    static function save($key, $value, $group = null, $timeout = null) { self::$values[$group][$key] = $value; }
+    static function save($key, $value, $group = null, $timeout = null) {
+        self::$saves++;
+        if (self::$failWrites) { throw new RuntimeException('Synthetic cache unavailable'); }
+        self::$values[$group][$key] = $value;
+    }
 }
 function caUnserializeForDatabase($data) {
     if (is_array($data)) { return $data; }
@@ -924,6 +934,7 @@ testAssert($known[990000] && Db::$mediaRows === $before, 'Warm usability must av
 $replace = Db::$pdo->prepare('UPDATE ca_object_representations SET media = ? WHERE representation_id = 990000'); $replace->execute([caSerializeForDatabase([])]);
 $known = []; tadlReadMediaUsability(new Db(), [990000], [1], $known);
 testAssert(!$known[990000] && Db::$mediaRows === $before + 1, 'A descriptor change must immediately invalidate usability.');
+require __DIR__.'/support/media_usability_checks.php';
 
 require __DIR__.'/support/server_results_checks.php';
 require __DIR__.'/support/result_navigation_checks.php';

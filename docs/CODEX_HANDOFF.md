@@ -40,6 +40,27 @@ Changes belong here rather than in upstream CollectiveAccess. The surrounding
 workspace has reference checkouts of Pawtucket and Providence at local tag
 `2.0.10`; that is a local source fact, not a verified current production version.
 
+## Media-filter cache batching
+
+`helpers/media_usability.php` caches descriptor validity in bounded maps of up to
+500 representation IDs per native cache entry, rather than making one network
+round trip per representation. Sorted, unique IDs give repeated sets stable keys;
+site and decoder identity separate entries between installations/source versions.
+Fresh SQL still checks access/deletion and each descriptor's SHA-256 fingerprint.
+Only matching boolean validity is reused; changed descriptors are decoded
+individually and refresh their batch. Payloads contain fingerprints and booleans,
+never media blobs, object visibility or relationship/ACL decisions. Entries expire
+after five minutes; warm reads do not extend their lifetime. Malformed cache data
+or cache outages fall back to the native media decoder. A fingerprint mismatch
+between the initial query and descriptor read is not persisted.
+
+This addresses a measured per-representation cache bottleneck before media-only
+Browse results appear. No database index, core change, cache purge or service
+restart is required. Source checks do not establish a deployed page-response time.
+`tests/support/media_usability_checks.php`, included by the media-preference suite,
+covers cold/warm 1,201-record batches, order independence, selective invalidation,
+fresh access/deletion, malformed payloads and cache failures.
+
 ## Collapsible filter sidebars
 
 Full Search/Browse result pages with populated facets have a scoped
