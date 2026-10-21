@@ -17,6 +17,19 @@ class ThumbnailPermissionConfig { function get($key) { return false; } }
 class Datamodel {
 	static function getInstanceByTableName($table, $cached) { return new self(); }
 	function getAppConfig() { return new ThumbnailPermissionConfig(); }
+	function getDb() {
+		return new class {
+			function query($sql, $params) {
+				checkObjectThumbnail(str_contains($sql, 'FROM ca_objects') && str_contains($sql, 'deleted = 0') && str_contains($sql, 'access IN (?)'), 'Bulk thumbnail owners need fresh native visibility SQL.');
+				return new class(str_contains($sql, 'oxr.is_primary') ? [] : $params[0]) {
+					private int $position = -1;
+					function __construct(private array $ids) {}
+					function nextRow() { return ++$this->position < count($this->ids); }
+					function get($key) { return $this->ids[$this->position]; }
+				};
+			}
+		};
+	}
 }
 $GLOBALS['g_request'] = new stdClass();
 $assertions = 0;
@@ -147,6 +160,13 @@ if (($argv[1] ?? '') === '--grid-fixtures') {
 	}
 	class GridThumbnailView extends ObjectThumbnailView {
 		function getVar($key) { return $key === 'result' ? new GridThumbnailResult() : parent::getVar($key); }
+	}
+	$gridMedia = new GridThumbnailResult();
+	for ($index = 0; $index < 9; $index++) {
+		$gridMedia->seek($index); $gridMedia->nextHit();
+		$tag = $gridMedia->get('ca_object_representations.media.medium');
+		ca_objects::$media[100 + $index] = [objectThumbnailMedia(100 + $index, 0, true, 1,
+			['tags'=>['medium'=>$tag,'small'=>$tag]])];
 	}
 	$view = new GridThumbnailView();
 	echo json_encode(['tiles' => $view->render('Browse/browse_results_images_html.php'), 'list' => $view->render('Browse/browse_results_list_html.php')], JSON_THROW_ON_ERROR);

@@ -71,8 +71,9 @@ class TestMediaBrowse {
 }
 function caDisplayLightbox($request) { return false; }
 function caDetailLink($request, $label, $class, $table, $id) { return '<a href="'.caDetailUrl($request, $table, $id).'">'.$label.'</a>'; }
+function caGetPlaceholder($code, $key) { return ''; }
 function caGetIconsConfig() { return new TestConfig(['placeholder_media_icon' => '<span>Media</span>']); }
-class ca_list_items {}
+class ca_list_items { function load($id) {} function get($key) { return ''; } }
 class ExternalCache {
     static array $values = [];
     static int $fetches = 0, $saves = 0;
@@ -154,6 +155,9 @@ function tadlGetDescendantCollectionImages($ids, $options = []) { return []; }
 function tadlGetCollectionImages($ids, $options = []) { return []; }
 function caGetDisplayImagesForAuthorityItems($table, $ids, $options = []) { return []; }
 class ca_objects {
+    function __construct(private int $id = 0) {}
+    function getPrimaryKey() { return $this->id; }
+    function getRepresentations($versions, $sizes, $options) { return []; }
     function getPrimaryMediaForIDs($ids, $versions, $options = []) {
         return array_fill_keys($ids, ['urls' => ['medium' => 'https://example.org/synthetic-preview.jpg'], 'tags'=>['small'=>'<img src="/synthetic-preview.jpg" alt="">','medium'=>'<img src="/synthetic-preview.jpg" alt="">'], 'representation_id'=>1]);
     }
@@ -221,6 +225,10 @@ class TestDbResult {
         return $key === null ? $value : ($value[$key] ?? null);
     }
     function hasMedia($field) { return (bool)$this->getMediaInfo($field); }
+    function getMediaTag($field, $version, $options) {
+        $url = $this->getMediaUrl('media', 'original');
+        return $url ? '<img src="'.htmlspecialchars($url, ENT_QUOTES, 'UTF-8').'" alt="">' : '';
+    }
     function getMediaUrl($field, $version) {
         $data = $this->getMediaInfo($field, $version);
         if (!$data || !empty($data['QUEUED'])) { return ''; }
@@ -747,7 +755,7 @@ testAssert(tadlMediaEligibleIDs('ca_collections', [500], [1]) === [500], 'Uninit
 foreach (range(1000,1600) as $id) { testObject($id); testRelation($id, 1); }
 $queryCount = count(Db::$queries);
 testAssert(tadlMediaEligibleIDs('ca_objects', range(1000,1600), [1]) === range(1000,1600), 'Chunked candidate batch dropped results.');
-testAssert(count(Db::$queries) - $queryCount === 7, '601 candidates should use bounded relationship/permission batches and one shared descriptor.');
+testAssert(count(Db::$queries) - $queryCount === 2, '601 candidates with no additional restrictions should use two fresh relationship batches without redundant visibility queries.');
 
 // A large collection needs one playable descriptor, not every attached media blob.
 testCollection(7000, 7000, 1, 2);

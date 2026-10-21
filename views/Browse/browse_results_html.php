@@ -117,7 +117,7 @@
 	}
 	$vn_tadl_page_size = tadlBrowseResultPageSize($vs_current_view, $this->request, $vn_result_size);
 	if ($vn_tadl_page_size) {
-		$vn_start = min(max(0, $vn_start), max(0, ((int)ceil($vn_result_size / $vn_tadl_page_size) - 1) * $vn_tadl_page_size));
+		$vn_start = tadlBrowseResultStart($qr_res, $vn_start, $vn_tadl_page_size, $vn_row_id);
 		$this->setVar('start', $vn_start);
 		$this->setVar('tadl_page_size', $vn_tadl_page_size);
 	}

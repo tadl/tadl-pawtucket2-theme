@@ -47,12 +47,13 @@ function tadlMediaEligibleIDs($table, array $candidateIDs, array $accessValues, 
 	$db = Datamodel::getInstanceByTableName($table, true)->getDb();
 	$eligible = [];
 	$representationHasMedia = [];
+	$objectPending = $objectFingerprints = [];
 	$mediaURL = null;
 
 	foreach (array_chunk(array_values($uncachedIDs), 500) as $chunk) {
 		if ($table === 'ca_objects') {
 			$sql = "
-				SELECT DISTINCT o.object_id candidate_id, o.object_id, r.representation_id
+				SELECT DISTINCT o.object_id candidate_id, o.object_id, r.representation_id, SHA2(r.media, 256) media_fingerprint
 				FROM ca_objects o
 				INNER JOIN ca_objects_x_object_representations oxr ON oxr.object_id = o.object_id
 				INNER JOIN ca_object_representations r ON r.representation_id = oxr.representation_id
@@ -100,20 +101,31 @@ function tadlMediaEligibleIDs($table, array $candidateIDs, array $accessValues, 
 		$rows = [];
 		while ($result->nextRow()) {
 			$row = ['candidate_id' => (int)$result->get('candidate_id'), 'object_id' => (int)$result->get('object_id'), 'representation_id' => (int)$result->get('representation_id')];
+			if ($table === 'ca_objects') { $row['media_fingerprint'] = (string)$result->get('media_fingerprint'); }
 			if ($table === 'ca_collections') { $row['collection_id'] = (int)$result->get('collection_id'); }
 			$rows[] = $row;
 		}
-		$rows = tadlReadableMediaRows($request, $rows, $access);
+		$rows = tadlReadableMediaRows($request, $rows, $access, true);
 		if ($table === 'ca_collections') {
 			$branches = tadlReadableCollectionBranches($request, $chunk, $access);
 			$rows = array_filter($rows, static fn($row) => isset($branches[$row['candidate_id']][$row['collection_id']]));
 		}
 		$pending = [];
 		foreach ($rows as $row) { $pending[$row['candidate_id']][$row['representation_id']] = $row['representation_id']; }
+		if ($table === 'ca_objects') {
+			$objectPending += $pending;
+			foreach ($rows as $row) { $objectFingerprints[$row['representation_id']] = $row['media_fingerprint']; }
+			continue;
+		}
 		$eligible += tadlRelatedMediaCandidates($db, array_map('array_values', $pending), $access, $representationHasMedia);
 		foreach ($chunk as $id) {
 			$eligibilityCache[$cacheKey][$id] = isset($eligible[$id]);
 		}
+	}
+	if ($table === 'ca_objects') {
+		// Share descriptor batches across the full set instead of repeating them per SQL chunk.
+		$eligible = tadlRelatedMediaCandidates($db, array_map('array_values', $objectPending), $access, $representationHasMedia, $objectFingerprints);
+		foreach ($uncachedIDs as $id) { $eligibilityCache[$cacheKey][$id] = isset($eligible[$id]); }
 	}
 
 	return array_values(array_filter($ids, function ($id) use ($eligibilityCache, $cacheKey) {
@@ -143,7 +155,7 @@ function tadlRepresentationHasUsableMedia($result, &$mediaURL) {
 }
 
 /** Decode one untested representation per unresolved record, shared across candidates. */
-function tadlRelatedMediaCandidates($db, array $pending, array $access, array &$hasMedia) {
+function tadlRelatedMediaCandidates($db, array $pending, array $access, array &$hasMedia, ?array $currentFingerprints = null) {
 	$positions = array_fill_keys(array_keys($pending), 0);
 	$eligible = []; $mediaURL = null;
 	while ($pending) {
@@ -161,7 +173,7 @@ function tadlRelatedMediaCandidates($db, array $pending, array $access, array &$
 			if (isset($eligible[$id]) || !isset($representationIDs[$positions[$id]])) { unset($pending[$id]); }
 		}
 		if (!$fetch) { break; }
-		tadlReadMediaUsability($db, array_values($fetch), $access, $hasMedia);
+		tadlReadMediaUsability($db, array_values($fetch), $access, $hasMedia, $currentFingerprints);
 	}
 	return $eligible;
 }

@@ -49,10 +49,26 @@ function tadlReadableIDs($request, $table, array $ids, array $access, $bundle = 
 	return array_values(array_filter($ids, static fn($id) => isset($allowed[$id])));
 }
 
-/** Media selection and eligibility share the same object/representation boundary. */
-function tadlReadableMediaRows($request, array $rows, array $access) {
+/** Whether fresh access/deletion SQL needs additional native row restrictions. */
+function tadlHasAdditionalRecordRestrictions($table) {
+	$model = Datamodel::getInstanceByTableName($table, false);
+	if (!$model) { throw new RuntimeException('Unable to check record permissions.'); }
+	return $model->getAppConfig()->get('perform_type_access_checking') || caSourceAccessControlIsEnabled($model)
+		|| is_array(caGetTypeRestrictionsForUser($table)) || is_array(caGetSourceRestrictionsForUser($table))
+		|| caACLIsEnabled($model, ['forPawtucket' => true]);
+}
+
+/**
+ * Media selection and eligibility share the same object/representation boundary.
+ * $visibilityChecked requires fresh SQL enforcing BOTH tables' access/deleted fields.
+ * Bundle, type/source and ACL restrictions are always evaluated in this request.
+ */
+function tadlReadableMediaRows($request, array $rows, array $access, $visibilityChecked = false) {
+	if (!$request || !$access) { return []; }
 	foreach (['ca_objects' => ['object_id', 'ca_object_representations'], 'ca_object_representations' => ['representation_id', 'media']] as $table => [$field, $bundle]) {
 		if (!$rows) { break; }
+		if (caGetBundleAccessLevel($table, $bundle) < __CA_BUNDLE_ACCESS_READONLY__) { return []; }
+		if ($visibilityChecked && !tadlHasAdditionalRecordRestrictions($table)) { continue; }
 		$allowed = array_fill_keys(tadlReadableIDs($request, $table, array_column($rows, $field), $access, $bundle), true);
 		$rows = array_filter($rows, static fn($row) => isset($allowed[$row[$field]]));
 	}

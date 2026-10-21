@@ -14,11 +14,24 @@ function tadlFilterMediaResult($request, $result) {
 class SyntheticFacetCounter {
     static PDO $db;
     static int $queries = 0;
+    static int $executions = 0;
     static array $lastIDs = [], $lastCriteria = [];
     public array $criteria = [], $info = [];
+    private ?array $scopeIDs = null;
     function getCriteria() { return $this->criteria; }
     function numCriteria() { return count($this->criteria); }
-    function addCriteria($facet, $values) { $this->criteria[$facet] = array_fill_keys($values, true); }
+    function addCriteria($facet, $values) { $this->criteria[$facet] = array_fill_keys($values, true); return true; }
+    function setContext($value) { check(str_starts_with($value,'tadl_media_counts:'), 'Fast cohort must use an isolated native cache context.'); }
+    function addResultFilter($field,$operator,$ids) {
+        check($field === 'ca_objects.object_id' && $operator === 'in', 'Fast cohort must restrict native results by object ID.');
+        $this->scopeIDs = array_map('intval',explode(',',$ids)); return true;
+    }
+    function execute($options) {
+        check($options['checkAccess'] === [1] && $options['noCache'] === true && $options['dontCheckFacetAvailability'] === true,
+            'Fast cohort must recompute native visibility without unrelated facet availability work.');
+        check($this->criteria === ['_tadl_access'=>[1=>true]] && $this->scopeIDs, 'Fast cohort must use intrinsic access and a nonempty ID restriction.');
+        self::$executions++; return true;
+    }
     function addFacetConfiguration($name, $info) { $this->info = $info; }
     function getResults() { return range(1,7); }
     function getFacetContent($name, $options) {
@@ -26,7 +39,8 @@ class SyntheticFacetCounter {
         check($this->info['show_all_when_first_facet'] === false, 'Native full-catalogue facet override must be disabled.');
         self::$queries++; self::$lastCriteria = $this->criteria;
         $where = []; $params = [];
-        foreach ($this->info['filter']['object_id'] as [$operator,$value]) {
+        $filters = $this->scopeIDs === null ? $this->info['filter']['object_id'] : [['IN',$this->scopeIDs]];
+        foreach ($filters as [$operator,$value]) {
             check(in_array($operator, ['IN','>='], true), 'Unexpected synthetic predicate.');
             if ($operator === 'IN') {
                 self::$lastIDs = $value;
@@ -66,4 +80,16 @@ check(tadlMediaCountedFacet($other,$items,$info,$browse,'type_facet') === [] && 
 tadlMediaFacetScope($other,range(1,7),range(1,7));
 check(tadlMediaCountedFacet($other,$items,$info,$browse,'type_facet') === $items && SyntheticFacetCounter::$queries === $before, 'If nothing was excluded, native counts already match and need no queries.');
 check(tadlMediaCountedFacet(new stdClass(),$items,$info,new stdClass(),'type_facet') === null, 'Unsupported adapters must retain the existing safe count fallback.');
+$anonymous = new class { function isLoggedIn() { return false; } };
+$plainBrowse = new SyntheticFacetCounter(); $plainBrowse->criteria = ['_search'=>['*'=>true]];
+tadlMediaFacetScope($anonymous,range(1,5),range(1,7)); $before = SyntheticFacetCounter::$executions;
+$expected = [1=>2,2=>3];
+check(array_column(tadlMediaCountedFacet($anonymous,$items,$info,$plainBrowse,'type_facet'),'content_count','id') === $expected,
+    'Fast anonymous counts must equal the normal smaller-cohort counts.');
+check(array_column(tadlMediaCountedFacet($anonymous,$items,$info,$plainBrowse,'other_type_facet'),'content_count','id') === $expected
+    && SyntheticFacetCounter::$executions === $before+1, 'All anonymous facets must share one request-local native cohort execution.');
+$loggedIn = new class { function isLoggedIn() { return true; } };
+tadlMediaFacetScope($loggedIn,range(1,5),range(1,7)); $before = SyntheticFacetCounter::$executions;
+tadlMediaCountedFacet($loggedIn,$items,$info,$plainBrowse,'type_facet');
+check(SyntheticFacetCounter::$executions === $before, 'Logged-in results must retain the general native facet path.');
 echo "Media facet counts passed: current scope, smaller cohorts, zero results, native filters/criteria, request isolation and bounded recounts.\n";

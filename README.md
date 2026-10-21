@@ -160,6 +160,8 @@ The theme extends Pawtucket through its native theme mechanism. PHP views provid
 
 Eligible records are filtered before theme counts and pagination, with batched lookups where appropriate. Keep `do_content_caching = 0` in `conf/app.conf` and collection `cache_timeout = 0`: rendered pages depend on the visitor's media preference and permissions, which native shared HTML cache keys do not fully represent. Other application caching can continue normally. PDF bytes and media-descriptor validity have separate content-keyed native caches; current access checks still run for every request. Media validity uses batches of up to 500 representations per cache lookup, avoiding a separate cache request for every object when filtering a large catalogue. Current descriptor fingerprints are checked on every request, so media changes take effect immediately.
 
+Media cache buckets also work across overlapping searches and sort orders. Object grids and lists fetch primary thumbnails for the displayed page in batches, with native permission checks and fallback images preserved. Returning to a distant result jumps to its page; a missing or outdated return target cannot expand one response into thousands of cards. These optimizations require no additional service, database index or cache purge.
+
 ## Updating and deploying
 
 Review upstream changes and merge them into your maintained fork or branch. Deploy the complete theme revision, preserving your private configuration and persistent detector data. For a clean, unmodified checkout tracking this repository, an update is:

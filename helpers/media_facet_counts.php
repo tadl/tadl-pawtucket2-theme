@@ -26,15 +26,37 @@ function tadlMediaCountedFacet($request, $items, array $info, $browse, $name) {
 	if (!$scope->ids) { return []; }
 	if (!$scope->countIDs) { return $items; }
 	if (!array_key_exists($name, $scope->counts)) {
-		$counter = caGetBrowseInstance('ca_objects');
-		foreach ((array)$browse->getCriteria() as $facet => $values) {
-			$counter->addCriteria($facet, array_keys($values));
+		// An unfiltered anonymous browse already supplies the exact cohort. Seed
+		// that cohort once with an intrinsic access facet, avoiding four native
+		// SearchResult expansions of the same primary-key filter.
+		$criteria = (array)$browse->getCriteria();
+		$plain = method_exists($request, 'isLoggedIn') && !$request->isLoggedIn()
+			&& (!$criteria || $criteria === ['_search'=>['*'=>true]]);
+		if ($plain && empty($info['filter'])) {
+			if (!isset($scope->counter)) {
+				$counter = caGetBrowseInstance('ca_objects');
+				$access = (array)caGetUserAccessValues($request);
+				$counter->setContext('tadl_media_counts:'.hash('sha256', json_encode([$access,$scope->countIDs])));
+				$counter->addFacetConfiguration('_tadl_access', ['type'=>'fieldList','field'=>'access','multiple'=>true,'dontExpandHierarchically'=>true]);
+				if (!$counter->addCriteria('_tadl_access', $access)
+					|| !$counter->addResultFilter('ca_objects.object_id', 'in', join(',', $scope->countIDs))
+					|| !$counter->execute(['checkAccess'=>$access,'request'=>$request,'noCache'=>true,'dontCheckFacetAvailability'=>true])) {
+					throw new RuntimeException('Unable to count media facets.');
+				}
+				$scope->counter = $counter;
+			}
+			$counter = $scope->counter;
+		} else {
+			$counter = caGetBrowseInstance('ca_objects');
+			foreach ($criteria as $facet => $values) {
+				$counter->addCriteria($facet, array_keys($values));
+			}
+			// Native facets only restrict counts to result IDs when a criterion exists.
+			// This counter is never executed or saved; the fixed ID filter supplies its scope.
+			if (!$counter->numCriteria()) { $counter->addCriteria('_search', ['*']); }
+			$info['filter'] = caNormalizeValueArray((array)($info['filter'] ?? []));
+			$info['filter']['object_id'][] = ['IN', $scope->countIDs];
 		}
-		// Native facets only restrict counts to result IDs when a criterion exists.
-		// This counter is never executed or saved; the fixed ID filter supplies its scope.
-		if (!$counter->numCriteria()) { $counter->addCriteria('_search', ['*']); }
-		$info['filter'] = caNormalizeValueArray((array)($info['filter'] ?? []));
-		$info['filter']['object_id'][] = ['IN', $scope->countIDs];
 		$info['show_all_when_first_facet'] = false;
 		unset($info['content'], $info['tadl_browse']);
 		$counter->addFacetConfiguration($name, $info);

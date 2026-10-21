@@ -18,6 +18,12 @@ $fetches = ExternalCache::$fetches; $saves = ExternalCache::$saves; $before = Db
 $known = []; tadlReadMediaUsability(new Db(), array_reverse($batchIDs), [1], $known);
 testAssert(count(array_filter($known)) === 1201 && Db::$mediaRows === $before, 'Stable batches must reuse validity regardless of input ordering.');
 testAssert(ExternalCache::$fetches - $fetches === 3 && ExternalCache::$saves === $saves, 'Warm batches must use three reads and avoid unnecessary cache writes.');
+$before = Db::$mediaRows; $fetches = ExternalCache::$fetches;
+$known = []; tadlReadMediaUsability(new Db(), [800499,800000,800999,801200], [1], $known);
+testAssert(count(array_filter($known)) === 4 && Db::$mediaRows === $before && ExternalCache::$fetches - $fetches === 3,
+    'Partially overlapping result sets must reuse existing buckets without decoding descriptors again.');
+$known = []; tadlReadMediaUsability(new Db(), [800001], [1], $known);
+testAssert($known === [800001=>true] && Db::$mediaRows === $before, 'A subset read must not evict other entries from the same bucket.');
 
 $replace = Db::$pdo->prepare('UPDATE ca_object_representations SET media = ? WHERE representation_id = 800500');
 $replace->execute([caSerializeForDatabase([])]);

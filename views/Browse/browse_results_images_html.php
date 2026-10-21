@@ -34,10 +34,6 @@
 	$vn_hits_per_block 	= (int)$this->getVar('hits_per_block');	// number of hits to display per block
 	$vn_start		 	= (int)$this->getVar('start');			// offset to seek to before outputting results
 	$vn_row_id		 	= (int)$this->getVar('row_id');			// id of last visited detail item so can load to and jump to that result - passed in back button
-	$vb_row_id_loaded 	= false;
-	if(!$vn_row_id){
-		$vb_row_id_loaded = true;
-	}
 		
 	$va_views			= $this->getVar('views');
 	$vs_current_view	= $this->getVar('view');
@@ -60,9 +56,12 @@
 	require_once(__DIR__.'/../../helpers/object_thumbnails.php');
 	require_once(__DIR__.'/../../helpers/representation_formats.php');
 	$vn_page_size = tadlBrowseResultPageSize('images', $this->request, $qr_res->numHits());
+	$vn_start = tadlBrowseResultStart($qr_res, $vn_start, $vn_page_size, $vn_row_id);
 	$vb_format_tags = $vs_table === 'ca_objects';
 	$va_formats = $vb_format_tags ? tadlObjectRepresentationFormats($this->request,
 		tadlBrowseResultPageIDs($qr_res, $vn_start, $vn_page_size, $vn_row_id), $va_access_values) : [];
+	$va_object_images = $vb_format_tags ? tadlObjectThumbnails($this->request,
+		tadlBrowseResultPageIDs($qr_res, $vn_start, $vn_page_size, $vn_row_id), 'medium', $va_access_values) : [];
 	
 
 
@@ -109,19 +108,8 @@
 			}
 			
 			$t_list_item = new ca_list_items();
-			while($qr_res->nextHit()) {
-				if($vn_c == $vn_page_size){
-					if($vb_row_id_loaded){
-						break;
-					}else{
-						$vn_c = 0;
-					}
-				}
+			while($vn_c < $vn_page_size && $qr_res->nextHit()) {
 				$vn_id = $qr_res->get("{$vs_table}.{$vs_pk}");
-				if($vn_id == $vn_row_id){
-					$vb_row_id_loaded = true;
-				}
-				
 
 					if ($vb_format_tags) {
 						$vs_result_metadata = tadlRepresentationFormatTags($va_formats[$vn_id] ?? []);
@@ -138,8 +126,7 @@
 					$vs_type_placeholder = "";
 					$vs_typecode = "";
 					if ($vs_table == 'ca_objects') {
-						$vs_thumbnail = tadlObjectThumbnail($vn_id, 'medium', $va_access_values,
-							$qr_res->get('ca_object_representations.media.medium', array("checkAccess" => $va_access_values)), $this->request);
+						$vs_thumbnail = $va_object_images[$vn_id] ?? '';
 						if(!$vs_thumbnail){
 							$t_list_item->load($qr_res->get("type_id"));
 							$vs_typecode = $t_list_item->get("idno");

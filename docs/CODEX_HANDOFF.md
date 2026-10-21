@@ -44,7 +44,7 @@ workspace has reference checkouts of Pawtucket and Providence at local tag
 
 `helpers/media_usability.php` caches descriptor validity in bounded maps of up to
 500 representation IDs per native cache entry, rather than making one network
-round trip per representation. Sorted, unique IDs give repeated sets stable keys;
+round trip per representation. Numeric ID buckets give overlapping sets stable keys;
 site and decoder identity separate entries between installations/source versions.
 Fresh SQL still checks access/deletion and each descriptor's SHA-256 fingerprint.
 Only matching boolean validity is reused; changed descriptors are decoded
@@ -53,6 +53,14 @@ never media blobs, object visibility or relationship/ACL decisions. Entries expi
 after five minutes; warm reads do not extend their lifetime. Malformed cache data
 or cache outages fall back to the native media decoder. A fingerprint mismatch
 between the initial query and descriptor read is not persisted.
+
+Object eligibility collects pending representations across its bounded relationship
+queries before decoding them. Those queries also return current descriptor hashes,
+avoiding another hash query for the same records. Fresh joined object/representation
+access/deletion predicates can satisfy those two visibility checks directly; bundle
+checks and native type/source/Pawtucket ACL restrictions still run in this request.
+When any additional restriction applies, the complete native bulk permission path
+is retained. No persistent record-eligibility or permission cache is introduced.
 
 This addresses a measured per-representation cache bottleneck before media-only
 Browse results appear. No database index, core change, cache purge or service
@@ -77,14 +85,50 @@ and original IDs establish a request-local `WeakMap` scope. An isolated native
 browse instance counts the smaller included/excluded cohort using the original
 facet configuration and criteria; excluded counts are subtracted from the native
 baseline. Zero-hit choices disappear. Existing intrinsic filters remain ANDed
-with the cohort, and empty cohorts never become unrestricted queries. The counter
-does not execute or save a browse, change the original context or persist counts.
+with the cohort, and empty cohorts never become unrestricted queries. For an
+unfiltered anonymous browse without a facet-specific intrinsic filter, one isolated
+counter executes the exact cohort through a native intrinsic access facet and ID
+restriction. `noCache` forces fresh native visibility and
+`dontCheckFacetAvailability` avoids unrelated facet work. Its result scope is
+reused only within the request, and facet contents are read directly, not from a
+shared facet cache. Logged-in, searched/filtered and custom-filter cases retain
+the general non-executing counter. Neither path changes the original browse or
+persists adjusted counts.
 Sidebar, full choice lists and hierarchy requests share this path. Other subject
 tables retain their previous suppression of unfiltered counts.
 `tests/media_facet_counts_test.php` covers scope isolation, both cohort strategies,
 zero results, configured filters/criteria and request-local reuse. Read-only checks
 against the native runtime also verified the object-type total against the media
 result total. The ordinary PHP suite count is now 46.
+
+## Bounded result rendering and performance
+
+`tadlObjectThumbnails()` reads primary relationships for the displayed page, applies
+current object/representation permissions, and fetches only the permitted primary
+descriptors in bounded batches. Native `DbResult::getMediaTag()` renders those
+descriptors; existing primary preference and native secondary-image fallback remain.
+The surrounding thumbnail link supplies the accessible record name, avoiding the
+native alt template's repeated expansion of all representation labels per card.
+Focal-point and responsive-image processing remain unchanged.
+
+`tadlBrowseResultStart()` locates a Back target in the already ordered result IDs
+and jumps directly to its page. Tiles/List loops, thumbnail lookups and format
+inventory always remain within one page. A missing/stale/crafted `row_id` previously
+could render the remainder of a result set. Synthetic regressions render actual
+views against 5,000 results with both missing and distant targets.
+
+Native CLI comparisons on 2026-10-21 pinned the previous source (`24c1263`) and
+proposed theme in private temporary copies, using the same catalogue and anonymous
+access. Warm 72-card media-only requests fell from roughly 4.5–5.0s to 3.5–3.7s;
+all-items requests from 2.8–2.9s to 2.3s. Primary thumbnail work fell from roughly
+0.8s to 0.03s, and the unfiltered media-facet recount from about 0.6s to 0.25s.
+Ordered result IDs, facet text/counts, displayed image URLs/srcsets/focal data and
+the 72-card bound matched. These instrumented CLI timings include native controller,
+result views and page shell; they are not deployed HTTP timings or a concurrent
+load test. No installed application source, database schema or service settings
+were changed by the diagnostic. Native result/facet generation remains the largest
+cost; do not enable shared HTML/browse caching to hide it without reviewing current
+permission isolation and invalidation.
 
 ## Collapsible filter sidebars
 

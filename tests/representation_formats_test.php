@@ -54,10 +54,15 @@ class FormatDb {
 	}
 }
 class FormatRows {
+	static public array $decoded = [];
 	private int $position = -1;
 	function __construct(private array $rows) {}
 	function nextRow() { return ++$this->position < count($this->rows); }
 	function get($field) { return $this->rows[$this->position][$field] ?? null; }
+	function getMediaTag($field, $version, $options) {
+		self::$decoded[] = $this->get('representation_id');
+		return $this->get('media') ? '<img src="/portrait.svg" alt="">' : '';
+	}
 }
 class FormatUser {
 	function getTypeAccessLevel($table, $id) { return $id === 2 ? 0 : 1; }
@@ -77,10 +82,10 @@ FormatDb::$pdo = new PDO('sqlite::memory:');
 FormatDb::$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 FormatDb::$pdo->exec('CREATE TABLE ca_objects (object_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER, type_id INTEGER, source_id INTEGER)');
 FormatDb::$pdo->exec('CREATE TABLE ca_object_representations (representation_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER, type_id INTEGER, source_id INTEGER, media TEXT, mimetype TEXT, original_filename TEXT)');
-FormatDb::$pdo->exec('CREATE TABLE ca_objects_x_object_representations (object_id INTEGER, representation_id INTEGER)');
+FormatDb::$pdo->exec('CREATE TABLE ca_objects_x_object_representations (object_id INTEGER, representation_id INTEGER, is_primary INTEGER DEFAULT 1)');
 FormatDb::$pdo->exec('INSERT INTO ca_objects VALUES (1,1,0,1,1),(2,0,0,1,1),(3,1,0,1,1),(99,1,0,1,1)');
 $insertRepresentation = FormatDb::$pdo->prepare('INSERT INTO ca_object_representations VALUES (?,?,?,?,?,?,?,?)');
-$insertLink = FormatDb::$pdo->prepare('INSERT INTO ca_objects_x_object_representations VALUES (?,?)');
+$insertLink = FormatDb::$pdo->prepare('INSERT INTO ca_objects_x_object_representations (object_id,representation_id) VALUES (?,?)');
 foreach ([
 	[10,1,0,1,1,'descriptor','image/tiff','synthetic.jpg'],
 	[11,1,0,1,1,'descriptor','image/jpeg','synthetic.jpg'],
@@ -158,6 +163,9 @@ function caDetailLink($request, $label, $class, $table, $id, $params = null, $at
 function caGetPlaceholder($code, $key) { return ''; }
 function caDetailUrl($request, $table, $id) { return '/Detail/'.substr($table,3).'/'.$id; }
 function caNavUrl($request, $module, $controller, $action, $params = [], $options = []) { return '/'.$controller.'/'.$action.'?'.http_build_query($params); }
+function caNavLink($request, $label, $class, $module, $controller, $action, $params = [], $attributes = []) {
+	return '<a class="'.htmlspecialchars($class, ENT_QUOTES, 'UTF-8').'" href="'.htmlspecialchars(caNavUrl($request,$module,$controller,$action,$params), ENT_QUOTES, 'UTF-8').'">'.$label.'</a>';
+}
 // Eligibility is covered by media_preferences_test.php; these are already-readable result IDs.
 function tadlFilterMediaResult($request, $result) {}
 class ca_objects {
@@ -168,11 +176,31 @@ class ca_objects {
 		foreach ($ids as $id) {
 			if ($id === 3) { continue; }
 			$media[$id]['urls']['medium'] = $id === 4 ? '/landscape.svg' : ($id === 5 ? '/tall.svg' : '/portrait.svg');
+			foreach ($versions as $version) { $media[$id]['tags'][$version] = '<img src="'.$media[$id]['urls']['medium'].'" alt="Synthetic photograph">'; }
 		}
 		return $media;
 	}
 }
 class ca_list_items { function load($id) {} function get($key) { return ''; } }
+require dirname(__DIR__).'/helpers/object_thumbnails.php';
+$GLOBALS['restricted'] = $GLOBALS['aclChecking'] = true;
+$before = count(FormatRows::$decoded);
+$thumbnails = tadlObjectThumbnails($request,[1,2,'1 OR 1=1',-1], 'medium', [1]);
+formatCheck(array_keys($thumbnails) === [1] && array_slice(FormatRows::$decoded,$before) === [10], 'Bulk thumbnails must decode only the chosen readable primary for readable objects.');
+FormatDb::$pdo->exec('UPDATE ca_objects_x_object_representations SET is_primary = 0 WHERE object_id = 1 AND representation_id IN (10,11,12,13,16,20)');
+$before = count(FormatRows::$decoded);
+formatCheck(tadlObjectThumbnails($request,[1], 'medium', [1]) === [1=>''] && count(FormatRows::$decoded) === $before,
+	'Private/deleted/type/source/ACL-denied primaries must not be decoded by the bulk path.');
+FormatDb::$pdo->exec('UPDATE ca_objects_x_object_representations SET is_primary = 1 WHERE object_id = 1');
+$GLOBALS['restricted'] = $GLOBALS['aclChecking'] = false;
+$before = count(FormatRows::$decoded); $queries = count(FormatDb::$queries);
+formatCheck(count(tadlObjectThumbnails($request,range(1000,1600), 'small', [1])) === 601 && count(FormatRows::$decoded)-$before === 2,
+	'601 objects sharing a primary must decode it once in each bounded batch, not per object.');
+$mediaQueries = array_filter(array_slice(FormatDb::$queries,$queries), static fn($q) => str_contains($q[0],'SELECT representation_id, media'));
+formatCheck(count($mediaQueries) === 2, 'Bulk thumbnails must bound descriptor queries independently of the number of cards.');
+$GLOBALS['deniedBundle'] = 'ca_object_representations:media'; $queries = count(FormatDb::$queries);
+formatCheck(tadlObjectThumbnails($request,[1], 'small', [1]) === [] && count(FormatDb::$queries) === $queries, 'A denied media bundle must prevent every bulk thumbnail query.');
+$GLOBALS['deniedBundle'] = '';
 class FormatResult {
 	public int $position = -1;
 	function __construct(private array $ids = [1,3,4,5,6,7,8,9,10]) {}
@@ -203,9 +231,9 @@ class FormatView {
 }
 $result = new FormatResult(range(1,70)); $result->seek(10);
 formatCheck(tadlBrowseResultPageIDs($result,9,9) === range(10,18) && $result->position === 9, 'Normal paging must read only current IDs without moving the cursor.');
-formatCheck(tadlBrowseResultPageIDs($result,0,9,20) === range(1,27), 'Back restoration needs formats through the target block.');
-formatCheck(tadlBrowseResultPageIDs($result,24,24,60) === range(25,70), 'List Back restoration must respect its own page size.');
-formatCheck(tadlBrowseResultPageIDs($result,9,9,999) === range(10,70), 'Missing Back target must follow native result output.');
+formatCheck(tadlBrowseResultPageIDs($result,0,9,20) === range(19,27), 'Back restoration must jump directly to the target page.');
+formatCheck(tadlBrowseResultPageIDs($result,24,24,60) === range(49,70), 'List Back restoration must respect its own page size.');
+formatCheck(tadlBrowseResultPageIDs($result,9,9,999) === range(10,18), 'A missing Back target must remain within one page.');
 $fixtures = [];
 foreach (['tiles' => 'browse_results_images_html.php', 'list' => 'browse_results_list_html.php'] as $name => $file) {
 	$queries = count(FormatDb::$queries);
@@ -221,6 +249,14 @@ foreach (['tiles' => 'browse_results_images_html.php', 'list' => 'browse_results
 	formatCheck(str_contains((new FormatView(new FormatRequest(false)))->render($file), 'tadl-representation-formats'), $name.': ordinary object search/browse must also show formats.');
 	formatCheck(!str_contains((new FormatView(new FormatRequest(true,false)))->render($file), 'SYN.1'), $name.': full object Search pages must replace identifiers with formats too.');
 	$fixtures[$name] = $html;
+	foreach ([999999=>9,1555=>($name === 'tiles' ? 540 : 550)] as $target => $start) {
+		$pageSize = $name === 'tiles' ? 18 : 25;
+		$bounded = (new FormatView(new FormatRequest(), ['result'=>new FormatResult(range(1000,5999)), 'start'=>9, 'row_id'=>$target]))->render($file);
+		$document = new DOMDocument(); @$document->loadHTML($bounded); $xpath = new DOMXPath($document);
+		$cards = $xpath->query('//div[starts-with(@id,"row")]');
+		formatCheck($cards->length === $pageSize && $cards->item(0)->getAttribute('id') === 'row'.(1000+$start),
+			$name.': a distant or missing Back target must render one bounded page, not thousands of cards.');
+	}
 }
 $queries = count(FormatDb::$queries);
 $overview = (new FormatView(new FormatRequest(false), ['result' => new FormatResult(), 'itemsPerPage' => 6,

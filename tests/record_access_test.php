@@ -88,14 +88,28 @@ $GLOBALS['aclChecking'] = true; $GLOBALS['aclDenied'] = [6,11];
 accessCheck(tadlReadableIDs($request, 'ca_objects', [1,6], [1]) === [1], 'Pawtucket-only ACLs must reject publicly flagged records.');
 $rows = [['object_id'=>1,'representation_id'=>10], ['object_id'=>1,'representation_id'=>11], ['object_id'=>6,'representation_id'=>10]];
 accessCheck(count(tadlReadableMediaRows($request, $rows, [1])) === 1, 'Media eligibility must check both owners and representations.');
+accessCheck(count(tadlReadableMediaRows($request, $rows, [1], true)) === 1, 'Fresh joined visibility must still enforce Pawtucket ACLs on both tables.');
 $GLOBALS['deniedBundle'] = 'ca_object_representations:media';
 accessCheck(tadlReadableMediaRows($request, $rows, [1]) === [], 'Denied media bundle must return no media.');
+accessCheck(tadlReadableMediaRows($request, $rows, [1], true) === [], 'Fresh joined visibility must never bypass a denied media bundle.');
 $GLOBALS['deniedBundle'] = ''; $GLOBALS['aclDenied'] = [];
 AccessDb::$pdo->exec('INSERT INTO ca_collections VALUES (20,0,20,1,12,1,0,1,1),(21,20,20,2,7,0,0,1,1),(22,21,20,3,4,1,0,1,1),(23,20,20,8,11,1,0,1,1),(24,23,20,9,10,1,0,1,1)');
 accessCheck(array_keys(tadlReadableCollectionBranches($request, [20], [1])[20]) === [20,23,24], 'Readable descendants of private intermediate collections must stay hidden.');
 $GLOBALS['aclDenied'] = [23];
 accessCheck(array_keys(tadlReadableCollectionBranches($request, [20], [1])[20]) === [20], 'ACL-denied ancestors must prune the complete branch.');
 $GLOBALS['aclChecking'] = false;
+$queries = count(AccessDb::$queries);
+accessCheck(tadlReadableMediaRows($request, $rows, [1], true) === $rows && count(AccessDb::$queries) === $queries,
+	'Fresh visibility SQL needs no duplicate visibility queries when additional restrictions are disabled.');
+$restrictedRows = [['object_id'=>1,'representation_id'=>10], ['object_id'=>4,'representation_id'=>10], ['object_id'=>5,'representation_id'=>10]];
+foreach (['typeChecking'=>[true,[1,5]], 'sourceChecking'=>[true,[1,4]], 'typeRestriction'=>[[1],[1,5]], 'sourceRestriction'=>[[1],[1,4]], 'typeRestrictionEmpty'=>[[],[]]] as $flag => [$value,$expected]) {
+	$flag = $flag === 'typeRestrictionEmpty' ? 'typeRestriction' : $flag;
+	$old = $GLOBALS[$flag]; $GLOBALS[$flag] = $value;
+	accessCheck(array_column(tadlReadableMediaRows($request, $restrictedRows, [1], true), 'object_id') === $expected,
+		'Joined visibility must preserve native '.$flag.' restrictions.');
+	$GLOBALS[$flag] = $old;
+}
+accessCheck(tadlReadableMediaRows(null,$rows,[1],true) === [] && tadlReadableMediaRows($request,$rows,[],true) === [], 'Joined visibility requires a request and access mask.');
 $query = AccessDb::$pdo->prepare('INSERT INTO ca_objects VALUES (?,1,0,1,1)');
 foreach (range(1000,1600) as $id) { $query->execute([$id]); }
 $queries = count(AccessDb::$queries);
