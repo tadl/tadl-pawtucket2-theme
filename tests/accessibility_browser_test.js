@@ -16,6 +16,9 @@ const fixtures = JSON.parse(rendered.stdout);
 const collectionHeaders = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'collection_detail_scripts_test.php'), '--staff-shortcut-fixtures'], {encoding:'utf8'});
 assert.equal(collectionHeaders.status, 0, collectionHeaders.stderr || collectionHeaders.stdout);
 Object.assign(fixtures, JSON.parse(collectionHeaders.stdout));
+const sortFixtures = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'result_context_heading_test.php'), '--sort-fixtures'], {encoding:'utf8'});
+assert.equal(sortFixtures.status, 0, sortFixtures.stderr || sortFixtures.stdout);
+Object.assign(fixtures, JSON.parse(sortFixtures.stdout));
 const documentTextFixture = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'document_text_test.php'), '--lazy-fixtures'], {encoding:'utf8'});
 assert.equal(documentTextFixture.status, 0, documentTextFixture.stderr || documentTextFixture.stdout);
 const documentText = JSON.parse(documentTextFixture.stdout);
@@ -87,7 +90,7 @@ let browser;
     const reports = [];
     for (const width of [1280, 320]) {
         await page.setViewportSize({width, height:900});
-        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'featured', 'notifications', 'collection-staff']) {
+        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'featured', 'notifications', 'collection-staff', 'sort-results']) {
             await page.goto(origin + '/' + name);
             if (name === 'gallery') { await page.locator('.galleryDetailNext').waitFor(); }
             await page.evaluate(async () => {
@@ -133,6 +136,37 @@ let browser;
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name}: overflow with enlarged/spaced text at ${width}px`);
             reports.push(`${name} ${width}px: axe, reflow, enlarged text and spacing passed`);
         }
+    }
+    for (const width of [320,390,768,1024,1600]) {
+        await page.setViewportSize({width,height:1000});
+        await page.goto(origin + '/sort-results');
+        const disclosure = page.locator('.tadl-results-sort'), toggle = disclosure.locator('summary');
+        await toggle.focus(); await page.keyboard.press('Enter');
+        assert(await disclosure.evaluate(node=>node.open), 'Sort by must open from the keyboard.');
+        await page.keyboard.press('Tab');
+        assert.equal(await page.locator(':focus').getAttribute('aria-label'), 'Sort by Identifier, Ascending', 'Direction choices must use normal Tab order.');
+        const menu = await disclosure.locator('ul').boundingBox();
+        assert(menu.x >= 0 && menu.x + menu.width <= width + 1, `${width}px: the open sort dropdown must fit the viewport.`);
+        assert.equal(await disclosure.locator('[aria-current=true]').getAttribute('aria-label'), 'Sort by Title, Descending');
+        for (const link of await disclosure.locator('a').all()) {
+            const box = await link.boundingBox();
+            assert(box.width >= 24 && box.height >= 24, 'Both directional choices must remain usable touch targets.');
+        }
+        await page.evaluate(axeSource);
+        const violations = await page.evaluate(async ()=>(await axe.run('#main',{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}})).violations.map(item=>({id:item.id,nodes:item.nodes.map(node=>node.html)})));
+        assert.deepEqual(violations,[], 'The open Sort by control must retain accessible names, contrast and target sizes.');
+        if (artifacts) {
+            await page.screenshot({path:path.join(artifacts,`sort-open-${width}.png`)});
+            const heading = await toggle.boundingBox();
+            await page.screenshot({path:path.join(artifacts,`sort-control-${width}.png`),clip:{x:Math.max(0,menu.x-8),y:heading.y-8,width:menu.width+16,height:menu.y+menu.height-heading.y+16}});
+        }
+        await disclosure.locator('a').first().focus();
+        await page.keyboard.press('Escape');
+        assert.equal(await disclosure.evaluate(node=>node.open),false);
+        assert(await toggle.evaluate(node=>node===document.activeElement), 'Escape must restore focus to Sort by.');
+        assert.equal(await page.evaluate(()=>caUI.panelCount),0, 'Closing Sort by must not invoke the native media-panel close lifecycle.');
+        await toggle.click(); await page.locator('h1').click();
+        assert.equal(await disclosure.evaluate(node=>node.open),false, 'An outside click must dismiss the sort dropdown.');
     }
     await page.setViewportSize({width:1280, height:900});
     await page.goto(origin + '/contact');

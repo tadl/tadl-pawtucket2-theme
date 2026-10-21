@@ -130,7 +130,9 @@ function caNavUrl($request, $module, $controller, $action, $params = [], $option
     return $url;
 }
 function caNavLink($request, $label, $class, $module, $controller, $action, $params = [], $attributes = [], $options = []) {
-    return '<a class="'.htmlspecialchars($class, ENT_QUOTES, 'UTF-8').'" href="'.htmlspecialchars(caNavUrl($request, $module, $controller, $action, $params, $options), ENT_QUOTES, 'UTF-8').'">'.$label.'</a>';
+    $attrs = '';
+    foreach ($attributes as $key => $value) { $attrs .= ' '.htmlspecialchars($key, ENT_QUOTES, 'UTF-8').'="'.htmlspecialchars($value, ENT_QUOTES, 'UTF-8').'"'; }
+    return '<a class="'.htmlspecialchars($class, ENT_QUOTES, 'UTF-8').'" href="'.htmlspecialchars(caNavUrl($request, $module, $controller, $action, $params, $options), ENT_QUOTES, 'UTF-8').'"'.$attrs.'>'.$label.'</a>';
 }
 function caDetailUrl($request, $table, $id, $asPieces = false, $params = [], $options = []) {
     $url = '/Detail/'.substr($table, 3).'/'.(int)$id;

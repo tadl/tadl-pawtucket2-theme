@@ -83,11 +83,9 @@
 		print '<p class="tadl-authority-empty">'.htmlspecialchars($message, ENT_QUOTES, 'UTF-8').'</p>';
 		return;
 	}
-	$vs_sort_control_type = caGetOption('sortControlType', $va_browse_info, 'dropdown');
 	$o_config = $this->getVar("config");
 	$vs_result_col_class = $o_config->get('result_col_class');
 	$vs_refine_col_class = $o_config->get('refine_col_class');
-	$va_export_formats = $this->getVar('export_formats');
 	$va_browse_type_info = $o_config->get($va_browse_info["table"]);
 	$va_all_facets = (array)($va_browse_type_info['facets'] ?? []);
 	if ($o_browse = $this->getVar('browse')) { $va_all_facets = $o_browse->getInfoForFacets(); }
@@ -102,14 +100,12 @@
 	$vb_has_filters = trim($vs_refine_html) !== '';
 	$va_result_context = null;
 	$vs_facet_description = null;
-	$va_sorts = [];
 	if (!$vb_fragment) {
 		$va_criteria = tadlResultDisplayCriteria($this->request, $va_criteria, $va_all_facets);
 		$va_result_context = tadlResultContext($vs_table, $va_criteria);
 	}
 	$vb_collection_controls = $vb_fragment && $vb_is_search && $vs_table === 'ca_objects'
 		&& $this->request->getParameter('tadl_collection_controls', pInteger) === 1;
-	if ($vb_collection_controls) { $vs_sort_control_type = 'dropdown'; }
 	ob_start();
 	include __DIR__.'/result_options_html.php';
 	$vs_tadl_result_options = ob_get_clean();
@@ -150,27 +146,6 @@ if (!$vb_fragment) {	// full page
 <?php } ?>
 <div style="clear:both;" class="row<?= $vb_subject_browse ? ' tadl-subject-browse' : ''; ?>">
 	<div class='<?php print !$vb_has_filters ? "col-sm-12" : (($vs_result_col_class) ? $vs_result_col_class : "col-sm-8 col-md-8 col-lg-8"); ?>'>
-<?php 
-			if($vs_sort_control_type == 'list'){
-				if(is_array($va_sorts = $this->getVar('sortBy')) && sizeof($va_sorts)) {
-					print "<div id='bSortByList'><ul><li><strong>"._t("Sort by:")."</strong></li>\n";
-					$i = 0;
-					foreach($va_sorts as $vs_sort => $vs_sort_flds) {
-						$i++;
-						if ($vs_current_sort === $vs_sort) {
-							print "<li class='selectedSort'>{$vs_sort}</li>\n";
-						} else {
-							print "<li>".caNavLink($this->request, $vs_sort, '', '*', '*', '*', array('view' => $vs_current_view, 'key' => $vs_browse_key, 'sort' => $vs_sort, '_advanced' => $vn_is_advanced ? 1 : 0))."</li>\n";
-						}
-						if($i < sizeof($va_sorts)){
-							print "<li class='divide'>&nbsp;</li>";
-						}
-					}
-					print "<li>".caNavLink($this->request, '<span class="glyphicon glyphicon-sort-by-attributes'.(($vs_sort_dir == 'asc') ? '' : '-alt').'" aria-hidden="true"></span><span class="sr-only">'._t("Change sort direction").'</span>', '', '*', '*', '*', array('view' => $vs_current_view, 'key' => $vs_browse_key, 'direction' => (($vs_sort_dir == 'asc') ? _t("desc") : _t("asc")), '_advanced' => $vn_is_advanced ? 1 : 0))."</li>";
-					print "</ul></div>\n";
-				}
-			}
-?>
 		<div class="tadl-results-header">
 			<div class="tadl-results-title-block">
 		<H1>
@@ -213,6 +188,11 @@ if (!$vb_fragment) {	// full page
 					$vs_facet_description = $t_authority_table->get($va_current_facet["show_description_when_first_facet"]);
 				}
 			}
+		}
+		if (count($va_criteria) > ($vb_is_search ? 1 : 0)) {
+			print caNavLink($this->request, _t('Start over'), 'tadl-filter-reset', '*', '*', '*', [
+				'view' => $vs_current_view, 'key' => $vs_browse_key, 'clear' => 1, '_advanced' => $vn_is_advanced ? 1 : 0
+			]);
 		}
 ?>		
 		</div>

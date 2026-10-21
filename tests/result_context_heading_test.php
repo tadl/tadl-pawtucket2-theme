@@ -53,8 +53,9 @@ function caNavUrl($request, $module, $controller, $action, $params = []) {
 	return '/synthetic/'.($controller === 'Detail' ? 'Detail/' : '').($action === '*' ? 'objects' : $action).'?'.http_build_query($params);
 }
 function caNavLink($request, $text, $class, $module, $controller, $action, $params = [], $attributes = []) {
-	$rel = isset($attributes['rel']) ? ' rel="'.htmlspecialchars($attributes['rel'], ENT_QUOTES, 'UTF-8').'"' : '';
-	return '<a class="'.htmlspecialchars($class, ENT_QUOTES, 'UTF-8').'" href="'.htmlspecialchars(caNavUrl($request, $module, $controller, $action, $params), ENT_QUOTES, 'UTF-8').'"'.$rel.'>'.$text.'</a>';
+	$attrs = '';
+	foreach ($attributes as $key => $value) { $attrs .= ' '.htmlspecialchars($key, ENT_QUOTES, 'UTF-8').'="'.htmlspecialchars($value, ENT_QUOTES, 'UTF-8').'"'; }
+	return '<a class="'.htmlspecialchars($class, ENT_QUOTES, 'UTF-8').'" href="'.htmlspecialchars(caNavUrl($request, $module, $controller, $action, $params), ENT_QUOTES, 'UTF-8').'"'.$attrs.'>'.$text.'</a>';
 }
 class Datamodel {
 	static function getInstance($table, $initialize = true) { return new ContextSubject($table); }
@@ -233,7 +234,7 @@ foreach (['images' => 18, 'list' => 25] as $view => $pageSize) {
     $html = (new ContextView($request, [], 90, ['view' => $view, 'start' => $pageSize, 'sort' => 'Title', 'sort_direction' => 'desc']))->render('Browse/browse_results_html.php');
     $document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
     $xpath = new DOMXPath($document);
-    checkContext($xpath->query('//button[contains(@class,"tadl-results-options")]')->length === 1, 'Every collection page must have Options.');
+    checkContext($xpath->query('//details[@class="tadl-results-sort"]/summary')->length === 1, 'Every collection page must have the shared Sort by disclosure.');
     checkContext(str_contains($html, 'Page 2 of ') && str_contains($html, 'data-tadl-result-count="45"'), 'Later pages must keep filtered counts and current page.');
     foreach ($xpath->query('//div[contains(@class,"tadl-collection-results-toolbar")]//a[@href!="#"]') as $anchor) {
         $url = $anchor->getAttribute('href');
@@ -253,9 +254,35 @@ foreach (['flat', 'hierarchy'] as $mode) {
 	$request->mediaMode = 'all';
 	$html = (new ContextView($request, [], 45, $extra))->render('Browse/browse_results_html.php');
 	$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
-	$anchor = (new DOMXPath($document))->query('//a[starts-with(@href,"/synthetic/CollectionContents/Objects?")]')->item(0);
-	checkContext($anchor && str_contains($anchor->getAttribute('href'), 'collection_id=42') && str_contains($anchor->getAttribute('href'), 'collection_view='.$mode) && !str_contains($anchor->getAttribute('href'), 'key=') && $anchor->getAttribute('rel') === 'nofollow', 'Native export must regenerate the selected branch scope and discourage crawling.');
+	checkContext(!str_contains($html, 'Synthetic PDF') && !str_contains($html, 'export_format=') && !str_contains($html, 'Download results as'), 'Result exports must be absent in All items mode too.');
 }
+foreach (['Browse', 'Search', 'FamilyContents', 'PlaceContents'] as $controller) {
+	$request = new ContextRequest($controller, false, null, ['entity_id'=>44, 'place_id'=>42, 'per_page'=>'36']);
+	$html = (new ContextView($request, [], 90, ['sort'=>'Title', 'sort_direction'=>'desc', 'start'=>36, 'is_advanced'=>true,
+		'browseInfo'=>['table'=>'ca_objects', 'sortControlType'=>'list'],
+		'sortBy'=>['Title'=>'ca_object_labels.name', 'Synthetic <b> & "field"'=>'synthetic_field']]))->render('Browse/browse_results_html.php');
+	$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $xpath = new DOMXPath($document);
+	checkContext($xpath->query('//details[@class="tadl-results-sort"]//li')->length === 2 && !str_contains($html, 'bSortByList'), 'All catalogue views must use one compact sort row per configured field, including legacy list controls.');
+	$selected = $xpath->query('//details//a[@aria-current="true"]');
+	checkContext($selected->length === 1 && $selected->item(0)->getAttribute('aria-label') === 'Sort by Title, Descending', 'Only the active field and direction may be marked current.');
+	checkContext($xpath->query('//details//b')->length === 0 && str_contains($html, '&lt;b&gt;'), 'Configured sort labels must be escaped.');
+	foreach ($xpath->query('//details//a') as $link) {
+		parse_str(parse_url($link->getAttribute('href'), PHP_URL_QUERY), $params);
+		checkContext(in_array($params['direction'], ['asc','desc'], true) && $params['s'] === '0' && $params['per_page'] === '36', 'Each sort choice must set field/direction together, reset paging and retain page size.');
+		checkContext($link->getAttribute('title') === $link->getAttribute('aria-label') && $link->getAttribute('data-tadl-view') === 'images', 'Directional choices need contextual names/tooltips and ordinary result-link attributes.');
+		if (in_array($controller, ['FamilyContents','PlaceContents'], true)) {
+			$key = $controller === 'FamilyContents' ? 'entity_id' : 'place_id';
+			checkContext($params[$key] === (string)$request->params[$key] && !isset($params['key']), 'Authority sorts must retain their fixed scope.');
+		} else {
+			checkContext($params['key'] === 'synthetic-key' && $params['_advanced'] === '1', 'Sort links must retain native search/filter context.');
+		}
+	}
+}
+$html = (new ContextView(new ContextRequest(), [contextCriterion('place_facet',42)]))->render('Browse/browse_results_html.php');
+$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $xpath = new DOMXPath($document);
+checkContext($xpath->query('//details//a[contains(@href,"clear=")]')->length === 0 && $xpath->query('//div[contains(@class,"tadl-active-filters")]/a[contains(@href,"clear=1")]')->length === 1, 'Start over belongs beside active filters, outside the sorting dropdown.');
+$html = (new ContextView(new ContextRequest(), [], 45, ['sortBy'=>[]]))->render('Browse/browse_results_html.php');
+checkContext(!str_contains($html, 'tadl-results-sort'), 'Views without sort fields must omit an empty disclosure.');
 $keysBefore = count(ExternalCache::$keys);
 foreach (['flat', 'hierarchy'] as $mode) {
 	$request = new ContextRequest('CollectionContents', true, null, ['tadl_collection_controls' => 1, 'tadl_collection_id' => 42, 'collection_view' => $mode]);
@@ -372,4 +399,11 @@ checkContext(!str_contains($html, 'tadl-subject-index-list'), 'Selected subject 
 $html = (new ContextView(new ContextRequest(), [], 45))->render('Browse/browse_results_html.php');
 checkContext(!str_contains($html, 'Browse Subjects') && !str_contains($html, 'tadl-subject-browse'), 'Subject layout leaked onto normal object browse.');
 
-echo json_encode(['status' => 'passed', 'assertions' => $GLOBALS['contextAssertions'], 'boundaries' => 'actual results/refine templates with synthetic record, access, ACL, result, URL and cache APIs'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;
+if (($argv[1] ?? '') === '--sort-fixtures') {
+	print json_encode(['sort-results'=>(new ContextView(new ContextRequest('Search'), [], 163, [
+		'sortBy'=>['Identifier'=>'ca_objects.idno', 'Title'=>'ca_object_labels.name', 'Date'=>'ca_objects.date.dates_value', 'Relevance'=>'_natural', 'Entity'=>'ca_entity_labels.surname'],
+		'sort'=>'Title', 'sort_direction'=>'desc'
+	]))->render('Browse/browse_results_html.php')], JSON_THROW_ON_ERROR);
+} else {
+	echo json_encode(['status' => 'passed', 'assertions' => $GLOBALS['contextAssertions'], 'boundaries' => 'actual results/refine templates with synthetic record, access, ACL, result, URL and cache APIs'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;
+}

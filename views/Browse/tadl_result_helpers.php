@@ -42,9 +42,9 @@ function tadlBrowseResultRoute($request, $params) {
 	return ['*', '*', '*', $params];
 }
 
-function tadlBrowseResultLink($request, $label, $class, $params) {
+function tadlBrowseResultLink($request, $label, $class, $params, array $attributes = []) {
 	[$module, $controller, $action, $params] = tadlBrowseResultRoute($request, $params);
-	$attributes = in_array($params['view'] ?? '', ['images', 'list'], true) ? ['data-tadl-view' => $params['view']] : [];
+	if (in_array($params['view'] ?? '', ['images', 'list'], true)) { $attributes['data-tadl-view'] = $params['view']; }
 	return caNavLink($request, $label, $class, $module, $controller, $action, $params, $attributes);
 }
 

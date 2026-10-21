@@ -25,6 +25,26 @@
     });
 })(jQuery);
 
+/* Sorting remains a native disclosure with ordinary links when JavaScript is off. */
+(function () {
+    'use strict';
+    document.addEventListener('click', function (event) {
+        document.querySelectorAll('.tadl-results-sort[open]').forEach(function (menu) {
+            if (!menu.contains(event.target)) { menu.open = false; }
+        });
+    });
+    // Own the keyup before Pawtucket's document-level viewer Escape handlers.
+    document.addEventListener('keyup', function (event) {
+        if (event.key !== 'Escape') { return; }
+        var menu = event.target.closest('.tadl-results-sort[open]');
+        if (!menu) { return; }
+        event.preventDefault();
+        event.stopPropagation();
+        menu.open = false;
+        menu.querySelector('summary').focus();
+    }, true);
+})();
+
 /* Keep the native AJAX viewer/panel lifecycle, with keyboard and modal semantics. */
 (function () {
     'use strict';

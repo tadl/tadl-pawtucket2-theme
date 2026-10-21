@@ -1,6 +1,6 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-20. This document carries the recent coding context to another
+Updated: 2026-10-21. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
@@ -19,6 +19,28 @@ media viewer. Use existing TADL visual conventions and accessible controls.
 Changes belong here rather than in upstream CollectiveAccess. The surrounding
 workspace has reference checkouts of Pawtucket and Providence at local tag
 `2.0.10`; that is a local source fact, not a verified current production version.
+
+## Compact catalogue sorting
+
+The shared Search/Browse/collection-item toolbar now uses **Sort by** in place
+of **Options**. Its native `details` disclosure has one row per configured field,
+with adjacent ascending/descending links (↑/↓). The current pair has a checkmark,
+`aria-current`, a filled control and a bold field label. Contextual names/tooltips
+identify both field and direction. Each choice sets both in one ordinary GET,
+resets the offset and preserves scope, filters, view, page size and native context.
+This replaces the old inline sort bar too, regardless of `sortControlType`.
+
+Catalogue result export links and export-format discovery in embedded collection
+results have been removed. **Start over** appears beside active filters instead
+of inside sorting. Existing finding aids, object media downloads and account
+Lightbox management remain separate controls. The Collections index retains its
+configured alphabetical order. Earlier Options/export notes below are historical.
+
+The disclosure works without JavaScript. `user-features.js` adds outside-click
+dismissal and Escape/focus restoration. Synthetic result/template tests and the
+accessibility/server-result browser suites cover both directions, native routes,
+scope and offset preservation, no-script navigation, keyboard use and open-menu
+reflow/axe checks at mobile through desktop widths.
 
 ## Collection-record grid page sizes
 
@@ -53,7 +75,7 @@ retain their separate native interactive behavior.
   runs once before counts, page slicing and native result-context storage. The
   containing response uses `Cache-Control: private, no-store`, while detail pages
   retain their normal indexing policy.
-- Collection toolbar/options, exports, format tags, sticky preferences and both
+- Collection toolbar/sorting, format tags, sticky preferences and both
   ordinary pagers remain shared. Later pages omit the descriptive metadata and
   link back to the overview. Embedded contexts explicitly activate the filtered
   search/objects result list so object Previous/Next follows the displayed scope.

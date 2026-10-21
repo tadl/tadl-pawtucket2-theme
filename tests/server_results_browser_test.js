@@ -60,6 +60,16 @@ let browser;
             await page.setViewportSize({width,height:1000});
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${width}px: server result controls must reflow.`);
         }
+        await page.locator('.tadl-results-sort > summary').focus(); await page.keyboard.press('Enter');
+        await page.getByRole('link',{name:'Sort by Title, Descending',exact:true}).click();
+        await page.waitForURL('**/sort/Title/direction/desc/**');
+        assert(page.url().includes('/s/0/') && page.url().includes('/per_page/18'), 'Sort changes must preserve size and reset paging.');
+        assert.equal(await page.locator('.tadl-sort-choice[aria-current=true]').getAttribute('aria-label'),'Sort by Title, Descending');
+        assert.equal(await page.locator('[id^=row]').count(),18);
+        await page.locator('.tadl-results-sort > summary').click();
+        await page.getByRole('link',{name:'Sort by Identifier, Ascending',exact:true}).click();
+        await page.waitForURL('**/sort/Identifier/direction/asc/**');
+        assert.equal(await page.locator('[id^=row]').first().getAttribute('id'),'row1000');
         await page.getByRole('link',{name:'Next',exact:true}).first().click();
         await page.waitForFunction(() => document.querySelector('[id^=row]')?.id === 'row1018');
         await page.goBack();

@@ -35,12 +35,6 @@ function tadlServerObjectResults($outer, $request, $result, $kind, array $info, 
 	$sorts = (array)($info['sortBy'] ?? []);
 	$sort = (string)$request->getParameter('sort', pString);
 	if (!isset($sorts[$sort])) { $sort = isset($sorts['Identifier']) ? 'Identifier' : array_key_first($sorts); }
-	$exports = $kind !== 'collection' || $request->config->get('disable_pdf_output') ? [] : caGetAvailablePrintTemplates('results', ['restrictToTypes'=>$info['restrictToTypes'] ?? null, 'table'=>'ca_objects']);
-	if ($kind === 'collection' && !$request->config->get('disable_export_output')) {
-		foreach ((array)($request->config->getAssoc('export_formats')['ca_objects'] ?? []) as $code => $format) {
-			$exports[] = ['name'=>$format['name'], 'code'=>$code, 'type'=>$format['type']];
-		}
-	}
 	$values = [
 		'result'=>$result, 'table'=>'ca_objects', 'primaryKey'=>'object_id', 't_instance'=>Datamodel::getInstance('ca_objects', false),
 		'access_values'=>caGetUserAccessValues($request), 'config'=>caGetBrowseConfig(), 'browseInfo'=>$info,
@@ -49,7 +43,7 @@ function tadlServerObjectResults($outer, $request, $result, $kind, array $info, 
 		'view'=>$display, 'viewIcons'=>[], 'sort'=>$sort, 'sortBy'=>$sorts,
 		'sort_direction'=>$request->getParameter('direction', pString) === 'desc' ? 'desc' : 'asc',
 		'start'=>max(0, (int)$request->getParameter('s', pInteger)), 'hits_per_block'=>tadlResultPageSize($request, null, $display),
-		'key'=>'', 'export_formats'=>$exports, 'tadl_embedded_results'=>$kind, 'tadl_search_expression'=>$expression
+		'key'=>'', 'tadl_embedded_results'=>$kind, 'tadl_search_expression'=>$expression
 	];
 	foreach ($values as $key => $value) { $view->setVar($key, $value); }
 	return $view->render('Browse/browse_results_html.php');
