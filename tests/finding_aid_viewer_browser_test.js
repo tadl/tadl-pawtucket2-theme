@@ -30,6 +30,16 @@ const server = http.createServer((request, response) => {
         response.end(header + '<h1>Synthetic collection</h1><div style="height:70vh" aria-hidden="true"></div>' + links + '<div style="height:160vh" aria-hidden="true"></div>' + pageParts.footer);
         return;
     }
+    if (url.pathname === '/object-pdf') {
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        response.end(aid.object_viewers[url.searchParams.get('document') || 'first']);
+        return;
+    }
+    if (url.pathname === '/synthetic-object.pdf') {
+        response.setHeader('Content-Type', 'application/pdf');
+        response.end(pdf);
+        return;
+    }
     if (url.pathname === '/synthetic/CollectionFindingAid/Viewer/collection_id/42') {
         viewerMethods.push(request.method);
         const viewer = aid.viewers[request.method];
@@ -71,7 +81,7 @@ async function viewerLayout(page) {
             return {top, bottom};
         };
         return {
-            title: rect('.tadl-finding-aid-controls'), toolbar: rect('#toolbarContainer'),
+            title: rect('.tadl-document-controls'), toolbar: rect('#toolbarContainer'),
             page: {overflow: getComputedStyle(document.documentElement).overflowY, scroll: scrollY, width: document.documentElement.clientWidth, viewport: innerWidth},
             containers: ['caMediaPanel', 'caMediaPanelContentArea', 'caMediaOverlayContent'].map(id => {
                 const node = document.getElementById(id);
@@ -85,6 +95,28 @@ function checkViewerLayout(layout, phase) {
     assert(layout.containers.every(node => node.content <= node.height + 1 && node.scroll === 0), `${phase}: outer viewer containers must not have a second scrollbar: ${JSON.stringify(layout)}`);
     assert.equal(layout.page.overflow, 'hidden', `${phase}: the background page must not retain a second scrollbar.`);
     assert.equal(layout.page.width, layout.page.viewport, `${phase}: the background scrollbar must not reserve a gutter beside the modal.`);
+}
+async function checkObjectBar(page, phase) {
+    await page.waitForFunction(()=>getComputedStyle(document.getElementById('caMediaPanelContentArea')).marginTop==='0px',undefined,{timeout:5000});
+    const layout=await page.evaluate(()=>{
+        const rect=node=>node.getBoundingClientRect().toJSON();
+        const bar=document.querySelector('.tadl-document-controls');
+        return {bar:rect(bar),close:rect(bar.querySelector('.tadl-dialog-close')),toolbar:rect(document.getElementById('toolbarContainer')),
+            children:Array.from(bar.children).map(rect),title:bar.querySelector('.objectInfo')?.getAttribute('title'),
+            width:bar.clientWidth,scrollWidth:bar.scrollWidth};
+    });
+    assert(layout.close.top>=layout.bar.top && layout.close.bottom<=layout.bar.bottom,phase+': close button must fit within the title bar: '+JSON.stringify(layout));
+    assert(layout.toolbar.top>=layout.bar.bottom-1,phase+': PDF toolbar must start below the complete title/navigation bar: '+JSON.stringify(layout));
+    assert(layout.children.every(child=>child.top>=layout.bar.top && child.bottom<=layout.bar.bottom && child.left>=layout.bar.left && child.right<=layout.bar.right),phase+': labels/navigation must stay inside the bar.');
+    assert(layout.scrollWidth<=layout.width+1,phase+': long labels must not create horizontal overflow.');
+    if (layout.title) { assert(layout.title.includes('https_example_org_files_original_') && layout.title.includes('.pdf)'),phase+': truncated labels must retain their full hover text.'); }
+    checkViewerLayout(await viewerLayout(page),phase);
+}
+async function waitForPDFRender(page) {
+    await page.waitForFunction(()=>{
+        const app=window.PDFViewerApplication;
+        return app?.pdfDocument && app.pdfViewer.getPageView(app.page-1)?.renderingState===3;
+    });
 }
 async function checkThumbnailSidebar(page, width) {
     if (!await page.locator('#outerContainer').evaluate(node => node.classList.contains('sidebarOpen'))) {
@@ -201,10 +233,58 @@ async function checkThumbnailSidebar(page, width) {
         await page.waitForFunction(() => document.querySelector('#caMediaPanel').getAttribute('aria-hidden') === 'true');
         assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).overflowY), originalOverflow, 'Repeated viewer openings must not leave the page locked.');
     }
+    for (const width of [1740, 768, 390, 320]) {
+        await page.setViewportSize({width, height:900});
+        await page.goto(origin);
+        await page.evaluate(() => {
+            const opener=document.createElement('button'); opener.id='open-object-pdf'; opener.textContent='Open newspaper';
+            opener.onclick=()=>caMediaPanel.showPanel('/object-pdf'); document.querySelector('#main').append(opener);
+        });
+        let allowPDF;
+        const pendingPDF=new Promise(resolve=>{allowPDF=resolve;});
+        await page.route('**/synthetic-object.pdf',async route=>{await pendingPDF;await route.continue();});
+        await page.locator('#open-object-pdf').click();
+        await page.locator('#toolbarContainer').waitFor({state:'visible'});
+        // Release the held response even if the loading-layout regression fails.
+        try { await checkObjectBar(page,`${width}px object PDF loading`); } finally { allowPDF(); }
+        await waitForPDFRender(page);
+        await page.unroute('**/synthetic-object.pdf');
+        await checkObjectBar(page,`${width}px object PDF rendered`);
+        if (process.env.TADL_A11Y_ARTIFACT_DIR) {
+            fs.mkdirSync(process.env.TADL_A11Y_ARTIFACT_DIR,{recursive:true});
+            await page.screenshot({path:path.join(process.env.TADL_A11Y_ARTIFACT_DIR,`object-pdf-viewer-${width}.png`)});
+        }
+        // Preserve the native .load() navigation for other records/representations.
+        await page.locator('.nextPreviousLinks a').first().click();
+        await page.waitForFunction(()=>document.querySelector('.tadl-document-controls .objectInfo')?.textContent.includes('newspaper-second.pdf'));
+        await waitForPDFRender(page);
+        await checkObjectBar(page,`${width}px next record with native download controls`);
+        await page.locator('.tadl-document-viewer').evaluate(node=>node.dataset.syntheticPrevious='true');
+        await page.getByRole('link',{name:'Next representation',exact:true}).click();
+        await page.waitForFunction(()=>!document.querySelector('[data-synthetic-previous]'));
+        await waitForPDFRender(page);
+        await checkObjectBar(page,`${width}px representation navigation`);
+        if (width===320) {
+            await page.evaluate(()=>{
+                const nodes=Array.from(document.querySelectorAll('.tadl-document-controls *')).map(node=>[node,parseFloat(getComputedStyle(node).fontSize)]);
+                nodes.forEach(([node,size])=>node.style.fontSize=(size*2)+'px');
+            });
+            await checkObjectBar(page,'320px enlarged object PDF controls');
+        }
+        await page.getByRole('button',{name:'Close media viewer',exact:true}).click();
+        await page.waitForFunction(()=>document.querySelector('#caMediaPanel').getAttribute('aria-hidden')==='true');
+        await page.waitForFunction(()=>getComputedStyle(document.getElementById('caMediaPanelContentArea')).marginTop==='40px');
+        await page.evaluate(()=>caMediaPanel.showPanel('/object-pdf?document=minimal'));
+        await waitForPDFRender(page);
+        await checkObjectBar(page,`${width}px minimal PDF controls`);
+        await page.keyboard.press('Escape');
+        await page.waitForFunction(()=>document.querySelector('#caMediaPanel').getAttribute('aria-hidden')==='true');
+        assert.equal(await page.evaluate(()=>caUI.panelCount),0,'PDF navigation/closing must retain the native panel lifecycle.');
+    }
     assert.deepEqual(errors, [], 'Native document viewer JavaScript errors.');
     assert.deepEqual(viewerMethods, ['POST', 'POST', 'POST', 'POST'], 'Exercise the native media-panel transport on every opening.');
     assert.equal(pdfRequests, 4, 'Each opening should request the PDF once without pre-generating or caching it.');
-    console.log('Finding-aid browser passed: loading/rendered/zoomed layout, unclipped thumbnail sidebar and page selection, single document scroller, background scroll lock/restoration, title/identifier, native PDF.js paging/search/download, close/reopen and focus restoration at 1280/390px.');
+    console.log('PDF browser passed: finding-aid loading/rendered/zoomed layout, sidebar, paging/search/download, close/reopen and focus at 1280/390px; object PDFs with long titles/navigation, native record/representation switching, download/minimal controls, loading/rendered geometry and enlarged text at 320–1740px.');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
     if (browser) { await browser.close(); }
     server.close();

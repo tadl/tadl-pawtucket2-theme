@@ -34,6 +34,7 @@ $download_controls = tadlNofollowMediaLinks($this->getVar('controls'));
 $viewer_download = '';
 $viewer_object_heading = '';
 $finding_aid_viewer = (bool)$this->getVar('finding_aid_viewer');
+$document_viewer = $finding_aid_viewer || $this->getVar('viewer') === 'pdfjs';
 if ($this->getVar('viewer') === 'TileViewer' && in_array($this->getVar('context') ?: $this->request->getParameter('context', pString), ['objects', 'gallery'], true)
 	&& preg_match('/^representation:(\d+)$/', (string)$this->getVar('identifier'), $download_match)) {
 	$t_download_object = Datamodel::getInstance('ca_objects', true);
@@ -53,22 +54,25 @@ if ($this->getVar('viewer') === 'TileViewer' && in_array($this->getVar('context'
 	}
 }
 ?>
-<?php if ($finding_aid_viewer) { ?><div class="tadl-finding-aid-viewer"><?php } ?>
+<?php if ($document_viewer) { ?><div class="tadl-document-viewer<?= $finding_aid_viewer ? ' tadl-finding-aid-viewer' : ''; ?>"><?php } ?>
 <div id="caMediaOverlayContent"><?php print $this->render($this->getVar('viewer').".php").$viewer_download; ?></div>
 <?php if ($this->getVar('hideOverlayControls')) { ?>
-<div class="caMediaOverlayControlsMinimal">
+<div class="caMediaOverlayControlsMinimal<?= $document_viewer ? ' tadl-document-controls' : ''; ?>">
 	<div class="close"><button type="button" class="tadl-dialog-close" aria-label="<?= _t('Close media viewer'); ?>" onclick="caMediaPanel.hidePanel(); return false;"><i class="fa fa-times" aria-hidden="true"></i></button></div>
 </div>
 <?php } else { ?>
-<div class="caMediaOverlayControls<?= $viewer_object_heading !== '' ? ' tadl-image-viewer-controls' : ''; ?><?= $this->getVar('finding_aid_viewer') ? ' tadl-finding-aid-controls' : ''; ?>">
+<div class="caMediaOverlayControls<?= $viewer_object_heading !== '' ? ' tadl-image-viewer-controls' : ''; ?><?= $document_viewer ? ' tadl-document-controls' : ''; ?><?= $finding_aid_viewer ? ' tadl-finding-aid-controls' : ''; ?>">
 	<div class="close"><button type="button" class="tadl-dialog-close" aria-label="<?= _t('Close media viewer'); ?>" onclick="caMediaPanel.hidePanel(); return false;"><i class="fa fa-times" aria-hidden="true"></i></button></div>
 	<?php print $download_controls; ?>
 </div>
 <?php } ?>
-<?php if ($finding_aid_viewer) { ?></div><?php } ?>
+<?php if ($document_viewer) { ?></div><?php } ?>
 
 <script>
 	jQuery(document).ready(function () {
+		jQuery('.tadl-document-controls .objectInfo, .tadl-document-controls .nextPreviousLinks a').each(function () {
+			if (!this.hasAttribute('title')) { this.setAttribute('title', jQuery(this).text().trim()); }
+		});
 		if (typeof tadlPlaceViewerDownload === 'function') {
 			tadlPlaceViewerDownload(document.getElementById('caMediaOverlayContent'));
 		}

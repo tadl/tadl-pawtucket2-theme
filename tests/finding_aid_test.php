@@ -388,7 +388,7 @@ foreach (['GET', 'POST'] as $method) {
 	aidCheck($response->status === 200 && str_contains($response->body, 'id="caMediaOverlayContent"') && str_contains($response->body, 'id="viewerContainer"'), 'Finding aid must reuse the actual PDF.js document viewer and native media overlay.');
 	aidCheck(str_contains($response->body, "window.pdfjsContentURL = '/synthetic/CollectionFindingAid/View/collection_id/42'") && str_contains($response->body, '/assets/pdfjs/viewer/viewer.js'), 'Native PDF.js must load the access-checked generated PDF endpoint.');
 	aidCheck(str_contains($response->body, '/CollectionFindingAid/Download/collection_id/42') && str_contains($response->body, 'Close media viewer') && $response->headers['Cache-Control'] === 'private, no-store' && $response->headers['X-Robots-Tag'] === 'noindex, nofollow', 'Viewer must retain download/close controls and privacy/crawler headers.');
-	aidCheck(str_contains($response->body, 'class="tadl-finding-aid-viewer"') && str_contains($response->body, 'title="Finding aid: Synthetic Archives Collection (SYN.42)"') && str_contains($response->body, '<span class="tadl-viewer-object-identifier"> (SYN.42)</span>'), 'The bounded finding-aid viewer must display the readable collection identifier after its title.');
+	aidCheck(str_contains($response->body, 'class="tadl-document-viewer tadl-finding-aid-viewer"') && str_contains($response->body, 'title="Finding aid: Synthetic Archives Collection (SYN.42)"') && str_contains($response->body, '<span class="tadl-viewer-object-identifier"> (SYN.42)</span>'), 'The bounded finding-aid viewer must display the readable collection identifier after its title.');
 	aidCheck(array_slice($GLOBALS['aidLoads'], $before) === [['ca_collections', 42]], 'Opening the viewer must validate only the root; PDF generation happens once when PDF.js requests it.');
 }
 $saved_root = $GLOBALS['aidRows']['ca_collections'][42];
@@ -450,7 +450,27 @@ if (($argv[1] ?? '') === '--viewer-fixture') {
 		$response = new AidResponse(); (new CollectionFindingAidController(new AidRequest(['collection_id' => 42], $method), $response))->Viewer();
 		$viewers[$method] = ['status' => $response->status, 'headers' => $response->headers, 'body' => $response->body];
 	}
-	print json_encode(['viewers' => $viewers, 'pdf' => base64_encode($browser_pdf)], JSON_THROW_ON_ERROR);
+	// Native object-PDF control shapes, including long imported representation
+	// labels and record/representation navigation. No catalogue or media is loaded.
+	$object_viewers = [];
+	foreach (['first', 'second', 'minimal'] as $document) {
+		$object_view = new View(new AidRequest(), dirname(__DIR__).'/views/mediaViewers');
+		$label = 'https_example_org_files_original_'.str_repeat('abcdef0123456789', 12).' (synthetic-newspaper-'.$document.'.pdf)';
+		$controls = '<div class="objectInfo">'.htmlspecialchars($label, ENT_QUOTES, 'UTF-8').'</div>';
+		if ($document !== 'minimal') {
+			$controls .= '<div class="repNav"><a href="#" onclick="jQuery(\'#caMediaPanelContentArea\').load(\'/object-pdf?document=second\'); return false;" aria-label="Next representation">→</a> 1 of 12</div>';
+			$controls .= '<div class="nextPreviousLinks"><a href="#" onclick="jQuery(\'#caMediaPanelContentArea\').load(\'/object-pdf?document=second\'); return false;">← Previous synthetic newspaper ('.str_repeat('previous_identifier_', 8).')</a>';
+			$controls .= ' | <a href="#" onclick="jQuery(\'#caMediaPanelContentArea\').load(\'/object-pdf?document=first\'); return false;">Next synthetic newspaper ('.str_repeat('next_identifier_', 8).') →</a></div>';
+			if ($document === 'second') {
+				$controls .= '<div class="download"><form><label>Download as <select name="version"><option>original</option></select></label><button type="button" aria-label="Download media representations">↓</button></form></div>';
+			}
+		}
+		foreach (['viewer'=>'pdfjs', 'context'=>'objects', 'original_media_url'=>'/synthetic-object.pdf', 'search'=>'', 'scroll_mode'=>-1, 'controls'=>$controls, 'hideOverlayControls'=>$document==='minimal'] as $key=>$value) {
+			$object_view->setVar($key, $value);
+		}
+		$object_viewers[$document] = $object_view->render('viewerWrapper.php');
+	}
+	print json_encode(['viewers' => $viewers, 'object_viewers'=>$object_viewers, 'pdf' => base64_encode($browser_pdf)], JSON_THROW_ON_ERROR);
 } else {
 	echo "Finding aid passed: {$GLOBALS['assertions']} assertions (".($autoload?'real Dompdf':'synthetic renderer').").\n";
 }

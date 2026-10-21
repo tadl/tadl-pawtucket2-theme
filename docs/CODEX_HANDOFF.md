@@ -260,6 +260,19 @@ for finding aids and object PDFs. The native PDF browser regression now uses a
 long synthetic document and verifies the full sidebar width, no horizontal
 overflow, vertical scrolling and last-page selection at 1280/390px.
 
+All native PDF.js overlays now share the `tadl-document-viewer` flex wrapper,
+including object/newspaper PDFs and the minimal close-only variant. The existing
+finding-aid marker and title/identifier layout remain. A measured
+`tadl-document-controls` row replaces the fixed 40px bar, so the 44px close button
+and long representation labels cannot overlap PDF.js's own toolbar. Long labels
+use ellipses with complete hover text. Record navigation occupies a separate row
+with bounded links; representation counters and native download controls remain.
+Native record/representation `.load()` callbacks are unchanged. Wrapper presence
+removes the content-area top margin, and removing it restores other media layouts.
+The optional real PDF.js browser regression reproduces the original overlap and
+checks loading/rendered geometry, long titles/identifiers, native switching,
+download and minimal controls, enlarged text and cleanup at 320–1740px.
+
 Collection item pagination now omits the descriptive metadata on nonzero `s`
 offsets. It skips those field/relationship reads, keeps the title, finding aid
 and navigation, and adds **About this collection** back to the first page with

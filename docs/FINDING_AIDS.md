@@ -216,6 +216,10 @@ collection fixture checks background scroll locking, scrollbar-gutter removal,
 wheel handling and scroll-position restoration. A long synthetic PDF exercises
 the expanded thumbnail sidebar: full pane width, unclipped pages and selection
 frames, no horizontal overflow, vertical scrolling and selection of the last page.
+It also exercises ordinary object/newspaper PDFs at 320–1740px, including long
+imported filenames and previous/next labels, native record/representation
+navigation, download/minimal controls, enlarged text and the shared title-row
+layout before and after PDF rendering.
 Viewer responses use the
 actual controller's status, headers and markup for each request method, including
 the native panel's POST. It never

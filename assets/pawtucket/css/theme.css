@@ -1568,13 +1568,13 @@ h6 {
     border: 0;
 }
 
-/* Keep PDF.js scrolling inside the document, below the finding-aid title bar. */
-#caMediaPanelContentArea:has(> .tadl-finding-aid-viewer) {
+/* Give every PDF a measured title row above PDF.js, including object media. */
+#caMediaPanelContentArea:has(> .tadl-document-viewer) {
     margin-top: 0;
     overflow: hidden;
 }
 
-.tadl-finding-aid-viewer {
+.tadl-document-viewer {
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -1582,7 +1582,7 @@ h6 {
     background-color: #404040;
 }
 
-.tadl-finding-aid-viewer > #caMediaOverlayContent {
+.tadl-document-viewer > #caMediaOverlayContent {
     position: relative;
     flex: 1 1 auto;
     min-height: 0;
@@ -1590,16 +1590,17 @@ h6 {
     overflow: hidden;
 }
 
-.tadl-finding-aid-viewer > .tadl-finding-aid-controls {
+.tadl-document-viewer > .tadl-document-controls {
     position: static;
     order: -1;
     flex: 0 0 auto;
     height: auto;
     min-height: 44px;
+    width: 100%;
 }
 
 div.caMediaOverlayControls.tadl-image-viewer-controls,
-div.caMediaOverlayControls.tadl-finding-aid-controls {
+div.tadl-document-controls {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -1607,7 +1608,7 @@ div.caMediaOverlayControls.tadl-finding-aid-controls {
 }
 
 div.tadl-image-viewer-controls .objectInfo,
-div.tadl-finding-aid-controls .objectInfo {
+div.tadl-document-controls .objectInfo {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -1624,7 +1625,6 @@ div.tadl-finding-aid-controls .objectInfo {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-
 .tadl-viewer-object-identifier {
     flex: 0 0 auto;
     white-space: nowrap;
@@ -1633,8 +1633,8 @@ div.tadl-finding-aid-controls .objectInfo {
 div.tadl-image-viewer-controls .repNav,
 div.tadl-image-viewer-controls .nextPreviousLinks,
 div.tadl-image-viewer-controls .close,
-div.tadl-finding-aid-controls .close,
-div.tadl-finding-aid-controls .download {
+div.tadl-document-controls .close,
+div.tadl-document-controls .download {
     flex: 0 0 auto;
     width: auto;
     margin: 0;
@@ -1644,9 +1644,48 @@ div.tadl-finding-aid-controls .download {
 }
 
 div.tadl-image-viewer-controls .close,
-div.tadl-finding-aid-controls .close {
+div.tadl-document-controls .close {
     order: 1;
 }
+
+/* Imported filenames and neighbouring record labels must not reach the PDF toolbar. */
+div.tadl-document-controls { flex-wrap: wrap; }
+div.tadl-document-controls .objectInfo {
+    display: block;
+    flex: 1 1 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+div.tadl-finding-aid-controls .objectInfo { display: flex; }
+div.tadl-document-controls .close { margin-left: auto; }
+div.tadl-document-controls .repNav {
+    flex: 0 0 auto;
+    float: none;
+    width: auto;
+    padding: 0;
+    white-space: nowrap;
+}
+div.tadl-document-controls .nextPreviousLinks {
+    display: flex;
+    flex: 1 1 100%;
+    order: 2;
+    gap: 8px;
+    float: none;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0 0 8px;
+}
+div.tadl-document-controls .nextPreviousLinks a {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+}
+div.tadl-document-controls .nextPreviousLinks a:last-child { text-align: right; }
 
 .tileviewer .tadl-viewer-downloads {
     width: auto;
