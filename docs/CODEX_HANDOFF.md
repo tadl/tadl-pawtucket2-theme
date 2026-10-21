@@ -481,6 +481,7 @@ the visitor enters a browse again.
 Object details intentionally omit **Browse objects**, showing only native
 **Prev / Next** when available. The toolbar is right-aligned at the top of the
 metadata column above the title, leaving the photo at the top of the body region.
+On phones (below 768px), the object toolbar is centered beneath the media.
 Its tooltips and ARIA labels identify the previous/next object. Direct object
 visits without result context omit the empty toolbar. Other detail types retain
 their Browse destination.
@@ -1070,7 +1071,8 @@ below retain implementation details and historical verification evidence.
   links plus the corresponding Browse action, with no Back button. Object details
   are the exception: only Prev/Next, with no toolbar when both are unavailable.
   Object navigation sits above its metadata heading; the other toolbars sit beside
-  their headings. The toolbars align right and wrap when space is limited;
+  their headings. The toolbars align right (object navigation centers on phones)
+  and wrap when space is limited;
   it reserves no outer navigation columns. Other detail types retain Browse on
   direct visits with no neighbors.
   Object media keeps its existing width; collection results stay full-width.

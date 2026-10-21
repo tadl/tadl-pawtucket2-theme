@@ -1892,6 +1892,10 @@ div.tadl-document-controls .nextPreviousLinks a:last-child { text-align: right; 
 }
 
 @media (max-width: 767px) {
+    .tadl-object-info > .tadl-record-nav {
+        justify-content: center;
+    }
+
     .tadl-object-detail .tadl-representation-stage {
         padding: 0;
     }
