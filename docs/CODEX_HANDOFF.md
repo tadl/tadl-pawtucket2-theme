@@ -272,8 +272,9 @@ removes the content-area top margin, and removing it restores other media layout
 The optional real PDF.js browser regression reproduces the original overlap and
 checks loading/rendered geometry, long titles/identifiers, native switching,
 download and minimal controls, enlarged text and cleanup at 320–1740px.
-PDF close buttons use a compact 32px square with an 18px X, scoped to document
-overlays and above the WCAG 2.2 AA minimum pointer target size.
+Image and PDF close buttons share a compact 32px square with an 18px X in
+`accessibility.css`, including minimal controls. This fits the image viewer's
+40px title bar and exceeds the WCAG 2.2 AA minimum pointer target size.
 
 Collection item pagination now omits the descriptive metadata on nonzero `s`
 offsets. It skips those field/relationship reads, keeps the title, finding aid

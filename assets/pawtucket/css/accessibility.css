@@ -58,6 +58,11 @@ html:has(#caMediaPanel[aria-hidden="false"]) { overflow: hidden; }
 
 .caMediaOverlayControls .tadl-dialog-close,
 .caMediaOverlayControlsMinimal .tadl-dialog-close {
+    min-width: 32px;
+    min-height: 32px;
+    padding: 4px;
+    font-size: 18px;
+    line-height: 1;
     border-color: #fff;
     background: #0b2f57;
     color: #fff;
