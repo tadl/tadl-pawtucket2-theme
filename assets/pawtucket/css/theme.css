@@ -1659,6 +1659,13 @@ div.tadl-document-controls .objectInfo {
 }
 div.tadl-finding-aid-controls .objectInfo { display: flex; }
 div.tadl-document-controls .close { margin-left: auto; }
+div.tadl-document-controls .tadl-dialog-close {
+    min-width: 32px;
+    min-height: 32px;
+    padding: 4px;
+    font-size: 18px;
+    line-height: 1;
+}
 div.tadl-document-controls .repNav {
     flex: 0 0 auto;
     float: none;

@@ -263,7 +263,7 @@ overflow, vertical scrolling and last-page selection at 1280/390px.
 All native PDF.js overlays now share the `tadl-document-viewer` flex wrapper,
 including object/newspaper PDFs and the minimal close-only variant. The existing
 finding-aid marker and title/identifier layout remain. A measured
-`tadl-document-controls` row replaces the fixed 40px bar, so the 44px close button
+`tadl-document-controls` row replaces the fixed 40px bar, so the close button
 and long representation labels cannot overlap PDF.js's own toolbar. Long labels
 use ellipses with complete hover text. Record navigation occupies a separate row
 with bounded links; representation counters and native download controls remain.
@@ -272,6 +272,8 @@ removes the content-area top margin, and removing it restores other media layout
 The optional real PDF.js browser regression reproduces the original overlap and
 checks loading/rendered geometry, long titles/identifiers, native switching,
 download and minimal controls, enlarged text and cleanup at 320–1740px.
+PDF close buttons use a compact 32px square with an 18px X, scoped to document
+overlays and above the WCAG 2.2 AA minimum pointer target size.
 
 Collection item pagination now omits the descriptive metadata on nonzero `s`
 offsets. It skips those field/relationship reads, keeps the title, finding aid

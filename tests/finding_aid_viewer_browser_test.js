@@ -106,6 +106,9 @@ async function checkObjectBar(page, phase) {
             width:bar.clientWidth,scrollWidth:bar.scrollWidth};
     });
     assert(layout.close.top>=layout.bar.top && layout.close.bottom<=layout.bar.bottom,phase+': close button must fit within the title bar: '+JSON.stringify(layout));
+    const enlarged=phase.includes('enlarged');
+    assert(layout.close.width>=24 && layout.close.height>=24,phase+': the compact close button must retain an AA-sized pointer target.');
+    if (!enlarged) { assert(layout.close.width<=34 && layout.close.height<=34,phase+': the PDF close button should stay compact.'); }
     assert(layout.toolbar.top>=layout.bar.bottom-1,phase+': PDF toolbar must start below the complete title/navigation bar: '+JSON.stringify(layout));
     assert(layout.children.every(child=>child.top>=layout.bar.top && child.bottom<=layout.bar.bottom && child.left>=layout.bar.left && child.right<=layout.bar.right),phase+': labels/navigation must stay inside the bar.');
     assert(layout.scrollWidth<=layout.width+1,phase+': long labels must not create horizontal overflow.');
