@@ -375,6 +375,7 @@ h6 {
     gap: 12px;
     list-style: none;
     white-space: normal;
+    font-size: 18px;
 }
 
 .tadl-media-preference-menu > summary::-webkit-details-marker {

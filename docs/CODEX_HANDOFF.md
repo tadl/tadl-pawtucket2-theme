@@ -68,6 +68,9 @@ JavaScript; the shared disclosure handler adds Escape/focus restoration and
 outside-click/focus dismissal. The open header menu sits above the main navigation.
 Browser checks cover phone/desktop layout, keyboard use, open-menu axe checks and
 an actual no-JavaScript POST from synthetic fixtures.
+The selector summary explicitly uses 18px text on both Front and interior pages;
+it must not fall back to Bootstrap's smaller button font on Front. Browser checks
+compare its full dimensions on Front and object Browse at phone/desktop widths.
 
 Object Search/Browse facets now retain counts in media-only mode. The filtered
 and original IDs establish a request-local `WeakMap` scope. An isolated native

@@ -196,6 +196,19 @@ let browser;
     }
     for (const width of [320,1280]) {
         await page.setViewportSize({width,height:1000});
+        const mediaSizes = [];
+        for (const route of ['/featured','/filters/browse']) {
+            await page.goto(origin + route);
+            if (width === 320) { await page.locator('.navbar-toggle').click(); }
+            const selector = page.locator('.tadl-media-preference-menu:visible');
+            await page.evaluate(async () => { await document.fonts.ready; await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))); });
+            mediaSizes.push(await selector.locator('summary').evaluate(node => {
+                const bounds = node.getBoundingClientRect();
+                return {font:getComputedStyle(node).fontSize,width:bounds.width,height:bounds.height};
+            }));
+        }
+        assert.deepEqual(mediaSizes[0], mediaSizes[1], 'Front and object Browse must show the same media selector size.');
+        assert.equal(mediaSizes[0].font,'18px', 'Every page must use the larger media selector size.');
         await page.goto(origin + '/contact');
         if (width === 320) { await page.locator('.navbar-toggle').click(); }
         const mediaMenu = page.locator('.tadl-media-preference-menu:visible');
