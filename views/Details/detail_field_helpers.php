@@ -32,6 +32,7 @@ function tadlDetailResultsReturnLink($view, $recordType) {
 	$url = is_array($return) ? ($return['url'] ?? null) : $view->getVar('resultsURL');
 	if (!is_string($url) || !str_starts_with($url, '/') || str_starts_with($url, '//') || preg_match('/[\\\\\x00-\x20\x7f]/', $url)) { return ''; }
 	$kind = is_array($return) ? ($return['kind'] ?? '') : $context->findType();
+	if ($kind === 'lightbox') { return ''; }
 	$label = [
 		'collection' => _t('Back to collection'),
 		'collections' => _t('Back to collections'),
@@ -40,8 +41,7 @@ function tadlDetailResultsReturnLink($view, $recordType) {
 		'families' => _t('Back to families'),
 		'places' => _t('Back to places'),
 		'occurrences' => _t('Back to events'),
-		'gallery' => _t('Back to gallery'),
-		'lightbox' => _t('Back to lightbox')
+		'gallery' => _t('Back to gallery')
 	][$kind] ?? _t('Back to results');
 	$escape = static fn($text) => htmlspecialchars((string)$text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 	return '<a class="tadl-record-return" href="'.$escape($url).'" title="'.$escape($label).'" aria-label="'.$escape($label).'">'

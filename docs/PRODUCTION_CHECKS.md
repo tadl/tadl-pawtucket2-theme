@@ -31,11 +31,11 @@ Do not use an arbitrary staff/patron account or inspect another person's lightbo
    not generate the former duplicate-email error. Invalid forms must not save
    partial preferences. Verify password-reset delivery to the designated test
    mailbox; never publish tokens or reset a real user's password for testing.
-3. Create a synthetic lightbox, add/reorder/remove an object, and test explicit
-   read/edit sharing using a second designated account. Verify an unshared account
-   is denied. Numeric Gallery and Gallery AJAX routes must deny that same lightbox
-   for owners, unrelated users and anonymous visitors, while published gallery sets
-   still render. Remove the disposable set when complete.
+3. Confirm object details and account menus contain no Lightbox controls for
+   anonymous or signed-in users. Direct `/Lightbox/Index` and
+   `/Lightbox/addItemForm` requests must return 404, including stale modal requests.
+   Published featured galleries must still render. Do not create or modify sets;
+   item sets are deferred until a future public researcher-account feature.
 4. Use small approved TIFF/BMP/JPEG/PDF records to check view/download menus,
    full image dimensions, PDF completeness and repeat exports. Generated files and
    download logs are production writes, so this is separate from read-only checks.

@@ -14,21 +14,22 @@ Native access and ACL checks still control permitted downloads.
   and POST parameters use native request precedence. The response has a clear
   retirement message and `X-Robots-Tag: noindex, nofollow`.
   Theme controller shims and `helpers/result_exports.php` implement this without
-  core changes. Object media downloads, finding aids, document text and native
-  account Lightbox exports keep their own access checks and behavior.
+  core changes. Object media downloads, finding aids and document text keep their
+  own access checks and behavior. All Lightbox routes, including exports, are
+  separately disabled with HTTP 404 before native controller loading.
 
 - Image download menus, native PDF/video/media toolbar actions, viewer controls,
-  collection finding aids and Lightbox export links use `rel="nofollow"`.
+  and collection finding aids use `rel="nofollow"`.
   Native callbacks and existing `rel` tokens remain intact.
   Advanced Search and Browse navigation links also use `nofollow`.
 - Search, MultiSearch, Browse, CollectionContents, FamilyContents and PlaceContents HTML pages
   use `noindex, follow`; links to public
   records remain eligible for discovery if a crawler visits those pages.
-  Account/lightbox pages use `noindex, nofollow`.
+  Account pages and disabled Lightbox responses use `noindex, nofollow`.
 - The theme's image, finding-aid, native representation and attribute/ZIP binary
   views send `X-Robots-Tag: noindex, nofollow`. Download headers, bytes and access
-  checks otherwise retain their existing behavior. Lightbox exports are covered
-  by the crawl restrictions; catalogue result exports are refused by the guard above.
+  checks otherwise retain their existing behavior. Lightbox exports return 404;
+  catalogue result exports are refused by the guard above.
 - `support/site-root/robots.txt` blocks dynamic search/browse, download, viewer
   data and account routes in both clean and `/index.php/` URL forms. Public
   `/Detail/objects/...`, collection/authority records, `/Collections`, `/Gallery`,

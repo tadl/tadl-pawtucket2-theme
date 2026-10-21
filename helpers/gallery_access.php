@@ -1,7 +1,7 @@
 <?php
 require_once(__DIR__.'/public_errors.php');
 
-/** Gallery is for published presentations; user lightboxes retain native sharing. */
+/** Gallery is for published presentations; user item sets must not appear here. */
 function tadlGuardGalleryRequest($request) {
 	// ResultContext includes the Gallery controller for static navigation helpers
 	// while rendering Detail pages. Validate only a dispatched Gallery request.

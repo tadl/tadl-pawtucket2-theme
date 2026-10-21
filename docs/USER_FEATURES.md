@@ -1,4 +1,4 @@
-# Accounts, lightboxes and home-page FAQ
+# Staff accounts, deferred item sets and home-page FAQ
 
 ## Catalogue display preferences
 
@@ -22,7 +22,7 @@ forms still work. No login, schema change or cache clearing is required.
 
 ## Current account pilot
 
-The theme uses Pawtucket's existing `LoginReg` and `Lightbox` controllers, with
+The theme uses Pawtucket's existing `LoginReg` controller, with
 a focused `AccountProfile` controller for profile saves. There is no separate
 authentication system or custom account database.
 
@@ -31,15 +31,21 @@ login, registration, account menu or Add to lightbox links. Existing accounts
 can log in. Self-registration is disabled with `dontAllowRegistration = 1`;
 the public catalog does not require authentication.
 
-After login, **My account** offers **My lightboxes**, **My profile** and **Log out**.
+After login, **My account** offers **My profile** and **Log out**.
 Its positioning overrides the inherited Yamm mega-menu rule so the green
 hover/focus/open marker and dropdown stay attached to the account item.
-**Add to lightbox** appears below object media on object details. Result tiles
-and list rows omit it for every user, including related-item and collection
-contents. The native modal lets the user choose or create a lightbox. The action
-adds the object, rather than a particular representation. Native authentication,
-CSRF, set ownership and sharing checks remain in charge. No credentials or users
-were created by this source change.
+Lightbox buttons and menu entries are removed for every session, including staff.
+`disable_lightbox = 1` disables native controls, and the theme's
+`controllers/LightboxController.php` rejects all dispatched Lightbox actions with
+404 before loading the native controller or accessing set data. This includes
+add forms, saves, sharing, presentations, ordering and exports. Static native
+ResultContext helpers can still load on other controllers. Old saved contexts
+do not produce **Back to lightbox** links, and ordinary pages no longer load the
+unused ordering script. Existing sets and public featured galleries are preserved.
+
+Item sets are deferred until public researcher login is introduced and must be
+called **item sets** if restored. This requires an explicit feature change;
+flipping the native configuration flag does not bypass the route guard.
 
 The shared AJAX panel retains the native viewer/lightbox lifecycle and Escape
 handler, adds dialog semantics, keeps Tab/Shift+Tab focus inside the panel and
@@ -56,11 +62,6 @@ My account retains its borderless, indented phone submenu styling through 1024px
 including the same link spacing and hover/focus colors.
 The All items / Only items with media buttons use an 18px minimum in both the
 desktop header and collapsed menu, including on the homepage.
-
-Lightbox **Options** is a named disclosure button with ordinary list/Tab semantics
-and Escape dismissal. Item actions remain visible without hover, and cards keep
-stable dimensions. User-entered form values are escaped for their HTML context.
-Comments have an associated label and announce save/remove/network outcomes.
 
 The native login form retains password reset and now supports password managers.
 Profile forms support contact details and password changes. Email delivery,
@@ -126,16 +127,19 @@ required. Existing bookmarked or stale forms posting to native
 `/LoginReg/profileSave` still use upstream behavior; reload the profile form after
 deploying this change.
 
-## Native feature inventory
+## Dormant native item-set functionality
 
-Inspected against the nearby Pawtucket 2.0.10 source, not just old screenshots.
+The inventory below describes retained upstream/view code for a possible future
+item-set feature. Lightbox routes are currently blocked; those capabilities are
+not enabled catalogue features. Profile/password and display preferences remain
+available separately. Inspected against the nearby Pawtucket 2.0.10 source.
 
 Lightbox Tiles/List captions include the same access-aware original-format tags
 as other object results. Inventory is limited to the current page. Captions grow
 to fit stacked tags, and phone Tiles use one column to leave room for titles.
 Native ownership, sharing, comments and editing controls remain unchanged.
 
-| Feature | Current theme behavior / requirement |
+| Native capability | Dormant implementation / future consideration |
 | --- | --- |
 | Named lightboxes / saved object lists | Native creation, naming, descriptions, additions and removal |
 | Item ordering | Native manual reordering and configured identifier/title sorting |
@@ -160,11 +164,8 @@ sharing through a Gallery URL. Existing sets are not changed. Keep the gallery
 and user set types distinct; controlled cross-account checks remain required. Do not broaden catalog access statuses just to show lightboxes.
 Existing sets and permissions are not changed by this theme.
 
-Bulk selection / Add all results remain omitted. Individual additions are
-available on object details; native bulk-add would need to respect the media
-filter before restoration. Result-card cache versions were bumped when their
-Lightbox buttons were removed, so existing cached buttons are bypassed after
-deployment. Keep whole-page caching disabled because navigation and other page
+Bulk and individual additions are disabled. Any future implementation must respect
+filtered results and native set permissions. Keep whole-page caching disabled because navigation and other page
 content depend on session/preference state.
 
 ## FAQ content editing
@@ -256,6 +257,9 @@ TADL_TEST_COMPOSER_AUTOLOAD=/path/to/pawtucket/vendor/autoload.php php tests/hom
 
 Synthetic browser previews verify accordion interaction, responsive layout and
 account navigation (keyboard, Escape, outside-click dismissal and expanded state).
+`tests/lightbox_disabled_test.php` checks the actual controller shim for read/write
+actions, request methods and authentication states, plus configuration and asset
+defaults. Retained Lightbox view tests exercise dormant code only.
 The small `user-features.js` asset synchronizes that state for Bootstrap 3.0. They are not proof of a successful login, lightbox save,
 sharing, password email or Providence editing session. Those require a configured
 safe application/database or separately authorized live pilot. The later,

@@ -16,6 +16,26 @@ Providence and iterating on Pawtucket presentation. Preserve thumbnail-rich
 results, clear record context, ordinary navigation, and a generous desktop
 media viewer. Use existing TADL visual conventions and accessible controls.
 
+## Item sets are disabled
+
+The user explicitly retired the Lightbox feature for every session, including
+staff. Remove neither this policy nor the controller guard as routine cleanup.
+`disable_lightbox = 1`, the object Add action and account-menu entry are removed,
+and `controllers/LightboxController.php` returns a typed 404 before loading the
+native controller for any dispatched Lightbox action. Static helpers included
+by ResultContext on other routes still work. Old contexts do not render Back to
+lightbox, and the ordering script is no longer in the default asset load set.
+Existing sets and published featured galleries are preserved.
+
+Any future public researcher-account feature must introduce **item sets**, not
+lightboxes, as an explicitly requested feature. A config flag alone cannot
+reactivate the routes. Older Lightbox implementation/audit notes below describe
+retained dormant code, not current feature availability.
+`tests/lightbox_disabled_test.php` covers routes, authentication/method variants,
+early native-loading boundaries and config/assets; user-feature tests render
+actual object pages for anonymous, public and staff sessions with native lightbox
+settings enabled and still require zero Lightbox controls.
+
 Changes belong here rather than in upstream CollectiveAccess. The surrounding
 workspace has reference checkouts of Pawtucket and Providence at local tag
 `2.0.10`; that is a local source fact, not a verified current production version.
@@ -107,12 +127,13 @@ exports before native loading or parent construction. `helpers/result_exports.ph
 blocks PDF/XLSX/PPTX views, nonempty `export_format` and nonzero numeric `download`
 flags using the native parsed request, including PATH/GET/POST requests. A typed
 exception maps to HTTP 410 with a short, safe retirement page and noindex headers.
-Normal result views, individual media, finding aids, document text and account
-Lightbox exports keep their own behavior. `tests/result_exports_test.php` covers
+Normal result views, individual media, finding aids and document text keep their
+own behavior. Lightbox routes are separately disabled with 404.
+`tests/result_exports_test.php` covers
 early dispatch/constructor boundaries and real HTTP responses without a database.
 **Start over** appears beside active filters instead
-of inside sorting. Existing finding aids, object media downloads and account
-Lightbox management remain separate controls. The Collections index retains its
+of inside sorting. Existing finding aids and object media downloads remain
+separate controls. The Collections index retains its
 configured alphabetical order. Earlier Options/export notes below are historical.
 
 The disclosure works without JavaScript. `user-features.js` adds dismissal when
@@ -489,7 +510,8 @@ remain unchanged. An already-open detail context keeps its existing order until
 the visitor enters a browse again.
 Object details intentionally omit **Browse objects**. A matching result context
 adds **Back to collection** or **Back to results** before native **Prev / Next**;
-native gallery/lightbox contexts use their corresponding labels. The toolbar is
+native gallery contexts use their corresponding label. Retired lightbox contexts
+do not render a return link. The toolbar is
 right-aligned at the top of the
 metadata column above the title, leaving the photo at the top of the body region.
 On phones (below 768px), the object toolbar is centered beneath the media.
@@ -1124,8 +1146,8 @@ below retain implementation details and historical verification evidence.
 - The shared search/browse **Options** menu omits Lightbox bulk-add and selection
   actions. Sorting, Start Over and eligible downloads remain available. This is
   consistent with result tiles/list rows, which omit individual Lightbox buttons
-  for everyone. Signed-in users can add objects from object details and use
-  **My lightboxes**. Result-card and result-block HTML is rendered per request.
+  for everyone. Object-detail additions, account Lightbox links and direct routes
+  are also disabled. Result-card and result-block HTML is rendered per request.
 - Object browse, regular search and advanced search offer **Date**, using the
   same `ca_objects.date.dates_value` field displayed on object details and native
   date-range sorting. Date defaults to ascending; the normal descending control
@@ -1193,7 +1215,8 @@ below retain implementation details and historical verification evidence.
   action-row height or thumbnail positions, on desktop and phones.
   Keep native **Media viewer**/compare callbacks; omit the image's
   Lightbox action and replace its original-download link with one native HTML
-  disclosure menu. Video toolbar behavior and account Lightbox remain unchanged.
+  disclosure menu. Video toolbar behavior remains unchanged; account Lightbox is
+  now disabled as described above.
   PDF previews use the same visible **Media viewer** button and a **Download PDF**
   link to the native original-download endpoint, only when the native toolbar
   supplies that link. The PDF viewer and complete document stay native; PDFs do
@@ -1589,12 +1612,11 @@ included in a workspace rsync and are not required by the committed tests.
   viewing records without media to logged-in researchers. That permission and
   account-preference design is not implemented. It needs server-side enforcement;
   hiding the toggle or trusting its cookie is not access control.
-- The native account/lightbox pilot is now wired into the theme. Anonymous login
-  links remain hidden; use the bookmarked `/LoginReg/LoginForm`. Registration is
-  disabled. Signed-in users get account navigation and additions on object details;
-  thumbnail/list results omit Lightbox buttons for everyone.
-  Bulk additions remain omitted until they respect filtered results. See
-  `docs/USER_FEATURES.md` for native features, access caveats and live checks.
+- Existing staff accounts can use the bookmarked `/LoginReg/LoginForm`; anonymous
+  login links and registration remain disabled. Lightbox is retired for everyone.
+  Public researcher login and a feature called **item sets** are deferred until
+  explicitly requested. See `docs/USER_FEATURES.md` for the current policy and
+  dormant native functionality.
 - FAQ template/editor activation was authorized and completed in production on
   2026-10-05 using the focused setup script. The native selector offers **FAQ entry**,
   all three content fields are registered, and sort order/locale were added to the

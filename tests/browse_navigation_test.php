@@ -149,7 +149,6 @@ foreach ([
 	[null, 'search', '/Search/objects?key=synthetic-key&row_id=42', 'Back to results'],
 	[null, 'multisearch', '/Search/objects?key=synthetic-key&row_id=42', 'Back to results'],
 	[null, 'gallery', '/Search/objects?key=synthetic-key&row_id=42', 'Back to gallery'],
-	[null, 'lightbox', '/Search/objects?key=synthetic-key&row_id=42', 'Back to lightbox'],
 	[['url'=>'/Detail/collections/77?view=list&s=50&per_page=25&collection_view=hierarchy', 'kind'=>'collection'], 'search', '/Detail/collections/77?view=list&s=50&per_page=25&collection_view=hierarchy', 'Back to collection'],
 	[['url'=>'/Browse/objects?key=synthetic-key&view=images&s=18&per_page=18', 'kind'=>'results'], 'browse', '/Browse/objects?key=synthetic-key&view=images&s=18&per_page=18', 'Back to results']
 ] as [$target, $type, $url, $label]) {
@@ -162,6 +161,10 @@ foreach ([
 	browseCheck($back->getAttribute('title') === $label && $back->getAttribute('aria-label') === $label && $back->firstChild->getAttribute('class') === 'small', 'The return button must have contextual tooltip/accessibility text and the shared label styling.');
 }
 $returnView->values['previousLink'] = $returnView->values['nextLink'] = '';
+ResultContext::$return = null; ResultContext::$type = 'lightbox';
+browseCheck(tadlDetailNavigation($returnView) === '', 'Old lightbox context must not expose a return link to the disabled feature.');
+ResultContext::$type = 'browse';
+ResultContext::$return = ['url'=>'/Browse/objects?key=synthetic-key&view=images&s=18&per_page=18', 'kind'=>'results'];
 $navigationFixtures['object-return-only'] = tadlDetailNavigation($returnView);
 browseCheck(str_contains(tadlDetailNavigation($returnView), 'Back to results'), 'Single-item result sets must still offer a return button.');
 ResultContext::$ids = [41,43];

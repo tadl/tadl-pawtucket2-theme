@@ -97,24 +97,19 @@ class FeatureView {
 }
 require dirname(__DIR__).'/helpers/user_features.php';
 $request = new FeatureRequest();
-checkUserFeature(tadlUserMenu($request) === '' && tadlAddToLightboxLink($request, 42) === '', 'Anonymous visitors must have no account/login/lightbox controls.');
+checkUserFeature(tadlUserMenu($request) === '', 'Anonymous visitors must have no account/login controls.');
 $request->loggedIn = true;
 $menu = tadlUserMenu($request);
-foreach (['My account', '/Lightbox/Index', '/LoginReg/profileForm', '/LoginReg/Logout'] as $value) {
+foreach (['My account', '/LoginReg/profileForm', '/LoginReg/Logout'] as $value) {
 	checkUserFeature(str_contains($menu, $value), 'Missing logged-in account entry: '.$value);
 }
-checkUserFeature(!str_contains($menu, 'LoginForm') && !str_contains($menu, 'register'), 'Account menu must not expose login or registration.');
+checkUserFeature(!str_contains($menu, 'LoginForm') && !str_contains($menu, 'register') && !str_contains(strtolower($menu), 'lightbox'), 'Account menu must not expose login, registration or lightboxes, even when native lightboxes are enabled.');
 $document = new DOMDocument(); $document->loadHTML($menu);
 $xpath = new DOMXPath($document);
 checkUserFeature($xpath->query('//a[@class="dropdown-toggle" and @href="/LoginReg/profileForm"]')->length === 1, 'Account menu must have a usable fallback and avoid the Bootstrap 3/jQuery bare-hash selector error.');
-checkUserFeature($xpath->query('//ul[@role="menu"]//a[@role="menuitem"]')->length === 3, 'Account actions must support native keyboard menu navigation.');
-$link = tadlAddToLightboxLink($request, 42);
-$document = new DOMDocument(); $document->loadHTML($link);
-$anchor = $document->getElementsByTagName('a')->item(0);
-checkUserFeature($anchor->getAttribute('href') === '/Lightbox/addItemForm?object_id=42' && str_contains($anchor->getAttribute('onclick'), 'caMediaPanel.showPanel('), 'Lightbox link must target the native form with the current object.');
-checkUserFeature(tadlAddToLightboxLink($request, 0) === '', 'Invalid object IDs must not get actions.');
+checkUserFeature($xpath->query('//ul[@role="menu"]//a[@role="menuitem"]')->length === 2, 'Profile/logout actions must support native keyboard menu navigation.');
 $request->config->values['disable_lightbox'] = 1;
-checkUserFeature(!str_contains(tadlUserMenu($request), 'Lightbox') && str_contains(tadlUserMenu($request), 'profileForm') && tadlAddToLightboxLink($request, 42) === '', 'Native disabled-Lightbox policy must keep profile/logout.');
+checkUserFeature(!str_contains(tadlUserMenu($request), 'Lightbox') && str_contains(tadlUserMenu($request), 'profileForm'), 'Disabled-Lightbox policy must keep profile/logout.');
 
 // Use the actual object view, including an object without media or readable bundles.
 foreach ([[false, 0], [false, 1], [true, 1], [true, 255], [true, 99], [true, 0]] as [$loggedIn, $userclass]) {
@@ -125,6 +120,7 @@ foreach ([[false, 0], [false, 1], [true, 1], [true, 255], [true, 99], [true, 0]]
 	$collection_link = tadlProvidenceCollectionLink($request, 73);
 	checkUserFeature(($collection_link !== '') === $staff, 'Collection editor link must use the same login/full-access staff gate.');
 	$html = (new FeatureView($request, ['item' => new FeatureDetailObject()]))->render('Details/ca_objects_default_html.php');
+	checkUserFeature(!str_contains(strtolower($html), 'lightbox'), 'Object details must omit lightbox buttons, callbacks and wrappers for every user class, even with native lightboxes enabled.');
 	$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 	$xpath = new DOMXPath($document);
 	$links = $xpath->query('//div[contains(@class,"tadl-object-info")]//a[contains(@class,"tadl-providence-object")]');

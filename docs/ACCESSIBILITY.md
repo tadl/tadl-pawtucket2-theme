@@ -5,6 +5,12 @@ This records source remediation and its evidence. It is not a declaration that
 every deployed page, catalogue item, document, viewer or complete account process
 conforms. The remaining acceptance work below is part of reaching that target.
 
+Lightbox is now disabled for all users, including staff. Its retained view/browser
+tests cover dormant code; historical Lightbox remediation below does not indicate
+an available catalogue feature. Live checks should verify absent controls and 404
+responses, not create or edit sets. A future researcher feature would use the name
+**item sets**.
+
 ## October 20 follow-up
 
 [Audit remediation](AUDIT_REMEDIATION.md) records the later 26-issue source pass.
@@ -87,7 +93,7 @@ accounts, submissions, tokens, catalogue exports or production screenshots to te
 | Contact and account forms | Native email/required/autofill semantics; associated arithmetic instructions; textual field errors and invalid/described-by state; focusable contact error summary; correct reset-password confirmation label and new-password autocomplete. |
 | Cookies | Named notice region; native details and grouped radios; existing preference names/values and required-category behavior retained. |
 | Gallery and homepage | Native previous/next buttons and disabled endpoints; focus survives gallery AJAX replacement; selection/range status; hidden featured items leave the tab order; manual controls remain the alternative to swiping. |
-| Lightboxes | Visible Move earlier/later controls for editable items; same native checked reorder endpoint and CSRF mechanism as dragging; pending state, saved/error feedback and failed-save rollback. Read-only sets receive no ordering controls. |
+| Item sets | Disabled. Legacy Lightbox views retain historical keyboard/reorder coverage but are not routed or exposed in the catalogue. |
 | Other native views | Named delete confirmation with keyboard controls; associated contribution agreement/math labels; PDF.js controls use DOM focus order and its password prompt has an accessible name; presentation mode permits browser zoom. |
 
 `assets/pawtucket/css/accessibility.css` loads after existing styles. The native
@@ -179,10 +185,10 @@ for the normative exceptions and testing guidance.
    workflow. Repeat scans against actual rendered pages and populated Options,
    filters, hierarchy, downloads, viewer dialogs and account states. This source
    audit did not deploy or change server/application configuration.
-2. Use controlled test accounts for profile changes, password reset, lightbox
-   editing/reordering/sharing/deleting and any active contribution/library flow.
-   Verify success, failure, read-only access, timeouts and recovery without real
-   patron data. Confirm a failed reorder restores the order and reports failure.
+2. Use controlled test accounts for profile changes, password reset and any active
+   account flow. Verify success, failure, timeouts and recovery without real patron
+   data. Confirm Lightbox controls are absent and its routes return 404 for
+   anonymous and signed-in users; do not create or edit sets.
 3. Test VoiceOver/Safari and an additional supported screen-reader/browser pairing,
    keyboard-only use, touch, voice input, 200%/400% browser zoom, text spacing,
    landscape and forced/high-contrast colors. Automated scans cannot certify this.

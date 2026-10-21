@@ -1,6 +1,6 @@
 # TADL theme for Pawtucket2
 
-A public catalogue theme for [CollectiveAccess Pawtucket2](https://github.com/collectiveaccess/pawtucket2), built for the Traverse Area District Library's [Local History Collection](https://archives.tadl.org/). It brings together archival collection browsing, image-rich search results, linked people and places, document text, finding aids, and researcher lightboxes.
+A public catalogue theme for [CollectiveAccess Pawtucket2](https://github.com/collectiveaccess/pawtucket2), built for the Traverse Area District Library's [Local History Collection](https://archives.tadl.org/). It brings together archival collection browsing, image-rich search results, linked people and places, document text, and finding aids.
 
 This repository contains the complete `tadl` theme. Install it in an existing Pawtucket application; it does not include Providence, Pawtucket itself, a database, or a metadata installation profile. Other institutions can use it as a starting point, but will need to adapt the branding, catalogue field mappings, and institutional links described below.
 
@@ -20,21 +20,21 @@ This repository contains the complete `tadl` theme. Install it in an existing Pa
 | Media and downloads | Native image, PDF, audio, and video viewers with compact Close buttons; original and generated image download choices; accessible secondary-image thumbnails when the primary representation is unavailable. PDF title controls sit above the document toolbar. Available formats depend on Pawtucket's media processing configuration. |
 | Document text | A copyable text section for accessible PDFs, using extracted text first and imported transcription fields as fallbacks. |
 | Finding aids | View or download a descriptive collection PDF with its complete readable hierarchy and each level's recorded extent, description, dates, creators, and other public metadata. Individually catalogued objects are not required. |
-| Researcher accounts | Native login, profiles, password reset, lightboxes, and sharing, plus staff-only shortcuts to objects and archival units in Providence. Anonymous visitors see no login link. |
+| Staff accounts | Native login, profiles and password reset, plus staff-only shortcuts to objects and archival units in Providence. Anonymous visitors see no login link. Item sets are disabled pending a future public researcher-account feature. |
 | Editable FAQ | Publish categorized questions and rich-text answers through Providence Site Pages, without redeploying the theme for content changes. |
 | Thumbnail focus | Filled image crops respect Providence's **Set center** setting. Optional local face detection supplies suggestions where staff have not chosen a center. |
 | Contact and recovery | A contact form with named Reply-To addresses and distinct subject references, optional Cloudflare Turnstile, and helpful error pages with search and browse links. |
 
-Catalogue result lists are rendered in the initial HTML. Search, browse, collection contents, related-item previews and gallery previews do not need a second request to load their cards. Paging uses ordinary links, including in lightboxes and the collection hierarchy browser. Tiles/List, collection view and page-size preferences persist between views; basic result navigation also works without JavaScript. Media viewers and account/editing dialogs still use the native interactive features.
+Catalogue result lists are rendered in the initial HTML. Search, browse, collection contents, related-item previews and gallery previews do not need a second request to load their cards. Paging and the collection hierarchy browser use ordinary links. Tiles/List, collection view and page-size preferences persist between views; basic result navigation also works without JavaScript. Media viewers and account/editing dialogs still use the native interactive features.
 
-Catalogue result exports to PDF, Excel, and PowerPoint are disabled, including direct requests to old export URLs. Search, Browse, and collection/place/family result pages reject export requests with HTTP 410 before running the result query. Finding-aid and individual-media downloads remain available; Lightbox exports retain their native account and set permissions.
+Catalogue result exports to PDF, Excel, and PowerPoint are disabled, including direct requests to old export URLs. Search, Browse, and collection/place/family result pages reject export requests with HTTP 410 before running the result query. Finding-aid and individual-media downloads remain available. All legacy Lightbox routes, including add forms and exports, return HTTP 404.
 
 Where a Search or Browse page has filters, a sidebar button hides them and lets results fill the available width. **Filters** beside Tiles/List reopens the sidebar. Selected filters stay above the results. The sidebar starts open on desktop and closed on phones, and remembers an explicit choice with the other display preferences. Without JavaScript, the filter links remain visible.
 Additional facet values use separate **View X more / View less** buttons. Large lists offer **View all X** to open an alphabetized filter chooser with letter shortcuts, scrollable choices, and keyboard access.
 
 File-format tags describe the accessible original representations attached to an object, such as JPEG, TIFF, or PDF. They can show multiple formats for one object. The **Object type** filter instead uses the catalogue's classification, such as Still image or Document; it does not infer an object's type from its files.
 
-The shared interface includes keyboard navigation, visible focus, reduced-motion support, responsive reflow, and accessible alternatives to dragging lightbox items. See the [accessibility guide](docs/ACCESSIBILITY.md) for coverage and remaining manual checks; installing the theme does not establish whole-site WCAG conformance.
+The shared interface includes keyboard navigation, visible focus, reduced-motion support, and responsive reflow. See the [accessibility guide](docs/ACCESSIBILITY.md) for coverage and remaining manual checks; installing the theme does not establish whole-site WCAG conformance.
 
 ## Before you install
 
@@ -109,11 +109,11 @@ The FAQ uses native Providence Site Pages, with one `faq_entry` page per questio
 
 After setup, staff edit category, question, answer, order, and public access in **Providence → Manage → Content Management → Site pages**. Published, complete entries appear on the homepage; no entries means no FAQ section. Answer HTML is sanitized and editor-supplied inline styles are removed while paragraphs, links, and semantic formatting remain.
 
-### Accounts and lightboxes
+### Staff accounts and deferred item sets
 
 Bookmark `/LoginReg/LoginForm` beneath your Pawtucket base URL. Existing accounts can sign in even though the anonymous navigation has no login link. Self-registration is disabled by default; the public catalogue remains open.
 
-Signed-in users get **My account** and **Add to lightbox** on object details. Result thumbnails omit that button. Staff Providence shortcuts on object and collection details are limited to native full-access accounts; Providence has its own login session and permissions. See [accounts and user features](docs/USER_FEATURES.md) before changing account settings or enabling additional native workflows.
+Signed-in users get **My account**, with profile and logout actions. Lightboxes are disabled for everyone: add buttons and menu entries are removed, and direct Lightbox requests return 404. A future public researcher-account feature may introduce **item sets**; changing a configuration flag alone does not enable it. Staff Providence shortcuts on object and collection details are limited to native full-access accounts; Providence has its own login session and permissions. See [accounts and user features](docs/USER_FEATURES.md).
 
 ### Galleries
 
@@ -182,7 +182,7 @@ The supplied `support/deploy-theme.sh` is an rsync helper for the `/var/www/pawt
 | [Audit remediation](docs/AUDIT_REMEDIATION.md) | Review findings, source fixes, verification and deployment boundaries. |
 | [Document text](docs/DOCUMENT_TEXT.md) | Extraction/transcription fallbacks, formatting, permissions, and indexing boundaries. |
 | [Image downloads](docs/IMAGE_DOWNLOADS.md) | Export formats, native processing requirements, private conversion cache, and limits. |
-| [Accounts](docs/USER_FEATURES.md) | Login, profiles, lightboxes, staff tools, and FAQ presentation. |
+| [Accounts](docs/USER_FEATURES.md) | Staff login, profiles, disabled item sets, staff tools, and FAQ presentation. |
 | [FAQ activation](docs/FAQ_SETUP.md) | Repeatable Providence editor/template registration and upgrade preservation. |
 | [Contact form](docs/CONTACT_FORM.md) | Mail settings, Reply-To, subject references, and Turnstile. |
 | [Thumbnail focus](docs/THUMBNAIL_FOCUS.md) | Manual focal points, offline detection, durable storage, and reusable package. |
@@ -203,6 +203,6 @@ The standalone regression suites use synthetic data and do not require an applic
 
 These are development tools, not extra requirements for serving the ordinary theme. GitHub Actions runs syntax checks, the standalone suites, and browser accessibility checks. See the [accessibility guide](docs/ACCESSIBILITY.md) for the separate local browser-test setup.
 
-Before making a customized site public, check collection and authority results, both media preferences, narrow-screen navigation, and access restrictions with representative records. Verify login, password reset, lightbox ownership/sharing, contact delivery, and exports in a controlled environment. The [production checklist](docs/PRODUCTION_CHECKS.md) covers these application-level checks; standalone tests cannot confirm your mail, media tools, catalogue mappings, or server configuration.
+Before making a customized site public, check collection and authority results, both media preferences, narrow-screen navigation, and access restrictions with representative records. Verify staff login, password reset, disabled Lightbox routes, contact delivery, and media downloads in a controlled environment. The [production checklist](docs/PRODUCTION_CHECKS.md) covers these application-level checks; standalone tests cannot confirm your mail, media tools, catalogue mappings, or server configuration.
 
 The sample contribution form is disabled (`conf/contribute.conf`, `enabled = 0`), including direct named-form routes. To accept contributions, configure an institution-specific mapping, review upload/access policies, and explicitly enable both the submission interface and contribution controller.

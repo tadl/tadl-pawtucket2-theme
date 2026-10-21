@@ -43,9 +43,6 @@
 			<div class='col-sm-6 col-md-6 col-lg-6 tadl-object-media'>
 				{{{representationViewer}}}
 				<div id="tadlObjectMediaActions" class="tadl-object-media-actions" role="group" aria-label="<?= htmlspecialchars(_t('Image actions'), ENT_QUOTES, 'UTF-8'); ?>"></div>
-				<?php if ($lightbox_link = tadlAddToLightboxLink($this->request, $t_object->getPrimaryKey())): ?>
-				<div class="tadl-object-lightbox-action"><?= $lightbox_link; ?></div>
-				<?php endif; ?>
 				
 				<div id="detailAnnotations"></div>
 				
