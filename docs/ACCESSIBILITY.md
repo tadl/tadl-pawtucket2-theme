@@ -25,6 +25,10 @@ contextual accessible names such as **Go to previous collection** (WCAG 2.5.3).
 
 Search/Browse filter sidebars support a labeled collapse button and a **Filters**
 button beside Tiles/List, synchronized expanded state, focus handoff and Escape.
+Keyboard activation moves focus between these controls; pointer activation does
+not transfer a focus ring to the replacement. Facet value disclosures use labeled
+**View X more / View less** buttons, with expanded state and contextual names;
+their extra values remain available without JavaScript.
 Selected filter chips remain visible while results expand to full width. Phone
 filters open in document flow; without JavaScript their links remain visible.
 The accessibility browser suite checks expanded/collapsed states at 320–1600px,

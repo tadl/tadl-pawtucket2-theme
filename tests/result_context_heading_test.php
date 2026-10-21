@@ -407,6 +407,26 @@ foreach (['open','closed'] as $state) {
 	$html = (new ContextView(new ContextRequest(cookies:['tadlDisplayPreferences'=>json_encode(['filters'=>$state])]), [], 45, ['facets'=>$facets]))->render('Browse/browse_results_html.php');
 	checkContext(str_contains($html, 'data-tadl-filter-state="'.$state.'"'), 'The validated sidebar preference must be present in initial HTML.');
 }
+foreach ([7,8,60,61] as $total) {
+	$facet = ['type'=>'fieldList','label_singular'=>'Synthetic <em> & "kind"','content'=>array_map(static fn($id)=>['id'=>$id,'label'=>'Synthetic <b> & "choice" '.$id],range(1,$total))];
+	$html = (new ContextView(new ContextRequest(), [], 45, ['facets'=>['type_facet'=>$facet],'tadl_collapsible_filters'=>true]))->render('Browse/browse_refine_subview_html.php');
+	$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $xpath = new DOMXPath($document);
+	checkContext($xpath->query('//a[not(@data-tadl-facet-choices)]')->length === ($total<=60?$total:7), 'Short lists must retain all native links; long lists must retain the bounded initial selection.');
+	checkContext($xpath->query('//button[@data-tadl-facet-toggle]')->length === ($total>7 && $total<=60?1:0), 'Only lists with 8–60 values need a local disclosure.');
+	checkContext($xpath->query('//a[@data-tadl-facet-choices]')->length === ($total>60?1:0), 'Larger lists must keep the native full-choice route.');
+	checkContext($xpath->query('//em|//b')->length===0 && str_contains($html,'&lt;b&gt;'), 'Facet labels and control attributes must preserve escaping.');
+	if ($total>7 && $total<=60) {
+		$button=$xpath->query('//button[@data-tadl-facet-toggle]')->item(0);
+		checkContext($button->getAttribute('aria-controls')==='type_facet_more' && $button->getAttribute('aria-expanded')==='false', 'Disclosure controls must identify their own extra values and initial state.');
+		checkContext($button->getAttribute('data-label-more')==='View '.($total-7).' more' && $button->getAttribute('data-label-less')==='View less', 'Disclosure labels must state the extra count and the reverse action.');
+		checkContext($button->getAttribute('aria-label')==='Synthetic <em> & "kind": View '.($total-7).' more' && !$button->hasAttribute('onclick'), 'Names must include the facet context without injecting HTML or inline script.');
+	}
+	if ($total>60) {
+		$link=$xpath->query('//a[@data-tadl-facet-choices]')->item(0);
+		parse_str(parse_url($link->getAttribute('href'),PHP_URL_QUERY),$params);
+		checkContext($link->textContent==='View all '.$total && $params['getFacet']==='1' && $params['facet']==='type_facet', 'View all must identify its total and retain the native GET fallback.');
+	}
+}
 
 $subjectFacets = ['term_facet' => ['type' => 'authority', 'table' => 'ca_list_items', 'label_singular' => 'Subject', 'group_mode' => 'alphabetical', 'content' => [
 	['id' => 42, 'label' => 'Synthetic bridges'], ['id' => 43, 'label' => 'Archives <script>x</script> & maps'],
@@ -430,7 +450,7 @@ checkContext(!str_contains($html, 'Browse Subjects') && !str_contains($html, 'ta
 if (($argv[1] ?? '') === '--filter-fixture') {
 	$input = json_decode(stream_get_contents(STDIN), true, flags:JSON_THROW_ON_ERROR);
 	$filterFacets = contextFacetDefinitions();
-	$filterFacets['entity_facet']['content'] = [['id'=>42, 'label'=>'Synthetic Studio', 'count'=>9]];
+	$filterFacets['entity_facet']['content'] = array_map(static fn($index)=>['id'=>42+$index,'label'=>'Synthetic person '.$index],range(1,12));
 	$filterFacets['place_facet']['content'] = [['id'=>42, 'label'=>'Synthetic Harbor', 'count'=>9]];
 	if (!empty($input['params']['getFacet'])) {
 		print (new ContextView(new ContextRequest(), [], 163, [

@@ -29,7 +29,10 @@ criteria remain visible above the cards. Fixed-scope Family/Place contents and
 embedded result fragments retain their existing absence of refinements.
 
 `display-preferences.js` owns visibility, synchronized `aria-expanded`, focus
-handoff and scoped Escape behavior. Explicit choices persist as validated
+handoff and scoped Escape behavior. Only keyboard activation/Escape transfers
+focus to the replacement control; pointer activation leaves it unfocused and
+scrolls the panel into view on phones. The Filters button uses an outlined SVG
+funnel. Explicit choices persist as validated
 `filters=open|closed` in the existing display cookie and appear in initial server
 HTML; this affects layout only. With no saved choice, desktop starts open and
 phones closed, following resize without saving those responsive defaults.
@@ -46,6 +49,15 @@ or facets. Tests cover empty panels, initial cookie
 state, full-width reflow, selected filters, Search/Browse/view navigation,
 keyboard focus/Escape, sticky positioning, no-script access and expanded/closed
 axe checks at phone through desktop widths.
+
+Facet actions are separated from their values by a divider and bordered controls.
+Lists of 8–60 values retain all links in server HTML, with a local **View X more /
+View less** disclosure after the first seven. Its state, contextual accessible
+name and chevron update together, without animation or requests. With no JavaScript,
+all of those values remain visible. Larger lists use **View all X** with the native
+GET URL as a fallback; ordinary clicks open the existing chooser. Delegated events
+also cover hierarchy replacements without rebinding handlers. Label/attribute
+escaping and the 7/8/60/61 boundaries have standalone tests.
 
 ## Compact catalogue sorting
 

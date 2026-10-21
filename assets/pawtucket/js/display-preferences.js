@@ -38,31 +38,55 @@
                 hide.hidden = !expanded;
                 show.setAttribute('aria-expanded', String(expanded));
                 hide.setAttribute('aria-expanded', String(expanded));
-                if (moveFocus || (!expanded && focusInSidebar)) {
+                if (moveFocus === true || (moveFocus === null && !expanded && focusInSidebar)) {
                     (expanded ? hide : show).focus({preventScroll:!phone.matches});
+                } else if (moveFocus === false && phone.matches) {
+                    (expanded ? panel : show).scrollIntoView({block:expanded ? 'start' : 'nearest'});
                 }
             }
-            function choose(state) {
+            function choose(state, moveFocus) {
                 preference = state;
                 save({filters:state});
-                update(state, true);
+                update(state, moveFocus);
             }
-            show.addEventListener('click', () => choose('open'));
-            hide.addEventListener('click', () => choose('closed'));
+            show.addEventListener('click', event => choose('open', event.detail === 0));
+            hide.addEventListener('click', event => choose('closed', event.detail === 0));
             // Capture keyup before the native document-level viewer Escape handlers.
             panel.addEventListener('keyup', event => {
                 if (event.key !== 'Escape') { return; }
                 event.preventDefault();
                 event.stopPropagation();
-                choose('closed');
+                choose('closed', true);
             }, true);
-            phone.addEventListener('change', () => update(preference || (phone.matches ? 'closed' : 'open'), false));
-            update(preference || (phone.matches ? 'closed' : 'open'), false);
+            phone.addEventListener('change', () => update(preference || (phone.matches ? 'closed' : 'open'), null));
+            update(preference || (phone.matches ? 'closed' : 'open'), null);
         });
     }
     if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initializeFilters); }
     else { initializeFilters(); }
     document.addEventListener('click', event => {
+        const facetToggle = event.target.closest('[data-tadl-facet-toggle]');
+        if (facetToggle) {
+            const values = document.getElementById(facetToggle.getAttribute('aria-controls'));
+            if (!values) { return; }
+            const expanded = facetToggle.getAttribute('aria-expanded') !== 'true';
+            values.dataset.tadlFacetExpanded = String(expanded);
+            facetToggle.setAttribute('aria-expanded', String(expanded));
+            facetToggle.setAttribute('aria-label', expanded ? facetToggle.dataset.labelLessAccessible : facetToggle.dataset.labelMoreAccessible);
+            facetToggle.querySelector('span').textContent = expanded ? facetToggle.dataset.labelLess : facetToggle.dataset.labelMore;
+            const icon = facetToggle.querySelector('i');
+            icon.classList.toggle('fa-angle-up', expanded);
+            icon.classList.toggle('fa-angle-down', !expanded);
+            return;
+        }
+        const facetChoices = event.target.closest('[data-tadl-facet-choices]');
+        if (facetChoices && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+            event.preventDefault();
+            window.jQuery('#bMorePanel').data('tadlOpener', facetChoices).load(facetChoices.href, function () {
+                window.jQuery(this).show().focus();
+            });
+            return;
+        }
         const link = event.target.closest('a[data-tadl-view], a[data-tadl-collection-view]');
         if (!link || event.button !== 0) { return; }
         const changes = {};
