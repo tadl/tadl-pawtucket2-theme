@@ -3,6 +3,7 @@ require_once(__DIR__.'/record_access.php');
 require_once(__DIR__.'/media_usability.php');
 require_once(__DIR__.'/family_contents.php');
 require_once(__DIR__.'/place_contents.php');
+require_once(__DIR__.'/media_facet_counts.php');
 
 /**
  * Return eligible public records in their existing result order. A representation
@@ -253,17 +254,19 @@ function tadlFilterMediaResult($request, $result, $type = null) {
 		return $result;
 	}
 	$table = $result->tableName();
+	$allObjectIDs = $table === 'ca_objects' ? $result->getPrimaryKeyValues() : null;
 	if ($table === tadlMediaAuthorityBrowseTable($request, $type)) {
 		$type = $type ?: ($request->getParameter('browseType', pString) ?: $request->getAction());
 		$ids = $type === 'families' ? tadlFamilyMediaEligibleIDs($request, $result->getPrimaryKeyValues())
 			: ($type === 'places' ? tadlPlaceMediaEligibleIDs($request, $result->getPrimaryKeyValues())
 				: tadlAuthorityMediaEligibleIDs($request, $table, $result->getPrimaryKeyValues()));
 	} elseif (in_array($table, ['ca_objects', 'ca_collections'], true)) {
-		$ids = tadlMediaEligibleIDs($table, $result->getPrimaryKeyValues(), (array)caGetUserAccessValues($request), $request);
+		$ids = tadlMediaEligibleIDs($table, $allObjectIDs ?? $result->getPrimaryKeyValues(), (array)caGetUserAccessValues($request), $request);
 	} else {
 		return $result;
 	}
 
+	if ($table === 'ca_objects') { tadlMediaFacetScope($request, $ids, $allObjectIDs); }
 	if (!class_exists('WLPlugSearchEngineBrowseEngine')) {
 		require_once(__CA_LIB_DIR__.'/Browse/BrowseResult.php');
 	}
@@ -271,8 +274,8 @@ function tadlFilterMediaResult($request, $result, $type = null) {
 	return $result;
 }
 
-/** Keep catalogue facet choices, without displaying unfiltered hit counts. */
-function tadlMediaFacetItems($request, $items, $info) {
+/** Count object facets in the current media scope; suppress unfiltered counts elsewhere. */
+function tadlMediaFacetItems($request, $items, $info, $browse = null, $facetName = null) {
 	if (!is_array($items) || (tadlMediaPreference($request) !== 'only')) {
 		return $items;
 	}
@@ -281,6 +284,10 @@ function tadlMediaFacetItems($request, $items, $info) {
 		$browseType = $request->getParameter('browseType', pString) ?: $request->getAction();
 		$browseInfo = caGetInfoForBrowseType($browseType);
 		$subjectTable = $browseInfo['table'] ?? null;
+	}
+	if ($subjectTable === 'ca_objects') {
+		$counted = tadlMediaCountedFacet($request, $items, $info, $browse ?? ($info['tadl_browse'] ?? null), $facetName ?? ($info['tadl_facet_name'] ?? null));
+		if ($counted !== null) { return $counted; }
 	}
 	if ($subjectTable && $subjectTable === tadlMediaAuthorityBrowseTable($request)) {
 		foreach ($items as &$item) { if (is_array($item)) { unset($item['content_count']); } }
@@ -322,6 +329,8 @@ function tadlMediaHierarchyFacetInfo($request, $browseType, $facetName) {
 	$info = $browse->getInfoForFacet($facetName);
 	if (!is_array($info)) { return []; }
 	$info['tadl_subject_table'] = $browseInfo['table'];
+	$info['tadl_browse'] = $browse;
+	$info['tadl_facet_name'] = $facetName;
 	if (in_array($info['type'] ?? null, ['label', 'hierarchy'], true) && empty($info['table'])) {
 		$info['table'] = $browseInfo['table'];
 	}

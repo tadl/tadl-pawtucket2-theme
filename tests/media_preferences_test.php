@@ -437,8 +437,9 @@ Session::$values = [];
 $defaultToggle = new DOMDocument();
 $defaultToggle->loadHTML(tadlRenderMediaPreferenceToggle(new TestRequest()), LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 $defaultXPath = new DOMXPath($defaultToggle);
-testAssert($defaultXPath->query('//button[@aria-pressed="true"]')->length === 1
-    && $defaultXPath->query('//button[@aria-pressed="true"]')->item(0)->getAttribute('value') === 'all', 'New visitor toggle must select All items uniquely.');
+testAssert($defaultXPath->query('//summary')->item(0)->textContent === 'All items'
+    && $defaultXPath->query('//button[@name="tadlMediaPreference"]')->length === 1
+    && $defaultXPath->query('//button[@name="tadlMediaPreference"]')->item(0)->getAttribute('value') === 'only', 'New visitor dropdown must show All items and offer only the other mode.');
 testAssert(tadlMediaPreference(testMediaRequest('only')) === 'only', 'Cookie Only mode not selected.');
 testAssert(tadlMediaPreference(new TestRequest()) === 'only', 'Site-wide session does not persist Only mode.');
 testAssert(tadlMediaPreference(new TestRequest([], 'Collections', 'index')) === 'only', 'Preference lost on collection navigation.');
@@ -484,14 +485,15 @@ $dom->loadHTML($html);
 libxml_clear_errors(); libxml_use_internal_errors($previous);
 $xpath = new DOMXPath($dom);
 testAssert($xpath->query('//form[not(@role) and @aria-label and @method="post" and @action="/MediaPreference/Set"]')->length === 1, 'Toggle needs a labelled POST form.');
-testAssert($xpath->query('//button[@type="submit" and @name="tadlMediaPreference"]')->length === 2, 'Toggle needs exactly two native submit buttons.');
-testAssert($xpath->query('//button[@aria-pressed="true"]')->length === 1, 'Selected toggle state is not unique.');
-testAssert($xpath->query('//button[@aria-pressed="true"]')->item(0)->textContent === '✓Only items with media', 'Wrong selected label.');
+testAssert($xpath->query('//button[@type="submit" and @name="tadlMediaPreference"]')->length === 1, 'Dropdown needs exactly one native submit button.');
+testAssert($xpath->query('//button[@aria-pressed]')->length === 0 && !str_contains($html, '10003') && !str_contains($html, '✓'), 'Media dropdown must not retain toggle states or checkmarks.');
+testAssert($xpath->query('//button[@name="tadlMediaPreference"]')->item(0)->textContent === 'All items'
+    && $xpath->query('//button[@name="tadlMediaPreference"]')->item(0)->getAttribute('value') === 'all', 'Only-items mode must offer All items as its sole action.');
 testAssert($xpath->query('//input[@name="csrfToken" and @value="synthetic-csrf-token"]')->length === 1, 'Toggle must include the native CSRF token.');
 testAssert($xpath->query('//input[@name="media"]')->length === 0, 'Toggle leaked preference into query-style input.');
 testAssert($xpath->query('//details[not(@open)]/summary')->length === 1
     && $xpath->query('//summary')->item(0)->getAttribute('aria-label') === 'Items shown: Only items with media', 'Media menu must start collapsed and label its current preference.');
-testAssert($xpath->query('//details//button[@type="submit"]')->length === 2, 'Both native POST choices must be inside the media disclosure.');
+testAssert($xpath->query('//details//button[@type="submit"]')->length === 1, 'The alternative native POST action must be inside the media disclosure.');
 
 $GLOBALS['g_request'] = testMediaRequest('only');
 $objectIDs = tadlMediaEligibleIDs('ca_objects', range(1, 13), [1]);

@@ -45,7 +45,7 @@
 		$va_content = $vb_hierarchy && $o_browse
 			? $o_browse->getFacet($vs_facet_name, ['checkAccess' => $va_access_values, 'request' => $this->request])
 			: ($va_facet_info['content'] ?? []);
-		$va_facet_info['content'] = tadlMediaFacetItems($this->request, $va_content, $va_facet_info);
+		$va_facet_info['content'] = tadlMediaFacetItems($this->request, $va_content, $va_facet_info, $o_browse, $vs_facet_name);
 		if (!is_array($va_facet_info['content']) || !$va_facet_info['content']) { unset($va_facets[$vs_facet_name]); }
 	}
 	unset($va_facet_info);

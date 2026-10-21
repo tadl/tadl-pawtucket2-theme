@@ -35,7 +35,7 @@
 	$vs_view = 				$this->getVar('view');
 	$vs_key = 				$this->getVar('key');
 	$va_facet_info = 		$this->getVar("facet_info");
-	$va_facet_content = tadlMediaFacetItems($this->request, $va_facet_content, $va_facet_info);
+	$va_facet_content = tadlMediaFacetItems($this->request, $va_facet_content, $va_facet_info, $this->getVar('browse'), $vs_facet_name);
 	$vb_is_nav = 			(bool)$this->getVar('isNav');
 	$vn_start =				$this->getVar('start');
 	$vn_items_per_page =	$this->getVar('limit');

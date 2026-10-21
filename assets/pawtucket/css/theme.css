@@ -400,7 +400,6 @@ h6 {
     width: 100%;
     align-items: center;
     justify-content: flex-start;
-    gap: 5px;
     min-height: 38px;
     padding: 6px 9px;
     border: 1px solid transparent;
@@ -420,23 +419,6 @@ h6 {
     background: #eef3f7;
     color: var(--tadl-primary-dark);
     text-decoration: underline;
-}
-
-.tadl-media-preference-option.is-selected {
-    border-color: #fff;
-    background: var(--tadl-primary-dark);
-    color: #fff;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-}
-
-.tadl-media-preference-check {
-    visibility: hidden;
-    flex: 0 0 auto;
-}
-
-.tadl-media-preference-option.is-selected .tadl-media-preference-check {
-    visibility: visible;
 }
 
 .tadl-mobile-search {

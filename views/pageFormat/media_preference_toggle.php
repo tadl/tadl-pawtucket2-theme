@@ -10,9 +10,8 @@ function tadlRenderMediaPreferenceToggle($request) {
 	$html .= '<details class="tadl-media-preference-menu"><summary class="btn btn-default" aria-label="'.htmlspecialchars(_t('Items shown: %1', $options[$mode]), ENT_QUOTES, 'UTF-8').'">';
 	$html .= htmlspecialchars($options[$mode], ENT_QUOTES, 'UTF-8').'<span class="fa fa-angle-down" aria-hidden="true"></span></summary><div class="tadl-media-preference-choices">';
 	foreach ($options as $value => $label) {
-		$selected = ($mode === $value);
-		$html .= '<button type="submit" class="tadl-media-preference-option'.($selected ? ' is-selected' : '').'" name="tadlMediaPreference" value="'.$value.'" aria-pressed="'.($selected ? 'true' : 'false').'">';
-		$html .= '<span class="tadl-media-preference-check" aria-hidden="true">&#10003;</span><span>'.htmlspecialchars($label, ENT_QUOTES, 'UTF-8').'</span></button>';
+		if ($mode === $value) { continue; }
+		$html .= '<button type="submit" class="tadl-media-preference-option" name="tadlMediaPreference" value="'.$value.'">'.htmlspecialchars($label, ENT_QUOTES, 'UTF-8').'</button>';
 	}
 	return $html.'</div></details></form>';
 }

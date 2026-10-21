@@ -62,11 +62,26 @@ covers cold/warm 1,201-record batches, order independence, selective invalidatio
 fresh access/deletion, malformed payloads and cache failures.
 
 The header media selector is a native `details` disclosure showing the current
-choice, with the two existing CSRF-protected POST buttons inside. It works without
+choice, with only the alternative CSRF-protected POST action inside, without a
+checkmark or repeated current choice. It works without
 JavaScript; the shared disclosure handler adds Escape/focus restoration and
 outside-click/focus dismissal. The open header menu sits above the main navigation.
 Browser checks cover phone/desktop layout, keyboard use, open-menu axe checks and
 an actual no-JavaScript POST from synthetic fixtures.
+
+Object Search/Browse facets now retain counts in media-only mode. The filtered
+and original IDs establish a request-local `WeakMap` scope. An isolated native
+browse instance counts the smaller included/excluded cohort using the original
+facet configuration and criteria; excluded counts are subtracted from the native
+baseline. Zero-hit choices disappear. Existing intrinsic filters remain ANDed
+with the cohort, and empty cohorts never become unrestricted queries. The counter
+does not execute or save a browse, change the original context or persist counts.
+Sidebar, full choice lists and hierarchy requests share this path. Other subject
+tables retain their previous suppression of unfiltered counts.
+`tests/media_facet_counts_test.php` covers scope isolation, both cohort strategies,
+zero results, configured filters/criteria and request-local reuse. Read-only checks
+against the native runtime also verified the object-type total against the media
+result total. The ordinary PHP suite count is now 46.
 
 ## Collapsible filter sidebars
 
@@ -947,8 +962,9 @@ and asset-version PHP checks. No production deployment was performed.
   related-object filter applies only to the configured authority Browse routes.
 - Related result contexts must save the displayed IDs for Previous/Next.
   The preference is visitor-specific; a shared URL uses its recipient's setting.
-- Native facet counts include all records, so media-only pages omit those counts.
-  Downloads use native unfiltered results and are available in All items mode.
+- Object Search/Browse facet counts are adjusted to the current media-filtered
+  scope as described above. Other media-only subject tables still omit native
+  unfiltered counts. Result exports remain disabled in both modes.
 - `conf/collections.conf` keeps `cache_timeout = 0`; whole-page content caching
   is disabled in `conf/app.conf`. Theme Tiles/List and result-block HTML cache
   calls are removed entirely because native zero-lifetime cache semantics are
