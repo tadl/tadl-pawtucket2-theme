@@ -56,16 +56,24 @@ let browser;
         assert.equal(await page.locator('#browseResultsContainer').getByText(/Loading/).count(),0);
         const firstResponse = await context.request.get(origin + '/Detail/collections/888888');
         assert(/id=['"]row1000['"]/.test(await firstResponse.text()), 'The initial HTTP response must contain the actual result cards.');
-        for (const width of [320,768,1600]) {
+        for (const width of [320,768,1200,1280,1600]) {
             await page.setViewportSize({width,height:1000});
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${width}px: server result controls must reflow.`);
         }
         await page.locator('.tadl-results-sort > summary').focus(); await page.keyboard.press('Enter');
-        await page.getByRole('link',{name:'Sort by Title, Descending',exact:true}).click();
-        await page.waitForURL('**/sort/Title/direction/desc/**');
+        await page.getByRole('link',{name:'Sort by Title, Ascending',exact:true}).click();
+        await page.waitForURL('**/sort/Title/direction/asc/**');
         assert(page.url().includes('/s/0/') && page.url().includes('/per_page/18'), 'Sort changes must preserve size and reset paging.');
-        assert.equal(await page.locator('.tadl-sort-choice[aria-current=true]').getAttribute('aria-label'),'Sort by Title, Descending');
+        assert.equal(await page.locator('.tadl-sort-choice[aria-current=true]').getAttribute('aria-label'),'Sort by Title. Currently Ascending; activate for Descending.');
+        assert.equal(await page.locator('.tadl-sort-toggle > span').first().textContent(),'Sort by Title');
+        assert.equal(await page.locator('.tadl-sort-direction').textContent(),'↑');
         assert.equal(await page.locator('[id^=row]').count(),18);
+        for (const [current,next,arrow] of [['Ascending','Descending','↓'],['Descending','Ascending','↑']]) {
+            await page.locator('.tadl-results-sort > summary').click();
+            await page.getByRole('link',{name:`Sort by Title. Currently ${current}; activate for ${next}.`,exact:true}).click();
+            await page.waitForURL(`**/sort/Title/direction/${next === 'Descending' ? 'desc' : 'asc'}/**`);
+            assert.equal(await page.locator('.tadl-sort-direction').textContent(),arrow,'Clicking the current field must reverse the order and update its indicator.');
+        }
         await page.locator('.tadl-results-sort > summary').click();
         await page.getByRole('link',{name:'Sort by Identifier, Ascending',exact:true}).click();
         await page.waitForURL('**/sort/Identifier/direction/asc/**');

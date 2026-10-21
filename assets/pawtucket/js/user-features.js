@@ -28,11 +28,13 @@
 /* Sorting remains a native disclosure with ordinary links when JavaScript is off. */
 (function () {
     'use strict';
-    document.addEventListener('click', function (event) {
+    function closeOutside(event) {
         document.querySelectorAll('.tadl-results-sort[open]').forEach(function (menu) {
             if (!menu.contains(event.target)) { menu.open = false; }
         });
-    });
+    }
+    document.addEventListener('click', closeOutside);
+    document.addEventListener('focusin', closeOutside);
     // Own the keyup before Pawtucket's document-level viewer Escape handlers.
     document.addEventListener('keyup', function (event) {
         if (event.key !== 'Escape') { return; }

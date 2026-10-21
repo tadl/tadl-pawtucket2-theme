@@ -22,11 +22,14 @@ workspace has reference checkouts of Pawtucket and Providence at local tag
 
 ## Compact catalogue sorting
 
-The shared Search/Browse/collection-item toolbar now uses **Sort by** in place
-of **Options**. Its native `details` disclosure has one row per configured field,
-with adjacent ascending/descending links (↑/↓). The current pair has a checkmark,
-`aria-current`, a filled control and a bold field label. Contextual names/tooltips
-identify both field and direction. Each choice sets both in one ordinary GET,
+The shared Search/Browse/collection-item toolbar now displays **Sort by Title**
+(or the current field) in a standard white theme button. Its native `details`
+disclosure has one clickable row per configured field. Selecting another field
+uses its configured default direction (ascending if unspecified); clicking the
+current field reverses direction. Only the active row displays ↑/↓ for its current
+direction, with `aria-current` and the standard selected-control styling.
+Contextual names/tooltips announce the current direction and reversal action.
+Each choice sets field and direction in one ordinary GET,
 resets the offset and preserves scope, filters, view, page size and native context.
 This replaces the old inline sort bar too, regardless of `sortControlType`.
 
@@ -36,9 +39,9 @@ of inside sorting. Existing finding aids, object media downloads and account
 Lightbox management remain separate controls. The Collections index retains its
 configured alphabetical order. Earlier Options/export notes below are historical.
 
-The disclosure works without JavaScript. `user-features.js` adds outside-click
-dismissal and Escape/focus restoration. Synthetic result/template tests and the
-accessibility/server-result browser suites cover both directions, native routes,
+The disclosure works without JavaScript. `user-features.js` adds dismissal when
+clicking or tabbing outside, and Escape/focus restoration. Synthetic result/template
+tests and the accessibility/server-result browser suites cover both directions, native routes,
 scope and offset preservation, no-script navigation, keyboard use and open-menu
 reflow/axe checks at mobile through desktop widths.
 

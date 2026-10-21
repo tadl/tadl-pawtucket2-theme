@@ -259,16 +259,19 @@ foreach (['flat', 'hierarchy'] as $mode) {
 foreach (['Browse', 'Search', 'FamilyContents', 'PlaceContents'] as $controller) {
 	$request = new ContextRequest($controller, false, null, ['entity_id'=>44, 'place_id'=>42, 'per_page'=>'36']);
 	$html = (new ContextView($request, [], 90, ['sort'=>'Title', 'sort_direction'=>'desc', 'start'=>36, 'is_advanced'=>true,
-		'browseInfo'=>['table'=>'ca_objects', 'sortControlType'=>'list'],
+		'browseInfo'=>['table'=>'ca_objects', 'sortControlType'=>'list', 'sortDirection'=>['Synthetic <b> & "field"'=>'DESC']],
 		'sortBy'=>['Title'=>'ca_object_labels.name', 'Synthetic <b> & "field"'=>'synthetic_field']]))->render('Browse/browse_results_html.php');
-	$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $xpath = new DOMXPath($document);
+	$document = new DOMDocument(); $document->loadHTML('<meta charset="UTF-8">'.$html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $xpath = new DOMXPath($document);
 	checkContext($xpath->query('//details[@class="tadl-results-sort"]//li')->length === 2 && !str_contains($html, 'bSortByList'), 'All catalogue views must use one compact sort row per configured field, including legacy list controls.');
 	$selected = $xpath->query('//details//a[@aria-current="true"]');
-	checkContext($selected->length === 1 && $selected->item(0)->getAttribute('aria-label') === 'Sort by Title, Descending', 'Only the active field and direction may be marked current.');
+	checkContext($selected->length === 1 && $selected->item(0)->getAttribute('aria-label') === 'Sort by Title. Currently Descending; activate for Ascending.', 'The current row must announce its direction and reversal action.');
+	checkContext($xpath->query('//details//a')->length === 2 && $xpath->query('//details//span[@class="tadl-sort-direction"]')->length === 1 && $selected->item(0)->textContent === 'Title↓', 'Each field must have one clickable row, with a direction arrow only on the current field.');
+	checkContext($xpath->query('//details/summary/span')->item(0)->textContent === 'Sort by Title', 'The dropdown control must identify the active field.');
 	checkContext($xpath->query('//details//b')->length === 0 && str_contains($html, '&lt;b&gt;'), 'Configured sort labels must be escaped.');
 	foreach ($xpath->query('//details//a') as $link) {
 		parse_str(parse_url($link->getAttribute('href'), PHP_URL_QUERY), $params);
 		checkContext(in_array($params['direction'], ['asc','desc'], true) && $params['s'] === '0' && $params['per_page'] === '36', 'Each sort choice must set field/direction together, reset paging and retain page size.');
+		checkContext($params['direction'] === ($params['sort'] === 'Title' ? 'asc' : 'desc'), 'The active field must reverse while another field uses its configured default direction.');
 		checkContext($link->getAttribute('title') === $link->getAttribute('aria-label') && $link->getAttribute('data-tadl-view') === 'images', 'Directional choices need contextual names/tooltips and ordinary result-link attributes.');
 		if (in_array($controller, ['FamilyContents','PlaceContents'], true)) {
 			$key = $controller === 'FamilyContents' ? 'entity_id' : 'place_id';
@@ -277,6 +280,13 @@ foreach (['Browse', 'Search', 'FamilyContents', 'PlaceContents'] as $controller)
 			checkContext($params['key'] === 'synthetic-key' && $params['_advanced'] === '1', 'Sort links must retain native search/filter context.');
 		}
 	}
+}
+foreach (['asc'=>'desc','desc'=>'asc'] as $currentDirection=>$nextDirection) {
+	$html = (new ContextView(new ContextRequest(), [], 45, ['sort'=>'Title', 'sort_direction'=>$currentDirection]))->render('Browse/browse_results_html.php');
+	$document = new DOMDocument(); $document->loadHTML('<meta charset="UTF-8">'.$html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $xpath = new DOMXPath($document);
+	$link = $xpath->query('//details//a[@aria-current="true"]')->item(0);
+	parse_str(parse_url($link->getAttribute('href'), PHP_URL_QUERY), $params);
+	checkContext($params['direction'] === $nextDirection && $xpath->query('//span[@class="tadl-sort-direction"]')->item(0)->textContent === ($currentDirection === 'asc' ? '↑' : '↓'), 'The visible arrow must show the current direction while the row link reverses it.');
 }
 $html = (new ContextView(new ContextRequest(), [contextCriterion('place_facet',42)]))->render('Browse/browse_results_html.php');
 $document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $xpath = new DOMXPath($document);

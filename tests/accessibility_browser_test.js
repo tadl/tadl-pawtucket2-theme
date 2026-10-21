@@ -141,20 +141,29 @@ let browser;
         await page.setViewportSize({width,height:1000});
         await page.goto(origin + '/sort-results');
         const disclosure = page.locator('.tadl-results-sort'), toggle = disclosure.locator('summary');
+        assert.equal(await toggle.locator('span').first().textContent(),'Sort by Title');
+        assert.deepEqual(await toggle.evaluate(node=>{
+            const neighbor=document.querySelector('.tadl-result-view-toggle:not(.active)');
+            return [getComputedStyle(node).backgroundColor,getComputedStyle(neighbor).backgroundColor];
+        }),['rgb(255, 255, 255)','rgb(255, 255, 255)'], 'Sort by must use the same white button surface as the neighboring view controls.');
         await toggle.focus(); await page.keyboard.press('Enter');
         assert(await disclosure.evaluate(node=>node.open), 'Sort by must open from the keyboard.');
         await page.keyboard.press('Tab');
         assert.equal(await page.locator(':focus').getAttribute('aria-label'), 'Sort by Identifier, Ascending', 'Direction choices must use normal Tab order.');
         const menu = await disclosure.locator('ul').boundingBox();
         assert(menu.x >= 0 && menu.x + menu.width <= width + 1, `${width}px: the open sort dropdown must fit the viewport.`);
-        assert.equal(await disclosure.locator('[aria-current=true]').getAttribute('aria-label'), 'Sort by Title, Descending');
+        assert.equal(await disclosure.locator('[aria-current=true]').getAttribute('aria-label'), 'Sort by Title. Currently Descending; activate for Ascending.');
+        assert.equal(await disclosure.locator('a').count(),5,'Each sort field must have one full-row link.');
+        assert.equal(await disclosure.locator('.tadl-sort-direction').textContent(),'↓');
         for (const link of await disclosure.locator('a').all()) {
             const box = await link.boundingBox();
-            assert(box.width >= 24 && box.height >= 24, 'Both directional choices must remain usable touch targets.');
+            assert(box.width >= menu.width - 12 && box.height >= 24, 'The whole sort row must be a usable touch target.');
         }
         await page.evaluate(axeSource);
-        const violations = await page.evaluate(async ()=>(await axe.run('#main',{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}})).violations.map(item=>({id:item.id,nodes:item.nodes.map(node=>node.html)})));
-        assert.deepEqual(violations,[], 'The open Sort by control must retain accessible names, contrast and target sizes.');
+        // The floating list temporarily covers page controls; the closed-page
+        // scan above checks those targets, and this scan checks the open list.
+        const violations = await page.evaluate(async ()=>(await axe.run('.tadl-results-sort',{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}})).violations.map(item=>({id:item.id,nodes:item.nodes.map(node=>node.html)})));
+        assert.deepEqual(violations,[], `${width}px: the open Sort by control must retain accessible names, contrast and target sizes.`);
         if (artifacts) {
             await page.screenshot({path:path.join(artifacts,`sort-open-${width}.png`)});
             const heading = await toggle.boundingBox();
@@ -167,6 +176,9 @@ let browser;
         assert.equal(await page.evaluate(()=>caUI.panelCount),0, 'Closing Sort by must not invoke the native media-panel close lifecycle.');
         await toggle.click(); await page.locator('h1').click();
         assert.equal(await disclosure.evaluate(node=>node.open),false, 'An outside click must dismiss the sort dropdown.');
+        await toggle.focus(); await page.keyboard.press('Enter');
+        await disclosure.locator('a').last().focus(); await page.keyboard.press('Tab');
+        assert.equal(await disclosure.evaluate(node=>node.open),false, 'Tabbing to a neighboring control must dismiss the overlay so that control stays visible.');
     }
     await page.setViewportSize({width:1280, height:900});
     await page.goto(origin + '/contact');
