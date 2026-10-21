@@ -182,7 +182,7 @@ foreach (['fname' => 'given-name', 'lname' => 'family-name', 'email' => 'email',
 }
 $fixtures['gallery'] = (new A11yView(['set_id' => 7, 'set_items' => array_map(static fn($id) => ['item_id' => $id], range(1, 14)), 'section_name' => 'Gallery', 'label' => 'Synthetic gallery']))->render('Gallery/detail_html.php');
 $fixtures['featured'] = '<h1>Synthetic featured collection</h1>'.(new A11yView(['access_values' => [1], 'featured_set_item_ids' => [1, 2, 3, 4]]))->render('Front/featured_set_slideshow_html.php');
-$fixtures['notifications'] = '<h1>Synthetic notifications</h1>'.(new A11yView(['notifications' => [['type' => 1, 'message' => 'Synthetic error notice.'], ['type' => 3, 'message' => 'Synthetic informational notice.']]]))->render('pageFormat/notifications.php');
+$fixtures['notifications'] = '<h1>Synthetic notifications</h1>'.(new A11yView(['notifications' => [['type' => 1, 'message' => 'Synthetic error notice. Reference: SYNTHETIC_NOTIFICATION_REFERENCE_0123456789_ABCDEFGHIJKLMNOPQRSTUVWXYZ'], ['type' => 3, 'message' => 'Synthetic informational notice.']]]))->render('pageFormat/notifications.php');
 foreach ([1, 2, 3] as $id) {
 	$fixtures['gallery-item-'.$id] = (new A11yView([
 		'previous_item_id' => $id > 1 ? $id - 1 : 0, 'next_item_id' => $id < 3 ? $id + 1 : 0,

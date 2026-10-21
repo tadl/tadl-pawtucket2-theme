@@ -85,7 +85,7 @@ html:has(#caMediaPanel[aria-hidden="false"]) { overflow: hidden; }
 
 /* Long content and translated labels must survive text spacing and narrow views. */
 #main, #pageArea, .tadl-content-shell .row > [class*="col-"] { min-width: 0; }
-#main :is(p, li, dd, .unit, .form-group, .tadl-record-heading) { overflow-wrap: anywhere; }
+#main :is(h1, h2, h3, h4, h5, h6, p, li, dd, .unit, .form-group, .tadl-record-heading, .notificationMessage) { overflow-wrap: anywhere; }
 .form-control, button, .btn { max-width: 100%; }
 .btn { white-space: normal; }
 textarea.form-control { resize: vertical; }

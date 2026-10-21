@@ -119,6 +119,8 @@ The shared shell now has a focusable native main landmark, stronger focus/input
 contrast, valid preference semantics and distinct pagination landmarks. Empty
 identifier links are omitted, thumbnails have useful names, extra result details
 use native disclosures, and Browse/Filters/dialog closes use native buttons.
+Headings and notifications wrap unbroken words/references when enlarged in narrow
+layouts; the browser fixture includes a long synthetic notification reference.
 Contact errors expose field associations and a focused summary. Account controls
 carry appropriate autocomplete; password confirmation labels and cookie radios
 are repaired. Gallery AJAX retains focus and announces selection; featured items
