@@ -26,6 +26,11 @@ $known = []; tadlReadMediaUsability(new Db(), [800001], [1], $known);
 testAssert($known === [800001=>true] && Db::$mediaRows === $before, 'A subset read must not evict other entries from the same bucket.');
 
 $replace = Db::$pdo->prepare('UPDATE ca_object_representations SET media = ? WHERE representation_id = 800500');
+ExternalCache::$clock += 3600;
+$before = Db::$mediaRows; $saves = ExternalCache::$saves;
+$known = []; tadlReadMediaUsability(new Db(), $batchIDs, [1], $known);
+testAssert(count(array_filter($known)) === 1201 && Db::$mediaRows === $before && ExternalCache::$saves === $saves,
+    'Unchanged descriptors must remain warm beyond five minutes without extending their expiry.');
 $replace->execute([caSerializeForDatabase([])]);
 $before = Db::$mediaRows; $saves = ExternalCache::$saves;
 $known = []; tadlReadMediaUsability(new Db(), $batchIDs, [1], $known);
@@ -39,6 +44,12 @@ Db::$pdo->exec('UPDATE ca_object_representations SET access = 1 WHERE representa
 Db::$pdo->exec('UPDATE ca_object_representations SET deleted = 0 WHERE representation_id = 800502');
 $known = []; tadlReadMediaUsability(new Db(), $batchIDs, [1], $known);
 testAssert($known[800501] && $known[800502], 'Restored visibility must be recognized immediately, without waiting for cache expiry.');
+
+ExternalCache::$clock += 86400;
+$before = Db::$mediaRows;
+$known = []; tadlReadMediaUsability(new Db(), $batchIDs, [1], $known);
+testAssert(count(array_filter($known)) === 1200 && Db::$mediaRows === $before + 1201,
+    'Expired validity entries must still refresh through the current native decoder.');
 
 foreach ($batchKeys as $key) { ExternalCache::$values['tadlMediaUsability'][$key] = 'Synthetic invalid cache payload'; }
 $known = []; tadlReadMediaUsability(new Db(), $batchIDs, [1], $known);

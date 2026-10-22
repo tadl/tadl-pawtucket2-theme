@@ -9,7 +9,10 @@ define('pString', 1); define('pInteger', 2);
 $checks = 0;
 function exportCheck($value, $message) { $GLOBALS['checks']++; if (!$value) { throw new RuntimeException($message); } }
 class ExportRequest {
-	function __construct(public string $controller, public array $sources = []) {}
+	function __construct(public string $controller, public array $sources = []) { $this->config = new ExportConfig(); }
+	public $config;
+	function isAjax() { return false; }
+	function isLoggedIn() { return false; }
 	function getController() { return $this->controller; }
 	function getParameter($key, $type) {
 		foreach (['GET', 'POST', 'PATH'] as $source) {
@@ -20,6 +23,9 @@ class ExportRequest {
 		return '';
 	}
 }
+class ExportConfig { function get($name) { return false; } }
+function caGetBrowseConfig() { return new ExportConfig(); }
+function caSetPageCSSClasses($classes) {}
 class AppController {
 	static $request;
 	static function getInstance() { return new self(); }
@@ -30,6 +36,8 @@ require_once(dirname(__DIR__).'/helpers/result_exports.php');
 function exportDispatch($controller, $sources) {
 	AppController::$request = $request = new ExportRequest($controller, $sources);
 	$response = new stdClass();
+	if (!defined('__CA_LIB_DIR__')) { define('__CA_LIB_DIR__', __CA_APP_DIR__.'/lib'); define('__CA_MODELS_DIR__', __CA_APP_DIR__.'/models'); }
+	if (class_exists($controller.'Controller', false)) { tadlGuardResultExportRequest($request); return new ($controller.'Controller')($request, $response); }
 	if (in_array($controller, ['Search', 'Browse'], true)) {
 		// Re-enter the actual theme shim as the native dispatcher does on each request.
 		require dirname(__DIR__).'/controllers/'.$controller.'Controller.php';
@@ -54,7 +62,7 @@ if (defined('TADL_EXPORT_HTTP')) {
 	return;
 }
 $directory = sys_get_temp_dir().'/tadl-result-exports-'.bin2hex(random_bytes(8));
-mkdir($directory.'/controllers', 0700, true);
+foreach (['controllers','helpers','models','lib/Browse'] as $folder) { mkdir($directory.'/'.$folder, 0700, true); }
 define('__CA_APP_DIR__', $directory);
 $native = <<<'PHP'
 <?php
@@ -62,10 +70,12 @@ $GLOBALS['nativeLoaded'] = true;
 class SearchController {
  function __construct(&$request, &$response, $view_paths = null) { $GLOBALS['nativeConstructed'] = true; }
 }
-class BrowseController extends SearchController {}
+
 PHP;
 file_put_contents($directory.'/controllers/SearchController.php', $native);
-file_put_contents($directory.'/controllers/BrowseController.php', '<?php require_once __DIR__."/SearchController.php";');
+file_put_contents($directory.'/controllers/FindController.php', '<?php require_once __DIR__."/SearchController.php"; class FindController extends SearchController { public $request; public $response; public $view; public $opo_config; function __construct(&$request,&$response,$paths=null) { parent::__construct($request,$response,$paths); $this->request=$request; $this->response=$response; $this->view=new class { function setVar($name,$value) {} }; } }');
+foreach (['models/ca_collections.php','helpers/browseHelpers.php'] as $file) { file_put_contents($directory.'/'.$file, '<?php'); }
+file_put_contents($directory.'/lib/Browse/ObjectBrowse.php', '<?php class ObjectBrowse {}');
 $process = null;
 try {
 	// The first legacy request must be refused before even loading native classes.

@@ -158,9 +158,11 @@ The theme extends Pawtucket through its native theme mechanism. PHP views provid
 | `support/` | Explicit maintenance/setup tools, deployment helper, and optional detector. |
 | `docs/` and `tests/` | Feature guides and synthetic regression checks. |
 
-Eligible records are filtered before theme counts and pagination, with batched lookups where appropriate. Keep `do_content_caching = 0` in `conf/app.conf` and collection `cache_timeout = 0`: rendered pages depend on the visitor's media preference and permissions, which native shared HTML cache keys do not fully represent. Other application caching can continue normally. PDF bytes and media-descriptor validity have separate content-keyed native caches; current access checks still run for every request. Media validity uses batches of up to 500 representations per cache lookup, avoiding a separate cache request for every object when filtering a large catalogue. Current descriptor fingerprints are checked on every request, so media changes take effect immediately.
+Eligible records are filtered before theme counts and pagination, with batched lookups where appropriate. Keep `do_content_caching = 0` in `conf/app.conf` and collection `cache_timeout = 0`: rendered pages depend on the visitor's media preference and permissions, which native shared HTML cache keys do not fully represent. Other application caching can continue normally. PDF bytes and media-descriptor validity have separate content-keyed native caches; current access checks still run for every request. Media validity uses batches of up to 500 representations per cache lookup, avoiding a separate cache request for every object when filtering a large catalogue. Current descriptor fingerprints are checked on every request, so media changes take effect immediately. Unchanged validity entries can remain warm for a day; access and deletion are never cached.
 
 Media cache buckets also work across overlapping searches and sort orders. Object grids and lists fetch primary thumbnails for the displayed page in batches, with native permission checks and fallback images preserved. Returning to a distant result jumps to its page; a missing or outdated return target cannot expand one response into thousands of cards. These optimizations require no additional service, database index or cache purge.
+
+Large unfiltered anonymous object browses can reuse native filter choices after checking a fresh fingerprint of the records, labels, visibility flags, hierarchy and relationships that produced them. Restricted views retain native computation. An optional MySQL covering index avoids reading every media descriptor just to fingerprint it; the theme detects it and otherwise uses ordinary native hashing. See [performance and optional database setup](docs/PERFORMANCE.md).
 
 ## Updating and deploying
 
@@ -182,6 +184,7 @@ The supplied `support/deploy-theme.sh` is an rsync helper for the `/var/www/pawt
 | [Families](docs/FAMILIES.md) | Related-member objects and media/access filtering. |
 | [Finding aids](docs/FINDING_AIDS.md) | Descriptive PDF structure, metadata at every hierarchy level, field mappings and access. |
 | [Audit remediation](docs/AUDIT_REMEDIATION.md) | Review findings, source fixes, verification and deployment boundaries. |
+| [Performance](docs/PERFORMANCE.md) | Cache freshness, optional MySQL index, measurement, and rollback. |
 | [Document text](docs/DOCUMENT_TEXT.md) | Extraction/transcription fallbacks, formatting, permissions, and indexing boundaries. |
 | [Image downloads](docs/IMAGE_DOWNLOADS.md) | Export formats, native processing requirements, private conversion cache, and limits. |
 | [Accounts](docs/USER_FEATURES.md) | Staff login, profiles, disabled item sets, staff tools, and FAQ presentation. |

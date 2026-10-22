@@ -60,7 +60,9 @@ function tadlReadMediaUsability($db, array $ids, array $access, array &$known, ?
 			}
 		}
 		if ($cache && $changed) {
-			try { ExternalCache::save($key, ['entries' => $entries], 'tadlMediaUsability', 300); }
+			// Fresh descriptor fingerprints invalidate changed entries immediately.
+			// A short TTL only forces unchanged catalogues to decode every file again.
+			try { ExternalCache::save($key, ['entries' => $entries], 'tadlMediaUsability', 86400); }
 			catch (Throwable $error) { /* Availability of this optimization is optional. */ }
 		}
 	}

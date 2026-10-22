@@ -1,6 +1,6 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-21. This document carries the recent coding context to another
+Updated: 2026-10-22. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
@@ -40,6 +40,42 @@ Changes belong here rather than in upstream CollectiveAccess. The surrounding
 workspace has reference checkouts of Pawtucket and Providence at local tag
 `2.0.10`; that is a local source fact, not a verified current production version.
 
+## Object browse performance (2026-10-22)
+
+The theme `BrowseController` now carries the Pawtucket 2.0.10 controller with its
+native license and delegates object browse construction to `TadlObjectBrowse`.
+Its early export guard remains before native class loading. All other native
+controller behavior and `FindController` navigation/chooser methods are retained.
+Compare this override when upgrading Pawtucket; no installed core file changes.
+
+`helpers/catalogue_browse.php` and `helpers/facet_snapshot.php` reuse native object
+type, entity, place and vocabulary facets for unfiltered anonymous sets of at least 128 IDs.
+Every request reads and hashes the actual current scalar inputs, including access,
+deletion, labels, hierarchy, type lists and relationships. The key also covers
+criteria, result IDs, explicit type/source restrictions, access options, locale,
+blank-label settings and implementation hashes. These are content fingerprints,
+not a timestamp/TTL permission cache. Only digests and native public facet output
+are persisted. Filtered searches, unsupported facets, custom templates/attribute groupings, logged-in
+sessions, bundle restrictions and native ACL/type/source policies retain native
+computation. Cache outages fall back, payloads are bounded and expire in an hour,
+and an input change during computation prevents publishing that cache entry.
+
+Media descriptor validity now expires after one day rather than five minutes;
+current access/deletion and SHA-256 descriptor identity still run each request.
+`helpers/media_identity.php` detects the optional MySQL 8 covering index documented
+in [PERFORMANCE.md](PERFORMANCE.md), validates its generated expressions and column
+order once per request, and falls back when absent. Nothing installs DDL during a
+web request. Representation relationship queries read each scalar row once.
+
+All 49 standalone PHP suites passed locally, including optional indexed media and
+facet invalidation/permission/failure boundaries. Serial native application A/B
+probes preserved ordered IDs, facet text/counts and thumbnail sources. Warm 72-card
+object browse profiles were about 2.4 to 1.8 seconds with all items, and 3.5 to
+2.4–2.5 seconds with media filtering. CLI profiles include application bootstrap;
+they are not live HTTP deployment timings or concurrent-load guarantees. First
+requests can be slower. Source deployment is a separate operator step; private
+workspace operations records track any explicitly authorized index trials.
+
 ## Media-filter cache batching
 
 `helpers/media_usability.php` caches descriptor validity in bounded maps of up to
@@ -50,7 +86,7 @@ Fresh SQL still checks access/deletion and each descriptor's SHA-256 fingerprint
 Only matching boolean validity is reused; changed descriptors are decoded
 individually and refresh their batch. Payloads contain fingerprints and booleans,
 never media blobs, object visibility or relationship/ACL decisions. Entries expire
-after five minutes; warm reads do not extend their lifetime. Malformed cache data
+after one day; warm reads do not extend their lifetime. Malformed cache data
 or cache outages fall back to the native media decoder. A fingerprint mismatch
 between the initial query and descriptor read is not persisted.
 

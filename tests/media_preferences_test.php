@@ -76,11 +76,14 @@ function caGetIconsConfig() { return new TestConfig(['placeholder_media_icon' =>
 class ca_list_items { function load($id) {} function get($key) { return ''; } }
 class ExternalCache {
     static array $values = [];
+    static array $expires = [];
+    static int $clock = 0;
     static int $fetches = 0, $saves = 0;
     static bool $failReads = false, $failWrites = false;
     static function fetch($key, $group = null) {
         self::$fetches++;
         if (self::$failReads) { throw new RuntimeException('Synthetic cache unavailable'); }
+        if (isset(self::$expires[$group][$key]) && self::$expires[$group][$key] <= self::$clock) { return null; }
         return self::$values[$group][$key] ?? null;
     }
     static function contains($key, $group = null) { return false; }
@@ -88,6 +91,7 @@ class ExternalCache {
         self::$saves++;
         if (self::$failWrites) { throw new RuntimeException('Synthetic cache unavailable'); }
         self::$values[$group][$key] = $value;
+        if ($timeout !== null) { self::$expires[$group][$key] = self::$clock + $timeout; }
     }
 }
 function caUnserializeForDatabase($data) {
@@ -217,6 +221,7 @@ class TestDbResult {
     function __construct(private array $rows) {}
     function nextRow() { return ++$this->position < count($this->rows); }
     function get($field) { return $this->rows[$this->position][$field] ?? null; }
+    function getRow() { return $this->rows[$this->position]; }
     function numRows() { return count($this->rows); }
     function getAllFieldValues($field) { return array_column($this->rows, $field); }
     function getMediaInfo($field, $version = null, $key = null) {
@@ -239,8 +244,16 @@ class Db {
     static public PDO $pdo;
     static public array $queries = [];
     static public int $mediaRows = 0;
+    function getConfig() { return new TestConfig(['db_type'=>defined('TADL_TEST_INDEXED_MEDIA') ? 'mysqli' : 'sqlite']); }
     function query($sql, $params = [], $options = null) {
         self::$queries[] = ['sql' => $sql, 'params' => $params];
+        if (str_contains($sql, 'information_schema.STATISTICS')) {
+            return new TestDbResult(array_map(static fn($name) => ['column_name'=>$name,
+                'extra'=>str_starts_with($name, 'tadl_') ? 'VIRTUAL GENERATED INVISIBLE' : '',
+                'expression'=>match($name) { 'tadl_has_media'=>"((`media` is not null) and (`media` <> _utf8mb4\\'\\'))", 'tadl_media_fingerprint'=>'sha2(`media`,256)', default=>'' }],
+                ['representation_id','deleted','access','tadl_has_media','tadl_media_fingerprint']));
+        }
+        $sql = str_replace('FORCE INDEX (i_tadl_media_identity)', '', $sql);
         // CollectiveAccess permits array values for a single IN (?) placeholder.
         $bindings = [];
         $index = 0;
@@ -313,10 +326,16 @@ class SearchResult {
 }
 Db::$pdo = class_exists('Pdo\Sqlite') ? new Pdo\Sqlite('sqlite::memory:') : new PDO('sqlite::memory:');
 $sqliteFunctionMethod = method_exists(Db::$pdo, 'createFunction') ? 'createFunction' : 'sqliteCreateFunction';
-Db::$pdo->$sqliteFunctionMethod('SHA2', static fn($data, $bits) => hash('sha256', (string)$data), 2);
+$deterministic = class_exists('Pdo\Sqlite') ? Pdo\Sqlite::DETERMINISTIC : PDO::SQLITE_DETERMINISTIC;
+Db::$pdo->$sqliteFunctionMethod('SHA2', static fn($data, $bits) => hash('sha256', (string)$data), 2, $deterministic);
 Db::$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 Db::$pdo->exec('CREATE TABLE ca_objects (object_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_object_representations (representation_id INTEGER PRIMARY KEY, access INTEGER, deleted INTEGER, media BLOB, mimetype TEXT, original_filename TEXT, md5 TEXT)');
+if (defined('TADL_TEST_INDEXED_MEDIA')) {
+    Db::$pdo->exec('ALTER TABLE ca_object_representations ADD COLUMN tadl_media_fingerprint TEXT GENERATED ALWAYS AS (SHA2(media,256)) VIRTUAL');
+    Db::$pdo->exec("ALTER TABLE ca_object_representations ADD COLUMN tadl_has_media INTEGER GENERATED ALWAYS AS (media IS NOT NULL AND media <> '') VIRTUAL");
+    Db::$pdo->exec('CREATE INDEX i_tadl_media_identity ON ca_object_representations (representation_id,deleted,access,tadl_has_media,tadl_media_fingerprint)');
+}
 Db::$pdo->exec('CREATE TABLE ca_objects_x_object_representations (relation_id INTEGER PRIMARY KEY, object_id INTEGER, representation_id INTEGER, is_primary INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_collections (parent_id INTEGER DEFAULT 0, collection_id INTEGER PRIMARY KEY, hier_collection_id INTEGER, hier_left INTEGER, hier_right INTEGER, access INTEGER, deleted INTEGER)');
 Db::$pdo->exec('CREATE TABLE ca_objects_x_collections (relation_id INTEGER PRIMARY KEY, object_id INTEGER, collection_id INTEGER)');
@@ -755,7 +774,10 @@ testAssert(tadlMediaEligibleIDs('ca_collections', [500], [1]) === [500], 'Uninit
 foreach (range(1000,1600) as $id) { testObject($id); testRelation($id, 1); }
 $queryCount = count(Db::$queries);
 testAssert(tadlMediaEligibleIDs('ca_objects', range(1000,1600), [1]) === range(1000,1600), 'Chunked candidate batch dropped results.');
-testAssert(count(Db::$queries) - $queryCount === 2, '601 candidates with no additional restrictions should use two fresh relationship batches without redundant visibility queries.');
+$batchQueries = array_slice(Db::$queries, $queryCount);
+$schemaQueries = array_filter($batchQueries, static fn($query) => str_contains($query['sql'], 'information_schema.STATISTICS'));
+testAssert(count($batchQueries) - count($schemaQueries) === 2 && count($schemaQueries) <= 1,
+    '601 candidates should use two fresh relationship batches, with at most one optional index discovery and no redundant visibility queries.');
 
 // A large collection needs one playable descriptor, not every attached media blob.
 testCollection(7000, 7000, 1, 2);

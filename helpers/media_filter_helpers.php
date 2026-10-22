@@ -1,6 +1,7 @@
 <?php
 require_once(__DIR__.'/record_access.php');
 require_once(__DIR__.'/media_usability.php');
+require_once(__DIR__.'/media_identity.php');
 require_once(__DIR__.'/family_contents.php');
 require_once(__DIR__.'/place_contents.php');
 require_once(__DIR__.'/media_facet_counts.php');
@@ -45,6 +46,10 @@ function tadlMediaEligibleIDs($table, array $candidateIDs, array $accessValues, 
 		return !array_key_exists($id, $eligibilityCache[$cacheKey]);
 	});
 	$db = Datamodel::getInstanceByTableName($table, true)->getDb();
+	$indexed = $uncachedIDs && $table === 'ca_objects' && tadlIndexedMediaIdentity($db);
+	$identity = $indexed ? 'r.tadl_media_fingerprint' : 'SHA2(r.media, 256)';
+	$mediaPresent = $indexed ? 'r.tadl_has_media = 1' : "r.media IS NOT NULL AND r.media <> ''";
+	$mediaIndex = $indexed ? 'FORCE INDEX (i_tadl_media_identity)' : '';
 	$eligible = [];
 	$representationHasMedia = [];
 	$objectPending = $objectFingerprints = [];
@@ -53,14 +58,14 @@ function tadlMediaEligibleIDs($table, array $candidateIDs, array $accessValues, 
 	foreach (array_chunk(array_values($uncachedIDs), 500) as $chunk) {
 		if ($table === 'ca_objects') {
 			$sql = "
-				SELECT DISTINCT o.object_id candidate_id, o.object_id, r.representation_id, SHA2(r.media, 256) media_fingerprint
+				SELECT DISTINCT o.object_id candidate_id, o.object_id, r.representation_id, {$identity} media_fingerprint
 				FROM ca_objects o
 				INNER JOIN ca_objects_x_object_representations oxr ON oxr.object_id = o.object_id
-				INNER JOIN ca_object_representations r ON r.representation_id = oxr.representation_id
+				INNER JOIN ca_object_representations r {$mediaIndex} ON r.representation_id = oxr.representation_id
 				WHERE o.object_id IN (?)
 					AND o.deleted = 0 AND o.access IN (?)
 					AND r.deleted = 0 AND r.access IN (?)
-					AND r.media IS NOT NULL AND r.media <> ''
+					AND {$mediaPresent}
 			";
 			$params = [$chunk, $access, $access];
 		} else {
@@ -100,9 +105,10 @@ function tadlMediaEligibleIDs($table, array $candidateIDs, array $accessValues, 
 		}
 		$rows = [];
 		while ($result->nextRow()) {
-			$row = ['candidate_id' => (int)$result->get('candidate_id'), 'object_id' => (int)$result->get('object_id'), 'representation_id' => (int)$result->get('representation_id')];
-			if ($table === 'ca_objects') { $row['media_fingerprint'] = (string)$result->get('media_fingerprint'); }
-			if ($table === 'ca_collections') { $row['collection_id'] = (int)$result->get('collection_id'); }
+			$values = $result->getRow();
+			$row = ['candidate_id' => (int)$values['candidate_id'], 'object_id' => (int)$values['object_id'], 'representation_id' => (int)$values['representation_id']];
+			if ($table === 'ca_objects') { $row['media_fingerprint'] = (string)$values['media_fingerprint']; }
+			if ($table === 'ca_collections') { $row['collection_id'] = (int)$values['collection_id']; }
 			$rows[] = $row;
 		}
 		$rows = tadlReadableMediaRows($request, $rows, $access, true);
