@@ -1,5 +1,8 @@
 # Performance
 
+For the completed changes and their measured effects, see the
+[performance improvements report](PERFORMANCE_IMPROVEMENTS.md).
+
 The theme works without a core patch, new service or additional database index.
 Use the application's existing native cache backend. Keep theme page caching and
 shared collection result caching disabled as shipped: those keys do not describe

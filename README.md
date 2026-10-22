@@ -185,6 +185,7 @@ The supplied `support/deploy-theme.sh` is an rsync helper for the `/var/www/pawt
 | [Finding aids](docs/FINDING_AIDS.md) | Descriptive PDF structure, metadata at every hierarchy level, field mappings and access. |
 | [Audit remediation](docs/AUDIT_REMEDIATION.md) | Review findings, source fixes, verification and deployment boundaries. |
 | [Performance](docs/PERFORMANCE.md) | Cache freshness, optional MySQL index, measurement, and rollback. |
+| [Performance improvements](docs/PERFORMANCE_IMPROVEMENTS.md) | Completed optimizations, measured gains, validation, experiments, and deployment record. |
 | [Document text](docs/DOCUMENT_TEXT.md) | Extraction/transcription fallbacks, formatting, permissions, and indexing boundaries. |
 | [Image downloads](docs/IMAGE_DOWNLOADS.md) | Export formats, native processing requirements, private conversion cache, and limits. |
 | [Accounts](docs/USER_FEATURES.md) | Staff login, profiles, disabled item sets, staff tools, and FAQ presentation. |
