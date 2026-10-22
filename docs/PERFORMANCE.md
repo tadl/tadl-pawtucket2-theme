@@ -15,22 +15,61 @@ all visitor preferences and current permissions.
   record/representation access and deletion, relationships, bundles and native
   restrictions. Changed media invalidates its saved validity immediately. The
   one-day expiry limits unused cache entries; it does not delay visibility changes.
-- Large unfiltered anonymous object browses reuse native type, people, place and subject
-  filter choices. Each request fingerprints the actual scalar records, labels,
-  access/deletion flags, hierarchy and relationships involved. Result IDs,
-  criteria, access options, restrictions, locale and implementation also identify
-  the entry. A cache hit requires matching current inputs. A change during native
-  computation prevents saving that result. Entries expire after one hour and have
-  bounded compressed size.
-- Filtered searches, logged-in or specially restricted views, unsupported facets and result sets
-  smaller than 128 IDs retain native facet computation. Cache failures fall back
-  to native computation. The cache stores digests and native readable facet data;
-  it does not store raw private source records.
+- Anonymous object Browse reuses native wildcard result IDs and facet availability,
+  complete sorted ID sets, and supported type/people/place/subject filter choices.
+  Page offsets and sizes are applied afterwards, so moving to another page does
+  not rerun the complete sort. Filtered Browse still executes its native query;
+  its ordering and supported facets can be reused for the freshly returned IDs.
+- Large object sets also reuse media-eligible IDs and adjusted facet counts across
+  requests, including object Search and collection contents. Sets smaller than
+  128 IDs keep their existing media path. Full-text queries execute against the
+  current native search index rather than reusing an old match list.
+- The new result-data cache requires MySQL. Logged-in/privileged sessions,
+  additional ACL/type/source policies, restricted bundles and unavailable input
+  snapshots bypass it. Unsupported facet contents retain native computation.
+  The earlier narrow wildcard-facet cache remains available independently.
+- Shared entries contain scalar result data, not rendered pages, request objects,
+  sessions, CSRF tokens or configuration secrets. Payloads are compressed, expire
+  after one hour, and are limited to 4 MiB compressed / 32 MiB JSON; ID lists are
+  limited to 200,000 unique positive IDs. Malformed entries and cache failures
+  fall back to native computation.
 - Visible-page thumbnails and format tags use batched lookups. Result pages
   contain their cards in the initial HTML and retain ordinary GET navigation.
 
 The object browse integration is a theme controller override based on Pawtucket
 2.0.10. Review it against the upstream controller when upgrading Pawtucket.
+
+## Freshness and cache controls
+
+Each participating request reads the native change-log count and greatest log ID,
+plus current scalar visibility, labels, hierarchy, relationships and representation
+descriptor fingerprints. The count detects a transaction committing an older log
+ID after a newer one. Access/deletion and media changes are detected even when
+made directly in SQL. Source, configuration, criteria, exact result IDs/options,
+access mask, locale and media preference also identify each cache entry. View
+counters are excluded. The one-hour TTL is an expiry limit, not a permission delay.
+
+New entries are queued until request shutdown and published only if a second
+fresh snapshot matches the first. MySQL named locks coordinate missing entries;
+another worker waits up to two seconds per entry for a published value, then
+falls back to computation. Locks are released at shutdown. Native browse-cache
+hydration uses public APIs and verifies the returned IDs before accepting them,
+since native browse keys do not include access scope. Normal ResultContext and
+Back/Previous/Next handling remain in the request.
+
+Normal Providence model writes invalidate data through `ca_change_log`. Direct SQL
+edits to arbitrary attribute/sort fields that bypass those logs are not all
+fingerprinted. After such maintenance, increment `tadl_result_cache_epoch` in the
+theme's `conf/app.conf`; the changed configuration creates a new namespace without
+deleting sessions or flushing Redis. The shipped epoch is `1`. Set
+`disable_tadl_result_cache = 1` to bypass this new layer while keeping the existing
+descriptor and narrow facet optimizations.
+
+The first request after expiry, relevant edits or a source update pays for native
+computation and the final snapshot. Measured cold fills took about 4–7 seconds,
+including initial descriptor warming; warm 72-card object requests were about
+1.7–1.9 seconds. These are serial CLI application profiles, not live HTTP or
+concurrent-load guarantees. Unique uncached searches do not receive the same gain.
 
 ## Optional MySQL 8 media index
 
@@ -107,15 +146,15 @@ warm times for 72-card object browses, including CLI application bootstrap:
 
 | View | Before | After |
 | --- | ---: | ---: |
-| All items | 2.4 s | 1.8 s |
-| Only items with media | 3.5 s | 2.4–2.5 s |
+| All items | 2.4–2.5 s | 1.7–1.9 s |
+| Only items with media | 3.2–3.3 s | 1.8–1.9 s |
 
 The indexed media identity query alone fell from roughly 0.44 s to 0.20 s.
 Ordered result IDs, filter text/counts and thumbnail sources matched in the A/B
 checks. These are development measurements, not a universal response-time
 guarantee or proof that a particular server has deployed the revision. Cold
-requests can cost more. Large native facet queries and result sorting still
-consume time even on fast hardware.
+requests can cost more. Fresh input snapshots, bootstrap, native queries and
+rendering still consume time even on fast hardware.
 
 No cache purge or service restart is required for these theme changes. Source
 updates change the relevant cache fingerprints; the new entries warm naturally.

@@ -97,10 +97,14 @@ function tadlDecodeFacetSnapshot($stored) {
     $raw = base64_decode($stored['data'], true);
     if ($raw === false || ($json = @gzuncompress($raw, 16*1024*1024)) === false) { return null; }
     $content = json_decode($json, true);
-    if (!is_array($content) || !is_bool($content['available'] ?? null) || !is_array($content['content'] ?? null)) { return null; }
+    return tadlFacetCacheEntryValid($content) ? $content : null;
+}
+
+function tadlFacetCacheEntryValid($content): bool {
+    if (!is_array($content) || !is_bool($content['available'] ?? null) || !is_array($content['content'] ?? null)) { return false; }
     foreach ($content['content'] as $row) {
         if (!is_array($row) || !is_string($row['label'] ?? null)
-            || !(is_int($row['id'] ?? null) || is_string($row['id'] ?? null))) { return null; }
+            || !(is_int($row['id'] ?? null) || is_string($row['id'] ?? null))) { return false; }
     }
-    return $content;
+    return true;
 }

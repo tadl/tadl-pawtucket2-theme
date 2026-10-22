@@ -48,17 +48,32 @@ Its early export guard remains before native class loading. All other native
 controller behavior and `FindController` navigation/chooser methods are retained.
 Compare this override when upgrading Pawtucket; no installed core file changes.
 
-`helpers/catalogue_browse.php` and `helpers/facet_snapshot.php` reuse native object
-type, entity, place and vocabulary facets for unfiltered anonymous sets of at least 128 IDs.
-Every request reads and hashes the actual current scalar inputs, including access,
-deletion, labels, hierarchy, type lists and relationships. The key also covers
-criteria, result IDs, explicit type/source restrictions, access options, locale,
-blank-label settings and implementation hashes. These are content fingerprints,
-not a timestamp/TTL permission cache. Only digests and native public facet output
-are persisted. Filtered searches, unsupported facets, custom templates/attribute groupings, logged-in
-sessions, bundle restrictions and native ACL/type/source policies retain native
-computation. Cache outages fall back, payloads are bounded and expire in an hour,
-and an input change during computation prevents publishing that cache entry.
+`helpers/result_cache.php` now adds shared anonymous result data through native
+`ExternalCache` (Redis when configured), without caching page HTML. MySQL requests
+check native change-log count/max plus live scalar visibility, labels, hierarchy,
+relationships and media fingerprints. Keys include code/configuration, locale,
+access, media preference, exact criteria/IDs/options. New entries are queued until
+shutdown, checked against a second snapshot and bounded to 4 MiB compressed / 32 MiB
+JSON with one-hour TTL. Named locks coordinate fills with a two-second bounded
+wait per missing entry; failures retain native computation. No new service or DDL.
+
+`TadlObjectBrowse` reuses wildcard execution and complete ordered IDs across pages
+through public native BrowseCache APIs. It checks hydration IDs against the validated
+entry to reject a concurrent overwrite of the native key. Filtered/full-text
+execution stays native; ordering and supported facets can reuse freshly returned
+IDs. Media-only object filtering and adjusted counts also reuse the result cache
+for sets of at least 128 IDs, including Search/collection-content paths. Small sets
+retain their media path. Logged-in/privileged callers, ACL/type/source policies,
+bundle restrictions and failed snapshots bypass this new layer. The earlier narrow
+wildcard-facet snapshot remains a separate fallback. Unsupported facets keep native
+content computation.
+
+Normal model writes invalidate through `ca_change_log`; direct SQL access/deletion,
+labels, hierarchy, relationships and media edits are independently fingerprinted.
+Direct SQL changes to arbitrary attribute/sort fields require incrementing
+`tadl_result_cache_epoch` in `conf/app.conf`. `disable_tadl_result_cache = 1` bypasses
+the new layer. Neither operation requires a Redis/session flush. Keep rendered-page
+caching and the broad native collection cache disabled.
 
 Media descriptor validity now expires after one day rather than five minutes;
 current access/deletion and SHA-256 descriptor identity still run each request.
@@ -67,14 +82,16 @@ in [PERFORMANCE.md](PERFORMANCE.md), validates its generated expressions and col
 order once per request, and falls back when absent. Nothing installs DDL during a
 web request. Representation relationship queries read each scalar row once.
 
-All 49 standalone PHP suites passed locally, including optional indexed media and
-facet invalidation/permission/failure boundaries. Serial native application A/B
-probes preserved ordered IDs, facet text/counts and thumbnail sources. Warm 72-card
-object browse profiles were about 2.4 to 1.8 seconds with all items, and 3.5 to
-2.4–2.5 seconds with media filtering. CLI profiles include application bootstrap;
-they are not live HTTP deployment timings or concurrent-load guarantees. First
-requests can be slower. Source deployment is a separate operator step; private
-workspace operations records track any explicitly authorized index trials.
+The 50 standalone PHP suites include `tests/result_cache_test.php`, exercising
+cold/warm native execution and ordering, page slices, eligibility/count reuse,
+visibility/media/relationship/log invalidation, out-of-order log commits, scope
+isolation, expiry/corruption, contention and native-cache races. Serial native A/B
+probes preserved ordered IDs, facet text/counts and thumbnail sources. The latest
+warm 72-card profiles were about 2.4–2.5 to 1.7–1.9 seconds with all items, and
+3.2–3.3 to 1.8–1.9 seconds with media filtering. List/descending sort, a later page
+and an object-type filter matched too. First fills took about 4–7 seconds. CLI
+profiles include bootstrap and deferred cache writes; they are not live HTTP or
+concurrent-load guarantees. Source deployment remains a separate operator step.
 
 ## Media-filter cache batching
 
@@ -96,7 +113,9 @@ avoiding another hash query for the same records. Fresh joined object/representa
 access/deletion predicates can satisfy those two visibility checks directly; bundle
 checks and native type/source/Pawtucket ACL restrictions still run in this request.
 When any additional restriction applies, the complete native bulk permission path
-is retained. No persistent record-eligibility or permission cache is introduced.
+is retained. The result-data layer described above can reuse eligible object IDs
+only after its current input and permission checks; descriptor buckets themselves
+do not cache record eligibility.
 
 This addresses a measured per-representation cache bottleneck before media-only
 Browse results appear. No database index, core change, cache purge or service
@@ -128,8 +147,9 @@ restriction. `noCache` forces fresh native visibility and
 `dontCheckFacetAvailability` avoids unrelated facet work. Its result scope is
 reused only within the request, and facet contents are read directly, not from a
 shared facet cache. Logged-in, searched/filtered and custom-filter cases retain
-the general non-executing counter. Neither path changes the original browse or
-persists adjusted counts.
+the general non-executing counter. Neither path changes the original browse.
+The result-data layer can reuse the resulting adjusted counts for validated
+anonymous input scopes; the native counter object stays request-local.
 Sidebar, full choice lists and hierarchy requests share this path. Other subject
 tables retain their previous suppression of unfiltered counts.
 `tests/media_facet_counts_test.php` covers scope isolation, both cohort strategies,

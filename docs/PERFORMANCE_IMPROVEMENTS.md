@@ -1,12 +1,12 @@
 # Catalogue performance improvements
 
-Recorded October 22, 2026. Covers the TADL Pawtucket theme through implementation
-commit `d0c9d4e`.
+Recorded October 22, 2026. Includes the shared result-data cache added after
+implementation commit `d0c9d4e`.
 
 The performance work reduced repeated database queries, cache requests, media
 decoding and thumbnail rendering. The latest warm native application profiles
 for 72-item object browses improved from approximately 2.4–2.5 seconds to
-1.7–1.8 seconds with all items, and from 3.4–3.5 seconds to 2.4–2.5 seconds with
+1.7–1.9 seconds with all items, and from 3.2–3.3 seconds to 1.8–1.9 seconds with
 the media-only filter. Current permissions and accurate filter counts were
 preserved.
 
@@ -132,7 +132,8 @@ This reduced an unfiltered media-facet recount from approximately 0.6 seconds to
 
 Large unfiltered anonymous object browses can reuse native type, people, place and
 subject filter choices. This applies to result sets containing at least 128 IDs.
-Filtered searches, logged-in sessions, unsupported facets and additional native
+This narrower optimization remains available independently of the result-data
+cache below. Logged-in sessions, unsupported facets and additional native
 permission restrictions retain native computation.
 
 Before reuse, the theme reads and fingerprints the current scalar inputs:
@@ -154,6 +155,38 @@ reviewed against upstream when upgrading Pawtucket. Implementation:
 [browse subclass](../helpers/catalogue_browse.php),
 [input fingerprints](../helpers/facet_snapshot.php) and
 [theme Browse controller](../controllers/BrowseController.php).
+
+## Share computed result data
+
+The next pass caches the expensive data used to build anonymous object results:
+wildcard Browse execution, complete sorted ID lists, supported filter choices,
+media-eligible object IDs and adjusted filter counts. Paging slices an existing
+ordered set. Large object Search and collection-content results can reuse the
+media stages too; full-text matching still reads the current search index.
+Rendered pages, sessions and CSRF controls are generated on every request.
+
+The implementation uses native `ExternalCache`, so an installation already using
+Redis needs no second client or service. It requires MySQL and bypasses restricted
+or privileged sessions. Before reuse it checks the native change-log count/max and
+current visibility, labels, relationships, hierarchy and media fingerprints.
+Entries also depend on the exact result scope, options, access mask, media
+preference, locale, configuration and source. New values are published at request
+shutdown only if the inputs still match. Native-cache hydration checks reject a
+concurrent overwrite that returns another result set.
+
+Entries expire after an hour, with limits of 4 MiB compressed / 32 MiB JSON.
+MySQL named locks coordinate missing values with bounded waits; malformed entries,
+cache outages and unsupported policies retain native computation. Small media
+sets avoid the extra snapshot cost. Normal Providence edits invalidate through
+the change log; direct SQL visibility/media changes are independently detected.
+After arbitrary direct SQL metadata maintenance that bypasses native logging,
+increment `tadl_result_cache_epoch` in `conf/app.conf`. The new layer can be bypassed
+with `disable_tadl_result_cache = 1`. Neither operation needs a Redis/session flush.
+
+Implementation: [result-data cache](../helpers/result_cache.php),
+[browse adapter](../helpers/catalogue_browse.php),
+[media filtering](../helpers/media_filter_helpers.php) and
+[adjusted filter counts](../helpers/media_facet_counts.php).
 
 ## Optional database index
 
@@ -181,28 +214,37 @@ SQL and rollback are in the [performance operations guide](PERFORMANCE.md).
 
 The latest comparison used the same catalogue, anonymous access, 72-card page size,
 sort and media preference for each pair of source revisions. Serial native
-application profiles included bootstrap, the controller, result views and page
-shell.
+application profiles included bootstrap, the controller, result views, page
+shell and deferred cache writes.
 
 | Latest warm comparison | Before | After |
 | --- | ---: | ---: |
-| All-item object browse | 2.4–2.5 s | 1.7–1.8 s |
-| Media-only object browse | 3.4–3.5 s | 2.4–2.5 s |
-| Media identity query alone | 0.44 s | 0.20 s |
+| All-item object browse | 2.4–2.5 s | 1.7–1.9 s |
+| Media-only object browse | 3.2–3.3 s | 1.8–1.9 s |
+| Media-only browse, offset 216 | 3.2–3.3 s | 1.8 s |
+| List view, descending title sort | 2.3–2.4 s | 1.6 s |
+| Media-only browse with an object-type filter | 3.4–3.5 s | 1.9 s |
+
+The optional media identity index was measured separately at approximately
+0.44 to 0.20 seconds for its identity query.
 
 An earlier comparison of the thumbnail, permission and recount changes measured
 media-only browsing at approximately 4.5–5.0 seconds before and 3.5–3.7 seconds
 after. These are separate comparisons; component savings overlap and should not
 be added together. CLI profiles are development measurements rather than live
-HTTP latency or concurrent-load guarantees. Cold requests cost more while caches
-warm, and the expensive browse paths remain above one second.
+HTTP latency or concurrent-load guarantees. First fills took about 4–7 seconds,
+including native descriptor warming and the second input snapshot. Unique uncached
+queries do not receive the warm-cache gain. The measured browse paths remain above
+one second.
 
 Validation preserved ordered result IDs, filter text/counts, displayed thumbnail
-URLs, responsive sources and focal data. All 49 standalone PHP suites passed
+URLs, responsive sources and focal data. All 50 standalone PHP suites passed
 locally, along with changed PHP lint, whitespace checks, accessibility browser
 checks and server-rendered result navigation checks. Synthetic tests cover cache
 invalidation, permission changes, malformed entries, failures, concurrent input
-changes and bounded result rendering.
+changes and bounded result rendering. The result-data suite additionally covers
+page/sort reuse, media eligibility and count reuse, out-of-order log commits,
+expiry, worker contention and native-cache hydration races.
 
 ## Experiments and deployment record
 
@@ -212,19 +254,19 @@ the test session, so it was removed. Native browse algorithm changes were also
 evaluated in disposable copies, including compact result-ID predicates and linear
 facet-array merging. Those core changes were not installed.
 
-The completed optimization pass applied the media identity index and pushed theme
-implementation commit `d0c9d4e`. It did not deploy the theme, change proxy settings,
-restart services or purge application caches. GitHub CI had not created a run for
-that commit at the October 22 documentation check; the validation above describes
-the completed local and native application checks.
+The earlier optimization pass applied the media identity index and pushed theme
+implementation commit `d0c9d4e`. The result-data cache adds no schema change. Neither
+pass deployed the theme, changed proxy settings, restarted services or purged
+application caches. The validation above describes local and native application
+checks; source control and deployment remain separate steps.
 
 Routine theme deployment preserves existing caches and sessions. Changed source
 fingerprints create new cache entries naturally. Shared rendered-page and native
-browse-result caching remain disabled as shipped because their keys do not fully
-represent current preferences and permissions.
+browse-result caching remain disabled as shipped. The new layer uses its own
+namespace with current input checks and explicit access/preference scope.
 
-The remaining work in native result generation, sorting and large filter queries
-still limits response time. Further gains should be measured after deployment
+Freshness snapshots, application bootstrap, remaining native work and rendering
+still limit response time. Further gains should be measured after deployment
 under representative requests before adding more complexity.
 
 ## Implementation history

@@ -5,6 +5,7 @@ require_once(__DIR__.'/media_identity.php');
 require_once(__DIR__.'/family_contents.php');
 require_once(__DIR__.'/place_contents.php');
 require_once(__DIR__.'/media_facet_counts.php');
+require_once(__DIR__.'/result_cache.php');
 
 /**
  * Return eligible public records in their existing result order. A representation
@@ -279,7 +280,11 @@ function tadlFilterMediaResult($request, $result, $type = null) {
 			: ($type === 'places' ? tadlPlaceMediaEligibleIDs($request, $result->getPrimaryKeyValues())
 				: tadlAuthorityMediaEligibleIDs($request, $table, $result->getPrimaryKeyValues()));
 	} elseif (in_array($table, ['ca_objects', 'ca_collections'], true)) {
-		$ids = tadlMediaEligibleIDs($table, $allObjectIDs ?? $result->getPrimaryKeyValues(), (array)caGetUserAccessValues($request), $request);
+		$compute = static fn() => tadlMediaEligibleIDs($table, $allObjectIDs ?? $result->getPrimaryKeyValues(), (array)caGetUserAccessValues($request), $request);
+		$cache = $table === 'ca_objects' && count($allObjectIDs) >= 128 ? tadlResultCache($request) : null;
+		$ids = $cache ? $cache->remember('media_ids', [$allObjectIDs], $compute,
+			static fn($ids) => tadlCachedIDsValid($ids)
+				&& array_map('intval', array_values(array_intersect($allObjectIDs, $ids))) === array_map('intval', $ids)) : $compute();
 	} else {
 		return $result;
 	}
