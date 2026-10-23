@@ -49,6 +49,30 @@ Changes belong here rather than in upstream CollectiveAccess. The surrounding
 workspace has reference checkouts of Pawtucket and Providence at local tag
 `2.0.10`; that is a local source fact, not a verified current production version.
 
+## Detail-page view tracking (2026-10-23)
+
+The theme now carries the Pawtucket 2.0.10 `DetailController`, retaining its
+native license and behavior except for an explicit `record_detail_views = 1`
+guard around `registerItemView()`. `conf/detail.conf` defaults this to `0`.
+Keep that default: native synchronous view-count updates can wait behind shared
+row locks held by a long-running Providence import, blocking otherwise readable
+collection/object/authority pages before rendering. Smaller page sizes and cache
+changes do not address this lock wait.
+
+Disabling the call skips both database `view_count` increments and native
+`caRecentlyViewed` tracking; the theme uses neither. Do not add replacement
+database writes or defer the same blocking write to shutdown. Native detail
+access, result navigation, viewer/download methods and metadata rendering remain
+unchanged. Review both the Browse and Detail overrides against upstream when
+upgrading Pawtucket. `tests/detail_view_count_test.php` dispatches actual detail
+requests with a synthetic locked counter and covers default/explicit tracking,
+rendering, access rejection, navigation and object media. No core or production
+configuration change is part of this source fix.
+
+Set `TADL_NATIVE_DETAIL_CONTROLLER` to the native `app/controllers/DetailController.php`
+path when running that test to also check complete PHP-token parity after reversing
+the tracking guard. The reference is optional so standalone clones remain testable.
+
 ## Object browse performance (2026-10-22)
 
 The theme `BrowseController` now carries the Pawtucket 2.0.10 controller with its

@@ -8,6 +8,23 @@ Use the application's existing native cache backend. Keep theme page caching and
 shared collection result caching disabled as shipped: those keys do not describe
 all visitor preferences and current permissions.
 
+## Avoid writes when opening detail pages
+
+`record_detail_views = 0` in `conf/detail.conf` disables native detail-page view
+tracking. Pawtucket normally updates the record's `view_count` before rendering
+its detail page. A long-running Providence import can hold a lock on that same
+record, making a public page wait for a database write even when its ordinary
+reads would succeed. More RAM, smaller result pages and result caching do not
+remove that wait.
+
+The theme's Detail controller retains native rendering, access checks, navigation
+and media actions, and skips only the `registerItemView()` call by default. This
+also skips native `caRecentlyViewed` tracking; the theme uses neither that list nor
+the database view counter. Web-server access logs remain available for traffic
+analysis. Set `record_detail_views = 1` only if those native statistics are needed
+and the possibility of waiting behind catalogue writes is acceptable. This is a
+theme setting, with no core patch, database migration or import interruption.
+
 ## What is reused
 
 - Media usability is decoded natively and saved in batches of up to 500
@@ -36,8 +53,9 @@ all visitor preferences and current permissions.
 - Visible-page thumbnails and format tags use batched lookups. Result pages
   contain their cards in the initial HTML and retain ordinary GET navigation.
 
-The object browse integration is a theme controller override based on Pawtucket
-2.0.10. Review it against the upstream controller when upgrading Pawtucket.
+The object Browse and Detail integrations are theme controller overrides based
+on Pawtucket 2.0.10. Review them against the upstream controllers when upgrading
+Pawtucket.
 
 ## Freshness and cache controls
 

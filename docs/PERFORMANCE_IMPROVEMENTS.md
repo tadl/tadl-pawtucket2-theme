@@ -1,7 +1,7 @@
 # Catalogue performance improvements
 
-Recorded October 22, 2026. Includes the shared result-data cache added after
-implementation commit `d0c9d4e`.
+Updated October 23, 2026. Includes the shared result-data cache added after
+implementation commit `d0c9d4e` and removal of synchronous detail-page view tracking.
 
 The performance work reduced repeated database queries, cache requests, media
 decoding and thumbnail rendering. The latest warm native application profiles
@@ -28,6 +28,28 @@ counts, and rebuilding largely unchanged filter choices. Native result generatio
 and sorting also contribute to response time.
 
 ## Changes to result delivery
+
+### Avoid blocking detail pages on a view-counter write
+
+A separate investigation found a collection detail request waiting on the native
+`UPDATE ... SET view_count = view_count + 1`, blocked by a long-running Providence
+import transaction. The HTTP probe timed out after 35 seconds without receiving
+page content. This delay occurred before result rendering; it was not caused by
+the 72-card page size or image downloads.
+
+The theme now defaults `record_detail_views` to `0` in `conf/detail.conf`. Its
+Detail controller skips native `registerItemView()`, including database counters
+and the native recently-viewed cache, while preserving the remaining controller
+behavior. Neither statistic is used by the theme. An installation that needs
+native tracking can explicitly opt back in with `record_detail_views = 1`.
+Traffic analysis can use the web-server logs without requiring this database write.
+
+Synthetic tests dispatch actual detail requests with a counter that throws a lock
+error if called, checking successful rendering with tracking disabled, native
+tracking when enabled, access rejection, result navigation and media rendering.
+This removes the identified write from the request; it does not promise that
+other catalogue work is instantaneous during an import. Deployment and live
+response-time verification remain separate operator steps.
 
 ### Include results in the initial response
 

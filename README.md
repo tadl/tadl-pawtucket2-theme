@@ -166,6 +166,8 @@ Download links discourage following, binary downloads send indexing directives, 
 
 The theme extends Pawtucket through its native theme mechanism. PHP views provide presentation, theme controllers handle additional routes, and helpers share access-aware queries and rendering behavior. It uses the application's models, search engine, authentication, media derivatives, and bundled libraries; no Providence or Pawtucket core patch is needed for theme installation.
 
+Native detail-page view tracking is disabled (`record_detail_views = 0` in `conf/detail.conf`). This avoids a view-counter database write that can block public pages during Providence imports. It also disables the native recently-viewed list; the theme uses neither statistic. Web-server access logs still record requests. See [performance](docs/PERFORMANCE.md) before opting back into native tracking.
+
 | Directory | Purpose |
 | --- | --- |
 | `conf/` | Native theme configuration, display mappings, routes, assets, and feature settings. |
@@ -194,7 +196,7 @@ Review upstream changes and merge them into your maintained fork or branch. Depl
 git -C /path/to/pawtucket2/themes/tadl pull --ff-only
 ```
 
-The theme includes a Browse controller override based on Pawtucket 2.0.10. When upgrading Pawtucket itself, review compatibility of that override, the native APIs, and the configuration mappings before deploying the application upgrade.
+The theme includes Browse and Detail controller overrides based on Pawtucket 2.0.10. When upgrading Pawtucket itself, review compatibility of those overrides, the native APIs, and the configuration mappings before deploying the application upgrade.
 
 Local CSS and JavaScript URLs include content hashes, so visitors can use normal Reload after an update. Routine theme deployment preserves application caches and sessions and does not require clearing Redis, deleting `app/tmp`, or restarting Apache. PHP updates rely on your web runtime checking file timestamps: review `opcache.validate_timestamps` and `opcache.revalidate_freq`. Installations with timestamp checks disabled need their own bytecode-invalidation procedure.
 
