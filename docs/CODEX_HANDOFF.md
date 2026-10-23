@@ -16,6 +16,15 @@ Providence and iterating on Pawtucket presentation. Preserve thumbnail-rich
 results, clear record context, ordinary navigation, and a generous desktop
 media viewer. Use existing TADL visual conventions and accessible controls.
 
+Header branding is about 15% smaller: the desktop logo is 291px wide with a 16px
+tagline, and responsive logos render at 85% of their existing slot with a 14px
+tagline. Explicit brand typography keeps Front and interior headers consistent;
+the interior content's 18px floor does not apply to the tagline. Smaller vertical
+padding/gaps reduce the measured header from about 196px to 169px on desktop and
+168px to 144px at 390px wide. Search/menu controls retain their sizes. Checked
+Front/interior layouts from 320–1600px and enlarged/spaced header text, including
+word wrapping on phones.
+
 ## Item sets are disabled
 
 The user explicitly retired the Lightbox feature for every session, including

@@ -267,9 +267,9 @@ h6 {
     align-items: center;
     justify-content: space-between;
     gap: 96px;
-    min-height: 138px;
-    padding-top: 18px;
-    padding-bottom: 18px;
+    min-height: 118px;
+    padding-top: 15px;
+    padding-bottom: 15px;
 }
 
 .tadl-branding {
@@ -282,7 +282,7 @@ h6 {
 .tadl-logo-link {
     display: inline-flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     height: auto;
     padding: 0;
     margin: 0;
@@ -292,7 +292,7 @@ h6 {
 
 .tadl-logo-link img {
     display: block;
-    width: 342px;
+    width: 291px;
     max-width: 100%;
     height: auto;
 }
@@ -301,7 +301,8 @@ h6 {
     display: inline-block;
     color: rgba(255, 255, 255, 0.9);
     font-family: "Open Sans", Arial, sans-serif;
-    font-size: 19px;
+    font-size: 16px;
+    line-height: 1.2;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
@@ -4475,10 +4476,10 @@ html.tadl-display-preferences-ready .tadl-filter-layout[data-tadl-filter-state="
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 14px;
+        gap: 12px;
         min-height: 0;
-        padding-top: 14px;
-        padding-bottom: 14px;
+        padding-top: 12px;
+        padding-bottom: 12px;
     }
 
     .tadl-branding {
@@ -4549,19 +4550,23 @@ html.tadl-display-preferences-ready .tadl-filter-layout[data-tadl-filter-state="
 
     .tadl-logo-link img {
         width: min(290px, 68vw);
+        /* Scale inside the responsive slot even when a narrow phone constrains it. */
+        max-width: 85%;
+        align-self: center;
     }
 
     .tadl-tagline {
-        font-size: max(var(--tadl-text-min, 0px), 15px);
+        font-size: 14px;
         letter-spacing: 0.1em;
         white-space: normal;
+        overflow-wrap: anywhere;
         text-align: center;
     }
 
     .tadl-brandband-inner {
-        gap: 8px;
-        padding-top: 8px;
-        padding-bottom: 8px;
+        gap: 7px;
+        padding-top: 7px;
+        padding-bottom: 7px;
     }
 
     .tadl-header-search {
