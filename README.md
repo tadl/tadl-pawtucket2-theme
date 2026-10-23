@@ -8,7 +8,7 @@ This repository contains the complete `tadl` theme. Install it in an existing Pa
 
 | Feature | Visitor experience |
 | --- | --- |
-| Responsive catalogue | Image tiles and list views with compact, square file-format tags stacked to the right of object titles, consistent 3:2 search/grid thumbnails, collapsible filter sidebars, mobile navigation, and expandable long descriptions that preserve links and formatting. |
+| Responsive catalogue | Compact logo/header, image tiles and list views with square file-format tags stacked to the right of object titles, consistent 3:2 search/grid thumbnails, collapsible filter sidebars, mobile navigation, and expandable long descriptions that preserve links and formatting. |
 | Collection browsing | A flat list of everything in a collection and its readable descendants, with an optional hierarchy view, bold titles for branches containing digitized media, alphabetical ordering, sorting, and pagination. Subsequent item pages omit repeated descriptive metadata. |
 | Featured galleries | Large, uncropped photos beside object metadata, with Previous/Next controls, a thumbnail strip, and media-viewer/download actions beneath the photo. The layout stacks on phones. |
 | Connected records | Browse people, organizations, families, places, and events. Place results include descendant places; family results include objects linked to directly related people and organizations. |
@@ -36,15 +36,16 @@ File-format tags describe the accessible original representations attached to an
 
 The shared interface includes keyboard navigation, visible focus, reduced-motion support, and responsive reflow. See the [accessibility guide](docs/ACCESSIBILITY.md) for coverage and remaining manual checks; installing the theme does not establish whole-site WCAG conformance.
 
-## Before you install
+## Requirements before installing
 
 - Start with a working **Providence and Pawtucket installation**, with Pawtucket connected to the intended shared database and media storage. Confirm the standard theme can display your records and derivatives first.
-- The theme is developed against **Pawtucket 2.0.10**, with automated checks running on **PHP 8.3**. Follow your Pawtucket release's PHP, extension, web-server, and media-processing requirements. Other releases may require adaptation.
-- Install Pawtucket's own dependencies normally. The theme has **no separate Composer install, npm build, or frontend build step** for ordinary use.
+- The tested combination is **Pawtucket 2.0.10 and PHP 8.3**. The theme uses PHP 8.1+ APIs, but your complete installation must also satisfy your Pawtucket release's PHP and Composer dependency requirements. Other releases may require adaptation.
+- Install Pawtucket's own dependencies and media-processing tools normally. The theme uses native libraries, including Dompdf, and PHP extensions including **DOM/XML, mbstring, fileinfo, and zlib**. It has **no separate Composer install, npm build, or frontend build step** for ordinary use.
+- The web PHP user must be able to read the theme, media originals and derivatives, and write to the application's normal cache paths and PHP temporary directory. Generated downloads use private temporary files. The theme source itself does not need to be writable by PHP.
 - Have access to Pawtucket's private `setup.php` and theme directory. Use a test installation to adapt the theme before making it your public catalogue.
-- Check your installation profile's metadata and type codes. The theme does not create fields or convert your catalogue to TADL's schema.
+- Check your installation profile's metadata and type codes, and publish the records and representations intended for visitors. The theme does not create fields, import records, generate media derivatives, or convert your catalogue to TADL's schema.
 
-Python, OpenCV, and a face-detection model are needed only for the optional detector. Redis is not a theme requirement.
+**No Redis server, extra database index, core patch, or separate Providence plugin installation is required to use the theme.** Python, OpenCV, and a face-detection model are needed only for optional automatic thumbnail focus. Additional feature requirements are listed below.
 
 ## Install and enable
 
@@ -57,7 +58,7 @@ cd /path/to/pawtucket2
 git clone https://github.com/tadl/tadl-pawtucket2-theme.git themes/tadl
 ```
 
-Keep the directory named `tadl` for the documented setup. Copy the complete repository when deploying; its views, helpers, controllers, configuration, and assets work together.
+Keep the directory named `tadl` for the documented setup. Copy the complete repository when deploying, including `plugins/`; its views, helpers, controllers, configuration, plugins, and assets work together. Pawtucket automatically discovers the included theme plugin. It does not need to be copied into Providence or installed separately.
 
 ### 2. Select the theme in setup.php
 
@@ -72,6 +73,22 @@ $_CA_THEMES_BY_DEVICE = [
 Edit the existing mapping before the final `app/helpers/post-setup.php` bootstrap; retain the rest of your application settings. If you have device-specific theme entries, update those too if you want this responsive theme on every device. Theme selection is made here, rather than by adding a `theme` option to `app.conf`.
 
 Reload Pawtucket. The theme can now render against your existing catalogue, subject to the field mappings and content setup below. Selecting it does not require a database migration or an installation-profile import.
+
+### 3. Configure your catalogue and choose extra features
+
+Adapt the branding, field/type mappings, contact address, and institutional links in the next section before making the site public. Enabling the theme does not provision the following services, content, or optional integrations:
+
+| Feature | Requirements beyond cloning and selecting the theme |
+| --- | --- |
+| Homepage slideshow and galleries | Populate public native sets with readable objects/media and the configured set codes/types. Large gallery photos need existing `large` image derivatives. Missing featured content is omitted; smaller gallery previews are used when no large derivative exists. |
+| Finding-aid PDFs | Pawtucket's installed Dompdf dependency, native PDF.js assets, a readable collection hierarchy, and metadata mappings for your profile. No separate PDF service is needed. Missing metadata is omitted; a missing PDF renderer prevents PDF generation. See [finding aids](docs/FINDING_AIDS.md). |
+| Generated JPG and single-image PDF downloads | A working native image processor that can read the original format and write JPEG, readable originals, and writable PHP temporary storage; PDF conversion also uses Dompdf. Unsupported conversions cannot be generated. The default private conversion cache is created automatically; custom durable storage needs separate provisioning outside all web roots. See [image downloads](docs/IMAGE_DOWNLOADS.md). |
+| Document text | Text already extracted into representation `media_content` or imported into the configured transcription fields. Configure native extraction tools and process/reprocess media separately; OCR and search indexing are separate application tasks. With no usable text, the section is omitted. See [document text](docs/DOCUMENT_TEXT.md). |
+| Editable FAQ | An explicit one-time **Providence database setup** registers the template and editor placements, followed by staff-created, published Site Pages. Inspect the existing Site Pages editor and take the required private backup before applying the setup. Cloning alone creates no FAQ editor or questions. See [FAQ activation](docs/FAQ_SETUP.md). |
+| Contact mail | Your own recipient, sender, and working application mail transport. Verify actual delivery; installing the theme does not configure mail. Optional Turnstile additionally needs a registered widget, private keys/hostname allowlist, PHP cURL with working TLS, browser/server HTTPS access to Cloudflare, and compatible CSP rules. See [contact setup](docs/CONTACT_FORM.md). |
+| Automatic thumbnail focus | A separate Python 3.11+ environment with the pinned OpenCV dependencies, verified YuNet model/license, PHP CLI with `proc_open`, existing JPEG derivatives, and a writable durable cache outside the application and web roots. Run the detector explicitly; no processing service or scheduler is installed. Manual **Set center** works without this setup. See [thumbnail focus](docs/THUMBNAIL_FOCUS.md). |
+| Shared result-data caching | Uses Pawtucket's configured cache backend; Redis is optional. This optimization requires the `mysqli` database driver; unsupported contexts use native computation. The optional MySQL 8 covering index is a separate administrator-applied schema change, not an installation step. See [performance setup](docs/PERFORMANCE.md). |
+| Site-wide crawler policy | Review, merge, and install the supplied `robots.txt` at the site root separately. A theme directory cannot install the root policy. See [crawler setup](docs/CRAWLER_POLICY.md). |
 
 ## Make it your own
 
@@ -94,6 +111,8 @@ The shipped site copy, logos, email recipient, external feeds, and Providence sh
 ### Match your catalogue schema
 
 CollectiveAccess installation profiles vary. In this theme, People, Organizations, and Families use entity type codes `ind`, `org`, and `fam`. These appear in browse configuration and in [family-content helpers](helpers/family_contents.php); changing only a display label will not change their behavior.
+
+In [collection configuration](conf/collections.conf), `landing_page_collection_type = collection` identifies the top-level archival collection type. Match that value to your profile so collection-root traversal and hierarchy navigation find the intended base collection. Child containers, series, and folders remain separate archival units beneath it.
 
 Metadata examples include `ca_collections.adminbiohist`, `date.dates_value`, `ca_objects.transcription`, and `ca_objects.pdf_text`. Review the configured bundles and detail templates against your own profile. Remap fields you use and remove displays you do not need. Some helpers skip missing optional fields, but that does not automatically translate the whole theme to a different profile.
 
@@ -125,7 +144,7 @@ Gallery photos use the selected representation's existing `large` image derivati
 
 Configure the recipient in `conf/contact.conf` and your application's mail transport/sender. Submitted, validated email and name become Reply-To; messages receive distinct subject references.
 
-Without Turnstile keys, the form uses the native arithmetic check. For Turnstile, register your hostnames and set the site key, secret, and allowed hostnames in private Pawtucket `setup.php`. The theme includes both the browser widget and server-side validation. Follow the [contact-form guide](docs/CONTACT_FORM.md) for exact settings and verification; do not commit keys to theme configuration.
+Without Turnstile keys, the form uses the native arithmetic check, or native reCAPTCHA if already configured. For Turnstile, register your hostnames and set the site key, secret, and allowed hostnames in private Pawtucket `setup.php`. Both keys and a valid hostname allowlist are required; partial configuration blocks anonymous sending. The theme includes both the browser widget and server-side validation. Follow the [contact-form guide](docs/CONTACT_FORM.md) for exact settings and verification; do not commit keys to theme configuration.
 
 ### Focal points and local face detection
 
@@ -153,6 +172,7 @@ The theme extends Pawtucket through its native theme mechanism. PHP views provid
 | `views/` | Page templates, result layouts, detail pages, viewer wrappers, and PDF presentation. |
 | `controllers/` | Theme endpoints for collection/place/family contents, finding aids, downloads, preferences, and account handling. |
 | `helpers/` | Shared filtering, permission checks, hierarchy traversal, text processing, asset versions, and media behavior. |
+| `plugins/` | Automatically discovered native theme hooks for related collection/place results; deploy with the rest of the theme. |
 | `assets/pawtucket/` | CSS, browser JavaScript, fonts, and graphics. |
 | `templates/` | Native Site Pages templates, including the editable FAQ entry. |
 | `support/` | Explicit maintenance/setup tools, deployment helper, and optional detector. |
@@ -164,7 +184,7 @@ Media cache buckets also work across overlapping searches and sort orders. Objec
 
 Anonymous object browsing also shares result IDs, ordering, supported filter choices, media eligibility and adjusted counts through the application's existing cache backend, including Redis when configured. Entries expire after an hour and are reused only after checking current catalogue changes, visibility flags, labels, hierarchy, relationships and media fingerprints. Pages and session controls are generated normally. Restricted sessions retain native computation. Full-text queries still execute against the current search index; large object searches and collection contents can reuse media eligibility and adjusted counts.
 
-The result-data cache requires MySQL and can be disabled with `disable_tadl_result_cache = 1` in `conf/app.conf`. After direct SQL metadata maintenance that bypasses native change logs, increment `tadl_result_cache_epoch` there. No Redis flush is needed. An optional MySQL covering index avoids reading every media descriptor just to fingerprint it; the theme detects it and otherwise uses ordinary native hashing. See [performance and optional database setup](docs/PERFORMANCE.md).
+The result-data cache requires MySQL through the `mysqli` driver and can be disabled with `disable_tadl_result_cache = 1` in `conf/app.conf`. After direct SQL metadata maintenance that bypasses native change logs, increment `tadl_result_cache_epoch` there. No Redis flush is needed. An optional MySQL 8 covering index avoids reading every media descriptor just to fingerprint it; the theme detects it and otherwise uses ordinary native hashing. See [performance and optional database setup](docs/PERFORMANCE.md).
 
 ## Updating and deploying
 
@@ -173,6 +193,8 @@ Review upstream changes and merge them into your maintained fork or branch. Depl
 ```sh
 git -C /path/to/pawtucket2/themes/tadl pull --ff-only
 ```
+
+The theme includes a Browse controller override based on Pawtucket 2.0.10. When upgrading Pawtucket itself, review compatibility of that override, the native APIs, and the configuration mappings before deploying the application upgrade.
 
 Local CSS and JavaScript URLs include content hashes, so visitors can use normal Reload after an update. Routine theme deployment preserves application caches and sessions and does not require clearing Redis, deleting `app/tmp`, or restarting Apache. PHP updates rely on your web runtime checking file timestamps: review `opcache.validate_timestamps` and `opcache.revalidate_freq`. Installations with timestamp checks disabled need their own bytecode-invalidation procedure.
 
@@ -199,7 +221,7 @@ The supplied `support/deploy-theme.sh` is an rsync helper for the `/var/www/pawt
 
 ## Development and verification
 
-The standalone regression suites use synthetic data and do not require an application database. Run them from the theme root with PHP CLI (DOM, PDO SQLite, JSON, mbstring, fileinfo, and `proc_open`), Bash, Node.js, and Python 3.11+:
+The standalone regression suites use synthetic data and do not require an application database. They are checked with PHP 8.3 CLI (DOM, PDO SQLite, JSON, mbstring, fileinfo, zlib, and `proc_open`), Bash, Node.js, and Python 3.11+. Run them from the theme root:
 
 ```sh
 (
