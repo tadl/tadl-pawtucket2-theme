@@ -130,6 +130,7 @@ class TestRequest {
     function getModulePath() { return ''; }
     function getActionExtra() { return ''; }
     function getBaseUrlPath() { return ''; }
+    function getSessionID() { return 'synthetic-media-session'; }
     function isAjax() { return $this->ajax; }
 }
 function testMediaRequest($mode, $params = [], $controller = 'Browse', $action = 'objects') {
@@ -516,7 +517,8 @@ testAssert($xpath->query('//button[@type="submit" and @name="tadlMediaPreference
 testAssert($xpath->query('//button[@aria-pressed]')->length === 0 && !str_contains($html, '10003') && !str_contains($html, '✓'), 'Media dropdown must not retain toggle states or checkmarks.');
 testAssert($xpath->query('//button[@name="tadlMediaPreference"]')->item(0)->textContent === 'All items'
     && $xpath->query('//button[@name="tadlMediaPreference"]')->item(0)->getAttribute('value') === 'all', 'Only-items mode must offer All items as its sole action.');
-testAssert($xpath->query('//input[@name="csrfToken" and @value="synthetic-csrf-token"]')->length === 1, 'Toggle must include the native CSRF token.');
+$csrfInput = $xpath->query('//input[@name="csrfToken"]');
+testAssert($csrfInput->length === 1 && tadlValidatePublicCSRFToken(testMediaRequest('only'), 'media_preference', $csrfInput->item(0)->getAttribute('value')), 'Toggle must include a valid session-backed CSRF token.');
 testAssert($xpath->query('//input[@name="media"]')->length === 0, 'Toggle leaked preference into query-style input.');
 testAssert($xpath->query('//details[not(@open)]/summary')->length === 1
     && $xpath->query('//summary')->item(0)->getAttribute('aria-label') === 'Items shown: Only items with media', 'Media menu must start collapsed and label its current preference.');

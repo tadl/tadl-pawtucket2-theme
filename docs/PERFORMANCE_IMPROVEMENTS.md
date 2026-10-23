@@ -37,19 +37,31 @@ import transaction. The HTTP probe timed out after 35 seconds without receiving
 page content. This delay occurred before result rendering; it was not caused by
 the 72-card page size or image downloads.
 
-The theme now defaults `record_detail_views` to `0` in `conf/detail.conf`. Its
-Detail controller skips native `registerItemView()`, including database counters
-and the native recently-viewed cache, while preserving the remaining controller
-behavior. Neither statistic is used by the theme. An installation that needs
-native tracking can explicitly opt back in with `record_detail_views = 1`.
+The theme now permanently omits native `registerItemView()`, including database
+counters and the native recently-viewed cache. Neither statistic is used by the
+theme. The former `record_detail_views` option is ignored, including when set to `1`.
 Traffic analysis can use the web-server logs without requiring this database write.
 
 Synthetic tests dispatch actual detail requests with a counter that throws a lock
-error if called, checking successful rendering with tracking disabled, native
-tracking when enabled, access rejection, result navigation and media rendering.
+error if called, checking successful rendering despite legacy tracking settings,
+access rejection, result navigation and media rendering.
 This removes the identified write from the request; it does not promise that
 other catalogue work is instantaneous during an import. Deployment and live
 response-time verification remain separate operator steps.
+
+### Remove other incidental catalogue writes
+
+The follow-up audit removed native download logging from original and generated
+media downloads, disabled SQL search logs, forced result navigation into session
+storage, and disabled Site Page view counters. Catalogue comment, tag, rating and
+annotation editing routes return 404. Explicit account actions remain available.
+Public preference/contact forms use session-backed CSRF protection instead of
+the native SQL token store. ZIP downloads also preserve originals when no temporary
+metadata-embedded copy is created.
+
+Pawtucket startup and native viewer code still contain writes outside theme
+control. The [read-only catalogue audit](READ_ONLY_CATALOGUE.md) separates these
+remaining application-level requirements from the completed theme changes.
 
 ### Include results in the initial response
 

@@ -60,6 +60,7 @@ class A11yRequest {
 	function getAction() { return 'Index'; }
 	function getRequestUrl() { return '/Contact/Form'; }
 	function getBaseUrlPath() { return ''; }
+	function getSessionID() { return 'synthetic-accessibility-session'; }
 	function getThemeUrlPath() { return '/themes/tadl'; }
 	function getThemeDirectoryPath() { return dirname(__DIR__); }
 	function isAjax() { return $this->ajax; }

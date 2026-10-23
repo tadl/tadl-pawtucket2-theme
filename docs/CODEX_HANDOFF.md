@@ -49,29 +49,45 @@ Changes belong here rather than in upstream CollectiveAccess. The surrounding
 workspace has reference checkouts of Pawtucket and Providence at local tag
 `2.0.10`; that is a local source fact, not a verified current production version.
 
-## Detail-page view tracking (2026-10-23)
+## Read-only catalogue policy (2026-10-23)
 
-The theme now carries the Pawtucket 2.0.10 `DetailController`, retaining its
-native license and behavior except for an explicit `record_detail_views = 1`
-guard around `registerItemView()`. `conf/detail.conf` defaults this to `0`.
-Keep that default: native synchronous view-count updates can wait behind shared
-row locks held by a long-running Providence import, blocking otherwise readable
-collection/object/authority pages before rendering. Smaller page sizes and cache
-changes do not address this lock wait.
+The user requires read-only catalogue browsing for anonymous and signed-in staff
+sessions; explicit login, profile and password actions remain allowed to write.
+The initial optional detail-counter guard is superseded: `registerItemView()` is
+permanently omitted, including with legacy `record_detail_views = 1` configuration.
+Counter writes can wait behind long-running Providence import locks before any
+page rendering. Do not add replacement writes or defer them to shutdown.
 
-Disabling the call skips both database `view_count` increments and native
-`caRecentlyViewed` tracking; the theme uses neither. Do not add replacement
-database writes or defer the same blocking write to shutdown. Native detail
-access, result navigation, viewer/download methods and metadata rendering remain
-unchanged. Review both the Browse and Detail overrides against upstream when
-upgrading Pawtucket. `tests/detail_view_count_test.php` dispatches actual detail
-requests with a synthetic locked counter and covers default/explicit tracking,
-rendering, access rejection, navigation and object media. No core or production
-configuration change is part of this source fix.
+Theme Detail/download controllers no longer construct `Downloadlog`; Site Pages
+render with `incrementViewCount = false` through the theme Default controller.
+`dont_use_search_log = 1` and
+`always_use_session_based_storage_for_find_result_contexts = 1` prevent SQL search
+logging and signed-in `ca_users` navigation storage. CommentForm,
+SaveCommentTagging and SaveAnnotations return 404/no-store. ZIP cleanup must never
+unlink a source original; only tracked temporary metadata copies are removed.
+
+Public media-preference and contact forms use the theme session-backed CSRF
+helper. Native account forms/controllers retain their native protection. Browser
+preferences, native cache and result navigation continue to work. Review Browse,
+Detail and Default overrides against upstream when upgrading Pawtucket.
+
+Native startup SQL cache cleanup, signed-in user autosave, file-backend session
+storage and native TileViewer CSRF generation still sit outside theme control.
+Do not claim the entire application executes no persistent writes until those
+upstream boundaries are separately addressed. The proposed core work stays in the
+workspace patch catalogue, unapplied pending authorization. See
+[READ_ONLY_CATALOGUE.md](READ_ONLY_CATALOGUE.md) for the source audit and limits.
 
 Set `TADL_NATIVE_DETAIL_CONTROLLER` to the native `app/controllers/DetailController.php`
-path when running that test to also check complete PHP-token parity after reversing
-the tracking guard. The reference is optional so standalone clones remain testable.
+path when running `tests/detail_view_count_test.php` to check retained PHP-token
+parity after accounting for the documented removed writes/mutation methods.
+`TADL_NATIVE_DEFAULT_CONTROLLER` provides the corresponding optional Site Page
+comparison. Standalone clones need neither reference checkout.
+
+This pass verified all 54 standalone PHP suites, changed-file PHP lint, native
+Detail/Default token comparisons, and all four local browser suites (accessibility,
+thumbnail grids, display preferences and server-composed results). These checks
+use synthetic data; no production deployment or core application change was made.
 
 ## Object browse performance (2026-10-22)
 

@@ -69,7 +69,7 @@ CAPTCHA exemption. The widget uses flexible width, keyboard-accessible Cloudflar
 controls, automatic retry and token refresh. It submits the native
 `cf-turnstile-response` field along with the form. No custom JavaScript is needed.
 
-The server checks POST, native CSRF and required/email fields, then verifies the
+The server checks POST, session-backed CSRF and required/email fields, then verifies the
 token against Cloudflare's fixed HTTPS Siteverify endpoint. It requires HTTP 200,
 boolean success, action `contact` and a hostname in the explicit allowlist. Missing,
 expired, replayed or rejected tokens, incorrect host/action, malformed responses,
@@ -99,6 +99,14 @@ optional visitor-IP parameter. Cloudflare's browser widget processes its own
 verification signals. The secret, tokens and submissions are not logged by this
 integration. Visitors without JavaScript receive instructions to enable it;
 verification failures provide retry guidance. The form omits the email-help line.
+
+Public Contact/Item Inquiry and media-preference forms use the theme's session
+CSRF helper instead of native SQL-backed token storage. Tokens are bound to their
+session and form purpose, expire after two hours, and are reused by other open
+forms until expiry. An expired or changed-session form returns 403; reopening it
+provides a fresh token. Native account forms retain their existing protection.
+Native file-backed sessions can still use SQL; see the
+[read-only catalogue audit](READ_ONLY_CATALOGUE.md) for that application boundary.
 
 After deployment and configuration:
 

@@ -166,7 +166,7 @@ Download links discourage following, binary downloads send indexing directives, 
 
 The theme extends Pawtucket through its native theme mechanism. PHP views provide presentation, theme controllers handle additional routes, and helpers share access-aware queries and rendering behavior. It uses the application's models, search engine, authentication, media derivatives, and bundled libraries; no Providence or Pawtucket core patch is needed for theme installation.
 
-Native detail-page view tracking is disabled (`record_detail_views = 0` in `conf/detail.conf`). This avoids a view-counter database write that can block public pages during Providence imports. It also disables the native recently-viewed list; the theme uses neither statistic. Web-server access logs still record requests. See [performance](docs/PERFORMANCE.md) before opting back into native tracking.
+Catalogue routes omit detail and Site Page view counters, search/download logs, and database-backed navigation preferences. Comments, tags, ratings and annotation editing are disabled, including for signed-in staff. Explicit account actions still work. Public preference/contact forms use session-backed CSRF protection. Pawtucket also has startup/session/viewer writes outside the theme's control; see the [read-only catalogue audit](docs/READ_ONLY_CATALOGUE.md) for those application-level limits. Web-server logs remain available for traffic analysis.
 
 | Directory | Purpose |
 | --- | --- |
@@ -196,7 +196,7 @@ Review upstream changes and merge them into your maintained fork or branch. Depl
 git -C /path/to/pawtucket2/themes/tadl pull --ff-only
 ```
 
-The theme includes Browse and Detail controller overrides based on Pawtucket 2.0.10. When upgrading Pawtucket itself, review compatibility of those overrides, the native APIs, and the configuration mappings before deploying the application upgrade.
+The theme includes Browse, Detail and Default controller overrides based on Pawtucket 2.0.10. When upgrading Pawtucket itself, review compatibility of those overrides, the native APIs, and the configuration mappings before deploying the application upgrade.
 
 Local CSS and JavaScript URLs include content hashes, so visitors can use normal Reload after an update. Routine theme deployment preserves application caches and sessions and does not require clearing Redis, deleting `app/tmp`, or restarting Apache. PHP updates rely on your web runtime checking file timestamps: review `opcache.validate_timestamps` and `opcache.revalidate_freq`. Installations with timestamp checks disabled need their own bytecode-invalidation procedure.
 
@@ -211,6 +211,7 @@ The supplied `support/deploy-theme.sh` is an rsync helper for the `/var/www/pawt
 | [Finding aids](docs/FINDING_AIDS.md) | Descriptive PDF structure, metadata at every hierarchy level, field mappings and access. |
 | [Audit remediation](docs/AUDIT_REMEDIATION.md) | Review findings, source fixes, verification and deployment boundaries. |
 | [Performance](docs/PERFORMANCE.md) | Cache freshness, optional MySQL index, measurement, and rollback. |
+| [Read-only catalogue](docs/READ_ONLY_CATALOGUE.md) | Removed incidental writes, explicit account actions, and remaining native application boundaries. |
 | [Performance improvements](docs/PERFORMANCE_IMPROVEMENTS.md) | Completed optimizations, measured gains, validation, experiments, and deployment record. |
 | [Document text](docs/DOCUMENT_TEXT.md) | Extraction/transcription fallbacks, formatting, permissions, and indexing boundaries. |
 | [Image downloads](docs/IMAGE_DOWNLOADS.md) | Export formats, native processing requirements, private conversion cache, and limits. |

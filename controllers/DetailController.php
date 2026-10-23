@@ -1,5 +1,5 @@
 <?php
-// Theme override based on Pawtucket 2.0.10; only detail view tracking differs.
+// Theme override based on Pawtucket 2.0.10; catalogue views and downloads never write usage data.
 /* ----------------------------------------------------------------------
  * app/controllers/DetailController.php :
  * ----------------------------------------------------------------------
@@ -34,7 +34,6 @@ require_once(__CA_LIB_DIR__.'/ApplicationPluginManager.php');
 require_once(__CA_APP_DIR__."/controllers/FindController.php");
 require_once(__CA_APP_DIR__."/helpers/printHelpers.php");
 require_once(__CA_APP_DIR__."/helpers/exportHelpers.php");
-require_once(__CA_LIB_DIR__.'/Logging/Downloadlog.php');
 require_once(__CA_LIB_DIR__.'/Parsers/ZipStream.php');
 
 class DetailController extends FindController {
@@ -216,11 +215,7 @@ class DetailController extends FindController {
 			}
 		}
 
-		// Public reads should not wait for editorial/import locks on catalogue rows.
-		// Opting in restores both the native counter and recently viewed tracking.
-		if ((int)$this->config->get('record_detail_views') === 1) {
-			$t_subject->registerItemView();
-		}
+		// Catalogue reads must not update counters or recently viewed records, even for staff.
 
 		$this->view->setVar("config_options", $options);
 
@@ -696,19 +691,11 @@ class DetailController extends FindController {
 		// Allow plugins to modify object_id list
 		$va_child_ids =  $o_app_plugin_manager->hookDetailDownloadMediaObjectIDs($va_child_ids);
 		$va_child_ids = array_unique($va_child_ids);
-		$t_download_log = new Downloadlog();
+
 		foreach($va_child_ids as $vn_object_id) {
 			$t_child_object = new ca_objects($vn_object_id);
 			if (!$t_child_object->getPrimaryKey()) { continue; }
 
-			$t_download_log->log(array(
-					"user_id" => $this->request->getUserID() ? $this->request->getUserID() : null,
-					"ip_addr" => RequestHTTP::ip(),
-					"table_num" => $t_object->TableNum(),
-					"row_id" => $vn_object_id,
-					"representation_id" => null,
-					"download_source" => "pawtucket"
-			));
 			$va_reps = $t_child_object->getRepresentations(array($ps_version), null, array("checkAccess" => $this->opa_access_values));
 			$vs_idno = $t_child_object->get('idno');
 
@@ -747,7 +734,7 @@ class DetailController extends FindController {
 
 			$vn_rc = $this->render('Details/download_file_binary.php');
 
-			if ($vs_path) { unlink($vs_path); }
+			// The destructor cleans only embedded temporary copies; originals stay untouched.
 		} else {
 			foreach($va_file_paths as $vs_path => $vs_name) {
 				$this->view->setVar('archive_path', $vs_path);
@@ -805,15 +792,6 @@ class DetailController extends FindController {
 		}
 		$this->view->setVar('t_object_representation', $t_rep);
 
-		$t_download_log = new Downloadlog();
-		$t_download_log->log(array(
-				"user_id" => $this->request->getUserID() ? $this->request->getUserID() : null,
-				"ip_addr" => $_SERVER['REMOTE_ADDR'] ?  $_SERVER['REMOTE_ADDR'] : null,
-				"table_num" => $t_instance->tableNum(),
-				"row_id" => $vn_object_id,
-				"representation_id" => $pn_representation_id,
-				"download_source" => "pawtucket"
-		));
 
 		$va_versions = $t_rep->getMediaVersions('media');
 
@@ -830,7 +808,7 @@ class DetailController extends FindController {
 
 		$va_info = $t_rep->getMediaInfo('media');
 
-		$vals = ['idno' => $vs_idno_proc];
+		$vals = ['idno' => $t_instance->get('idno')];
 		foreach(array_merge($va_rep_info, $va_info) as $k => $v) {
 			if (is_array($v)) { continue; }
 			if (strtolower($k) == 'original_filename') { $v = pathinfo($v, PATHINFO_FILENAME); }
@@ -856,165 +834,19 @@ class DetailController extends FindController {
 	/**
 	 *
 	 */
-	public function CommentForm(){
-		if (!$this->request->isLoggedIn()) { $this->response->setRedirect(caNavUrl($this->request, '', 'LoginReg', 'loginForm')); return; }
-		$this->view->setVar("item_id", $this->request->getParameter('item_id', pInteger));
-		$this->view->setVar("tablename", $this->request->getParameter('tablename', pString));
-		$this->render('Details/form_comments_html.php');
+	public function CommentForm() {
+		// Catalogue comments and tags are edited in Providence.
+		$this->response->addHeader('Cache-Control', 'private, no-store');
+		$this->response->setHTTPResponseCode(404, 'Not Found');
 	}
 	# -------------------------------------------------------
 	/**
 	 *
 	 */
 	public function SaveCommentTagging() {
-		if (!caValidateCSRFToken($this->request)) {
-			throw new ApplicationException(_t("Invalid CSRF token"));
-		}
-
-		# --- inline is passed to indicate form appears embedded in detail page, not in overlay
-		$inline_form = $this->request->getParameter("inline", pInteger);
-		if(!$t_item = Datamodel::getInstance($this->request->getParameter("tablename", pString), true)) {
-			throw new ApplicationException("Invalid table name ".$this->request->getParameter("tablename", pString)." for saving comment");
-		}
-		$table = $this->request->getParameter("tablename", pString);
-		if(!($item_id = $this->request->getParameter("item_id", pInteger))){
-			if($inline_form){
-				$this->notification->addNotification(_t("Invalid ID"), __NOTIFICATION_TYPE_ERROR__);
-				$this->response->setRedirect(caDetailUrl($this->request, $table, $item_id));
-			}else{
-				$this->view->setVar("message", _t("Invalid ID"));
-				$this->render("Form/reload_html.php");
-			}
-			return;
-		}
-		if(!$t_item->load($item_id)){
-			if($inline_form){
-				$this->notification->addNotification(_t("ID does not exist"), __NOTIFICATION_TYPE_ERROR__);
-				$this->response->setRedirect(caDetailUrl($this->request, $table, $item_id));
-			}else{
-				$this->view->setVar("message", _t("ID does not exist"));
-				$this->render("Form/reload_html.php");
-			}
-			return;
-		}
-
-		# --- get params from form
-		$comment = strip_tags($this->request->getParameter('comment', pString));
-		$rank = $this->request->getParameter('rank', pInteger);
-		$tags = strip_tags($this->request->getParameter('tags', pString));
-		$email = strip_tags($this->request->getParameter('email', pString));
-		$name = strip_tags($this->request->getParameter('name', pString));
-		$location = strip_tags($this->request->getParameter('location', pString));
-		$media1 = $_FILES['media1']['tmp_name'];
-		$media1_original_name = $_FILES['media1']['name'];
-
-		$errors = [];
-
-		if(!$this->request->getUserID() && !$name && !$email){
-			$errors["general"] = _t("Please enter your name and email");
-		}
-		if(!$comment && !$rank && !$tags && !$media1){
-			$errors["general"] = _t("Please enter your contribution");
-		}
-		if(sizeof($errors)){
-			$this->view->setVar("form_comment", $comment);
-			$this->view->setVar("form_rank", $rank);
-			$this->view->setVar("form_tags", $tags);
-			$this->view->setVar("form_email", $email);
-			$this->view->setVar("form_name", $name);
-			$this->view->setVar("form_location", $location);
-			$this->view->setVar("item_id", $item_id);
-			$this->view->setVar("tablename", $table);
-			if($inline_form){
-				$this->notification->addNotification($errors["general"], __NOTIFICATION_TYPE_ERROR__);
-				$this->request->setActionExtra($item_id);
-				$this->__call(caGetDetailForType($table), null);
-				#$this->response->setRedirect(caDetailUrl($this->request, $table, $item_id));
-			}else{
-				$this->view->setVar("errors", $errors);
-				$this->render('Details/form_comments_html.php');
-			}
-		}else{
-			# --- if there is already a rank set from this user/IP don't let another
-			$t_item_comment = new ca_item_comments();
-			$dup_rank_message = "";
-			$vb_dup_rank = false;
-			if($this->request->getUserID() && $t_item_comment->load(array("row_id" => $item_id, "user_id" => $this->request->getUserID()))){
-				if($t_item_comment->get("comment_id")){
-					$rank = null;
-					$vb_dup_rank = true;
-				}
-			}
-			if($t_item_comment->load(array("row_id" => $item_id, "ip_addr" => $_SERVER['REMOTE_ADDR']))){
-				$rank = null;
-				$vb_dup_rank = true;
-			}
-			if($vb_dup_rank){
-				$dup_rank_message = " "._t("You can only rate an item once.");
-			}
-			if(!(($rank > 0) && ($rank <= 5))){
-				$rank = null;
-			}
-			if($comment || $rank || $media1){
-				$t_item->addComment($comment, $rank, $this->request->getUserID(), null, $name, $email, ($this->request->config->get("dont_moderate_comments")) ? 1:0, null, array('media1_original_filename' => $media1_original_name), $media1, null, null, null, $location);
-			}
-			if(is_string($tags) && strlen($tags)){
-				$tags = explode(",", $tags);
-				foreach($tags as $tag){
-					$t_item->addTag(trim($tag), $this->request->getUserID(), null, ($this->request->config->get("dont_moderate_comments")) ? 1:0, null);
-				}
-			}
-			if($comment || $tags || $media1){
-				# --- check if email notification should be sent to admin
-				if(!$this->request->config->get("dont_email_notification_for_new_comments")){
-					# --- send email confirmation
-					$o_view = new View($this->request, array($this->request->getViewsDirectoryPath()));
-					$o_view->setVar("comment", $comment);
-					$o_view->setVar("tags", $tags);
-					$o_view->setVar("name", $name);
-					$o_view->setVar("email", $email);
-					$o_view->setVar("item", $t_item);
-
-
-					# -- generate email subject line from template
-					$subject_line = $o_view->render("mailTemplates/admin_comment_notification_subject.tpl");
-
-					# -- generate mail text from template - get both the text and the html versions
-					$mail_message_text = $o_view->render("mailTemplates/admin_comment_notification.tpl");
-					$mail_message_html = $o_view->render("mailTemplates/admin_comment_notification_html.tpl");
-
-					caSendmail($this->request->config->get("ca_admin_email"), $this->request->config->get("ca_admin_email"), $subject_line, $mail_message_text, $mail_message_html);
-				}
-				if($this->request->config->get("dont_moderate_comments")){
-					if($inline_form){
-						$this->notification->addNotification(_t("Thank you for contributing.").$dup_rank_message, __NOTIFICATION_TYPE_INFO__);
-						$this->response->setRedirect(caDetailUrl($this->request, $table, $item_id));
-						return;
-					}else{
-						$this->view->setVar("message", _t("Thank you for contributing.").$dup_rank_message);
-						$this->render("Form/reload_html.php");
-					}
-				}else{
-					if($inline_form){
-						$this->notification->addNotification(_t("Thank you for contributing.  Your comments will be posted on this page after review by site staff.").$dup_rank_message, __NOTIFICATION_TYPE_INFO__);
-						$this->response->setRedirect(caDetailUrl($this->request, $table, $item_id));
-						return;
-					}else{
-						$this->view->setVar("message", _t("Thank you for contributing.  Your comments will be posted on this page after review by site staff.").$dup_rank_message);
-						$this->render("Form/reload_html.php");
-					}
-				}
-			}else{
-				if($inline_form){
-					$this->notification->addNotification(_t("Thank you for your contribution.").$dup_rank_message, __NOTIFICATION_TYPE_INFO__);
-					$this->response->setRedirect(caDetailUrl($this->request, $table, $item_id));
-					return;
-				}else{
-					$this->view->setVar("message", _t("Thank you for your contribution.").$dup_rank_message);
-					$this->render("Form/reload_html.php");
-				}
-			}
-		}
+		// Catalogue annotations, comments and tags are edited in Providence.
+		$this->response->addHeader('Cache-Control', 'private, no-store');
+		$this->response->setHTTPResponseCode(404, 'Not Found');
 	}
 	# -------------------------------------------------------
 	# share - email item
@@ -1354,61 +1186,9 @@ class DetailController extends FindController {
 	 *
 	 */
 	public function SaveAnnotations() {
-		global $g_ui_locale_id;
-		if (!$this->request->isLoggedIn()) { throw new ApplicationException(_t('Must be logged in')); }
-		$pn_representation_id = $this->request->getParameter('representation_id', pInteger);
-		$vn_item_id = $this->request->getParameter('item_id', pInteger);
-
-		$t_rep = new ca_object_representations($pn_representation_id);
-		if (!$t_rep->getPrimaryKey()) { throw new ApplicationException(_t('Invalid representation_id')); }
-
-		$t_rep->annotationMode('user');
-		$pa_annotations = $this->request->getParameter('save', pArray);
-
-		$va_annotation_ids = array();
-		if (is_array($pa_annotations)) {
-			foreach($pa_annotations as $vn_i => $va_annotation) {
-				$vs_label = (isset($va_annotation['label']) && ($va_annotation['label'])) ? $va_annotation['label'] : '';
-				if (isset($va_annotation['annotation_id']) && ($vn_annotation_id = $va_annotation['annotation_id'])) {
-					// edit existing annotation
-					$t_rep->editAnnotation($vn_annotation_id, $g_ui_locale_id, $va_annotation, 0, 0);
-					$va_annotation_ids[$va_annotation['index']] = $vn_annotation_id;
-				} else {
-					// new annotation
-					$va_annotation_ids[$va_annotation['index']] = $t_rep->addAnnotation($vs_label, $g_ui_locale_id, $this->request->getUserID(), $va_annotation, 0, 0, null, array('item_id' => $vn_item_id));
-				}
-			}
-		}
-		$va_annotations = array(
-			'error' => $t_rep->numErrors() ? join("; ", $t_rep->getErrors()) : null,
-			'annotation_ids' => $va_annotation_ids
-		);
-
-		$pa_annotations = $this->request->getParameter('delete', pArray);
-
-		if (is_array($pa_annotations)) {
-			foreach($pa_annotations as $vn_to_delete_annotation_id) {
-				$t_rep->removeAnnotation($vn_to_delete_annotation_id);
-			}
-		}
-
-		// save scale if set
-		if (
-			($vs_measurement = $this->request->getParameter('measurement', pString))
-			&&
-			(strlen($vn_width = $this->request->getParameter('width', pFloat)))
-			&&
-			(strlen($vn_height = $this->request->getParameter('height', pFloat)))
-		) {
-			$t_rep = new ca_object_representations($pn_representation_id);
-			$vn_image_width = (int)$t_rep->getMediaInfo('media', 'original', 'WIDTH');
-			$vn_image_height = (int)$t_rep->getMediaInfo('media', 'original', 'HEIGHT');
-			$t_rep->setMediaScale('media', $vs_measurement, sqrt(pow($vn_width * $vn_image_width, 2) + pow($vn_height * $vn_image_height, 2))/$vn_image_width);
-			$va_annotations = array_merge($va_annotations, $t_rep->getMediaScale('media'));
-		}
-
-		$this->view->setVar('annotations', $va_annotations);
-		$this->render('Details/ajax_representation_annotations_json.php');
+		// Catalogue annotations, comments and tags are edited in Providence.
+		$this->response->addHeader('Cache-Control', 'private, no-store');
+		$this->response->setHTTPResponseCode(404, 'Not Found');
 	}
 	# -------------------------------------------------------
 	/**

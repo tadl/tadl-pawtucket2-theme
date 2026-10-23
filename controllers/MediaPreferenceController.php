@@ -1,5 +1,6 @@
 <?php
 require_once(__CA_LIB_DIR__.'/pawtucket/BasePawtucketController.php');
+require_once(__DIR__.'/../helpers/csrf.php');
 
 class MediaPreferenceController extends BasePawtucketController {
 	public function Set() {
@@ -16,7 +17,7 @@ class MediaPreferenceController extends BasePawtucketController {
 			return;
 		}
 		$token = $params['csrfToken'] ?? null;
-		if (!is_string($token) || !$token || !caValidateCSRFToken($this->request, $token)) {
+		if (!tadlValidatePublicCSRFToken($this->request, 'media_preference', $token)) {
 			$this->response->setHTTPResponseCode(403, 'Forbidden');
 			return;
 		}

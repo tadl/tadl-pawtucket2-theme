@@ -1,4 +1,5 @@
 <?php
+	require_once(__DIR__.'/../../helpers/csrf.php');
 	$o_config = caGetContactConfig();
 	$va_errors = $this->getVar("errors") ?: [];
 	$contact_error_text = [
@@ -47,7 +48,7 @@
 ?>
 	<form id="contactForm" action="<?= caNavUrl($this->request, "", "Contact", "send"); ?>" method="post">
 		<p><?= _t('Your name, email address and message are required.'); ?></p>
-	    <input type="hidden" name="csrfToken" value="<?= caGenerateCSRFToken($this->request); ?>"/>
+	    <input type="hidden" name="csrfToken" value="<?= htmlspecialchars(tadlGeneratePublicCSRFToken($this->request, 'contact'), ENT_QUOTES, 'UTF-8'); ?>"/>
 <?php
 	if($pn_id && $t_item->getPrimaryKey()){
 ?>

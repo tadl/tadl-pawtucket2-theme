@@ -12,8 +12,7 @@ define('pInteger', 1);
 define('pString', 2);
 $directory = sys_get_temp_dir().'/tadl-download-test-'.bin2hex(random_bytes(8));
 mkdir($directory.'/lib/pawtucket', 0700, true);
-mkdir($directory.'/lib/Logging', 0700, true);
-foreach (['pawtucket/BasePawtucketController.php', 'Media.php', 'Logging/Downloadlog.php'] as $file) {
+foreach (['pawtucket/BasePawtucketController.php', 'Media.php'] as $file) {
 	file_put_contents($directory.'/lib/'.$file, '<?php');
 }
 ini_set('error_log', $directory.'/diagnostics.log');
@@ -32,8 +31,8 @@ foreach ($fixtures as $format => $bytes) { file_put_contents($directory.'/image.
 file_put_contents($directory.'/not-image', 'Synthetic non-image content');
 register_shutdown_function(function () use ($directory) {
 	foreach (glob($directory.'/*') as $file) { if (is_file($file)) { unlink($file); } }
-	foreach (['pawtucket/BasePawtucketController.php', 'Media.php', 'Logging/Downloadlog.php'] as $file) { unlink($directory.'/lib/'.$file); }
-	rmdir($directory.'/lib/pawtucket'); rmdir($directory.'/lib/Logging'); rmdir($directory.'/lib'); rmdir($directory);
+	foreach (['pawtucket/BasePawtucketController.php', 'Media.php'] as $file) { unlink($directory.'/lib/'.$file); }
+	rmdir($directory.'/lib/pawtucket'); rmdir($directory.'/lib'); rmdir($directory);
 });
 $assertions = 0;
 function checkDownload($condition, $message) {
@@ -136,7 +135,7 @@ else {
 	class_alias(DownloadPDFOptions::class, 'Dompdf\\Options');
 	class_alias(DownloadPDFRenderer::class, 'Dompdf\\Dompdf');
 }
-class Downloadlog { static public array $entries = []; function log($entry) { self::$entries[] = $entry; } }
+class Downloadlog { static public array $entries = []; function __construct() { throw new RuntimeException('Catalogue downloads must never create a database logger.'); } }
 class DownloadView {
 	public array $values = [];
 	function __construct(public ?DownloadRequest $request = null) {}
@@ -187,7 +186,7 @@ foreach (['png', 'tiff', 'jpg', 'bmp'] as $format) {
 	checkDownload($dimensions[0] === 13 && $dimensions[1] === 7 && $dimensions[2] === IMAGETYPE_JPEG, 'Download was resized or was not JPEG bytes.');
 	checkDownload(str_ends_with($controller->view->getVar('image_download_name'), '.jpg'), 'JPG filename missing.');
 	checkDownload(hash_file('sha256', $rep->path) === $originalHash, 'Original was changed.');
-	checkDownload(count(Downloadlog::$entries) === 1, 'Successful download was not logged.');
+	checkDownload(!Downloadlog::$entries, 'Successful download must stay database read-only.');
 	if ($format === 'jpg') { checkDownload(!Media::$calls, 'JPEG original should stream without re-encoding.'); }
 	else { checkDownload(Media::$calls[1] === ['read', $rep->path] && end(Media::$calls) === ['cleanup'], 'Conversion did not read/clean up native media.'); }
 }
@@ -199,7 +198,7 @@ foreach (['png', 'tiff', 'jpg', 'bmp'] as $format) {
 	checkDownload($controller->rendered && $download['mime'] === 'application/pdf' && $download['temporary'], $format.': PDF download failed.');
 	$bytes = file_get_contents($download['path']);
 	checkDownload(str_starts_with($bytes, '%PDF-') && str_ends_with(rtrim($bytes), '%%EOF') && (new finfo(FILEINFO_MIME_TYPE))->file($download['path']) === 'application/pdf', 'PDF response has wrong bytes.');
-	checkDownload(str_ends_with($controller->view->getVar('image_download_name'), '.pdf') && count(Downloadlog::$entries) === 1, 'PDF filename/logging missing.');
+	checkDownload(str_ends_with($controller->view->getVar('image_download_name'), '.pdf') && !Downloadlog::$entries, 'PDF filename missing or download attempted a database write.');
 	checkDownload(hash_file('sha256', $rep->path) === $originalHash, 'PDF conversion modified the original.');
 	if (!$autoload) {
 		$options = DownloadPDFRenderer::$calls[count(DownloadPDFRenderer::$calls) - 3][1];

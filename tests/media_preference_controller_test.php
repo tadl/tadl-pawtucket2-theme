@@ -25,6 +25,7 @@ class BasePawtucketController {
 }
 class PreferenceTestRequest {
 	public function __construct(public array $post, private string $method = 'POST', private string $base = '/archive') {}
+	public function getSessionID() { return 'synthetic-media-session'; }
 	public function getRequestMethod() { return $this->method; }
 	public function getBaseUrlPath() { return $this->base; }
 	public function getParameters($sources) {
@@ -46,9 +47,18 @@ function tadlSetMediaPreference($request, $mode) {
 	$GLOBALS['preferenceWrites'][] = $mode;
 	return true;
 }
-function caValidateCSRFToken($request, $token) { return $token === 'synthetic-valid-csrf'; }
+class Session {
+	static public array $values = [];
+	static function getVar($key) { return self::$values[$key] ?? null; }
+	static function setVar($key, $value) { self::$values[$key] = $value; return true; }
+}
+function caValidateCSRFToken($request, $token) { throw new RuntimeException('Public preferences must not use the SQL token store.'); }
 function caNavUrl($request, $module, $controller, $action) { return rtrim($request->getBaseUrlPath(), '/').'/'.$controller.'/'.$action; }
+function _t($text, ...$values) { foreach ($values as $i => $value) { $text = str_replace('%'.($i + 1), (string)$value, $text); } return $text; }
+function tadlMediaPreference($request) { return 'all'; }
+function tadlMediaPreferenceUrl($request) { return '/archive/Browse/objects'; }
 require dirname(__DIR__).'/controllers/MediaPreferenceController.php';
+require dirname(__DIR__).'/views/pageFormat/media_preference_toggle.php';
 
 $assertions = 0;
 function checkPreferenceController($condition, $message) {
@@ -58,8 +68,9 @@ function checkPreferenceController($condition, $message) {
 function runPreferenceRequest($overrides = array(), $method = 'POST', $base = '/archive', $writeFailure = false) {
 	$GLOBALS['preferenceWrites'] = array();
 	$GLOBALS['preferenceWriteFailure'] = $writeFailure;
-	$post = array_replace(array('tadlMediaPreference' => 'only', 'csrfToken' => 'synthetic-valid-csrf', 'returnTo' => $base.'/Collections/index?view=list'), $overrides);
+	$post = array('tadlMediaPreference' => 'only', 'returnTo' => $base.'/Collections/index?view=list');
 	$request = new PreferenceTestRequest($post, $method, $base);
+	$request->post = array_replace($post, ['csrfToken' => tadlGeneratePublicCSRFToken($request, 'media_preference')], $overrides);
 	$response = new PreferenceTestResponse();
 	(new MediaPreferenceController($request, $response))->Set();
 	return $response;
@@ -101,4 +112,22 @@ checkPreferenceController($response->location === '/Collections/Index', 'Root in
 $response = runPreferenceRequest(array('returnTo' => '//example.org/'), 'POST', '');
 checkPreferenceController($response->location === '/Front/Index', 'Root installation accepted protocol-relative URL.');
 
-echo json_encode(array('status' => 'passed', 'assertions' => $assertions, 'controller' => 'actual theme MediaPreferenceController', 'dependencies' => 'synthetic request/response/CSRF/persistence boundaries'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;
+$formRequest = new PreferenceTestRequest([]);
+$html = tadlRenderMediaPreferenceToggle($formRequest);
+$document = new DOMDocument(); $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+$input = (new DOMXPath($document))->query('//input[@name="csrfToken"]')->item(0);
+$formToken = $input->getAttribute('value');
+$response = runPreferenceRequest(['csrfToken' => $formToken]);
+checkPreferenceController($response->status === 303 && $GLOBALS['preferenceWrites'] === ['only'], 'The actual rendered preference form token must pass the actual controller.');
+$contactToken = tadlGeneratePublicCSRFToken($formRequest, 'contact');
+$response = runPreferenceRequest(['csrfToken' => $contactToken]);
+checkPreferenceController($response->status === 403 && !$GLOBALS['preferenceWrites'], 'A real contact-purpose token must not change the media preference.');
+Session::$values['tadl_public_csrf']['media_preference']['expires'] = time() - 1;
+$response = runPreferenceRequest(['csrfToken' => $formToken]);
+checkPreferenceController($response->status === 403 && !$GLOBALS['preferenceWrites'], 'An expired form token must not change the preference after another page renews it.');
+$formToken = tadlGeneratePublicCSRFToken($formRequest, 'media_preference');
+Session::$values['tadl_public_csrf']['media_preference']['session'] = hash('sha256', 'synthetic-other-session');
+$response = runPreferenceRequest(['csrfToken' => $formToken]);
+checkPreferenceController($response->status === 403 && !$GLOBALS['preferenceWrites'], 'A token copied from a different session must not change the preference.');
+
+echo json_encode(array('status' => 'passed', 'assertions' => $assertions, 'controller' => 'actual theme MediaPreferenceController and CSRF helper', 'dependencies' => 'synthetic request/response/session/persistence boundaries'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL;

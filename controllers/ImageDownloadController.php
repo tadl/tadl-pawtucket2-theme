@@ -1,7 +1,6 @@
 <?php
 require_once(__CA_LIB_DIR__.'/pawtucket/BasePawtucketController.php');
 require_once(__CA_LIB_DIR__.'/Media.php');
-require_once(__CA_LIB_DIR__.'/Logging/Downloadlog.php');
 require_once(__DIR__.'/../helpers/image_downloads.php');
 require_once(__DIR__.'/../helpers/image_download_cache.php');
 require_once(__DIR__.'/../helpers/export_diagnostics.php');
@@ -53,11 +52,6 @@ class ImageDownloadController extends BasePawtucketController {
 		$name = pathinfo((string)$source['representation']->get('original_filename'), PATHINFO_FILENAME);
 		$name = trim(preg_replace('/[^A-Za-z0-9_-]+/', '_', $name), '_');
 		$name = substr($name ?: 'image-'.$representationID, 0, 150).'.'.$download['extension'];
-		(new Downloadlog())->log([
-			'user_id' => $this->request->getUserID() ?: null, 'ip_addr' => $_SERVER['REMOTE_ADDR'] ?? null,
-			'table_num' => $object->tableNum(), 'row_id' => $objectID,
-			'representation_id' => $representationID, 'download_source' => 'pawtucket'
-		]);
 		$this->view->setVar('image_download', $download);
 		$this->view->setVar('image_download_name', $name);
 		$this->render('Details/image_download_binary.php', true);

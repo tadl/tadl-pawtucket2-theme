@@ -10,20 +10,24 @@ all visitor preferences and current permissions.
 
 ## Avoid writes when opening detail pages
 
-`record_detail_views = 0` in `conf/detail.conf` disables native detail-page view
-tracking. Pawtucket normally updates the record's `view_count` before rendering
+The theme omits native detail-page view tracking. Pawtucket normally updates
+the record's `view_count` before rendering
 its detail page. A long-running Providence import can hold a lock on that same
 record, making a public page wait for a database write even when its ordinary
 reads would succeed. More RAM, smaller result pages and result caching do not
 remove that wait.
 
-The theme's Detail controller retains native rendering, access checks, navigation
-and media actions, and skips only the `registerItemView()` call by default. This
-also skips native `caRecentlyViewed` tracking; the theme uses neither that list nor
-the database view counter. Web-server access logs remain available for traffic
-analysis. Set `record_detail_views = 1` only if those native statistics are needed
-and the possibility of waiting behind catalogue writes is acceptable. This is a
-theme setting, with no core patch, database migration or import interruption.
+The theme also removes Site Page counters and download logging, disables native
+SQL search logging, and stores result navigation in the session instead of
+`ca_users`. Detail view tracking cannot be enabled through the old
+`record_detail_views` setting. Native `caRecentlyViewed` tracking is also omitted;
+the theme uses neither that list nor the database view counter. Web-server logs
+remain available for traffic analysis. Explicit account actions are preserved.
+
+These theme protections require no core patch or database migration. They do not
+make the entire native application read-only: startup cache cleanup, file-backend
+sessions, signed-in user autosave and native viewer token generation also need
+application-level changes. See the [read-only audit](READ_ONLY_CATALOGUE.md).
 
 ## What is reused
 
@@ -53,7 +57,7 @@ theme setting, with no core patch, database migration or import interruption.
 - Visible-page thumbnails and format tags use batched lookups. Result pages
   contain their cards in the initial HTML and retain ordinary GET navigation.
 
-The object Browse and Detail integrations are theme controller overrides based
+The Browse, Detail and Site Page integrations are theme controller overrides based
 on Pawtucket 2.0.10. Review them against the upstream controllers when upgrading
 Pawtucket.
 

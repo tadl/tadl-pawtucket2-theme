@@ -9,12 +9,12 @@ $checks = 0; $sent = []; $mailSuccess = true; $captchaAccepted = true; $subjects
 function contactCheck($value, $message) { $GLOBALS['checks']++; if (!$value) { throw new RuntimeException($message); } }
 function _t($text, ...$values) { foreach ($values as $i=>$value) { $text=str_replace('%'.($i+1), $value, $text); } return $text; }
 function caGetContactConfig() { return $GLOBALS['contactConfig']; }
-function caValidateCSRFToken($request) { return ($request->params['csrfToken'] ?? null) === 'synthetic-token'; }
+function caValidateCSRFToken($request) { throw new RuntimeException('Public contact must not use the SQL token store.'); }
 function caGetHTMLPurifier() { return new class { function purify($value) { return $value; } }; }
 function caCheckEmailAddress($email) { return filter_var($email, FILTER_VALIDATE_EMAIL) !== false; }
 function caSetPageCSSClasses($classes) {}
 function caNavUrl($request, ...$args) { return '/synthetic/Contact/Form'; }
-function caGenerateCSRFToken($request) { return 'synthetic-token'; }
+function caGenerateCSRFToken($request) { throw new RuntimeException('Public contact must not generate SQL-backed tokens.'); }
 function caVerifyCaptcha($token) { if (!$GLOBALS['captchaAccepted'] || $token !== 'synthetic-captcha') { throw new CaptchaException('Synthetic CAPTCHA failure'); } return true; }
 function caSendmail($to, $from, $subject, $text, $html, $cc, $bcc, $attachments, $options) {
 	$GLOBALS['sent'][] = compact('to','from','subject','text','html','options'); return $GLOBALS['mailSuccess'];
@@ -23,6 +23,11 @@ define('pString', 1); define('pInteger', 2); define('__NOTIFICATION_TYPE_ERROR__
 define('__CA_GOOGLE_RECAPTCHA_SECRET_KEY__', 'synthetic-not-a-real-key');
 class CaptchaException extends RuntimeException {}
 class MetaTagManager { static function setWindowTitle($title) {} }
+class Session {
+	static public array $values = [];
+	static function getVar($key) { return self::$values[$key] ?? null; }
+	static function setVar($key, $value) { self::$values[$key] = $value; return true; }
+}
 class ContactConfig {
 	function __construct(public array $values) {}
 	function get($name) { return $this->values[$name] ?? null; }
@@ -33,6 +38,8 @@ class ContactRequest {
 		$this->config = new ContactConfig(['ca_admin_email'=>'sender@example.org','app_display_name'=>'Synthetic Archive','page_title_delimiter'=>' | ','site_host'=>'https://archive.example.org']);
 	}
 	function getRequestMethod() { return $this->method; }
+	function getSessionID() { return 'synthetic-contact-session'; }
+	function getParameters($sources) { contactCheck($sources === ['POST'], 'CSRF must read the POST body only.'); return $this->params; }
 	function isLoggedIn() { return $this->loggedIn; }
 	function getParameter($key, $type, $method=null, $options=[]) { return is_string($this->params[$key] ?? '') ? ($this->params[$key] ?? '') : ''; }
 	function getViewsDirectoryPath() { return dirname(__DIR__).'/views'; }
@@ -78,7 +85,8 @@ $fields = [
 $contactConfig=new ContactConfig(['contact_email'=>['questions@example.org'],'check_security'=>1,'contact_form_elements'=>$fields]);
 function contactRun(array $overrides=[], $method='POST', $loggedIn=false, $turnstile=null) {
 	$GLOBALS['sent']=[]; $_REQUEST=['sum'=>'7'];
-	$request=new ContactRequest(array_replace(['csrfToken'=>'synthetic-token','security'=>'7','g-recaptcha-response'=>'synthetic-captcha','name'=>'Synthetic Visitor','email'=>'alice@example.org','message'=>'Synthetic question'], $overrides),$method,$loggedIn);
+	$request=new ContactRequest(['security'=>'7','g-recaptcha-response'=>'synthetic-captcha','name'=>'Synthetic Visitor','email'=>'alice@example.org','message'=>'Synthetic question'],$method,$loggedIn);
+	$request->params=array_replace($request->params, ['csrfToken'=>tadlGeneratePublicCSRFToken($request, 'contact')], $overrides);
 	$response=new ContactResponse(); $controller=new ContactControllerFixture($request,$response);
 	if ($turnstile) { $controller->setTurnstile($turnstile); }
 	$controller->Send();
@@ -189,6 +197,26 @@ $html=contactFormHTML(new TadlContactTurnstile());
 contactCheck(str_contains($html,'name="security"') && str_contains($html,'name="sum"'), 'Absent Turnstile setup must preserve the existing arithmetic form.');
 $contactConfig->values['check_security']=0;
 contactCheck(!str_contains(contactFormHTML(new TadlContactTurnstile()),'name="security"'), 'The arithmetic view must honor its existing configuration.');
+$csrfForm = contactFormHTML(new TadlContactTurnstile());
+$csrfDocument = new DOMDocument(); $csrfDocument->loadHTML($csrfForm, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+$csrfInput = (new DOMXPath($csrfDocument))->query('//input[@name="csrfToken"]')->item(0);
+$formToken = $csrfInput->getAttribute('value');
+$captchaAccepted = true;
+[$controller,$response,$messages] = contactRun(['csrfToken' => $formToken]);
+contactCheck($response->status === 200 && count($messages) === 1, 'The actual rendered contact token must pass the actual sending controller.');
+$csrfRequest = new ContactRequest([], 'GET');
+$mediaToken = tadlGeneratePublicCSRFToken($csrfRequest, 'media_preference');
+[$controller,$response,$messages] = contactRun(['csrfToken' => $mediaToken]);
+contactCheck($response->status === 403 && !$messages, 'A real media-preference token must not send a contact message.');
+Session::$values['tadl_public_csrf']['contact']['expires'] = time() - 1;
+[$controller,$response,$messages] = contactRun(['csrfToken' => $formToken]);
+contactCheck($response->status === 403 && !$messages, 'An expired rendered contact token must not send after another page renews it.');
+$formToken = tadlGeneratePublicCSRFToken($csrfRequest, 'contact');
+Session::$values['tadl_public_csrf']['contact']['session'] = hash('sha256', 'synthetic-other-session');
+[$controller,$response,$messages] = contactRun(['csrfToken' => $formToken]);
+contactCheck($response->status === 403 && !$messages, 'A token copied from a different session must not send a contact message.');
+[$controller,$response,$messages] = contactRun(['csrfToken' => ['invalid-token']]);
+contactCheck($response->status === 403 && !$messages, 'An array-shaped contact token must fail closed.');
 define('__TADL_TURNSTILE_SITE_KEY__','synthetic-site-key');
 define('__TADL_TURNSTILE_SECRET_KEY__','synthetic-secret-key');
 define('__TADL_TURNSTILE_HOSTNAMES__',['archive.example.org','history.example.org']);

@@ -28,6 +28,7 @@
 require_once(__CA_LIB_DIR__."/ApplicationError.php");
 require_once(__CA_LIB_DIR__.'/pawtucket/BasePawtucketController.php');
 require_once(__DIR__.'/../helpers/contact_turnstile.php');
+require_once(__DIR__.'/../helpers/csrf.php');
 
 class ContactController extends BasePawtucketController {
 	// Based on Pawtucket's ContactController; keep native validation and templates.
@@ -60,7 +61,8 @@ class ContactController extends BasePawtucketController {
 			$this->response->addHeader('Allow', 'POST');
 			$this->response->setHTTPResponseCode(405, 'Method Not Allowed'); return;
 		}
-		if (!caValidateCSRFToken($this->request)) {
+		$post = $this->request->getParameters(['POST']);
+		if (!tadlValidatePublicCSRFToken($this->request, 'contact', $post['csrfToken'] ?? null)) {
 			$this->response->setHTTPResponseCode(403, 'Forbidden'); return;
 		}
 		$o_purifier = caGetHTMLPurifier();

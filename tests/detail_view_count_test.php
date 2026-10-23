@@ -18,14 +18,17 @@ class DetailViewConfig {
 }
 class DetailViewRequest {
 	public $config;
-	function __construct(public string $action, public array $parameters = []) { $this->config = new DetailViewConfig(); }
-	function isLoggedIn() { return false; }
+	function __construct(public string $action, public array $parameters = [], public bool $loggedIn = false) { $this->config = new DetailViewConfig(); }
+	function isLoggedIn() { return $this->loggedIn; }
 	function getActionExtra() { return '14'; }
 	function getParameter($name, $type) { foreach ((array)$name as $key) { if (isset($this->parameters[$key])) { return $this->parameters[$key]; } } return null; }
 	function getRequestUrl($absolute = false) { return '/Detail/'.$this->action.'/14'; }
 }
 class DetailViewResponse {
-	public $redirect = null;
+	public $redirect = null, $status = 200;
+	public $headers = [];
+	function setHTTPResponseCode($status, $message) { $this->status = $status; }
+	function addHeader($name, $value) { $this->headers[$name] = $value; }
 	function setRedirect($url) { $this->redirect = $url; }
 }
 class DetailViewView {
@@ -76,7 +79,7 @@ class DetailViewRepresentation {
 	function get($name) { return 31; }
 	function getMediaInfo($field, $version, $name) { return 'image/jpeg'; }
 }
-class Datamodel { static function getInstance($table, $cached = false) { return new $table(); } }
+class Datamodel { static public $loads = 0; static function getInstance($table, $cached = false) { self::$loads++; return new $table(); } }
 class AssetLoadManager { static function register($name) {} }
 class MetaTagManager { static function setWindowTitle($title) {} }
 class ResultContext {
@@ -108,7 +111,7 @@ function _t($message) { return $message; }
 define('__NOTIFICATION_TYPE_INFO__', 1);
 
 $directory = sys_get_temp_dir().'/tadl-detail-view-count-'.bin2hex(random_bytes(8));
-$nativeFiles = ['lib/BaseSearchController.php','lib/MediaContentLocationIndexer.php','lib/Media/MediaViewerManager.php','lib/ApplicationPluginManager.php','controllers/FindController.php','helpers/printHelpers.php','helpers/exportHelpers.php','lib/Logging/Downloadlog.php','lib/Parsers/ZipStream.php'];
+$nativeFiles = ['lib/BaseSearchController.php','lib/MediaContentLocationIndexer.php','lib/Media/MediaViewerManager.php','lib/ApplicationPluginManager.php','controllers/FindController.php','helpers/printHelpers.php','helpers/exportHelpers.php','lib/Parsers/ZipStream.php'];
 foreach ($nativeFiles as $file) {
 	if (!is_dir(dirname($directory.'/'.$file))) { mkdir(dirname($directory.'/'.$file), 0700, true); }
 	file_put_contents($directory.'/'.$file, '<?php');
@@ -116,7 +119,7 @@ foreach ($nativeFiles as $file) {
 define('__CA_APP_DIR__', $directory); define('__CA_LIB_DIR__', $directory.'/lib');
 $theme = dirname(__DIR__);
 require $theme.'/controllers/DetailController.php';
-function detailViewDispatch($type, $tracking) {
+function detailViewDispatch($type, $tracking, $loggedIn = false) {
 	$values = ['detailTypes' => []];
 	foreach (['objects','collections','entities','places'] as $name) {
 		$values['detailTypes'][$name] = ['table' => 'ca_'.$name, 'disableRelatedItemsBrowse' => true,
@@ -124,39 +127,54 @@ function detailViewDispatch($type, $tracking) {
 	}
 	if ($tracking !== null) { $values['record_detail_views'] = $tracking; }
 	$GLOBALS['detailConfig'] = new DetailViewConfig($values);
-	$request = new DetailViewRequest($type); $response = new DetailViewResponse();
+	$request = new DetailViewRequest($type, [], $loggedIn); $response = new DetailViewResponse();
 	$controller = new DetailController($request, $response);
 	$controller->$type();
 	return [$controller, $response];
 }
 try {
-	// Optional upstream reference proves all native endpoints still have identical
-	// PHP tokens, apart from this one guarded tracking call. Normal standalone
-	// checks do not require an adjacent Pawtucket checkout.
+	// Optional native parity checks all retained catalogue/media paths. The only
+	// permitted changes remove usage writes, reject mutation actions, and avoid
+	// deleting original media during ZIP cleanup.
 	if ($reference = getenv('TADL_NATIVE_DETAIL_CONTROLLER')) {
 		detailViewCheck(is_file($reference) && is_readable($reference), 'Native parity reference must be a readable source file.');
-		$guard = <<<'GUARD'
-if ((int)$this->config->get('record_detail_views') === 1) {
-			$t_subject->registerItemView();
+		$native = file_get_contents($reference);
+		foreach (["require_once(__CA_LIB_DIR__.'/Logging/Downloadlog.php');", '$t_subject->registerItemView();', 'if ($vs_path) { unlink($vs_path); }'] as $removed) {
+			$native = str_replace($removed, '', $native, $count);
+			detailViewCheck($count === 1, 'Native parity must remove exactly one known usage/unsafe-cleanup operation.');
 		}
-GUARD;
-		$source = str_replace($guard, '$t_subject->registerItemView();', file_get_contents($theme.'/controllers/DetailController.php'), $replaced);
-		detailViewCheck($replaced === 1, 'Native parity must reverse exactly one tracking guard.');
+		$native = str_replace('$t_download_log = new Downloadlog();', '', $native, $count);
+		detailViewCheck($count === 2, 'Native parity must remove both download logger instances.');
+		$native = preg_replace('/\\$t_download_log->log\\(array\\(.*?\\)\\);/s', '', $native, -1, $count);
+		detailViewCheck($count === 2, 'Native parity must remove both download log writes.');
+		$native = str_replace("\$vals = ['idno' => \$vs_idno_proc];", "\$vals = ['idno' => \$t_instance->get('idno')];", $native, $count);
+		detailViewCheck($count === 1, 'Native parity fixes the native undefined filename variable.');
 		$tokens = static function ($source) {
-			return array_values(array_filter(token_get_all($source), static function ($token) {
-				return !is_array($token) || !in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true);
-			}));
+			$tokens = token_get_all($source); $values = [];
+			$mutation = false; $function = false; $depth = 0;
+			foreach ($tokens as $token) {
+				if (is_array($token) && in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) { continue; }
+				if ($depth) {
+					if ($token === '{') { $depth++; }
+					elseif ($token === '}' && --$depth === 0) { $values[] = '}'; $mutation = false; }
+					continue;
+				}
+				if (is_array($token) && $token[0] === T_FUNCTION) { $function = true; }
+				elseif ($function && is_array($token) && $token[0] === T_STRING) {
+					$mutation = in_array($token[1], ['CommentForm', 'SaveCommentTagging', 'SaveAnnotations'], true); $function = false;
+				}
+				$values[] = is_array($token) ? [$token[0], $token[1]] : $token;
+				if ($mutation && $token === '{') { $depth = 1; }
+			}
+			return $values;
 		};
-		$values = static function ($tokens) { return array_map(static fn($token) => is_array($token) ? [$token[0], $token[1]] : $token, $tokens); };
-		detailViewCheck($values($tokens($source)) === $values($tokens(file_get_contents($reference))), 'The complete native controller must differ only in optional view tracking.');
+		detailViewCheck($tokens(file_get_contents($theme.'/controllers/DetailController.php')) === $tokens($native), 'Retained native detail/viewer/download logic must stay intact.');
 	}
-	$config = file_get_contents($theme.'/conf/detail.conf');
-	detailViewCheck(preg_match('/^record_detail_views\s*=\s*0\s*$/m', $config) === 1, 'The shipped theme must disable detail writes.');
 	foreach (['objects','collections','entities','places'] as $type) {
-		foreach ([null, 0, '0'] as $setting) {
+		foreach ([null, 0, '0', 1, '1'] as $setting) {
 			DetailViewModel::$views = 0; DetailViewModel::$locked = true; DetailViewModel::$access = 1;
 			[$controller] = detailViewDispatch($type, $setting);
-			detailViewCheck(DetailViewModel::$views === 0, 'Missing/disabled tracking must never touch the locked catalogue row.');
+			detailViewCheck(DetailViewModel::$views === 0, 'Catalogue detail must never touch a locked row, including legacy opt-in configurations.');
 			detailViewCheck($controller->rendered === 'Details/ca_'.$type.'_default_html.php', 'A locked optional counter must not prevent normal detail rendering.');
 			detailViewCheck($controller->view->getVar('substitutionAccess') === [1], 'Native template access scope must remain intact.');
 			detailViewCheck(str_ends_with($controller->view->getVar('previousURL'), '/13') && str_ends_with($controller->view->getVar('nextURL'), '/15'), 'Native result context navigation must remain intact.');
@@ -166,21 +184,24 @@ GUARD;
 				detailViewCheck($controller->view->getVar('representation_id') === 31, 'The permitted native representation must remain selected.');
 			}
 		}
-		DetailViewModel::$views = 0; DetailViewModel::$locked = false;
-		[$controller] = detailViewDispatch($type, 1);
-		detailViewCheck(DetailViewModel::$views === 1 && $controller->rendered !== null, 'Explicit opt-in must invoke native tracking once and render normally.');
-		DetailViewModel::$views = 0; DetailViewModel::$locked = true;
-		$blocked = false;
-		try { detailViewDispatch($type, 1); } catch (RuntimeException $error) { $blocked = str_contains($error->getMessage(), 'locked'); }
-		detailViewCheck($blocked && DetailViewModel::$views === 1, 'The synthetic lock must detect accidental counter execution.');
 		DetailViewModel::$views = 0; DetailViewModel::$access = 0;
 		[$controller, $response] = detailViewDispatch($type, 0);
 		detailViewCheck($controller->rendered === null && $response->redirect !== null && DetailViewModel::$views === 0, 'Disabling statistics must preserve native record access rejection.');
 	}
+	foreach ([false, true] as $loggedIn) {
+		foreach (['CommentForm', 'SaveCommentTagging', 'SaveAnnotations'] as $action) {
+			DetailViewModel::$access = 1;
+			[$controller, $response] = detailViewDispatch('objects', 1, $loggedIn);
+			$controller->rendered = null; $loads = Datamodel::$loads;
+			$controller->$action();
+			detailViewCheck($response->status === 404 && $response->headers['Cache-Control'] === 'private, no-store', 'Catalogue mutation routes must be unavailable to anonymous and staff sessions.');
+			detailViewCheck(Datamodel::$loads === $loads && $controller->rendered === null, 'Rejected mutation must not load models or render a mutation response.');
+		}
+	}
 	foreach (['GetMediaInline','GetMediaOverlay','GetMediaData','DownloadRepresentation','DownloadMedia'] as $method) {
 		detailViewCheck(method_exists(DetailController::class, $method), 'Native viewer/download endpoints must remain available.');
 	}
-	echo "Detail view counts passed: {$checks} assertions (locked rows, default/optional tracking, access, result navigation and native viewer rendering).\n";
+	echo "Detail view counts passed: {$checks} assertions (locked rows, ignored legacy opt-in, rejected mutations, access, result navigation and native viewer rendering).\n";
 } finally {
 	$files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
 	foreach ($files as $file) { $file->isDir() ? rmdir($file->getPathname()) : unlink($file->getPathname()); }
