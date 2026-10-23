@@ -202,8 +202,9 @@ let browser;
             if (name === 'notifications') {
                 const notices = page.locator('.notificationMessage');
                 for (const notice of await notices.all()) {
-                    const banner = await notice.boundingBox(), close = await notice.getByRole('button').boundingBox();
-                    assert(close.y + close.height <= banner.y + banner.height, 'Enlarged dismiss controls must remain inside the banner too.');
+                    // Text enlargement can reflow the page between separate browser calls.
+                    const contained = await notice.evaluate(node => node.querySelector('button').getBoundingClientRect().bottom <= node.getBoundingClientRect().bottom);
+                    assert(contained, 'Enlarged dismiss controls must remain inside the banner too.');
                 }
                 await notices.first().getByRole('button', {name:'Dismiss notification'}).focus();
                 await page.keyboard.press('Enter');
