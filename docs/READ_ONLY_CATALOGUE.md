@@ -1,9 +1,9 @@
-# Read-only catalogue audit
+# Catalogue database-write audit
 
-The policy is that catalogue browsing must not persist database changes, including
-when staff are signed in. Explicit login, password and profile actions may write.
-This is separate from Redis/file cache writes, temporary export files and native
-SQL working tables used to calculate search results.
+The goal is to avoid unnecessary theme database writes and other behavior that
+harms performance or accessibility. Intentional features and account actions
+remain supported. This is not a requirement to prohibit all Pawtucket database
+writes or modify its startup, authentication and maintenance behavior.
 
 The following theme protections are implemented. They preserve native access,
 representation permissions, readable metadata and ordinary result navigation.
@@ -32,11 +32,11 @@ Maintenance commands such as FAQ registration are explicit administrator tools,
 not web-request installation steps. They can write when deliberately applied with
 their documented backups and checks. Face detection writes cache files only.
 
-## Native application limits
+## Native application findings outside this task
 
-Installing this theme alone does **not** guarantee that the whole Pawtucket
-application performs zero persistent database writes. Inspection of Pawtucket
-2.0.10 found these additional paths outside theme control:
+Inspection of Pawtucket 2.0.10 also found the paths below outside theme control.
+These are background findings, not additional installation requirements or an
+approved core-change plan. The user declined the separate core proposal.
 
 | Native path | Effect and boundary |
 | --- | --- |
@@ -46,8 +46,8 @@ application performs zero persistent database writes. Inspection of Pawtucket
 | Native TileViewer construction | Creates SQL-backed CSRF tokens before rendering the theme's viewer wrapper; it also enables annotation editing controls for signed-in users. The theme rejects saves, but cannot prevent the earlier token writes from its view template. |
 | Native account forms | Their CSRF tokens and explicit account changes remain SQL-backed. These are the intentional account exception, not catalogue state. |
 
-Addressing the startup/session/viewer paths requires a separately reviewed
-application change; no core patch is installed automatically by this theme.
+Changing the startup/session/viewer paths would require a separate application
+task. No core patch is needed for the completed theme optimizations.
 Do not work around them by disabling CSRF, replacing the authenticated user with
 an anonymous object, or weakening native access checks. The shipped media viewer
 can still show native edit controls to staff until its application-level behavior

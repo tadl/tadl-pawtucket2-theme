@@ -24,10 +24,10 @@ SQL search logging, and stores result navigation in the session instead of
 the theme uses neither that list nor the database view counter. Web-server logs
 remain available for traffic analysis. Explicit account actions are preserved.
 
-These theme protections require no core patch or database migration. They do not
-make the entire native application read-only: startup cache cleanup, file-backend
-sessions, signed-in user autosave and native viewer token generation also need
-application-level changes. See the [read-only audit](READ_ONLY_CATALOGUE.md).
+These theme protections require no core patch or database migration. Native
+startup, session and viewer writes found during the audit are outside this task;
+making the entire application read-only is not the goal. See the
+[database-write audit](READ_ONLY_CATALOGUE.md).
 
 ## What is reused
 

@@ -59,9 +59,9 @@ Public preference/contact forms use session-backed CSRF protection instead of
 the native SQL token store. ZIP downloads also preserve originals when no temporary
 metadata-embedded copy is created.
 
-Pawtucket startup and native viewer code still contain writes outside theme
-control. The [read-only catalogue audit](READ_ONLY_CATALOGUE.md) separates these
-remaining application-level requirements from the completed theme changes.
+Pawtucket startup and native viewer code also contain writes outside theme
+control. The [database-write audit](READ_ONLY_CATALOGUE.md) records those background
+findings separately; they are not requirements to change core for this task.
 
 ### Include results in the initial response
 

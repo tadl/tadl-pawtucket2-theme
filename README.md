@@ -166,7 +166,7 @@ Download links discourage following, binary downloads send indexing directives, 
 
 The theme extends Pawtucket through its native theme mechanism. PHP views provide presentation, theme controllers handle additional routes, and helpers share access-aware queries and rendering behavior. It uses the application's models, search engine, authentication, media derivatives, and bundled libraries; no Providence or Pawtucket core patch is needed for theme installation.
 
-Catalogue routes omit detail and Site Page view counters, search/download logs, and database-backed navigation preferences. Comments, tags, ratings and annotation editing are disabled, including for signed-in staff. Explicit account actions still work. Public preference/contact forms use session-backed CSRF protection. Pawtucket also has startup/session/viewer writes outside the theme's control; see the [read-only catalogue audit](docs/READ_ONLY_CATALOGUE.md) for those application-level limits. Web-server logs remain available for traffic analysis.
+Catalogue routes omit detail and Site Page view counters, search/download logs, and database-backed navigation preferences. Comments, tags, ratings and annotation editing are disabled, including for signed-in staff. Explicit account actions still work. Public preference/contact forms use session-backed CSRF protection. These changes avoid unnecessary theme writes; they do not require a read-only Pawtucket application or a core patch. See the [database-write audit](docs/READ_ONLY_CATALOGUE.md) for details. Web-server logs remain available for traffic analysis.
 
 | Directory | Purpose |
 | --- | --- |
@@ -211,7 +211,7 @@ The supplied `support/deploy-theme.sh` is an rsync helper for the `/var/www/pawt
 | [Finding aids](docs/FINDING_AIDS.md) | Descriptive PDF structure, metadata at every hierarchy level, field mappings and access. |
 | [Audit remediation](docs/AUDIT_REMEDIATION.md) | Review findings, source fixes, verification and deployment boundaries. |
 | [Performance](docs/PERFORMANCE.md) | Cache freshness, optional MySQL index, measurement, and rollback. |
-| [Read-only catalogue](docs/READ_ONLY_CATALOGUE.md) | Removed incidental writes, explicit account actions, and remaining native application boundaries. |
+| [Database-write audit](docs/READ_ONLY_CATALOGUE.md) | Removed incidental theme writes and native application findings outside the theme's scope. |
 | [Performance improvements](docs/PERFORMANCE_IMPROVEMENTS.md) | Completed optimizations, measured gains, validation, experiments, and deployment record. |
 | [Document text](docs/DOCUMENT_TEXT.md) | Extraction/transcription fallbacks, formatting, permissions, and indexing boundaries. |
 | [Image downloads](docs/IMAGE_DOWNLOADS.md) | Export formats, native processing requirements, private conversion cache, and limits. |

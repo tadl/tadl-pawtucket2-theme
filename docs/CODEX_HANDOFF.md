@@ -49,10 +49,14 @@ Changes belong here rather than in upstream CollectiveAccess. The surrounding
 workspace has reference checkouts of Pawtucket and Providence at local tag
 `2.0.10`; that is a local source fact, not a verified current production version.
 
-## Read-only catalogue policy (2026-10-23)
+## Unnecessary theme database writes (2026-10-23)
 
-The user requires read-only catalogue browsing for anonymous and signed-in staff
-sessions; explicit login, profile and password actions remain allowed to write.
+The user clarified the scope: avoid unnecessary writes and other theme behavior
+that harms performance or accessibility. This is not a blanket read-only policy
+for Pawtucket. Preserve intentional features and explicit account actions. The
+user declined the proposed production core patch; leave it unapplied and do not
+treat it as a pending implementation or deployment task.
+
 The initial optional detail-counter guard is superseded: `registerItemView()` is
 permanently omitted, including with legacy `record_detail_views = 1` configuration.
 Counter writes can wait behind long-running Providence import locks before any
@@ -73,10 +77,9 @@ Detail and Default overrides against upstream when upgrading Pawtucket.
 
 Native startup SQL cache cleanup, signed-in user autosave, file-backend session
 storage and native TileViewer CSRF generation still sit outside theme control.
-Do not claim the entire application executes no persistent writes until those
-upstream boundaries are separately addressed. The proposed core work stays in the
-workspace patch catalogue, unapplied pending authorization. See
-[READ_ONLY_CATALOGUE.md](READ_ONLY_CATALOGUE.md) for the source audit and limits.
+They are background audit findings, not requirements to change core as part of
+this task. The unused core proposal remains in the workspace patch catalogue.
+See [the database-write audit](READ_ONLY_CATALOGUE.md) for the source findings.
 
 Set `TADL_NATIVE_DETAIL_CONTROLLER` to the native `app/controllers/DetailController.php`
 path when running `tests/detail_view_count_test.php` to check retained PHP-token

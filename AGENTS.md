@@ -25,11 +25,12 @@ also applies when the theme is cloned without the surrounding workspace.
   cookie and stays out of ordinary URLs. It controls display, not authorization.
 - Keep native record access, representation access, bundle permissions and ACLs.
   Filter eligible results before theme counts, paging and result-context storage.
-- Keep catalogue browsing read-only, including for signed-in staff. Do not write
-  view/search/download statistics, catalogue annotations or navigation preferences
-  to database records. Use browser/session/cache state for display and navigation.
-  Preserve explicit staff login, password and profile actions. Inspect native
-  helper side effects, including CSRF storage and request shutdown, before reuse.
+- Avoid unnecessary theme database writes and work that harms performance or
+  accessibility. Do not add usage counters or SQL analytics as a side effect of
+  catalogue display. Prefer browser/session/cache state for display and navigation.
+  Preserve intentional features and explicit account actions. Inspect native
+  helper side effects before reuse; this is not a mandate to make Pawtucket core
+  or the entire application read-only. Core changes are outside the current task.
 - Preserve normal links, browser Back and direct-link fallbacks. Do not replace
   result pages with carousels or require AJAX for basic navigation.
 - Keep browse/search thumbnails based on the primary representation. Object
