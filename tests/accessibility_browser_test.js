@@ -128,6 +128,14 @@ let browser;
             });
             assert.deepEqual(result, [], `${name} at ${width}px: ${JSON.stringify(result)}`);
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name}: horizontal page overflow at ${width}px`);
+            if (name === 'notifications') {
+                for (const notification of await page.locator('.notificationMessage').all()) {
+                    const banner = await notification.boundingBox();
+                    const close = await notification.getByRole('button', {name:'Dismiss notification'}).boundingBox();
+                    assert(close.width >= 24 && close.width <= 32 && close.height >= 24 && close.height <= 32, 'Notification dismiss buttons must stay compact while retaining a usable pointer target.');
+                    assert(close.y >= banner.y && close.y + close.height <= banner.y + banner.height, 'The dismiss button must remain inside its notification banner.');
+                }
+            }
             if (name.startsWith('authority-return-')) {
                 const links = page.locator('.tadl-record-nav a');
                 assert.equal(await links.count(), 3);
@@ -191,6 +199,19 @@ let browser;
             });
             await page.addStyleTag({content:'#main * {line-height:1.5;letter-spacing:.12em;word-spacing:.16em} #main p {margin-bottom:2em}'});
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name}: overflow with enlarged/spaced text at ${width}px`);
+            if (name === 'notifications') {
+                const notices = page.locator('.notificationMessage');
+                for (const notice of await notices.all()) {
+                    const banner = await notice.boundingBox(), close = await notice.getByRole('button').boundingBox();
+                    assert(close.y + close.height <= banner.y + banner.height, 'Enlarged dismiss controls must remain inside the banner too.');
+                }
+                await notices.first().getByRole('button', {name:'Dismiss notification'}).focus();
+                await page.keyboard.press('Enter');
+                assert.equal(await notices.first().isVisible(), false, 'Keyboard activation must dismiss the selected notification.');
+                assert(await notices.last().isVisible(), 'Dismissing one message must preserve other notifications.');
+                await notices.last().getByRole('button').click();
+                assert.equal(await notices.last().isVisible(), false, 'Pointer activation must still dismiss a notification.');
+            }
             reports.push(`${name} ${width}px: axe, reflow, enlarged text and spacing passed`);
         }
     }

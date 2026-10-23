@@ -1,6 +1,6 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-22. This document carries the recent coding context to another
+Updated: 2026-10-23. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
@@ -367,6 +367,10 @@ identifier links are omitted, thumbnails have useful names, extra result details
 use native disclosures, and Browse/Filters/dialog closes use native buttons.
 Headings and notifications wrap unbroken words/references when enlarged in narrow
 layouts; the browser fixture includes a long synthetic notification reference.
+Notification dismiss buttons use a compact 32px target, scoped separately from
+the larger dialog controls. The banner contains its floated button so short
+messages cannot let it spill below the border. Browser checks cover desktop/phone
+geometry, enlarged text and independent keyboard/pointer dismissal.
 Contact errors expose field associations and a focused summary. Account controls
 carry appropriate autocomplete; password confirmation labels and cookie radios
 are repaired. Gallery AJAX retains focus and announces selection; featured items

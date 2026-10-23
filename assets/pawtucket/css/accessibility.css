@@ -84,7 +84,15 @@ html:has(#caMediaPanel[aria-hidden="false"]) { overflow: hidden; }
 .alert-success { color: #235c2c; }
 .alert-warning { color: #6d4c12; }
 .alert-info { color: #1b526c; }
-.notificationMessage { color: #1b526c; }
+.notificationMessage { display: flow-root; color: #1b526c; }
+.notificationMessage .tadl-dialog-close {
+    min-width: 32px;
+    min-height: 32px;
+    margin-left: 12px;
+    padding: 4px;
+    font-size: 18px;
+    line-height: 1;
+}
 .tadl-error-summary { scroll-margin-block: 20px; }
 .tadl-error-summary h2 { margin-top: 0; font-size: 1.25em; }
 
