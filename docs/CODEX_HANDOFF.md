@@ -5,6 +5,13 @@ Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
 
+Expanded long metadata now places Read less after the complete value. The opening
+native summary is hidden while expanded; the ending button collapses the field
+and restores focus to Read more. Keyboard opening moves focus to the full value
+without scrolling to its end. Delegated toggle/click handlers cover gallery and
+other inserted metadata without per-fragment initialization or added requests.
+Without JavaScript, the native summary still opens/closes the complete content.
+
 Finding-aid fields preserve recorded bold and italic emphasis in PDF and HTML,
 including editor font-weight/font-style spans. A narrow DOM conversion emits only
 canonical strong/em markup; the render boundary also rejects noncanonical tags
@@ -889,6 +896,11 @@ formatting. Link labels remain complete even when they cross the prose boundary.
 Previews omit later DOM nodes instead of clipping hidden focusable links; cloned
 IDs and active widgets/scripts are omitted. The full native value stays unchanged
 inside the disclosure, with no additional queries or changed access filtering.
+The shared JavaScript hides the opening summary while expanded and exposes a
+**Read less** button after the full value. Keyboard opening focuses the value;
+collapsing restores focus to **Read more**. Without JavaScript, the native summary
+continues to provide both actions. Browser checks cover prose and linked values,
+inserted fragments, keyboard order and focus, phone reflow and the native fallback.
 
 Repeated linked native `<unit>` fields use entry previews: five complete
 line-separated associations or list items, including their roles. A few long

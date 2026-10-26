@@ -117,7 +117,7 @@ let browser;
     const reports = [];
     for (const width of [1280, 320]) {
         await page.setViewportSize({width, height:900});
-        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'finding-aid-text', 'featured', 'notifications', 'collection-staff', 'sort-results', 'object-return', 'object-return-only', 'back-to-top', ...Object.keys(authorityNavigationFixtures), ...Object.keys(objectCitations)]) {
+        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'long-fields', 'finding-aid-text', 'featured', 'notifications', 'collection-staff', 'sort-results', 'object-return', 'object-return-only', 'back-to-top', ...Object.keys(authorityNavigationFixtures), ...Object.keys(objectCitations)]) {
             await page.goto(origin + '/' + name);
             if (name === 'gallery') { await page.locator('.galleryDetailNext').waitFor(); }
             await page.evaluate(async () => {
@@ -228,6 +228,53 @@ let browser;
             }
             reports.push(`${name} ${width}px: axe, reflow, enlarged text and spacing passed`);
         }
+    }
+    // Long prose and linked metadata must put the collapse action last in both
+    // visual and keyboard order, including fragments inserted after page load.
+    for (const width of [1280,320]) {
+        await page.setViewportSize({width,height:900});
+        await page.goto(origin + '/long-fields');
+        const fields = page.locator('.tadl-long-field');
+        assert.equal(await fields.count(),2);
+        for (const [index, field] of (await fields.all()).entries()) {
+            const details = field.locator('details');
+            const summary = details.locator('summary');
+            const full = details.locator('.tadl-long-field-full');
+            const collapse = details.locator('.tadl-long-field-collapse');
+            const preview = field.locator('.tadl-long-field-preview');
+            assert(await summary.isVisible() && await preview.isVisible() && await collapse.isHidden());
+            await summary.focus(); await page.keyboard.press('Enter');
+            await page.waitForFunction(() => document.activeElement.classList.contains('tadl-long-field-full'));
+            assert(await summary.isHidden() && await preview.isHidden() && await collapse.isVisible(), 'Expanded metadata must expose only the ending collapse control.');
+            assert.equal(await collapse.getAttribute('aria-expanded'),'true');
+            const bodyBox = await full.boundingBox(), collapseBox = await collapse.boundingBox();
+            assert(collapseBox.y >= bodyBox.y + bodyBox.height, 'Read less must follow the complete value in document flow.');
+            // The prose fixture is taller than a screen; opening must not jump to
+            // the ending button or strand focus on the now-hidden summary.
+            if ((await full.innerText()).startsWith('Synthetic long description')) {
+                assert(collapseBox.y > 900, 'Opening a long field must keep the reading position near its start.');
+            }
+            await page.evaluate(axeSource);
+            const violations = await page.evaluate(async () => (await axe.run('#main', {runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}})).violations.map(v => ({id:v.id,nodes:v.nodes.map(n => n.html)})));
+            assert.deepEqual(violations,[], 'Expanded long fields must retain accessible control names and contrast.');
+            await full.locator('a').last().focus(); await page.keyboard.press('Tab');
+            assert(await collapse.evaluate(node => node === document.activeElement), 'Read less must follow the last content link in keyboard order.');
+            if (artifacts) { await page.screenshot({path:path.join(artifacts,`read-less-${width}-${index}.png`)}); }
+            await page.keyboard.press('Space');
+            assert.equal(await details.evaluate(node => node.open),false);
+            assert(await summary.isVisible() && await preview.isVisible() && await summary.evaluate(node => node === document.activeElement), 'Collapsing must restore the preview and focus to Read more.');
+            assert(await collapse.isHidden());
+            await summary.click();
+            await collapse.waitFor({state:'visible'});
+            await collapse.click();
+            assert.equal(await details.evaluate(node => node.open),false, 'Pointer activation must collapse the same field.');
+        }
+        await fields.first().evaluate(node => document.querySelector('#main').append(node.cloneNode(true)));
+        const inserted = fields.last();
+        await inserted.locator('summary').click();
+        await inserted.locator('.tadl-long-field-collapse').click();
+        assert.equal(await inserted.locator('details').evaluate(node => node.open),false, 'Inserted gallery/metadata fragments must work without a separate initialization step.');
+        reports.push(`Long metadata ${width}px: ending Read less, keyboard reading order, focus restoration, pointer controls, inserted fragments and expanded axe passed`);
     }
     // Exercise the shared return control with real scrolling and native history.
     for (const width of [1280,320]) {
@@ -403,6 +450,13 @@ let browser;
         assert(await plainPage.locator('[data-tadl-back-to-top]').isHidden(), 'Without JavaScript the scroll-dependent control must stay hidden.');
         await plainPage.goto(origin + '/finding-aid-text');
         assert(await plainPage.getByRole('link', {name:'Return to collection',exact:true}).isVisible(), 'Text finding aids must provide a usable return link without JavaScript.');
+        await plainPage.goto(origin + '/long-fields');
+        const plainField = plainPage.locator('.tadl-long-field').first();
+        await plainField.locator('summary').click();
+        assert(await plainField.locator('.tadl-long-field-full').isVisible() && await plainField.locator('summary').isVisible(), 'Without JavaScript native disclosure must still reveal all content.');
+        assert(await plainField.locator('.tadl-long-field-collapse').isHidden(), 'The enhanced ending button must stay hidden without JavaScript.');
+        await plainField.locator('summary').click();
+        assert.equal(await plainField.locator('details').evaluate(node => node.open),false, 'Native summary must also collapse without JavaScript.');
         await plainPage.goto(origin + '/contact');
         const plainMenu = plainPage.locator('.tadl-media-preference-menu:visible');
         await plainMenu.locator('summary').click();

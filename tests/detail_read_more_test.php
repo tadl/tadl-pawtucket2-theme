@@ -44,6 +44,8 @@ foreach ([
 	checkReadMore($xpath->query('//summary/span[@class="tadl-read-more"]')->item(0)->textContent === 'Read more'
 		&& $xpath->query('//summary/span[@class="tadl-read-less"]')->item(0)->textContent === 'Read less', $bundle.': disclosure needs both state labels.');
 	checkReadMore(str_contains($html, '<div class="tadl-long-field-full">'.$rich.'</div>'), $bundle.': the complete rich value must remain intact, not truncated or rebuilt.');
+	checkReadMore($xpath->query('//details/div[@class="tadl-long-field-full"]/following-sibling::button[@type="button" and @class="tadl-long-field-collapse" and @hidden]')->length === 1, $bundle.': the enhanced collapse control must follow the full value and stay hidden without JavaScript.');
+	checkReadMore($xpath->query('//button[@class="tadl-long-field-collapse"]/span[@class="sr-only"]')->item(0)->textContent === ': '.$label, $bundle.': the ending collapse action must retain its field context.');
 	checkReadMore($item->reads === [['^'.$bundle, ['convertCodesToDisplayText' => true, 'checkAccess' => [1, 2]]]], $bundle.': disclosure must preserve native permissions without extra reads.');
 }
 foreach (['0', 'A short description.', '<p>Short &amp; formatted <strong>description</strong>.</p>', str_repeat('é', 600), str_repeat('<span></span>', 100).'Short', str_repeat('&nbsp;', 700).'Short'] as $short) {

@@ -103,7 +103,8 @@ if (!function_exists('tadlDetailExpandableValue')) {
 		return '<div class="tadl-long-field"><div class="'.$previewClass.'">'.$previewHTML.'</div>'
 			.'<details class="tadl-long-field-details"><summary><span class="tadl-read-more">'.$escape(_t('Read more')).'</span>'
 			.'<span class="tadl-read-less">'.$escape(_t('Read less')).'</span><span class="sr-only">: '.$escape($label).'</span></summary>'
-			.'<div class="tadl-long-field-full">'.$value.'</div></details></div>';
+			.'<div class="tadl-long-field-full">'.$value.'</div>'
+			.'<button type="button" class="tadl-long-field-collapse" hidden aria-expanded="true">'.$escape(_t('Read less')).'<span class="sr-only">: '.$escape($label).'</span></button></details></div>';
 	}
 }
 

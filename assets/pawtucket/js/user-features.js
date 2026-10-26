@@ -25,6 +25,35 @@
     });
 })(jQuery);
 
+/* Keep collapse actions after the full value, including metadata loaded into galleries. */
+(function () {
+    'use strict';
+    document.addEventListener('toggle', function (event) {
+        var details = event.target;
+        if (!details.matches || !details.matches('details.tadl-long-field-details')) { return; }
+        var summary = details.querySelector(':scope > summary');
+        var full = details.querySelector(':scope > .tadl-long-field-full');
+        var collapse = details.querySelector(':scope > .tadl-long-field-collapse');
+        if (!summary || !full || !collapse) { return; }
+        var openingFocus = details.open && document.activeElement === summary;
+        summary.hidden = details.open;
+        collapse.hidden = !details.open;
+        collapse.setAttribute('aria-expanded', details.open ? 'true' : 'false');
+        if (openingFocus) { full.tabIndex = -1; full.focus({preventScroll:true}); }
+    }, true);
+    document.addEventListener('click', function (event) {
+        var collapse = event.target.closest('.tadl-long-field-collapse');
+        var details = collapse && collapse.parentElement;
+        if (!details || !details.matches('details.tadl-long-field-details')) { return; }
+        event.preventDefault();
+        var summary = details.querySelector(':scope > summary');
+        summary.hidden = false;
+        details.open = false;
+        // The focused collapse button is about to disappear with the full text.
+        summary.focus();
+    });
+})();
+
 /* Offer a return to the header only after the first screenful of the page. */
 (function () {
     'use strict';

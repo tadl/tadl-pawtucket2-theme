@@ -8,7 +8,7 @@ This repository contains the complete `tadl` theme. Install it in an existing Pa
 
 | Feature | Visitor experience |
 | --- | --- |
-| Responsive catalogue | Compact logo/header, image tiles and list views with square file-format tags stacked to the right of object titles, consistent 3:2 search/grid thumbnails, collapsible filter sidebars, mobile navigation, and expandable long descriptions that preserve links and formatting. |
+| Responsive catalogue | Compact logo/header, image tiles and list views with square file-format tags stacked to the right of object titles, consistent 3:2 search/grid thumbnails, collapsible filter sidebars, mobile navigation, and expandable long descriptions that preserve links and formatting, with **Read less** after the expanded content. |
 | Collection browsing | A flat list of everything in a collection and its readable descendants, with an optional hierarchy view, bold titles for branches containing digitized media, alphabetical ordering, sorting, and pagination. Subsequent item pages omit repeated descriptive metadata. |
 | Featured galleries | Large, uncropped photos beside object metadata, with Previous/Next controls, a thumbnail strip, and media-viewer/download actions beneath the photo. The layout stacks on phones. |
 | Connected records | Browse people, organizations, families, places, and events. Place results include descendant places; family results include objects linked to directly related people and organizations. |

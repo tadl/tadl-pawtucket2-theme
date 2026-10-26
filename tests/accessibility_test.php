@@ -214,6 +214,12 @@ $topLink = a11yDocument($fixtures['footer'])->query('//a[@data-tadl-back-to-top]
 a11yCheck($topLink && $topLink->hasAttribute('hidden') && $topLink->getAttribute('href') === '#tadl-page-top' && $topLink->getAttribute('aria-label') === 'Back to top', 'The shared return control needs a labelled native top link, hidden until scrolling is enhanced.');
 a11yCheck(str_contains($fixtures['header'], 'id="tadl-page-top" class="tadl-header" role="banner" tabindex="-1"'), 'The return control must target a focusable header without adding it to the Tab order.');
 $fixtures['back-to-top'] = '<h1>Synthetic long result set</h1>'.str_repeat('<p>Synthetic catalogue results. <a href="/synthetic/objects">Browse synthetic objects</a>.</p>', 100);
+require_once dirname(__DIR__).'/views/Details/detail_field_helpers.php';
+$longBody = '<p>'.str_repeat('Synthetic long description with readable archival context. ', 100).'</p><p><a href="/synthetic/objects">Last description link</a></p>';
+$relatedRows = [];
+foreach (range(1, 12) as $id) { $relatedRows[] = '<a href="/synthetic/people/'.$id.'">Synthetic person '.$id.' with a descriptive catalogue name</a> (creator)'; }
+$fixtures['long-fields'] = '<h1>Synthetic long metadata</h1><section><h2>Description</h2>'.tadlDetailExpandableValue($longBody, 'Description').'</section>'
+	.'<section><h2>Related people</h2>'.tadlDetailExpandableValue(join('<br>', $relatedRows), 'Related people', true).'</section>';
 $aidTitle = 'Synthetic "Archives" & Photograph Collection';
 $fixtures['finding-aid-text'] = (new A11yView([
 	'finding_aid' => ['title' => $aidTitle, 'identifier' => 'SYN.42', 'fields' => [

@@ -136,6 +136,27 @@ body.tadl-interior {
     outline-offset: 2px;
 }
 
+.tadl-long-field-collapse {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    min-height: 44px;
+    margin-top: 8px;
+    padding: 8px 0;
+    border: 0;
+    background: transparent;
+    color: var(--tadl-primary-dark);
+    font: inherit;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.tadl-long-field-details > summary[hidden],
+.tadl-long-field-details > .tadl-long-field-collapse[hidden] {
+    display: none;
+}
+
 .tadl-long-field-details .tadl-read-less,
 .tadl-long-field-details[open] .tadl-read-more {
     display: none;
