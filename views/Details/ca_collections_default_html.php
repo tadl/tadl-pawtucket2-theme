@@ -119,7 +119,7 @@
 		<div class="container">
 			<header class="tadl-record-header tadl-collection-record-header">
 				<div class="tadl-collection-heading tadl-record-heading">
-					<H1>{{{^ca_collections.preferred_labels.name}}} <span class="tadl-collection-identity">{{{^ca_collections.type_id}}}{{{<ifdef code="ca_collections.idno">, ^ca_collections.idno</ifdef>}}}</span></H1>
+					<H1>{{{^ca_collections.preferred_labels.name}}} <span class="tadl-collection-identity">{{{<ifdef code="ca_collections.idno">^ca_collections.idno</ifdef>}}}</span></H1>
 					<?php if ($parent_links !== '') { print '<div class="unit">'.htmlspecialchars(_t('Part of:'), ENT_QUOTES, 'UTF-8').' '.$parent_links.'</div>'; } ?>
 				</div>
 				<div class="tadl-collection-header-actions">

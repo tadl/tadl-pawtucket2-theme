@@ -206,7 +206,7 @@ $parent_document = new DOMDocument(); $parent_document->loadHTML($public_folder_
 $parent_line = $parent_xpath->query('//div[@class="unit"][starts-with(normalize-space(.), "Part of:")]')->item(0);
 checkDetailScripts($parent_line && $parent_line->textContent === 'Part of: Synthetic root & <archive> > Synthetic box', 'A folder must display genuine ancestors in root-to-parent order with safely escaped names.');
 checkDetailScripts($parent_xpath->query('//header[contains(@class,"tadl-collection-record-header")]//h1/span[@class="tadl-collection-identity"]')->length === 1
-	&& $parent_xpath->query('//header[contains(@class,"tadl-collection-record-header")]//h2')->length === 0, 'Collection type and identifier must follow the name inside the main heading, without a separate subtitle heading.');
+	&& $parent_xpath->query('//header[contains(@class,"tadl-collection-record-header")]//h2')->length === 0, 'Collection identifier must follow the name inside the main heading, without a separate subtitle heading.');
 checkDetailScripts($parent_xpath->query('//header[contains(@class,"tadl-collection-record-header")]//h1/following-sibling::div[starts-with(normalize-space(.), "Part of:")]')->length === 1
 	&& $parent_xpath->query('//div[contains(@class,"tadl-collection-overview")]//div[starts-with(normalize-space(.), "Part of:")]')->length === 0, 'The parent collection must appear beneath the name in the record header, exactly once.');
 checkDetailScripts($parent_xpath->query('.//a', $parent_line)->length === 2 && $parent_xpath->query('.//a[@href="/synthetic/Detail/collections/73"]|.//archive', $parent_line)->length === 0 && !str_contains($public_folder_html, 'PRIVATE grouping') && !str_contains($public_folder_html, 'Ancestor above private grouping'), 'Part of must not link the current record, expose administrative groups or cross a hidden ancestor.');
@@ -313,7 +313,7 @@ foreach ([42 => 'collection', 73 => 'folder'] as $id => $type) {
 			$header = $xpath->query('//header[contains(@class,"tadl-collection-record-header")]')->item(0);
 			$heading = $header->getElementsByTagName('h1')->item(0);
 			$heading->replaceChild($document->createTextNode('Synthetic Community History Collection: Oral Histories, Photographs, Diaries, Family Papers and Records of Regional Organizations '), $heading->firstChild);
-			$xpath->query('.//span[@class="tadl-collection-identity"]', $header)->item(0)->nodeValue = 'COLLECTION, SYNTHETIC.42';
+			$xpath->query('.//span[@class="tadl-collection-identity"]', $header)->item(0)->nodeValue = 'SYNTHETIC.42';
 			$staff_shortcut_fixtures[$staff ? 'collection-staff' : 'collection-public'] = $document->saveHTML($header);
 		}
 	}
