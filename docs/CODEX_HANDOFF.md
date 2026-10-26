@@ -1,9 +1,15 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-23. This document carries the recent coding context to another
+Updated: 2026-10-26. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
+
+Finding-aid text now normalizes CRLF/CR and whitespace-only lines, and caps repeated
+paragraph breaks at one blank line. Empty rich-text editor blocks previously became
+large vertical gaps through `nl2br()`. Ordinary single line breaks remain, and the
+same normalization applies to PDF and accessible HTML at every hierarchy level.
+The helper's source hash already invalidates cached PDF bytes; no purge is needed.
 
 The review fixes below follow checkpoint `51b11d8` on `main` at
 `git@github.com:tadl/tadl-pawtucket2-theme.git`, checked on 2026-10-08. That checkpoint

@@ -266,6 +266,13 @@ foreach ([['ca_collections', 14, '^ca_collections.description'], ['ca_collection
 aidCheck(!array_intersect([8, 9, 10, 11], array_column($GLOBALS['aidReads'], 1)), 'Unreadable branches must not supply metadata.');
 aidCheck(!array_intersect(['ca_objects', 'ca_object_representations', 'ca_storage_locations'], array_column($GLOBALS['aidLoads'], 0)), 'No object, representation or storage models may be loaded.');
 aidCheck(tadlFindingAidText('<script>secret</script><h3>Heading</h3><p>Safe &amp; readable</p>') === "Heading\nSafe & readable", 'HTML must become readable plain text.');
+$spaced_description = "<p>First paragraph &amp; context.</p>\r\n\r\n<p>&nbsp;</p>\r\n<p><br></p>\r\n<p>Second paragraph.</p>";
+aidCheck(tadlFindingAidText($spaced_description) === "First paragraph & context.\n\nSecond paragraph.", 'Empty rich-text blocks and CRLF formatting must leave only one blank line between paragraphs.');
+aidCheck(tadlFindingAidText("First paragraph.\r\n \t\r\n\rSecond paragraph.") === "First paragraph.\n\nSecond paragraph.", 'Whitespace-only lines and mixed newline styles must not expand paragraph spacing.');
+aidCheck(tadlFindingAidText("First creator\r\nSecond creator\rStreet address<br>Town") === "First creator\nSecond creator\nStreet address\nTown", 'Ordinary line breaks in names, addresses and explicit breaks must remain intact.');
+$spaced_collection = clone $collection;
+$spaced_collection->row['values']['ca_collections.description'] = $spaced_description;
+aidCheck(tadlFindingAidValue($request, $spaced_collection, ['ca_collections.description']) === "First paragraph & context.\n\nSecond paragraph.", 'Catalogue metadata must use compact paragraphs before either finding-aid view renders it.');
 aidCheck(tadlFindingAidValue($request, $collection, ['ca_objects.idno', 'ca_collections.missing', 'ca_collections.description<script>']) === '', 'Wrong-table, missing and unsafe field mappings must be rejected.');
 $view = new AidView(); $view->setVar('finding_aid', $data); $html = $view->render('Details/finding_aid_pdf_html.php');
 foreach (['PRIVATE', 'directly linked', 'object_count', 'No accessible object records', '0 items', '4105', 'Missing field:', 'Level of description:'] as $excluded) { aidCheck(!str_contains($html, $excluded), 'Unwanted finding-aid output: '.$excluded); }

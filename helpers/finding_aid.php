@@ -22,7 +22,10 @@ function tadlFindingAidText($value) {
 	$value = preg_replace('~<(script|style)\b[^>]*>.*?</\1\s*>~is', '', (string)$value);
 	$value = preg_replace('~<br\s*/?>|</(?:p|div|li|h[1-6]|tr|section)>~i', "\n", $value);
 	$value = html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-	$value = trim(preg_replace('/[\p{Z}\t]+/u', ' ', $value));
+	$value = str_replace(["\r\n", "\r"], "\n", $value);
+	$value = preg_replace('/[\p{Z}\t]+/u', ' ', $value);
+	// Empty editor blocks and source formatting must not become stacked blank lines.
+	$value = trim(preg_replace(['/ *\n */', '/\n{3,}/'], ["\n", "\n\n"], $value));
 	return preg_match('/[\p{L}\p{N}]/u', $value) ? $value : '';
 }
 

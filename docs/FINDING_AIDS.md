@@ -42,6 +42,8 @@ results and are separate from the finding aid.
   restricted levels have no suffix.
 - Readable body text, paragraph and line breaks, and page numbers. Editor HTML
   becomes escaped plain text; scripts, styles and executable markup are excluded.
+  Empty editor blocks and repeated blank lines collapse to one blank line between
+  paragraphs in both PDF and HTML. Ordinary line breaks in names and addresses remain.
 - Recorded hierarchy rank first, natural title order for equal ranks, then ID
   for deterministic ties. Complete branches stay together. Set
   `hierarchy_sort = name` to explicitly use natural title order instead.
