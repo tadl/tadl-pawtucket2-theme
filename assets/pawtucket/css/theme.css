@@ -1184,6 +1184,8 @@ h6 {
 .tadl-footer-bottom {
     margin-top: 28px;
     padding-top: 18px;
+    /* Keep the last footer links above the floating return control. */
+    padding-bottom: 56px;
     border-top: 1px solid rgba(255, 255, 255, 0.16);
     color: rgba(255, 255, 255, 0.9);
     font-size: max(var(--tadl-text-min, 0px), 16px);
@@ -1199,6 +1201,39 @@ h6 {
 
 .tadl-footer-bottom ul {
     margin-bottom: 0;
+}
+
+.tadl-back-to-top.btn {
+    position: fixed;
+    right: max(20px, env(safe-area-inset-right));
+    bottom: max(20px, env(safe-area-inset-bottom));
+    z-index: 1000;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-width: 44px;
+    min-height: 44px;
+    max-width: calc(100% - 40px);
+    padding: 10px 12px;
+    font-size: 18px;
+    white-space: normal;
+    box-shadow: var(--tadl-soft-shadow);
+}
+
+.tadl-back-to-top[hidden],
+body:has(#cookieNotice) .tadl-back-to-top,
+body:has([aria-modal="true"][aria-hidden="false"]) .tadl-back-to-top,
+.tadl-back-to-top-label {
+    display: none;
+}
+
+@media (max-width: 991px) {
+    .tadl-back-to-top-label { display: inline; }
+}
+
+@media print {
+    .tadl-back-to-top.btn { display: none; }
 }
 
 .detail,

@@ -199,6 +199,10 @@ a11yCheck(str_contains($header, '<main id="main" tabindex="-1">') && str_contain
 require dirname(__DIR__).'/helpers/media_preferences.php';
 $fixtures['header'] = (new A11yView())->render('pageFormat/pageHeader.php');
 $fixtures['footer'] = (new A11yView())->render('pageFormat/pageFooter.php');
+$topLink = a11yDocument($fixtures['footer'])->query('//a[@data-tadl-back-to-top]')->item(0);
+a11yCheck($topLink && $topLink->hasAttribute('hidden') && $topLink->getAttribute('href') === '#tadl-page-top' && $topLink->getAttribute('aria-label') === 'Back to top', 'The shared return control needs a labelled native top link, hidden until scrolling is enhanced.');
+a11yCheck(str_contains($fixtures['header'], 'id="tadl-page-top" class="tadl-header" role="banner" tabindex="-1"'), 'The return control must target a focusable header without adding it to the Tab order.');
+$fixtures['back-to-top'] = '<h1>Synthetic long result set</h1>'.str_repeat('<p>Synthetic catalogue results. <a href="/synthetic/objects">Browse synthetic objects</a>.</p>', 100);
 $GLOBALS['a11yFront'] = true;
 $fixtures['front-header'] = (new A11yView([], new A11yRequest(false, 'Front')))->render('pageFormat/pageHeader.php');
 $GLOBALS['a11yFront'] = false;

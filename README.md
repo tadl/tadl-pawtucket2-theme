@@ -35,7 +35,7 @@ Additional facet values use separate **View X more / View less** buttons. Large 
 
 File-format tags describe the accessible original representations attached to an object, such as JPEG, TIFF, or PDF. They can show multiple formats for one object. The **Object type** filter instead uses the catalogue's classification, such as Still image or Document; it does not infer an object's type from its files.
 
-The shared interface includes keyboard navigation, visible focus, reduced-motion support, and responsive reflow. See the [accessibility guide](docs/ACCESSIBILITY.md) for coverage and remaining manual checks; installing the theme does not establish whole-site WCAG conformance.
+The shared interface includes keyboard navigation, visible focus, reduced-motion support, and responsive reflow. A bottom-right **Back to top** control appears after scrolling one viewport, returning the page and keyboard focus to the header. See the [accessibility guide](docs/ACCESSIBILITY.md) for coverage and remaining manual checks; installing the theme does not establish whole-site WCAG conformance.
 
 ## Requirements before installing
 

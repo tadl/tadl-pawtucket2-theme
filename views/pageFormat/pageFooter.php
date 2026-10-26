@@ -64,6 +64,10 @@
 				</div>
 			</div>
 		</footer><!-- end footer -->
+		<a href="#tadl-page-top" class="btn btn-default tadl-back-to-top" data-tadl-back-to-top hidden title="<?= htmlspecialchars(_t('Back to top'), ENT_QUOTES, 'UTF-8'); ?>" aria-label="<?= htmlspecialchars(_t('Back to top'), ENT_QUOTES, 'UTF-8'); ?>">
+			<span class="fa fa-chevron-up" aria-hidden="true"></span>
+			<span class="tadl-back-to-top-label"><?= htmlspecialchars(_t('Back to top'), ENT_QUOTES, 'UTF-8'); ?></span>
+		</a>
 		<?= TooltipManager::getLoadHTML(); ?>
 		<div id="caMediaPanel" role="dialog" aria-modal="true" aria-label="<?= htmlspecialchars(_t('Media viewer'), ENT_QUOTES, 'UTF-8'); ?>" aria-hidden="true" tabindex="-1">
 			<div id="caMediaPanelContentArea">

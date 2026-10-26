@@ -5,6 +5,14 @@ Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
 
+A shared bottom-right Back to top control appears only beyond one viewport of
+page scrolling. It returns focus to the header and scrolls smoothly unless reduced
+motion is requested. Scroll updates use a passive listener and one queued animation
+frame; resize and history restoration refresh visibility. The control is hidden
+without JavaScript, during modal dialogs/cookie notices and in print. Its desktop
+chevron gains a text label below 992px; footer spacing keeps final links clear.
+It uses existing assets with no added request, dependency or server-side work.
+
 Object details have a compact Copy citation button after the right-column
 metadata, with regular-weight 16px text, the standard copy icon and the FAQ's
 attribution text. A fresh native numeric object route is resolved against the

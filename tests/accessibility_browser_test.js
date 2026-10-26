@@ -117,7 +117,7 @@ let browser;
     const reports = [];
     for (const width of [1280, 320]) {
         await page.setViewportSize({width, height:900});
-        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'featured', 'notifications', 'collection-staff', 'sort-results', 'object-return', 'object-return-only', ...Object.keys(authorityNavigationFixtures), ...Object.keys(objectCitations)]) {
+        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'featured', 'notifications', 'collection-staff', 'sort-results', 'object-return', 'object-return-only', 'back-to-top', ...Object.keys(authorityNavigationFixtures), ...Object.keys(objectCitations)]) {
             await page.goto(origin + '/' + name);
             if (name === 'gallery') { await page.locator('.galleryDetailNext').waitFor(); }
             await page.evaluate(async () => {
@@ -220,6 +220,69 @@ let browser;
             reports.push(`${name} ${width}px: axe, reflow, enlarged text and spacing passed`);
         }
     }
+    // Exercise the shared return control with real scrolling and native history.
+    for (const width of [1280,320]) {
+        for (const motion of ['reduce','no-preference']) {
+            await page.setViewportSize({width,height:900});
+            await page.emulateMedia({reducedMotion:motion});
+            const url = origin + '/back-to-top?synthetic=1&width=' + width + '&motion=' + motion + '#retained-context';
+            await page.goto(url);
+            const link = page.getByRole('link', {name:'Back to top',exact:true,includeHidden:true});
+            const scroll = async top => page.evaluate(async top => {
+                window.scrollTo({top,behavior:'instant'});
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            }, top);
+            await scroll(0);
+            assert(await link.isHidden(), 'Back to top must stay hidden and outside the Tab order at the page top.');
+            await scroll(900);
+            assert(await link.isHidden(), 'The first viewport must not show Back to top.');
+            await scroll(920);
+            assert(await link.isVisible(), 'Back to top must appear after the first viewport.');
+            const box = await link.boundingBox();
+            assert(box.width >= 44 && box.height >= 44 && Math.abs(width - box.x - box.width - 20) < 1 && Math.abs(900 - box.y - box.height - 20) < 1, 'The control needs a usable target at the viewport bottom right.');
+            assert.equal(await link.locator('.tadl-back-to-top-label').isVisible(), width < 992, 'Small screens must show the text label beside the chevron.');
+            await page.evaluate(axeSource);
+            const result = await page.evaluate(() => axe.run(document, {runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}}));
+            assert.deepEqual(result.violations, [], 'The visible Back to top control must pass accessibility checks.');
+            await page.setViewportSize({width,height:1000});
+            await page.waitForFunction(() => document.querySelector('[data-tadl-back-to-top]').hidden);
+            await page.setViewportSize({width,height:900});
+            await page.waitForFunction(() => !document.querySelector('[data-tadl-back-to-top]').hidden);
+            if (motion === 'reduce') {
+                await page.goto(origin + '/contact');
+                await page.goBack();
+                await page.waitForFunction(() => scrollY > innerHeight && !document.querySelector('[data-tadl-back-to-top]').hidden);
+            }
+            await page.evaluate(() => {
+                const scroll = window.scrollTo.bind(window);
+                window.backToTopScrolls = [];
+                window.scrollTo = (...args) => { if (typeof args[0] === 'object') window.backToTopScrolls.push(args[0]); scroll(...args); };
+            });
+            await link.focus();
+            if (artifacts) { await page.screenshot({path:path.join(artifacts, `back-to-top-${width}-${motion}.png`)}); }
+            await page.keyboard.press('Enter');
+            await page.waitForFunction(() => scrollY === 0 && document.querySelector('[data-tadl-back-to-top]').hidden);
+            assert.equal(await page.locator(':focus').getAttribute('id'), 'tadl-page-top', 'Activation must move keyboard focus to the header before hiding the trigger.');
+            assert.equal(page.url(), url, 'Returning to the top must preserve the current URL and result context.');
+            assert.deepEqual(await page.evaluate(() => window.backToTopScrolls), [{top:0,behavior:motion === 'reduce' ? 'auto' : 'smooth'}], 'Reduced-motion users must return without animated scrolling.');
+            await scroll(920);
+            await link.click();
+            await page.waitForFunction(() => scrollY === 0 && document.querySelector('[data-tadl-back-to-top]').hidden);
+            await scroll(100000);
+            const clearFooter = await page.locator('.tadl-footer-bottom').evaluate(node => node.getBoundingClientRect().bottom <= document.querySelector('[data-tadl-back-to-top]').getBoundingClientRect().top + parseFloat(getComputedStyle(node).paddingBottom));
+            assert(clearFooter, 'Footer content must have room above the floating control.');
+            await page.evaluate(() => {
+                const notice = document.createElement('div'); notice.id = 'cookieNotice'; document.body.append(notice);
+            });
+            assert(await link.isHidden(), 'The return control must not cover a cookie notice.');
+            await page.locator('#cookieNotice').evaluate(node => node.remove());
+            await page.emulateMedia({media:'print'});
+            assert(await link.isHidden(), 'Printed pages must omit the floating control.');
+            await page.emulateMedia({media:'screen'});
+        }
+    }
+    await page.emulateMedia({reducedMotion:'reduce'});
+    reports.push('Back to top: viewport threshold, resize/history restoration, bottom-right layout, keyboard/pointer activation, focus, motion preferences, URL preservation and print/cookie behavior passed.');
     // Stub the browser API so these tests cannot alter the user's system clipboard.
     const citationContext = await browser.newContext({reducedMotion:'reduce'});
     await citationContext.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
@@ -328,6 +391,7 @@ let browser;
         const plainPage = await plainContext.newPage();
         await plainPage.goto(origin + '/object-citation');
         assert(await plainPage.locator('[data-tadl-citation]').isHidden(), 'Without JavaScript the clipboard action must stay hidden rather than exposing a broken button.');
+        assert(await plainPage.locator('[data-tadl-back-to-top]').isHidden(), 'Without JavaScript the scroll-dependent control must stay hidden.');
         await plainPage.goto(origin + '/contact');
         const plainMenu = plainPage.locator('.tadl-media-preference-menu:visible');
         await plainMenu.locator('summary').click();

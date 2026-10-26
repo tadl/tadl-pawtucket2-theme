@@ -25,6 +25,39 @@
     });
 })(jQuery);
 
+/* Offer a return to the header only after the first screenful of the page. */
+(function () {
+    'use strict';
+    function initializeBackToTop() {
+        var link = document.querySelector('[data-tadl-back-to-top]');
+        if (!link) { return; }
+        var top = document.getElementById('tadl-page-top');
+        if (!top) { return; }
+        var pending = false;
+        function updateVisibility() {
+            var hidden = window.scrollY <= window.innerHeight;
+            if (link.hidden !== hidden) { link.hidden = hidden; }
+        }
+        function scheduleUpdate() {
+            if (pending) { return; }
+            pending = true;
+            window.requestAnimationFrame(function () { pending = false; updateVisibility(); });
+        }
+        window.addEventListener('scroll', scheduleUpdate, {passive:true});
+        window.addEventListener('resize', scheduleUpdate);
+        window.addEventListener('pageshow', scheduleUpdate);
+        link.addEventListener('click', function (event) {
+            event.preventDefault();
+            // Move focus before the scrolled-up page hides its triggering link.
+            top.focus({preventScroll:true});
+            window.scrollTo({top:0, behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+        });
+        updateVisibility();
+    }
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initializeBackToTop); }
+    else { initializeBackToTop(); }
+})();
+
 /* Copy a clean object permalink without carrying the visitor's result-set state. */
 (function () {
     'use strict';
