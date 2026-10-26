@@ -146,7 +146,8 @@ foreach ([[false, 0], [false, 1], [true, 1], [true, 255], [true, 99], [true, 0]]
 	checkUserFeature($citation->item(0)->hasAttribute('hidden') && $citation->item(0)->getAttribute('data-citation-path') === '/Detail/objects/42', 'Citation must start hidden without JavaScript and target the displayed object without navigation state.');
 	checkUserFeature($citation->item(0)->getAttribute('data-citation-credit') === 'Image courtesy of Traverse Area District Library Local History Collection', 'Citation must use the FAQ attribution exactly.');
 	checkUserFeature($xpath->query('//*[@data-tadl-citation]//button[@type="button" and @data-tadl-copy-citation]//*[contains(@class,"fa-copy") and @aria-hidden="true"]')->length === 1, 'Copy citation must use a native button and decorative standard copy icon.');
-	checkUserFeature($xpath->query('//*[@data-tadl-citation]//*[@data-tadl-citation-status and @role="status"]')->length === 1, 'Copy feedback must be announced without moving focus.');
+	checkUserFeature($citation->item(0)->getAttribute('data-citation-button-copied') === 'Copied!' && $xpath->query('//*[@data-tadl-citation-label]')->item(0)->textContent === 'Copy citation', 'Citation must provide translated action and success button labels.');
+	checkUserFeature($xpath->query('//*[@data-tadl-citation]//*[@data-tadl-citation-status and @role="status" and contains(@class,"sr-only")]')->length === 1, 'Copy success must have a visually hidden live status without moving focus.');
 	checkUserFeature($xpath->query('//*[@data-tadl-citation]//textarea[@data-tadl-citation-text and @readonly and @hidden and @aria-label="Citation"]')->length === 1, 'Unavailable clipboard fallback must have a labelled, initially hidden readonly text field.');
 	if ($staff) {
 		$collection_document = new DOMDocument(); $collection_document->loadHTML($collection_link);

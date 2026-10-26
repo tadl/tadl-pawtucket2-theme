@@ -247,19 +247,28 @@ let browser;
             for (const mode of ['success','rejected','unavailable']) {
                 await citationPage.goto(origin + '/' + name + '?clipboard=' + mode + '&key=synthetic-result&s=18&per_page=72#metadata');
                 const citation = citationPage.locator('[data-tadl-citation]');
-                const copy = citation.getByRole('button', {name:'Copy citation',exact:true});
+                const copy = citation.locator('[data-tadl-copy-citation]');
                 const text = citation.locator('[data-tadl-citation-text]');
                 const status = citation.getByRole('status');
                 assert(await citation.isVisible() && await text.isHidden(), 'Copy citation must appear after enhancement, with its manual fallback initially hidden.');
+                assert.equal(await copy.getAttribute('title'), 'Copy citation for this object');
+                assert.equal((await copy.innerText()).trim(), 'Copy citation');
                 await copy.focus(); await citationPage.keyboard.press('Enter');
                 await citationPage.waitForFunction(() => document.querySelector('[data-tadl-citation-status]').textContent.length > 0);
                 assert.equal(await text.inputValue(), expected, 'Citation must contain only the FAQ credit and absolute object URL, excluding current query, paging and fragment state.');
                 assert.deepEqual(await citationPage.evaluate(() => window.citationWrites), mode === 'unavailable' ? [] : [expected], 'Clipboard must receive exactly one plain text citation when available.');
                 if (mode === 'success') {
+                    assert.equal((await copy.innerText()).trim(), 'Copied!', 'Success must change the button label instead of displaying a neighboring message.');
                     assert.equal(await status.textContent(), 'Citation copied.');
+                    assert(await status.evaluate(node => node.classList.contains('sr-only') && getComputedStyle(node).clip !== 'auto'), 'Success must remain available to screen readers without a visible adjacent message.');
                     assert(await text.isHidden() && await copy.evaluate(node => node === document.activeElement), 'Successful copying must retain keyboard focus and keep the fallback hidden.');
+                    await citationPage.keyboard.press('Enter');
+                    await citationPage.waitForFunction(() => window.citationWrites.length === 2 && document.querySelector('[data-tadl-citation-label]').textContent === 'Copied!');
+                    assert.deepEqual(await citationPage.evaluate(() => window.citationWrites), [expected,expected], 'The success button must remain usable for copying again.');
                 } else {
+                    assert.equal((await copy.innerText()).trim(), 'Copy citation', 'Clipboard failure must not claim the citation was copied.');
                     assert.equal(await status.textContent(), 'Copy the selected citation.');
+                    assert(await status.evaluate(node => !node.classList.contains('sr-only')), 'Manual-copy instructions must remain visible when clipboard access fails.');
                     assert(await text.isVisible(), 'Unavailable or rejected clipboard access must reveal the manual-copy text.');
                     assert.deepEqual(await text.evaluate(node => ({readonly:node.readOnly, focused:node === document.activeElement, selection:node.value.slice(node.selectionStart,node.selectionEnd)})),
                         {readonly:true,focused:true,selection:expected}, 'Fallback must focus and select the complete readonly citation for keyboard copying.');

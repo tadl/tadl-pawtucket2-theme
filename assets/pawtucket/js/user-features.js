@@ -37,21 +37,27 @@
             url.search = ''; url.hash = '';
             var citation = widget.dataset.citationCredit + ', ' + url.href;
             var button = widget.querySelector('[data-tadl-copy-citation]');
+            var label = button.querySelector('[data-tadl-citation-label]');
+            var copyLabel = label.textContent;
             var status = widget.querySelector('[data-tadl-citation-status]');
             var text = widget.querySelector('[data-tadl-citation-text]');
             text.value = citation;
             function manualCopy() {
+                status.classList.remove('sr-only');
                 status.textContent = widget.dataset.citationFallback;
                 text.hidden = false;
                 text.focus();
                 text.select();
             }
             button.addEventListener('click', async function () {
+                label.textContent = copyLabel;
+                status.classList.add('sr-only');
                 status.textContent = '';
                 try {
                     if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') { manualCopy(); return; }
                     await navigator.clipboard.writeText(citation);
                     text.hidden = true;
+                    label.textContent = widget.dataset.citationButtonCopied;
                     status.textContent = widget.dataset.citationCopied;
                 } catch (error) { manualCopy(); }
             });

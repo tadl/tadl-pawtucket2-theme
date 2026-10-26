@@ -6,11 +6,13 @@ Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 ## Checkpoint and product direction
 
 Object details have a compact Copy citation button after the right-column
-metadata, using the standard copy icon and the FAQ's attribution text. A fresh
-native numeric object route is resolved against the browser's current origin,
-preserving subdirectory/index.php installations without result-set, query or
-fragment state. Clipboard success is announced; unavailable/denied clipboard
-access reveals selected readonly text for manual copying. Controls stay hidden
+metadata, with regular-weight 16px text, the standard copy icon and the FAQ's
+attribution text. A fresh native numeric object route is resolved against the
+browser's current origin, preserving subdirectory/index.php installations
+without result-set, query or
+fragment state. Success changes the button label to Copied! and announces it
+through a visually hidden status; unavailable/denied clipboard access reveals
+selected readonly text for manual copying. Controls stay hidden
 without JavaScript. This uses the existing user-features asset and adds no
 request, dependency, permission lookup or database write.
 
