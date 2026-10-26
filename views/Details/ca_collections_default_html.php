@@ -111,14 +111,16 @@
 			print tadlDetailField($this->request, $t_item, 'Related places', '<unit relativeTo="ca_places" delimiter="<br/>"><l>^ca_places.preferred_labels.name</l><ifdef code="relationship_typename"> (^relationship_typename)</ifdef></unit>');
 		$collection_facts = trim(ob_get_clean());
 	}
+	$collection_ancestry = tadlCollectionContentsAncestry($this->request, $t_item);
+	$parent_links = tadlCollectionParentLinks($this->request, $collection_ancestry, $t_item->getPrimaryKey());
 ?>
 <div class="row tadl-collection-detail">
 	<div class='col-xs-12'>
 		<div class="container">
 			<header class="tadl-record-header tadl-collection-record-header">
 				<div class="tadl-collection-heading tadl-record-heading">
-					<H1>{{{^ca_collections.preferred_labels.name}}}</H1>
-					<H2>{{{^ca_collections.type_id}}}{{{<ifdef code="ca_collections.idno">, ^ca_collections.idno</ifdef>}}}</H2>
+					<H1>{{{^ca_collections.preferred_labels.name}}} <span class="tadl-collection-identity">{{{^ca_collections.type_id}}}{{{<ifdef code="ca_collections.idno">, ^ca_collections.idno</ifdef>}}}</span></H1>
+					<?php if ($parent_links !== '') { print '<div class="unit">'.htmlspecialchars(_t('Part of:'), ENT_QUOTES, 'UTF-8').' '.$parent_links.'</div>'; } ?>
 				</div>
 				<div class="tadl-collection-header-actions">
 					<?= tadlDetailNavigation($this, 'index', _t('Browse collections'), 'Collections', 'collections'); ?>
@@ -127,6 +129,7 @@
 					<?php endif; ?>
 				</div>
 			</header>
+			<?php if ($collection_fields || $collection_facts): ?><h2 class="sr-only"><?= htmlspecialchars(_t('Collection details'), ENT_QUOTES, 'UTF-8'); ?></h2><?php endif; ?>
 			<div class="tadl-collection-overview<?= $collection_show_metadata ? '' : ' tadl-collection-overview--compact'; ?>">
 				<div class="tadl-collection-heading">
 <?php
@@ -137,9 +140,6 @@
 						$details_url = caNavUrl($this->request, '', 'Detail', 'collections/'.(int)$t_item->getPrimaryKey(), $details_params);
 						print '<p class="tadl-collection-details-link"><a href="'.htmlspecialchars($details_url, ENT_QUOTES, 'UTF-8').'">'.htmlspecialchars(_t('About this collection'), ENT_QUOTES, 'UTF-8').'</a></p>';
 					}
-					$collection_ancestry = tadlCollectionContentsAncestry($this->request, $t_item);
-					$parent_links = tadlCollectionParentLinks($this->request, $collection_ancestry, $t_item->getPrimaryKey());
-					if ($parent_links !== '') { print '<div class="unit">'.htmlspecialchars(_t('Part of:'), ENT_QUOTES, 'UTF-8').' '.$parent_links.'</div>'; }
 					if ($vn_pdf_enabled && $collection_ancestry) {
 						$finding_aid_root = reset($collection_ancestry);
 						$finding_aid_id = (int)$finding_aid_root->getPrimaryKey();

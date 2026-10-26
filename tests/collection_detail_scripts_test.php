@@ -205,6 +205,10 @@ $public_folder_html = (new DetailScriptView(0, [], [], 73, 'folder'))->render('c
 $parent_document = new DOMDocument(); $parent_document->loadHTML($public_folder_html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $parent_xpath = new DOMXPath($parent_document);
 $parent_line = $parent_xpath->query('//div[@class="unit"][starts-with(normalize-space(.), "Part of:")]')->item(0);
 checkDetailScripts($parent_line && $parent_line->textContent === 'Part of: Synthetic root & <archive> > Synthetic box', 'A folder must display genuine ancestors in root-to-parent order with safely escaped names.');
+checkDetailScripts($parent_xpath->query('//header[contains(@class,"tadl-collection-record-header")]//h1/span[@class="tadl-collection-identity"]')->length === 1
+	&& $parent_xpath->query('//header[contains(@class,"tadl-collection-record-header")]//h2')->length === 0, 'Collection type and identifier must follow the name inside the main heading, without a separate subtitle heading.');
+checkDetailScripts($parent_xpath->query('//header[contains(@class,"tadl-collection-record-header")]//h1/following-sibling::div[starts-with(normalize-space(.), "Part of:")]')->length === 1
+	&& $parent_xpath->query('//div[contains(@class,"tadl-collection-overview")]//div[starts-with(normalize-space(.), "Part of:")]')->length === 0, 'The parent collection must appear beneath the name in the record header, exactly once.');
 checkDetailScripts($parent_xpath->query('.//a', $parent_line)->length === 2 && $parent_xpath->query('.//a[@href="/synthetic/Detail/collections/73"]|.//archive', $parent_line)->length === 0 && !str_contains($public_folder_html, 'PRIVATE grouping') && !str_contains($public_folder_html, 'Ancestor above private grouping'), 'Part of must not link the current record, expose administrative groups or cross a hidden ancestor.');
 checkDetailScripts(str_contains($public_folder_html, '/CollectionFindingAid/View/collection_id/42'), 'Subfolders beneath a public root must retain its full finding aid despite hidden administrative ancestors.');
 $GLOBALS['detailScriptDeniedBundles'] = ['preferred_labels'];
@@ -246,6 +250,7 @@ checkDetailScripts(strpos($html, 'tadl-collection-metadata') < strpos($html, 'br
 $document = new DOMDocument();
 $document->loadHTML('<meta charset="UTF-8">'.$html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
 $xpath = new DOMXPath($document);
+checkDetailScripts($xpath->query('//h2[@class="sr-only" and normalize-space(.)="Collection details"]/following-sibling::div[contains(@class,"tadl-collection-overview")]')->length === 1, 'Descriptive field headings must retain a collection-details section heading for screen readers after the former subtitle moves inline.');
 $column_labels = static fn($class) => array_map(static fn($node) => $node->textContent, iterator_to_array($xpath->query('//div[@class="'.$class.'"]//div[@class="unit"]/h3')));
 checkDetailScripts($column_labels('tadl-collection-fields') === ['Description', 'Source of description', 'Scope and content'], 'Center column must group the narrative fields together.');
 checkDetailScripts($column_labels('tadl-collection-facts') === ['Creators', 'Dates', 'Extent', 'Language', 'Vocabulary terms', 'Library of Congress subject headings', 'Rights', 'Copyright statement', 'Related places'], 'Right column must group collection facts and relationships without losing fields.');
@@ -306,8 +311,9 @@ foreach ([42 => 'collection', 73 => 'folder'] as $id => $type) {
 		}
 		if ($id === 42 && ($staff || (!$logged_in && $userclass === 1))) {
 			$header = $xpath->query('//header[contains(@class,"tadl-collection-record-header")]')->item(0);
-			$header->getElementsByTagName('h1')->item(0)->nodeValue = 'Synthetic Community History Collection: Oral Histories, Photographs, Diaries, Family Papers and Records of Regional Organizations';
-			$header->getElementsByTagName('h2')->item(0)->nodeValue = 'COLLECTION, SYNTHETIC.42';
+			$heading = $header->getElementsByTagName('h1')->item(0);
+			$heading->replaceChild($document->createTextNode('Synthetic Community History Collection: Oral Histories, Photographs, Diaries, Family Papers and Records of Regional Organizations '), $heading->firstChild);
+			$xpath->query('.//span[@class="tadl-collection-identity"]', $header)->item(0)->nodeValue = 'COLLECTION, SYNTHETIC.42';
 			$staff_shortcut_fixtures[$staff ? 'collection-staff' : 'collection-public'] = $document->saveHTML($header);
 		}
 	}

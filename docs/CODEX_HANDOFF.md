@@ -5,6 +5,15 @@ Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
 
+Collection detail now gives its desktop links column about one fifth of the
+overview width; most reclaimed space goes to the narrative, with facts beside it.
+The existing 991px overview and 600px metadata stacking breakpoints remain.
+Type and identifier follow the name in the H1 as smaller text, with checked
+`Part of` ancestor links directly beneath the title in the record header.
+The overview keeps finding-aid and flat/hierarchy links. A screen-reader section
+heading preserves the hierarchy of metadata headings; long names wrap, and empty,
+single-column and later-page layouts retain their existing behavior.
+
 Large finding aids now batch hierarchy, intrinsic fields, metadata templates and
 creator relationships rather than loading a model and expanding every configured
 field for each unit. Fresh, scoped `ca_attributes` presence skips absent fields;

@@ -1271,9 +1271,13 @@ h6 {
 
 .tadl-collection-overview {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 4fr);
     align-items: start;
     gap: 32px;
+}
+
+.tadl-collection-overview > .tadl-collection-heading {
+    overflow-wrap: anywhere;
 }
 
 .tadl-collection-overview > :only-child {
@@ -1286,13 +1290,20 @@ h6 {
     color: var(--tadl-primary-dark);
 }
 
+.tadl-collection-identity {
+    color: #454545;
+    font-size: 18px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
 .tadl-collection-view-switch {
     margin-bottom: 20px;
 }
 
 .tadl-collection-metadata {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     gap: 24px;
     overflow-wrap: anywhere;
 }
