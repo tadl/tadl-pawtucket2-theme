@@ -30,6 +30,10 @@ for (const [name, navigation] of Object.entries(JSON.parse(navigationFixtures.st
 const sortFixtures = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'result_context_heading_test.php'), '--sort-fixtures'], {encoding:'utf8'});
 assert.equal(sortFixtures.status, 0, sortFixtures.stderr || sortFixtures.stdout);
 Object.assign(fixtures, JSON.parse(sortFixtures.stdout));
+const citationFixtures = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'user_features_test.php'), '--citation-fixtures'], {encoding:'utf8'});
+assert.equal(citationFixtures.status, 0, citationFixtures.stderr || citationFixtures.stdout);
+const objectCitations = JSON.parse(citationFixtures.stdout);
+Object.assign(fixtures, objectCitations);
 const documentTextFixture = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'document_text_test.php'), '--lazy-fixtures'], {encoding:'utf8'});
 assert.equal(documentTextFixture.status, 0, documentTextFixture.stderr || documentTextFixture.stdout);
 const documentText = JSON.parse(documentTextFixture.stdout);
@@ -113,7 +117,7 @@ let browser;
     const reports = [];
     for (const width of [1280, 320]) {
         await page.setViewportSize({width, height:900});
-        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'featured', 'notifications', 'collection-staff', 'sort-results', 'object-return', 'object-return-only', ...Object.keys(authorityNavigationFixtures)]) {
+        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'featured', 'notifications', 'collection-staff', 'sort-results', 'object-return', 'object-return-only', ...Object.keys(authorityNavigationFixtures), ...Object.keys(objectCitations)]) {
             await page.goto(origin + '/' + name);
             if (name === 'gallery') { await page.locator('.galleryDetailNext').waitFor(); }
             await page.evaluate(async () => {
@@ -216,6 +220,63 @@ let browser;
             reports.push(`${name} ${width}px: axe, reflow, enlarged text and spacing passed`);
         }
     }
+    // Stub the browser API so these tests cannot alter the user's system clipboard.
+    const citationContext = await browser.newContext({reducedMotion:'reduce'});
+    await citationContext.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
+    await citationContext.addInitScript(() => {
+        const parameters = new URL(location.href).searchParams;
+        const mode = parameters.get('clipboard');
+        if (parameters.has('citation_path')) {
+            // Registered before application listeners so initialization sees the malformed input.
+            document.addEventListener('DOMContentLoaded', () => document.querySelector('[data-tadl-citation]').setAttribute('data-citation-path', parameters.get('citation_path')));
+        }
+        window.citationWrites = [];
+        Object.defineProperty(navigator, 'clipboard', {configurable:true, value:mode === 'unavailable' ? undefined : {
+            writeText(text) {
+                window.citationWrites.push(text);
+                return mode === 'rejected' ? Promise.reject(new Error('Synthetic clipboard denial')) : Promise.resolve();
+            }
+        }});
+    });
+    const citationPage = await citationContext.newPage();
+    citationPage.on('pageerror', error => errors.push(error.message));
+    for (const width of [1280,320]) {
+        await citationPage.setViewportSize({width,height:900});
+        for (const [name, detailPath] of [['object-citation','/Detail/objects/42'], ['object-citation-subdirectory','/catalogue/index.php/Detail/objects/73']]) {
+            const expected = 'Image courtesy of Traverse Area District Library Local History Collection, ' + origin + detailPath;
+            for (const mode of ['success','rejected','unavailable']) {
+                await citationPage.goto(origin + '/' + name + '?clipboard=' + mode + '&key=synthetic-result&s=18&per_page=72#metadata');
+                const citation = citationPage.locator('[data-tadl-citation]');
+                const copy = citation.getByRole('button', {name:'Copy citation',exact:true});
+                const text = citation.locator('[data-tadl-citation-text]');
+                const status = citation.getByRole('status');
+                assert(await citation.isVisible() && await text.isHidden(), 'Copy citation must appear after enhancement, with its manual fallback initially hidden.');
+                await copy.focus(); await citationPage.keyboard.press('Enter');
+                await citationPage.waitForFunction(() => document.querySelector('[data-tadl-citation-status]').textContent.length > 0);
+                assert.equal(await text.inputValue(), expected, 'Citation must contain only the FAQ credit and absolute object URL, excluding current query, paging and fragment state.');
+                assert.deepEqual(await citationPage.evaluate(() => window.citationWrites), mode === 'unavailable' ? [] : [expected], 'Clipboard must receive exactly one plain text citation when available.');
+                if (mode === 'success') {
+                    assert.equal(await status.textContent(), 'Citation copied.');
+                    assert(await text.isHidden() && await copy.evaluate(node => node === document.activeElement), 'Successful copying must retain keyboard focus and keep the fallback hidden.');
+                } else {
+                    assert.equal(await status.textContent(), 'Copy the selected citation.');
+                    assert(await text.isVisible(), 'Unavailable or rejected clipboard access must reveal the manual-copy text.');
+                    assert.deepEqual(await text.evaluate(node => ({readonly:node.readOnly, focused:node === document.activeElement, selection:node.value.slice(node.selectionStart,node.selectionEnd)})),
+                        {readonly:true,focused:true,selection:expected}, 'Fallback must focus and select the complete readonly citation for keyboard copying.');
+                }
+                assert(await citationPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${mode}: citation must not overflow at ${width}px.`);
+                if (artifacts && mode !== 'rejected') { await citationPage.screenshot({path:path.join(artifacts, `${name}-${mode}-${width}.png`),fullPage:true}); }
+            }
+        }
+    }
+    // A path supplied by compromised markup must never become a copied external link.
+    for (const unsafePath of ['https://untrusted.example.invalid/Detail/objects/42', '//untrusted.example.invalid/Detail/objects/42', 'javascript:alert(1)']) {
+        await citationPage.goto(origin + '/object-citation?citation_path=' + encodeURIComponent(unsafePath));
+        assert(await citationPage.locator('[data-tadl-citation]').isHidden(), 'Invalid or cross-origin citation paths must leave the action hidden.');
+        assert.deepEqual(await citationPage.evaluate(() => window.citationWrites), [], 'Invalid or cross-origin citation paths must not reach the clipboard.');
+    }
+    await citationContext.close();
+    reports.push('Copy citation: exact clean object URLs, subdirectory/script paths, keyboard feedback, rejected/unavailable clipboard fallback and phone reflow passed');
     for (const width of [320,1280]) {
         await page.setViewportSize({width,height:1000});
         const mediaSizes = [];
@@ -256,6 +317,8 @@ let browser;
         await plainContext.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
         await plainContext.route('**/MediaPreference/Set', route => route.fulfill({contentType:'text/html',body:'Synthetic preference saved'}));
         const plainPage = await plainContext.newPage();
+        await plainPage.goto(origin + '/object-citation');
+        assert(await plainPage.locator('[data-tadl-citation]').isHidden(), 'Without JavaScript the clipboard action must stay hidden rather than exposing a broken button.');
         await plainPage.goto(origin + '/contact');
         const plainMenu = plainPage.locator('.tadl-media-preference-menu:visible');
         await plainMenu.locator('summary').click();

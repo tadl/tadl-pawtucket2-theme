@@ -14,7 +14,7 @@ function checkUserFeature($condition, $message) {
 }
 function _t($text, ...$values) { foreach ($values as $i => $value) { $text = str_replace('%'.($i + 1), (string)$value, $text); } return $text; }
 function caDisplayLightbox($request) { return $request->isLoggedIn() && !$request->config->get('disable_lightbox'); }
-function caNavUrl($request, $module, $controller, $action, $params = []) { return '/'.$controller.'/'.$action.($params ? '?'.http_build_query($params) : ''); }
+function caNavUrl($request, $module, $controller, $action, $params = []) { return $request->urlPrefix.'/'.$controller.'/'.$action.($params ? '?'.http_build_query($params) : ''); }
 function caNavLink($request, $label, $class, $module, $controller, $action, $params = [], $attributes = []) {
 	$attributeText = '';
 	foreach ($attributes as $key => $value) { $attributeText .= ' '.htmlspecialchars($key).'="'.htmlspecialchars($value, ENT_QUOTES, 'UTF-8').'"'; }
@@ -47,6 +47,7 @@ class FeatureUser {
 }
 class FeatureRequest {
 	function getParameter($key, $type) { return null; }
+	public string $urlPrefix = '';
 	public FeatureConfig $config;
 	public FeatureUser $user;
 	function __construct(public bool $loggedIn = false, public bool $ajax = false, int $userclass = 1) {
@@ -96,6 +97,19 @@ class FeatureView {
 	function render($file) { ob_start(); try { include dirname(__DIR__).'/views/'.$file; return ob_get_clean(); } catch (Throwable $error) { ob_end_clean(); throw $error; } }
 }
 require dirname(__DIR__).'/helpers/user_features.php';
+if (($argv[1] ?? '') === '--citation-fixtures') {
+	$fixtures = [];
+	foreach (['object-citation' => ['', 42], 'object-citation-subdirectory' => ['/catalogue/index.php', 73]] as $name => [$prefix, $id]) {
+		$request = new FeatureRequest(); $request->urlPrefix = $prefix;
+		// Use the actual detail view; replace only native template expansion, not its controls.
+		$html = (new FeatureView($request, ['item' => new FeatureDetailObject($id)]))->render('Details/ca_objects_default_html.php');
+		$html = preg_replace('/\{\{\{representationViewer\}\}\}/', '<img src="/synthetic.svg" alt="Synthetic catalogue photograph" width="600" height="400" style="max-width:100%;height:auto">', $html);
+		$html = preg_replace('/<H1>.*?<\/H1>/s', '<h1><span class="tadl-object-title">Synthetic object '.$id.'</span></h1>', $html);
+		$html = preg_replace('/<H2>.*?<\/H2>/s', '<h2>Still image</h2>', $html);
+		$fixtures[$name] = preg_replace('/\{\{\{.*?\}\}\}/s', '', $html);
+	}
+	print json_encode($fixtures, JSON_THROW_ON_ERROR); exit;
+}
 $request = new FeatureRequest();
 checkUserFeature(tadlUserMenu($request) === '', 'Anonymous visitors must have no account/login controls.');
 $request->loggedIn = true;
@@ -127,6 +141,13 @@ foreach ([[false, 0], [false, 1], [true, 1], [true, 255], [true, 99], [true, 0]]
 	checkUserFeature($links->length === ($staff ? 1 : 0), 'Object metadata column must render the editor action only for staff.');
 	checkUserFeature($staff || !str_contains($html, 'collections.tadl.org'), 'Nonstaff HTML must omit the editor URL entirely.');
 	checkUserFeature($staff || !str_contains($html, 'tadl-object-staff-actions'), 'Nonstaff HTML must omit the staff action wrapper.');
+	$citation = $xpath->query('//div[contains(@class,"tadl-object-info")]/*[last()][@data-tadl-citation]');
+	checkUserFeature($citation->length === 1, 'Citation must sit at the bottom of the object metadata column for every account class and objects without media or readable bundles.');
+	checkUserFeature($citation->item(0)->hasAttribute('hidden') && $citation->item(0)->getAttribute('data-citation-path') === '/Detail/objects/42', 'Citation must start hidden without JavaScript and target the displayed object without navigation state.');
+	checkUserFeature($citation->item(0)->getAttribute('data-citation-credit') === 'Image courtesy of Traverse Area District Library Local History Collection', 'Citation must use the FAQ attribution exactly.');
+	checkUserFeature($xpath->query('//*[@data-tadl-citation]//button[@type="button" and @data-tadl-copy-citation]//*[contains(@class,"fa-copy") and @aria-hidden="true"]')->length === 1, 'Copy citation must use a native button and decorative standard copy icon.');
+	checkUserFeature($xpath->query('//*[@data-tadl-citation]//*[@data-tadl-citation-status and @role="status"]')->length === 1, 'Copy feedback must be announced without moving focus.');
+	checkUserFeature($xpath->query('//*[@data-tadl-citation]//textarea[@data-tadl-citation-text and @readonly and @hidden and @aria-label="Citation"]')->length === 1, 'Unavailable clipboard fallback must have a labelled, initially hidden readonly text field.');
 	if ($staff) {
 		$collection_document = new DOMDocument(); $collection_document->loadHTML($collection_link);
 		$collection_anchor = $collection_document->getElementsByTagName('a')->item(0);
@@ -138,6 +159,10 @@ foreach ([[false, 0], [false, 1], [true, 1], [true, 255], [true, 99], [true, 0]]
 		checkUserFeature(str_contains($anchor->textContent, 'View in Providence') && str_contains($anchor->textContent, '(opens in a new tab)'), 'Editor action must have a useful label and accessible new-tab hint.');
 	}
 }
+$prefixedRequest = new FeatureRequest(); $prefixedRequest->urlPrefix = '/catalogue/index.php';
+$prefixedRequest->config->values['site_host'] = 'https://untrusted.example.invalid';
+$prefixedCitation = (new FeatureView($prefixedRequest, ['item' => new FeatureDetailObject(73)]))->render('Details/ca_objects_default_html.php');
+checkUserFeature(str_contains($prefixedCitation, 'data-citation-path="/catalogue/index.php/Detail/objects/73"') && !str_contains($prefixedCitation, 'untrusted.example.invalid'), 'Citation must retain native subdirectory/script routing without importing configured or request hosts.');
 $objectNavigation = (new FeatureView(new FeatureRequest(), [
 	'item' => new FeatureDetailObject(),
 	'previousLink' => '<a href="/Detail/objects/41">Previous</a>',

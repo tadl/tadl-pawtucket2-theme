@@ -1435,6 +1435,22 @@ h6 {
     margin-bottom: 16px;
 }
 
+.tadl-object-citation {
+    margin-top: 20px;
+}
+
+.tadl-object-citation [hidden] {
+    display: none;
+}
+
+.tadl-citation-status {
+    margin-left: 8px;
+}
+
+.tadl-object-citation textarea {
+    margin-top: 8px;
+}
+
 .tadl-image-downloads {
     position: relative;
     width: max-content;

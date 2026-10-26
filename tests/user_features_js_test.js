@@ -9,6 +9,7 @@ function check(actual, expected) { checks++; assert.deepEqual(actual, expected);
 const events = {}, bootstrapEvents = {};
 const document = {
     activeElement: null,
+    querySelectorAll() { return []; }, // This panel fixture has no citation controls or open disclosures.
     querySelector(selector) { return selector === '#main' ? page : null; },
     addEventListener(name, callback) { events[name] = callback; },
     body: {children: []}

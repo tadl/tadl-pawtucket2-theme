@@ -148,7 +148,15 @@
 							{{{map}}}
 						</div>
 					</div><!-- end row -->
-						
+				<div class="tadl-object-citation" data-tadl-citation hidden
+					data-citation-path="<?= htmlspecialchars(caNavUrl($this->request, '', 'Detail', 'objects/'.(int)$t_object->getPrimaryKey()), ENT_QUOTES, 'UTF-8'); ?>"
+					data-citation-credit="<?= htmlspecialchars(_t('Image courtesy of Traverse Area District Library Local History Collection'), ENT_QUOTES, 'UTF-8'); ?>"
+					data-citation-copied="<?= htmlspecialchars(_t('Citation copied.'), ENT_QUOTES, 'UTF-8'); ?>"
+					data-citation-fallback="<?= htmlspecialchars(_t('Copy the selected citation.'), ENT_QUOTES, 'UTF-8'); ?>">
+					<button type="button" class="btn btn-default btn-sm" data-tadl-copy-citation title="<?= htmlspecialchars(_t('Copy citation for this object'), ENT_QUOTES, 'UTF-8'); ?>"><span class="fa fa-copy" aria-hidden="true"></span> <?= htmlspecialchars(_t('Copy citation'), ENT_QUOTES, 'UTF-8'); ?></button>
+					<span class="tadl-citation-status" data-tadl-citation-status role="status" aria-atomic="true"></span>
+					<textarea class="form-control" data-tadl-citation-text rows="4" readonly hidden aria-label="<?= htmlspecialchars(_t('Citation'), ENT_QUOTES, 'UTF-8'); ?>"></textarea>
+				</div>
 			</div><!-- end col -->
 		</div><!-- end row -->
 		<?= tadlObjectDocumentTextDisclosure($this->request, $t_object); ?>

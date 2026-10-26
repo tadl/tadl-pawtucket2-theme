@@ -5,6 +5,15 @@ Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
 
+Object details have a compact Copy citation button after the right-column
+metadata, using the standard copy icon and the FAQ's attribution text. A fresh
+native numeric object route is resolved against the browser's current origin,
+preserving subdirectory/index.php installations without result-set, query or
+fragment state. Clipboard success is announced; unavailable/denied clipboard
+access reveals selected readonly text for manual copying. Controls stay hidden
+without JavaScript. This uses the existing user-features asset and adds no
+request, dependency, permission lookup or database write.
+
 Collection detail now gives its desktop links column about one fifth of the
 overview width; most reclaimed space goes to the narrative, with facts beside it.
 The existing 991px overview and 600px metadata stacking breakpoints remain.

@@ -25,6 +25,43 @@
     });
 })(jQuery);
 
+/* Copy a clean object permalink without carrying the visitor's result-set state. */
+(function () {
+    'use strict';
+    function initializeCitations() {
+        document.querySelectorAll('[data-tadl-citation]').forEach(function (widget) {
+            var url;
+            try { url = new URL(widget.dataset.citationPath, window.location.origin); }
+            catch (error) { return; }
+            if (!/^https?:$/.test(url.protocol) || url.origin !== window.location.origin) { return; }
+            url.search = ''; url.hash = '';
+            var citation = widget.dataset.citationCredit + ', ' + url.href;
+            var button = widget.querySelector('[data-tadl-copy-citation]');
+            var status = widget.querySelector('[data-tadl-citation-status]');
+            var text = widget.querySelector('[data-tadl-citation-text]');
+            text.value = citation;
+            function manualCopy() {
+                status.textContent = widget.dataset.citationFallback;
+                text.hidden = false;
+                text.focus();
+                text.select();
+            }
+            button.addEventListener('click', async function () {
+                status.textContent = '';
+                try {
+                    if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') { manualCopy(); return; }
+                    await navigator.clipboard.writeText(citation);
+                    text.hidden = true;
+                    status.textContent = widget.dataset.citationCopied;
+                } catch (error) { manualCopy(); }
+            });
+            widget.hidden = false;
+        });
+    }
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initializeCitations); }
+    else { initializeCitations(); }
+})();
+
 /* Native sorting/media disclosures also work when JavaScript is off. */
 (function () {
     'use strict';
