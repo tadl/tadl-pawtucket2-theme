@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__.'/../../helpers/finding_aid.php');
 $aid = $this->getVar('finding_aid');
 $fields = $aid['fields'];
 $level = $fields['level']['value'] ?? '';
@@ -33,7 +34,7 @@ p { margin: 0 0 8pt; }
 <?php if ($fields) { ?>
 <h2>About this collection</h2>
 <?php foreach ($fields as $field) { ?>
-<div class="field"><span class="label"><?= $escape($field['label']); ?>:</span><br><?= nl2br($escape($field['value'])); ?></div>
+<div class="field"><span class="label"><?= $escape($field['label']); ?>:</span><br><?= tadlFindingAidFieldHTML($field); ?></div>
 <?php } } ?>
 <?php if (count($aid['collections']) > 1) { ?>
 <h2>Arrangement and contents</h2>
@@ -49,7 +50,7 @@ unset($node_fields['level']);
 <h3 class="collection-name"><?= $escape($node['title']); ?><?php if ($node_level !== '') { ?> <span class="collection-level">(<?= $escape($node_level); ?>)</span><?php } ?></h3><?php if ($node['identifier'] !== '') { ?><p class="note"><?= $escape($node['identifier']); ?></p><?php } ?>
 </div>
 <?php foreach ($node_fields as $field) { ?>
-<div class="field"><span class="label"><?= $escape($field['label']); ?>:</span><br><?= nl2br($escape($field['value'])); ?></div>
+<div class="field"><span class="label"><?= $escape($field['label']); ?>:</span><br><?= tadlFindingAidFieldHTML($field); ?></div>
 <?php } ?>
 </div>
 <?php } } ?>

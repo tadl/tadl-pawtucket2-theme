@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__.'/../../helpers/finding_aid.php');
 $aid = $this->getVar('finding_aid');
 $summary_fields = $aid['fields']; $root_level = $summary_fields['level']['value'] ?? ''; unset($summary_fields['level']);
 $escape = static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -6,7 +7,7 @@ $renderFields = static function ($fields) use ($escape) {
  unset($fields['level']);
  if (!$fields) { return; }
  print '<dl class="tadl-finding-aid-fields">';
- foreach ($fields as $field) { print '<dt>'.$escape($field['label']).'</dt><dd>'.nl2br($escape($field['value'])).'</dd>'; }
+ foreach ($fields as $field) { print '<dt>'.$escape($field['label']).'</dt><dd>'.tadlFindingAidFieldHTML($field).'</dd>'; }
  print '</dl>';
 };
 $children = [];

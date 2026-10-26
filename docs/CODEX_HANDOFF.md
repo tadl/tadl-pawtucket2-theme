@@ -5,6 +5,15 @@ Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
 
+Finding-aid fields preserve recorded bold and italic emphasis in PDF and HTML,
+including editor font-weight/font-style spans. A narrow DOM conversion emits only
+canonical strong/em markup; the render boundary also rejects noncanonical tags
+or attributes. Plain values remain available for metadata and labels. Existing
+paragraph-gap normalization remains. Formatting is captured from the same native
+field/batch reads, with no extra queries; plain fields avoid duplicate HTML payloads.
+Formatting-only changes invalidate PDF bytes, and the helper's source hash
+invalidates older stripped-format PDFs without a cache purge.
+
 Provenance is Providence-only. Pawtucket omits it from collection metadata at
 every level, object-page metadata-description fallbacks, and both text and PDF
 finding aids (including custodial-history aliases). Do not restore it as a public

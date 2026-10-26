@@ -25,6 +25,16 @@ ExternalCache::$fail = false; tadlFindingAidCachedPDF($data, 'renderer-1', $gene
 if ($count !== 5 || tadlFindingAidCachedPDF([], 'bad-renderer', static fn() => 'invalid') !== null) { throw new RuntimeException('Disabled caches and invalid artifacts must fail safely.'); }
 echo "Finding aid artifact reuse passed.\n";
 
+$plain_data = array_replace($data, ['fields' => ['description' => tadlFindingAidFieldText('Same text')]]);
+$bold_data = array_replace($data, ['fields' => ['description' => tadlFindingAidFieldText('<strong>Same text</strong>')]]);
+$before = $count;
+tadlFindingAidCachedPDF($plain_data, 'emphasis-renderer', $generate);
+tadlFindingAidCachedPDF($bold_data, 'emphasis-renderer', $generate);
+tadlFindingAidCachedPDF($bold_data, 'emphasis-renderer', $generate);
+if ($plain_data['fields']['description']['value'] !== $bold_data['fields']['description']['value'] || $count !== $before + 2) {
+ throw new RuntimeException('Formatting-only edits must invalidate cached PDF bytes while identical emphasis remains reusable.');
+}
+
 ExternalCache::$values = [];
 $first = tadlFindingAidCachedPDF($data, 'binary-renderer', $generate);
 $cached = tadlFindingAidCachedPDF($data, 'binary-renderer', static function () { throw new RuntimeException('Binary PDF was not cached.'); });

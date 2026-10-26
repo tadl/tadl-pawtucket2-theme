@@ -216,7 +216,10 @@ a11yCheck(str_contains($fixtures['header'], 'id="tadl-page-top" class="tadl-head
 $fixtures['back-to-top'] = '<h1>Synthetic long result set</h1>'.str_repeat('<p>Synthetic catalogue results. <a href="/synthetic/objects">Browse synthetic objects</a>.</p>', 100);
 $aidTitle = 'Synthetic "Archives" & Photograph Collection';
 $fixtures['finding-aid-text'] = (new A11yView([
-	'finding_aid' => ['title' => $aidTitle, 'identifier' => 'SYN.42', 'fields' => ['description' => ['label' => 'Description', 'value' => 'Synthetic public collection description.']], 'collections' => [42 => ['parent_id' => null]], 'generated' => 'Synthetic date'],
+	'finding_aid' => ['title' => $aidTitle, 'identifier' => 'SYN.42', 'fields' => [
+		'description' => ['label' => 'Description', 'value' => "Abstract\nSynthetic description.\nHistory\nSynthetic historical context.", 'html' => "<strong>Abstract</strong>\nSynthetic description.\n<strong>History</strong>\nSynthetic historical context."],
+		'scope' => ['label' => 'Scope and content', 'value' => "Advertisements\nSynthetic printed advertisements.\nEarly History\nSynthetic records.", 'html' => "<strong>Advertisements</strong>\nSynthetic printed advertisements.\n<strong>Early History</strong>\nSynthetic records."]
+	], 'collections' => [42 => ['parent_id' => null]], 'generated' => 'Synthetic date'],
 	'collection_url' => '/Detail/collections/42', 'download_url' => '/CollectionFindingAid/Download/collection_id/42'
 ]))->render('Details/finding_aid_html.php');
 MetaTagManager::setWindowTitle('Finding aid: '.$aidTitle);

@@ -188,13 +188,13 @@ batchNode('ca_collections', 9, 1); batchNode('ca_collections', 10, 9);
 batchNode('ca_collections', 11, 1, ['type_id' => 3]); batchNode('ca_collections', 12, 11);
 batchNode('ca_collections', 13, 1, ['source_id' => 3]); batchNode('ca_collections', 14, 13);
 $request->aclDenied['ca_collections'] = [9]; $request->deniedTypes['ca_collections'] = [3]; $request->deniedSources['ca_collections'] = [3];
-$GLOBALS['batchValues']['ca_collections'][1]['ca_collections.description'] = '<p>Synthetic root.</p>';
+$GLOBALS['batchValues']['ca_collections'][1]['ca_collections.description'] = '<p><strong>Synthetic root.</strong></p>';
 $GLOBALS['batchValues']['ca_collections'][2]['ca_collections.extent_text'] = 'PRIVATE inapplicable metadata';
 $GLOBALS['batchValues']['ca_collections'][2]['ca_collections.extent'] = 'Two boxes';
 $GLOBALS['batchValues']['ca_collections'][3]['ca_collections.description'] = 'PRIVATE wrong-type metadata';
 $GLOBALS['batchValues']['ca_collections'][3]['ca_collections.extent_text'] = '<p>&nbsp;</p>';
 $GLOBALS['batchValues']['ca_collections'][3]['ca_collections.extent'] = 'One folder';
-$GLOBALS['batchValues']['ca_collections'][4]['ca_collections.description'] = '<p>Folder description.</p><p>Two paragraphs.</p>';
+$GLOBALS['batchValues']['ca_collections'][4]['ca_collections.description'] = '<p><span style="font-weight:700">Folder description.</span></p><p>Two paragraphs.</p>';
 $GLOBALS['batchValues']['ca_collections'][4]['ca_collections.language'] = 'English';
 $GLOBALS['batchValues']['ca_collections'][4]['ca_collections.external_link.url_line2.url_entry'] = 'https://example.org/synthetic-finding-aid';
 foreach ($GLOBALS['batchValues']['ca_collections'] as $id => $values) {
@@ -225,6 +225,8 @@ function batchCanonical($request, $root, $config) {
 	return $batch;
 }
 $data = batchCanonical($request, $root, $config);
+batchCheck($data['fields']['description']['value'] === 'Synthetic root.' && $data['fields']['description']['html'] === '<strong>Synthetic root.</strong>'
+	&& str_contains($data['collections'][4]['fields']['description']['html'], '<strong>Folder description.</strong>'), 'Batched root and descendant fields must preserve safe emphasis from the same native reads as the canonical path.');
 batchCheck(array_keys($data['collections']) === [1, 3, 4, 2], 'Unreadable/deleted/type/source/ACL branches and their descendants must be pruned.');
 batchCheck($data['fields']['creators']['value'] === "Synthetic 103\nSynthetic 101", 'Creators retain relation order while duplicates are removed.');
 batchCheck($data['collections'][4]['fields']['related_links']['value'] === 'https://example.org/synthetic-finding-aid'

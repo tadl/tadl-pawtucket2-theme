@@ -134,6 +134,8 @@ let browser;
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name}: horizontal page overflow at ${width}px`);
             if (name === 'finding-aid-text') {
                 assert.equal(await page.title(), 'Finding aid: Synthetic "Archives" & Photograph Collection | TADL Local History Collection', 'Text finding aids need a descriptive, safely escaped browser title.');
+                assert.deepEqual(await page.locator('.tadl-finding-aid-fields dd strong').allTextContents(), ['Abstract','History','Advertisements','Early History'], 'Recorded emphasis must survive inside public description and scope fields.');
+                assert(await page.locator('.tadl-finding-aid-fields dd strong').evaluateAll(nodes => nodes.every(node => parseInt(getComputedStyle(node).fontWeight,10) >= 700)), 'Metadata emphasis must visibly render in bold.');
                 const back = page.getByRole('link', {name:'Return to collection',exact:true});
                 assert.equal(await back.getAttribute('href'), '/Detail/collections/42');
                 await back.focus(); await page.keyboard.press('Tab');

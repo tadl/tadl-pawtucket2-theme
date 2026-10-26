@@ -17,7 +17,7 @@ function tadlFindingAidRoot($request, $collection) {
 	return $ancestry ? reset($ancestry) : null;
 }
 
-/** Catalog text becomes escaped text in the PDF, never executable HTML. */
+/** Plain catalogue text for labels, identifiers and format-independent values. */
 function tadlFindingAidText($value) {
 	$value = preg_replace('~<(script|style)\b[^>]*>.*?</\1\s*>~is', '', (string)$value);
 	$value = preg_replace('~<br\s*/?>|</(?:p|div|li|h[1-6]|tr|section)>~i', "\n", $value);
@@ -29,8 +29,64 @@ function tadlFindingAidText($value) {
 	return preg_match('/[\p{L}\p{N}]/u', $value) ? $value : '';
 }
 
+/** Keep emphasis only: no imported attributes, links, CSS or embedded resources. */
+function tadlFindingAidEmphasisHTML($value) {
+	if (!preg_match('~<(?:b|strong|i|em|h[1-6])\b|font-weight\s*:\s*(?:bold|bolder|[6-9]00)|font-style\s*:\s*italic~i', (string)$value)) { return null; }
+	$document = new DOMDocument('1.0', 'UTF-8');
+	$errors = libxml_use_internal_errors(true);
+	try {
+		$loaded = $document->loadHTML('<?xml encoding="UTF-8"><html><body>'.(string)$value.'</body></html>', LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+	} finally { libxml_clear_errors(); libxml_use_internal_errors($errors); }
+	$body = $document->getElementsByTagName('body')->item(0);
+	if (!$loaded || !$body) { return null; }
+	$render = static function ($node) use (&$render) {
+		if ($node->nodeType === XML_TEXT_NODE || $node->nodeType === XML_CDATA_SECTION_NODE) {
+			return htmlspecialchars($node->nodeValue, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+		}
+		if ($node->nodeType !== XML_ELEMENT_NODE) { return ''; }
+		$tag = strtolower($node->nodeName);
+		if (in_array($tag, ['script', 'style', 'iframe', 'object', 'embed', 'svg', 'math', 'template', 'noscript', 'head'], true)) { return ''; }
+		if ($tag === 'br') { return "\n"; }
+		$html = '';
+		foreach ($node->childNodes as $child) { $html .= $render($child); }
+		if (preg_match('/[^\s\p{Z}]/u', $html)) {
+			$style = $node->getAttribute('style');
+			$bold = in_array($tag, ['b', 'strong', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'], true)
+				|| preg_match('/(?:^|;)\s*font-weight\s*:\s*(?:bold|bolder|[6-9]00)\s*(?:!important\s*)?(?:;|$)/i', $style);
+			$italic = in_array($tag, ['i', 'em'], true)
+				|| preg_match('/(?:^|;)\s*font-style\s*:\s*italic\s*(?:!important\s*)?(?:;|$)/i', $style);
+			if ($italic) { $html = '<em>'.$html.'</em>'; }
+			if ($bold) { $html = '<strong>'.$html.'</strong>'; }
+		}
+		return $html.(in_array($tag, ['p', 'div', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'tr', 'section'], true) ? "\n" : '');
+	};
+	$html = '';
+	foreach ($body->childNodes as $node) { $html .= $render($node); }
+	$html = str_replace(["\r\n", "\r"], "\n", $html);
+	$html = trim(preg_replace(['/[^\S\n]+/u', '/ *\n */', '/\n{3,}/'], [' ', "\n", "\n\n"], $html));
+	return str_contains($html, '<strong>') || str_contains($html, '<em>') ? $html : null;
+}
+
+/** Retain the plain-text contract; add formatting only when safe emphasis survives. */
+function tadlFindingAidFieldText($raw) {
+	$value = tadlFindingAidText($raw);
+	if ($value === '') { return []; }
+	$field = ['value' => $value];
+	$html = tadlFindingAidEmphasisHTML($raw);
+	// Malformed editor markup must never lose text through HTML parser recovery.
+	if ($html !== null && tadlFindingAidText($html) === $value) { $field['html'] = $html; }
+	return $field;
+}
+
+/** Validate the canonical tag-only form cheaply before placing it in either document. */
+function tadlFindingAidFieldHTML($field) {
+	$html = $field['html'] ?? null;
+	if (is_string($html) && strpbrk(preg_replace('~</?(?:strong|em)>~', '', $html), '<>') === false) { return nl2br($html, false); }
+	return nl2br(htmlspecialchars((string)($field['value'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), false);
+}
+
 /** Only read a configured, existing field when its root bundle is readable. */
-function tadlFindingAidValue($request, $record, $bundles, $display_language_labels = false) {
+function tadlFindingAidValue($request, $record, $bundles, $display_language_labels = false, $with_formatting = false) {
 	foreach ((array)$bundles as $bundle) {
 		if (!preg_match('/\A'.preg_quote($record->tableName(), '/').'\.([a-zA-Z0-9_]+)(?:\.[a-zA-Z0-9_]+)*\z/', (string)$bundle, $match)) { continue; }
 		$root = $match[1];
@@ -42,13 +98,14 @@ function tadlFindingAidValue($request, $record, $bundles, $display_language_labe
 		// collection and language bundle still require their normal permissions.
 		if ($display_language_labels && $bundle === 'ca_collections.language'
 			&& (int)ca_metadata_elements::getElementDatatype($root) === 3) { $access = []; }
-		$value = tadlFindingAidText($record->getWithTemplate('^'.$bundle, [
+		$raw = $record->getWithTemplate('^'.$bundle, [
 			'checkAccess' => $access, 'convertCodesToDisplayText' => true,
 			'makeLink' => false, 'delimiter' => "\n", 'dontReturnDefault' => true
-		]));
-		if ($value !== '') { return $value; }
+		]);
+		$value = $with_formatting ? tadlFindingAidFieldText($raw) : tadlFindingAidText($raw);
+		if ($with_formatting ? (bool)$value : $value !== '') { return $value; }
 	}
-	return '';
+	return $with_formatting ? [] : '';
 }
 
 /** Creator names need their own record, label and ACL checks, not just a readable relationship. */
@@ -75,9 +132,9 @@ function tadlFindingAidFields($request, $record, $fields) {
 	$result = [];
 	foreach ((array)$fields as $key => $field) {
 		if (!is_array($field)) { continue; }
-		$value = isset($field['related_table']) ? tadlFindingAidRelatedValue($request, $record, $field)
-			: tadlFindingAidValue($request, $record, $field['bundles'] ?? [], (int)($field['display_language_labels'] ?? 0) === 1);
-		if ($value !== '') { $result[$key] = ['label' => (string)($field['label'] ?? $key), 'value' => $value]; }
+		$value = isset($field['related_table']) ? ['value' => tadlFindingAidRelatedValue($request, $record, $field)]
+			: tadlFindingAidValue($request, $record, $field['bundles'] ?? [], (int)($field['display_language_labels'] ?? 0) === 1, true);
+		if (($value['value'] ?? '') !== '') { $result[$key] = ['label' => (string)($field['label'] ?? $key)] + $value; }
 	}
 	return $result;
 }
@@ -125,7 +182,7 @@ function tadlFindingAidBatchAttributeRows($request, $model, array $rows, array $
 }
 
 /** Native multi-record templates retain formatting without one template query per unit. */
-function tadlFindingAidBatchValue($request, $model, array $rows, $bundles, $display_language_labels = false) {
+function tadlFindingAidBatchValue($request, $model, array $rows, $bundles, $display_language_labels = false, $with_formatting = false) {
 	$values = [];
 	$table = $model->tableName();
 	$type_field = $model->getTypeFieldName();
@@ -155,8 +212,8 @@ function tadlFindingAidBatchValue($request, $model, array $rows, $bundles, $disp
 			]);
 			if (!is_array($result)) { throw new RuntimeException('Unable to read finding aid metadata.'); }
 			foreach ($chunk as $id) {
-				$value = tadlFindingAidText($result[$id] ?? '');
-				if ($value !== '') { $values[$id] = $value; }
+				$value = $with_formatting ? tadlFindingAidFieldText($result[$id] ?? '') : tadlFindingAidText($result[$id] ?? '');
+				if ($with_formatting ? (bool)$value : $value !== '') { $values[$id] = $value; }
 			}
 		}
 	}
@@ -214,8 +271,8 @@ function tadlFindingAidBatchData($request, $collection, $config) {
 	foreach ($configured_fields as $key => $field) {
 		if (!is_array($field)) { continue; }
 		$values = isset($field['related_table']) ? tadlFindingAidBatchRelatedValue($request, $model, $rows, $field)
-			: tadlFindingAidBatchValue($request, $model, $rows, $field['bundles'] ?? [], (int)($field['display_language_labels'] ?? 0) === 1);
-		foreach ($values as $id => $value) { $fields[$id][$key] = ['label' => (string)($field['label'] ?? $key), 'value' => $value]; }
+			: tadlFindingAidBatchValue($request, $model, $rows, $field['bundles'] ?? [], (int)($field['display_language_labels'] ?? 0) === 1, true);
+		foreach ($values as $id => $value) { $fields[$id][$key] = ['label' => (string)($field['label'] ?? $key)] + (is_array($value) ? $value : ['value' => $value]); }
 	}
 	$data = [
 		'title' => $titles[$root_id] ?? _t('Untitled archival unit'), 'identifier' => $identifiers[$root_id] ?? '',

@@ -42,8 +42,12 @@ results and are separate from the finding aid.
   **Box 1** (Container) and **Folder 1** (Folder), including for the selected root.
   It is not repeated as a separate “Level of description” field. Missing or
   restricted levels have no suffix.
-- Readable body text, paragraph and line breaks, and page numbers. Editor HTML
-  becomes escaped plain text; scripts, styles and executable markup are excluded.
+- Readable body text, paragraph and line breaks, and page numbers. Recorded bold
+  and italic emphasis survives in descriptive fields, including editor font-weight
+  and font-style spans, in both PDF and HTML. Only canonical `strong`/`em` tags
+  reach the output; other text is escaped, and attributes, CSS, executable markup,
+  links and embedded resources are excluded. Titles, identifiers and level labels
+  remain plain text.
   Empty editor blocks and repeated blank lines collapse to one blank line between
   paragraphs in both PDF and HTML. Ordinary line breaks in names and addresses remain.
 - Recorded hierarchy rank first, natural title order for equal ranks, then ID
