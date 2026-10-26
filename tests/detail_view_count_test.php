@@ -26,10 +26,12 @@ class DetailViewRequest {
 }
 class DetailViewResponse {
 	public $redirect = null, $status = 200;
+	public string $body = '';
 	public $headers = [];
 	function setHTTPResponseCode($status, $message) { $this->status = $status; }
 	function addHeader($name, $value) { $this->headers[$name] = $value; }
 	function setRedirect($url) { $this->redirect = $url; }
+	function addContent($content) { $this->body .= $content; }
 }
 class DetailViewView {
 	public $vars = [];
@@ -134,8 +136,8 @@ function detailViewDispatch($type, $tracking, $loggedIn = false) {
 }
 try {
 	// Optional native parity checks all retained catalogue/media paths. The only
-	// permitted changes remove usage writes, reject mutation actions, and avoid
-	// deleting original media during ZIP cleanup.
+	// permitted changes remove usage writes, reject mutation/summary-export actions,
+	// and avoid deleting original media during ZIP cleanup.
 	if ($reference = getenv('TADL_NATIVE_DETAIL_CONTROLLER')) {
 		detailViewCheck(is_file($reference) && is_readable($reference), 'Native parity reference must be a readable source file.');
 		$native = file_get_contents($reference);
@@ -149,6 +151,10 @@ try {
 		detailViewCheck($count === 2, 'Native parity must remove both download log writes.');
 		$native = str_replace("\$vals = ['idno' => \$vs_idno_proc];", "\$vals = ['idno' => \$t_instance->get('idno')];", $native, $count);
 		detailViewCheck($count === 1, 'Native parity fixes the native undefined filename variable.');
+		$native = preg_replace('/\n\t\t\$ps_view = \$this->request->getParameter\(\'view\', pString\);\n\t\tif\(\$ps_view === \'pdf\'\) \{.*?\n\t\t\}[ \t]*\n/s', '', $native, -1, $count);
+		detailViewCheck($count === 1, 'Native parity removes only the retired arbitrary-field PDF summary branch.');
+		$theme_source = preg_replace('/\n\t\tif \(\$this->request->getParameter\(\'view\', pString\) === \'pdf\'\) \{.*?\n\t\t\}[ \t]*\n/s', '', file_get_contents($theme.'/controllers/DetailController.php'), -1, $count);
+		detailViewCheck($count === 1, 'Native parity permits exactly one early PDF-summary rejection.');
 		$tokens = static function ($source) {
 			$tokens = token_get_all($source); $values = [];
 			$mutation = false; $function = false; $depth = 0;
@@ -168,7 +174,7 @@ try {
 			}
 			return $values;
 		};
-		detailViewCheck($tokens(file_get_contents($theme.'/controllers/DetailController.php')) === $tokens($native), 'Retained native detail/viewer/download logic must stay intact.');
+		detailViewCheck($tokens($theme_source) === $tokens($native), 'Retained native detail/viewer/download logic must stay intact.');
 	}
 	foreach (['objects','collections','entities','places'] as $type) {
 		foreach ([null, 0, '0', 1, '1'] as $setting) {
@@ -187,6 +193,15 @@ try {
 		DetailViewModel::$views = 0; DetailViewModel::$access = 0;
 		[$controller, $response] = detailViewDispatch($type, 0);
 		detailViewCheck($controller->rendered === null && $response->redirect !== null && DetailViewModel::$views === 0, 'Disabling statistics must preserve native record access rejection.');
+		foreach ([false, true] as $loggedIn) {
+			foreach (['_display_42', '_pdf_summary'] as $format) {
+				$request = new DetailViewRequest($type, ['view' => 'pdf', 'export_format' => $format], $loggedIn);
+				$response = new DetailViewResponse(); $controller = new DetailController($request, $response); $loads = Datamodel::$loads;
+				$controller->$type();
+				detailViewCheck($response->status === 410 && $response->headers['Cache-Control'] === 'private, no-store' && $response->headers['X-Robots-Tag'] === 'noindex, nofollow', 'Anonymous and staff summary-export requests must be rejected without cache reuse.');
+				detailViewCheck(Datamodel::$loads === $loads && $controller->rendered === null && $response->body === 'Catalogue record exports are disabled.', 'Summary exports must stop before catalogue reads, dynamic field selection, cached PDFs or usage writes.');
+			}
+		}
 	}
 	foreach ([false, true] as $loggedIn) {
 		foreach (['CommentForm', 'SaveCommentTagging', 'SaveAnnotations'] as $action) {

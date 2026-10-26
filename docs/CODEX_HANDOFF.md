@@ -5,6 +5,18 @@ Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
 
+Provenance is Providence-only. Pawtucket omits it from collection metadata at
+every level, object-page metadata-description fallbacks, and both text and PDF
+finding aids (including custodial-history aliases). Do not restore it as a public
+field. The stored Providence values and schema are unchanged. Finding-aid byte
+cache keys include the checked data, so previously generated PDFs containing the
+removed field are not reused after the configuration change.
+Legacy Detail `view=pdf` record-summary exports return 410 before model loading;
+they could otherwise expose database-configured fields or old cached summaries.
+Native display-export option loading is disabled. Individual media and the
+dedicated checked finding-aid routes remain available; no core or database change
+is required. The native Detail parity test allows this documented export exception.
+
 Text finding aids use a descriptive Finding aid: [collection name] page title
 through the native metadata manager. Return to collection and Download PDF buttons
 sit beneath the heading/identifier and wrap on phones. Return uses the checked
@@ -980,9 +992,10 @@ See `docs/USER_FEATURES.md` for limitations and live verification boundaries.
 Collection detail metadata uses the same presentation at every archival level,
 including series, containers and folders without individual object records.
 `helpers/collection_metadata.php` checks each configured native attribute's
-existence/readability before fetching it, omits default values and adds public
-provenance and source-labelled external links. It never inherits a parent's
-description/extent, enumerates staff-only fields or depends on media presence.
+existence/readability before fetching it, omits default values and adds
+source-labelled external links. Provenance remains Providence-only. It never
+inherits a parent's description/extent, enumerates staff-only fields or depends
+on media presence.
 Native rich text and long-field disclosures remain intact. External link values
 use the native locale-aware attribute API; labels/URLs are escaped and only
 HTTP(S) URLs become clickable. The selected-unit regressions live in
@@ -1019,7 +1032,7 @@ transport mismatch instead of returning successful markup for every request.
 View and Download share the same export of the selected unit and all readable
 descendants as a descriptive PDF. As of 2026-10-19, every hierarchy level uses the same
 `collection_fields` mapping: extent, description, dates, creator relationships,
-scope/content, language, provenance, rights and other configured public metadata.
+scope/content, language, rights and other configured public metadata.
 Missing fields are omitted. A folder without individually catalogued objects can
 still describe its complete physical contents. Root metadata appears once in the
 overview; descendants retain their actual parent and relative depth.

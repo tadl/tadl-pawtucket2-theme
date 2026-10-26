@@ -129,6 +129,15 @@ class DetailController extends FindController {
 			return $this->DownloadAttributeMedia();
 		}
 
+		// Legacy summaries can expose arbitrary display fields or older cached PDFs.
+		if ($this->request->getParameter('view', pString) === 'pdf') {
+			$this->response->setHTTPResponseCode(410, 'Gone');
+			$this->response->addHeader('Cache-Control', 'private, no-store');
+			$this->response->addHeader('X-Robots-Tag', 'noindex, nofollow');
+			$this->response->addContent(_t('Catalogue record exports are disabled.'));
+			return;
+		}
+
 		$function = strtolower($function);
 		$id = urldecode($this->request->getActionExtra());
 
@@ -162,21 +171,6 @@ class DetailController extends FindController {
 			throw new ApplicationException("Invalid id");
 		}
 		$t_subject->autoConvertLineBreaks(true);
-
-		$ps_view = $this->request->getParameter('view', pString);
-		if($ps_view === 'pdf') {
-			if (!($vn_limit = ini_get('max_execution_time'))) { $vn_limit = 30; }
-			set_time_limit($vn_limit * 6);
-
-			caExportItemAsPDF(
-				$this->request,
-				$t_subject,
-				$this->request->getParameter("export_format", pString),
-				caGenerateDownloadFileName(caGetOption('pdfExportTitle', $options, $t_subject->get('preferred_labels')), ['t_subject' => $t_subject]),
-				['checkAccess' => $this->opa_access_values]
-			);
-			return;
-		}
 
 		//
 		// Return facet content

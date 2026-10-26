@@ -91,7 +91,7 @@ The supplied mappings cover:
 | Abstract and description | `ca_collections.abstract`, `ca_collections.description` |
 | Source of description | `ca_collections.description_source` |
 | History, scope and arrangement | `adminbiohist`, `collection_scope_content` / `scopecontent`, `arrangement` |
-| Provenance and acquisition | `provenance` / `custodhist` / `custohist`, `acqinfo`, `accruals` |
+| Acquisition and accruals | `acqinfo`, `accruals` |
 | Access conditions | `accessrestrict`, `physaccessrestrict`, `techaccessrestrict` |
 | Rights and use | `rights.rightsText`, `rights.copyrightStatement`, `reproduction` |
 | Subjects | `lcsh_terms` |
@@ -100,8 +100,10 @@ The supplied mappings cover:
 
 All shortened paths in the table have the `ca_collections.` prefix in the actual
 configuration. The local profile provides description, source, dates, extent,
-language, provenance, scope/content, subjects, rights and related links. Other
-mappings support common DACS/ISAD profiles but do not create absent fields.
+language, scope/content, subjects, rights and related links. Provenance, including
+its custodial-history aliases, is intentionally excluded from both HTML and PDF
+finding aids and stays in Providence. Other mappings support common DACS/ISAD
+profiles but do not create absent fields.
 Dates use recorded date values; typed inclusive/bulk-date labels need a
 profile-specific extension if your installation stores them separately.
 

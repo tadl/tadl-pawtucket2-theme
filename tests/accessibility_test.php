@@ -200,6 +200,15 @@ $footer = file_get_contents(dirname(__DIR__).'/views/pageFormat/pageFooter.php')
 a11yCheck(str_contains($header, '<main id="main" tabindex="-1">') && str_contains($footer, '</main><!-- end main -->'), 'The skip target must be a focusable native main landmark.');
 require dirname(__DIR__).'/helpers/media_preferences.php';
 $fixtures['header'] = (new A11yView())->render('pageFormat/pageHeader.php');
+$provenanceOnlyObject = new class {
+	public array $reads = [];
+	function tableName() { return 'ca_objects'; }
+	function getWithTemplate($template, $options) {
+		$this->reads[] = $template;
+		return $template === '^ca_objects.provenance' ? 'PROVIDENCE_ONLY_OBJECT_PROVENANCE' : '';
+	}
+};
+a11yCheck(tadlMetaDescriptionForItem(new A11yRequest(), $provenanceOnlyObject) === '' && !in_array('^ca_objects.provenance', $provenanceOnlyObject->reads, true), 'Empty public descriptions must never fall back to provenance in page, search-engine or social metadata.');
 $fixtures['footer'] = (new A11yView())->render('pageFormat/pageFooter.php');
 $topLink = a11yDocument($fixtures['footer'])->query('//a[@data-tadl-back-to-top]')->item(0);
 a11yCheck($topLink && $topLink->hasAttribute('hidden') && $topLink->getAttribute('href') === '#tadl-page-top' && $topLink->getAttribute('aria-label') === 'Back to top', 'The shared return control needs a labelled native top link, hidden until scrolling is enhanced.');

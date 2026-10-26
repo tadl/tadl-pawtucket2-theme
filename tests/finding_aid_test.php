@@ -42,7 +42,6 @@ class AidConfig {
 			'language' => ['label' => 'Language', 'display_language_labels' => 1, 'bundles' => ['ca_collections.language']],
 			'description' => ['label' => 'Description', 'bundles' => ['ca_collections.description']],
 			'scope' => ['label' => 'Scope and content', 'bundles' => ['ca_collections.collection_scope_content']],
-			'provenance' => ['label' => 'Provenance', 'bundles' => ['ca_collections.provenance']],
 			'rights' => ['label' => 'Rights', 'bundles' => ['ca_collections.rights.rightsText']],
 			'copyright' => ['label' => 'Copyright statement', 'bundles' => ['ca_collections.rights.copyrightStatement']],
 			'related_links' => ['label' => 'Related links', 'bundles' => ['ca_collections.external_link.url_line2.url_entry']],
@@ -204,6 +203,10 @@ $GLOBALS['aidRows'] = [
 		206 => aidRow(206, 'ca_entities', 'PRIVATE label creator', '', ['denied' => ['preferred_labels']])
 	]
 ];
+foreach ($GLOBALS['aidRows']['ca_collections'] as $id => &$row) {
+	$row['values']['ca_collections.provenance'] ??= 'PROVIDENCE_ONLY_PROVENANCE_'.$id;
+}
+unset($row);
 foreach ([7 => 42, 8 => 42, 9 => 8, 10 => 42, 11 => 42, 12 => 42, 13 => 7, 14 => 7, 15 => 13] as $id => $parent_id) {
 	$GLOBALS['aidRows']['ca_collections'][$id]['parent_id'] = $parent_id;
 }
@@ -289,11 +292,15 @@ $level_only['collections'][15]['fields'] = ['level' => $data['collections'][15][
 $view->setVar('finding_aid', $level_only); $level_only_html = $view->render('Details/finding_aid_pdf_html.php');
 aidCheck(!str_contains($level_only_html, 'About this collection') && str_contains($level_only_html, 'Folder 1 <span class="collection-level">(Folder)</span>'), 'A unit with only a level must show its title suffix without an empty metadata section.');
 aidCheck(str_contains($html, '80 newspaper clippings in one folder, 20 x 30 cm') && str_contains($html, 'Clippings concerning a fictional community garden.') && str_contains($html, 'Synthetic folder use conditions'), 'All relevant folder fields must be rendered even with no linked objects.');
-foreach (['ca_collections.provenance' => 'Folder provenance.', 'ca_collections.rights.copyrightStatement' => 'Folder copyright.', 'ca_collections.external_link.url_line2.url_entry' => 'https://example.org/related-materials'] as $bundle => $value) {
+foreach (['ca_collections.rights.copyrightStatement' => 'Folder copyright.', 'ca_collections.external_link.url_line2.url_entry' => 'https://example.org/related-materials'] as $bundle => $value) {
 	$folder = new AidModel('ca_collections'); $folder->load(15); $folder->row['values'][$bundle] = $value;
 	aidCheck(in_array($value, array_column(tadlFindingAidFields($request, $folder, $GLOBALS['aidConfig']->values['collection_fields']), 'value'), true), 'Every configured administrative/supporting field must work at folder level.');
 }
-aidCheck(str_contains($html, 'Example Community Organization') && str_contains($html, 'Transferred from a fictional community organization.') && str_contains($html, 'Synthetic copyright statement'), 'Collection context and approved administrative fields must appear.');
+aidCheck(str_contains($html, 'Example Community Organization') && str_contains($html, 'Synthetic copyright statement'), 'Collection context and approved administrative fields must appear.');
+aidCheck(!str_contains($html, 'Transferred from a fictional community organization.') && !str_contains($html, 'PROVIDENCE_ONLY_PROVENANCE') && !str_contains($html, 'Provenance'), 'PDF finding aids must omit provenance at the root and every descendant.');
+aidCheck(!array_filter($GLOBALS['aidReads'], static fn($read) => str_contains($read[2], 'ca_collections.provenance')), 'Finding-aid data must not fetch provenance.');
+$public_config = file_get_contents(dirname(__DIR__).'/conf/finding_aid.conf');
+aidCheck(!preg_match('/ca_collections\.(?:provenance|custodhist|custohist)\b/', $public_config), 'The shipped finding-aid mappings must omit provenance and its custodial-history aliases.');
 aidCheck(substr_count($html, 'class="collection"') === 5 && str_contains($html, 'margin-left: 24pt;') && str_contains($html, 'SYN.F1'), 'Every descendant must retain its indentation and identifier without repeating the root.');
 aidCheck(substr_count($html, 'A synthetic collection &amp; its history.') === 1 && str_contains($html, 'Folder description with &lt;angle brackets&gt;.'), 'Metadata must be escaped and root prose must not be duplicated.');
 $unsafe = $data; $unsafe['title'] = '<img src="file:///private/example" onerror="bad"> & title';
@@ -491,6 +498,7 @@ aidCheck($text_controller->rendered === 'Details/finding_aid_html.php' && $respo
 aidCheck(MetaTagManager::$title === 'Finding aid: '.$text_controller->view->getVar('finding_aid')['title'], 'Text finding aids must set a descriptive native page title from the already checked collection name.');
 $text_html = $text_controller->view->render('Details/finding_aid_html.php');
 $text_document = new DOMDocument(); $text_document->loadHTML($text_html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $text_xpath = new DOMXPath($text_document);
+aidCheck(!str_contains($text_html, 'Transferred from a fictional community organization.') && !str_contains($text_html, 'PROVIDENCE_ONLY_PROVENANCE') && !str_contains($text_html, 'Provenance'), 'Text finding aids must omit provenance at all hierarchy levels too.');
 aidCheck($text_xpath->query('//h1')->length === 1 && $text_xpath->query('//dl/dt')->length > 0 && $text_xpath->query('//ol/li/ol/li')->length > 0, 'HTML finding aids must expose headings, terms/values and the full nested archival hierarchy.');
 aidCheck($text_xpath->query('//div[@class="tadl-finding-aid-actions"]/a[@href="/synthetic/Detail/collections/42" and contains(@class,"btn")]')->item(0)->textContent === 'Return to collection', 'Text finding aids must return to their own collection through a native numeric route.');
 $response = new AidResponse(); $series_text = new CollectionFindingAidController(new AidRequest(['collection_id' => 7]), $response); $series_text->Text();

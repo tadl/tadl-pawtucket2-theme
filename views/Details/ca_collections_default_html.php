@@ -68,7 +68,6 @@
 			print tadlCollectionMetadataField($this->request, $t_item, 'Description', ['ca_collections.description']);
 			print tadlCollectionMetadataField($this->request, $t_item, 'Source of description', ['ca_collections.description_source']);
 			print tadlCollectionMetadataField($this->request, $t_item, 'Scope and content', ['ca_collections.collection_scope_content']);
-			print tadlCollectionMetadataField($this->request, $t_item, 'Provenance', ['ca_collections.provenance']);
 			# Comment and Share Tools
 			if ($vn_comments_enabled | $vn_share_enabled) {
 				print '<div id="detailTools">';

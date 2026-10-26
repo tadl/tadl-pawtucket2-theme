@@ -34,9 +34,10 @@ images and video previews are never embedded in the collection's metadata
 columns. The shared results loader applies the current media preference and
 permissions before showing cards and totals.
 
-The overview groups description/source, scope/content and provenance separately
+The overview groups description/source and scope/content separately
 from creators, dates, extent, language, subjects, rights, external links and related
-records. The same fields apply to every collection level, including series,
+records. Provenance stays in Providence and is not displayed in Pawtucket.
+The same fields apply to every collection level, including series,
 containers and folders, independently of linked-object counts or media.
 Description, extent and other facts come from the selected unit, not its parent.
 Only existing readable bundles are fetched; metadata defaults, private notes and

@@ -28,12 +28,14 @@ This repository contains the complete `tadl` theme. Install it in an existing Pa
 
 Catalogue result lists are rendered in the initial HTML. Search, browse, collection contents, related-item previews and gallery previews do not need a second request to load their cards. Paging and the collection hierarchy browser use ordinary links. Tiles/List, collection view and page-size preferences persist between views; basic result navigation also works without JavaScript. Media viewers and account/editing dialogs still use the native interactive features.
 
-Catalogue result exports to PDF, Excel, and PowerPoint are disabled, including direct requests to old export URLs. Search, Browse, and collection/place/family result pages reject export requests with HTTP 410 before running the result query. Finding-aid and individual-media downloads remain available. All legacy Lightbox routes, including add forms and exports, return HTTP 404.
+Catalogue result exports to PDF, Excel, and PowerPoint are disabled, including direct requests to old export URLs. Search, Browse, and collection/place/family result pages reject export requests with HTTP 410 before running the result query. Legacy Detail record-summary PDFs also return HTTP 410 before loading catalogue data; these arbitrary-field exports could otherwise bypass the public field selection. Finding-aid and individual-media downloads remain available. All legacy Lightbox routes, including add forms and exports, return HTTP 404.
 
 Where a Search or Browse page has filters, a sidebar button hides them and lets results fill the available width. **Filters** beside Tiles/List reopens the sidebar. Selected filters stay above the results. The sidebar starts open on desktop and closed on phones, and remembers an explicit choice with the other display preferences. Without JavaScript, the filter links remain visible.
 Additional facet values use separate **View X more / View less** buttons. Large lists offer **View all X** to open an alphabetized filter chooser with letter shortcuts, scrollable choices, and keyboard access.
 
 File-format tags describe the accessible original representations attached to an object, such as JPEG, TIFF, or PDF. They can show multiple formats for one object. The **Object type** filter instead uses the catalogue's classification, such as Still image or Document; it does not infer an object's type from its files.
+
+Provenance stays in Providence. It is omitted from Pawtucket displays, page metadata, and text/PDF finding aids without changing stored catalogue data.
 
 The shared interface includes keyboard navigation, visible focus, reduced-motion support, and responsive reflow. A bottom-right **Back to top** control appears after scrolling one viewport, returning the page and keyboard focus to the header. See the [accessibility guide](docs/ACCESSIBILITY.md) for coverage and remaining manual checks; installing the theme does not establish whole-site WCAG conformance.
 

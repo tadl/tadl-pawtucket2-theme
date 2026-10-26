@@ -31,7 +31,7 @@ $rich = '<p>'.str_repeat('Synthetic café &amp; archive context. ', 24).'</p><ul
 	.'<p><a href="https://example.org/guide">Research guide</a> with <strong>original formatting</strong>.</p>';
 foreach ([
 	['ca_collections.description', 'Description'], ['ca_collections.collection_scope_content', 'Scope and content'],
-	['ca_objects.description', 'Description'], ['ca_objects.provenance', 'Provenance'],
+	['ca_objects.description', 'Description'], ['ca_objects.coverageNotes', 'Coverage notes'],
 	['ca_entities.biography', 'Description'], ['ca_places.description', 'Description'],
 	['ca_occurrences.description_source', 'Source of description']
 ] as [$bundle, $label]) {

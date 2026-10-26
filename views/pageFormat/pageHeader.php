@@ -71,7 +71,7 @@ if (!function_exists('tadlMetaDescriptionForItem')) {
 
 		$table = $item->tableName();
 		$templates_by_table = [
-			'ca_objects' => ['^ca_objects.description', '^ca_objects.coverageNotes', '^ca_objects.provenance'],
+			'ca_objects' => ['^ca_objects.description', '^ca_objects.coverageNotes'],
 			'ca_collections' => ['^ca_collections.collection_scope_content', '^ca_collections.description'],
 			'ca_entities' => ['^ca_entities.description'],
 			'ca_occurrences' => ['^ca_occurrences.description'],
