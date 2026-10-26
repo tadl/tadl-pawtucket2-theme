@@ -22,7 +22,9 @@ function caGetBrowseTypes($options) { return ['objects' => ['displayName' => 'Ob
 function caGetBrowseConfig() { return new A11yConfig(['browseMenuFormat' => 'list']); }
 class Session { static function getVar($key) { return null; } static function setVar($key, $value) {} }
 class MetaTagManager {
-	static function getWindowTitle() { return 'Synthetic accessibility fixture'; }
+	static string $windowTitle = 'Synthetic accessibility fixture';
+	static function getWindowTitle() { return self::$windowTitle; }
+	static function setWindowTitle($title) { self::$windowTitle = $title; }
 	static function addMeta(...$args) {} static function addMetaProperty(...$args) {}
 	static function getHTML() { return ''; }
 }
@@ -203,6 +205,14 @@ $topLink = a11yDocument($fixtures['footer'])->query('//a[@data-tadl-back-to-top]
 a11yCheck($topLink && $topLink->hasAttribute('hidden') && $topLink->getAttribute('href') === '#tadl-page-top' && $topLink->getAttribute('aria-label') === 'Back to top', 'The shared return control needs a labelled native top link, hidden until scrolling is enhanced.');
 a11yCheck(str_contains($fixtures['header'], 'id="tadl-page-top" class="tadl-header" role="banner" tabindex="-1"'), 'The return control must target a focusable header without adding it to the Tab order.');
 $fixtures['back-to-top'] = '<h1>Synthetic long result set</h1>'.str_repeat('<p>Synthetic catalogue results. <a href="/synthetic/objects">Browse synthetic objects</a>.</p>', 100);
+$aidTitle = 'Synthetic "Archives" & Photograph Collection';
+$fixtures['finding-aid-text'] = (new A11yView([
+	'finding_aid' => ['title' => $aidTitle, 'identifier' => 'SYN.42', 'fields' => ['description' => ['label' => 'Description', 'value' => 'Synthetic public collection description.']], 'collections' => [42 => ['parent_id' => null]], 'generated' => 'Synthetic date'],
+	'collection_url' => '/Detail/collections/42', 'download_url' => '/CollectionFindingAid/Download/collection_id/42'
+]))->render('Details/finding_aid_html.php');
+MetaTagManager::setWindowTitle('Finding aid: '.$aidTitle);
+$fixtures['finding-aid-header'] = (new A11yView())->render('pageFormat/pageHeader.php');
+MetaTagManager::setWindowTitle('Synthetic accessibility fixture');
 $GLOBALS['a11yFront'] = true;
 $fixtures['front-header'] = (new A11yView([], new A11yRequest(false, 'Front')))->render('pageFormat/pageHeader.php');
 $GLOBALS['a11yFront'] = false;

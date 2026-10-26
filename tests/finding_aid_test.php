@@ -131,6 +131,10 @@ class AidResponse {
 	function setHTTPResponseCode($code, $message) { $this->status = $code; }
 	function addContent($text) { $this->body .= $text; }
 }
+class MetaTagManager {
+	static string $title = '';
+	static function setWindowTitle(string $title): bool { self::$title = $title; return true; }
+}
 class BasePawtucketController {
 	public $view;
 	public $rendered;
@@ -484,11 +488,17 @@ if (($argv[1] ?? '') === '--viewer-fixture') {
 
 $response = new AidResponse(); $text_controller = new CollectionFindingAidController(new AidRequest(), $response); $text_controller->Text();
 aidCheck($text_controller->rendered === 'Details/finding_aid_html.php' && $response->headers['Cache-Control'] === 'private, no-store', 'Accessible finding aid must recheck access and use private HTML.');
+aidCheck(MetaTagManager::$title === 'Finding aid: '.$text_controller->view->getVar('finding_aid')['title'], 'Text finding aids must set a descriptive native page title from the already checked collection name.');
 $text_html = $text_controller->view->render('Details/finding_aid_html.php');
 $text_document = new DOMDocument(); $text_document->loadHTML($text_html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING); $text_xpath = new DOMXPath($text_document);
 aidCheck($text_xpath->query('//h1')->length === 1 && $text_xpath->query('//dl/dt')->length > 0 && $text_xpath->query('//ol/li/ol/li')->length > 0, 'HTML finding aids must expose headings, terms/values and the full nested archival hierarchy.');
+aidCheck($text_xpath->query('//div[@class="tadl-finding-aid-actions"]/a[@href="/synthetic/Detail/collections/42" and contains(@class,"btn")]')->item(0)->textContent === 'Return to collection', 'Text finding aids must return to their own collection through a native numeric route.');
+$response = new AidResponse(); $series_text = new CollectionFindingAidController(new AidRequest(['collection_id' => 7]), $response); $series_text->Text();
+aidCheck($series_text->view->getVar('collection_url') === '/synthetic/Detail/collections/7' && MetaTagManager::$title === 'Finding aid: '.$series_text->view->getVar('finding_aid')['title'], 'A directly requested series finding aid must return to that series and use its own title.');
+MetaTagManager::$title = 'Unchanged title';
 $response = new AidResponse(); (new CollectionFindingAidController(new AidRequest(['collection_id' => 999]), $response))->Text();
 aidCheck($response->status === 404, 'Unavailable HTML finding aids must remain unavailable.');
+aidCheck(MetaTagManager::$title === 'Unchanged title', 'Unreadable collections must not supply title metadata.');
 
 $root_level = $text_controller->view->getVar('finding_aid')['fields']['level']['value'] ?? '';
 aidCheck($root_level === '' || str_contains($text_html, '('.htmlspecialchars($root_level, ENT_QUOTES, 'UTF-8').')'), 'HTML must retain the root archival level provided in the equivalent PDF.');

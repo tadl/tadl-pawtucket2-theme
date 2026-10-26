@@ -26,7 +26,10 @@ $renderChildren = static function ($parent) use (&$renderChildren, $children, $r
 <article class="tadl-finding-aid-text">
  <h1><?= $escape(_t('Finding aid').': '.$aid['title']); ?><?php if ($root_level !== '') { ?> <span class="collection-level">(<?= $escape($root_level); ?>)</span><?php } ?></h1>
  <?php if ($aid['identifier'] !== '') { ?><p><?= $escape(_t('Collection identifier').': '.$aid['identifier']); ?></p><?php } ?>
- <p><a href="<?= $escape($this->getVar('download_url')); ?>" rel="nofollow"><?= $escape(_t('Download PDF')); ?></a></p>
+ <div class="tadl-finding-aid-actions">
+  <a class="btn btn-default" href="<?= $escape($this->getVar('collection_url')); ?>"><?= $escape(_t('Return to collection')); ?></a>
+  <a class="btn btn-default" href="<?= $escape($this->getVar('download_url')); ?>" rel="nofollow"><?= $escape(_t('Download PDF')); ?></a>
+ </div>
  <?php if ($summary_fields) { ?><h2><?= $escape(_t('About this collection')); ?></h2><?php $renderFields($summary_fields); } ?>
  <?php if ($children) { ?><h2><?= $escape(_t('Arrangement and contents')); ?></h2><?php $renderChildren((int)array_key_first($aid['collections'])); } ?>
  <p><?= $escape(_t('Generated').' '.$aid['generated']); ?></p>

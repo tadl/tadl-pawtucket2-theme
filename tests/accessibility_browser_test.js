@@ -69,7 +69,7 @@ const server = http.createServer((request, response) => {
     if (Object.hasOwn(fixtures, name)) {
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         const fragment = name === 'login-dialog' || name === 'media-dialog';
-        const header = name === 'featured' ? fixtures['front-header'] : name === 'gallery' ? fixtures['gallery-header'] : fixtures.header;
+        const header = name === 'featured' ? fixtures['front-header'] : name === 'gallery' ? fixtures['gallery-header'] : name === 'finding-aid-text' ? fixtures['finding-aid-header'] : fixtures.header;
         response.end(fragment ? fixtures[name] : header + fixtures[name] + fixtures.footer);
         return;
     }
@@ -117,7 +117,7 @@ let browser;
     const reports = [];
     for (const width of [1280, 320]) {
         await page.setViewportSize({width, height:900});
-        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'featured', 'notifications', 'collection-staff', 'sort-results', 'object-return', 'object-return-only', 'back-to-top', ...Object.keys(authorityNavigationFixtures), ...Object.keys(objectCitations)]) {
+        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'finding-aid-text', 'featured', 'notifications', 'collection-staff', 'sort-results', 'object-return', 'object-return-only', 'back-to-top', ...Object.keys(authorityNavigationFixtures), ...Object.keys(objectCitations)]) {
             await page.goto(origin + '/' + name);
             if (name === 'gallery') { await page.locator('.galleryDetailNext').waitFor(); }
             await page.evaluate(async () => {
@@ -132,6 +132,13 @@ let browser;
             });
             assert.deepEqual(result, [], `${name} at ${width}px: ${JSON.stringify(result)}`);
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name}: horizontal page overflow at ${width}px`);
+            if (name === 'finding-aid-text') {
+                assert.equal(await page.title(), 'Finding aid: Synthetic "Archives" & Photograph Collection | TADL Local History Collection', 'Text finding aids need a descriptive, safely escaped browser title.');
+                const back = page.getByRole('link', {name:'Return to collection',exact:true});
+                assert.equal(await back.getAttribute('href'), '/Detail/collections/42');
+                await back.focus(); await page.keyboard.press('Tab');
+                assert(await page.getByRole('link', {name:'Download PDF',exact:true}).evaluate(node => node === document.activeElement), 'Finding-aid return and download actions must follow ordinary link Tab order.');
+            }
             if (name === 'notifications') {
                 for (const notification of await page.locator('.notificationMessage').all()) {
                     const banner = await notification.boundingBox();
@@ -392,6 +399,8 @@ let browser;
         await plainPage.goto(origin + '/object-citation');
         assert(await plainPage.locator('[data-tadl-citation]').isHidden(), 'Without JavaScript the clipboard action must stay hidden rather than exposing a broken button.');
         assert(await plainPage.locator('[data-tadl-back-to-top]').isHidden(), 'Without JavaScript the scroll-dependent control must stay hidden.');
+        await plainPage.goto(origin + '/finding-aid-text');
+        assert(await plainPage.getByRole('link', {name:'Return to collection',exact:true}).isVisible(), 'Text finding aids must provide a usable return link without JavaScript.');
         await plainPage.goto(origin + '/contact');
         const plainMenu = plainPage.locator('.tadl-media-preference-menu:visible');
         await plainMenu.locator('summary').click();

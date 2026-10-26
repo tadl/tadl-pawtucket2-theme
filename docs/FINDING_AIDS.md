@@ -6,9 +6,11 @@ viewer in the media overlay, with paging, zoom, text search and download control
 handles keyboard focus and returns focus to the link when closed. Modified clicks
 and browsers without the panel follow a direct inline-PDF link instead; browser
 PDF settings can override inline viewing. The viewer's **Read as text** link opens an equivalent semantic HTML finding aid
-with headings, description lists and the complete nested hierarchy. A no-script
-link on the collection page also reaches this version. The PDF supplied by the
-bundled Dompdf renderer remains untagged; use the HTML version for structured
+with headings, description lists and the complete nested hierarchy. Its page title
+identifies the finding aid and collection; **Return to collection** beside
+**Download PDF** beneath the heading links back to the described collection.
+A no-script link on the collection page also reaches this version. The PDF
+supplied by the bundled Dompdf renderer remains untagged; use the HTML version for structured
 screen-reader reading. The viewer's **Download PDF** link sends
 the same access-checked document as an attachment. No Providence representation
 or stored export is created.

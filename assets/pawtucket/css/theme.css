@@ -4728,10 +4728,11 @@ html.tadl-display-preferences-ready .tadl-filter-layout[data-tadl-filter-state="
 }
 
 .tadl-finding-aid-text { max-width: 75ch; margin: 0 auto; }
+.tadl-finding-aid-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 24px; }
 .tadl-finding-aid-fields dd { margin: 0 0 1em; }
 .tadl-finding-aid-tree { padding-left: 1.5em; }
 .tadl-finding-aid-tree > li { margin: 1.5em 0; }
-.tadl-finding-aid-text a { color: var(--tadl-primary-dark); text-decoration: underline; }
+.tadl-finding-aid-text a:not(.btn) { color: var(--tadl-primary-dark); text-decoration: underline; }
 .tadl-finding-aid-controls .download { display: flex; gap: 1em; }
 
 .tadl-lightbox-pagination {

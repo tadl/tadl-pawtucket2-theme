@@ -19,7 +19,10 @@ class CollectionFindingAidController extends BasePawtucketController {
         if (!$collection = $this->readableCollection()) { return; }
         $this->response->addHeader('Cache-Control', 'private, no-store');
         $this->response->addHeader('X-Robots-Tag', 'noindex, nofollow');
-        $this->view->setVar('finding_aid', tadlFindingAidData($this->request, $collection, Configuration::load(__DIR__.'/../conf/finding_aid.conf')));
+        $aid = tadlFindingAidData($this->request, $collection, Configuration::load(__DIR__.'/../conf/finding_aid.conf'));
+        MetaTagManager::setWindowTitle(_t('Finding aid').': '.$aid['title']);
+        $this->view->setVar('finding_aid', $aid);
+        $this->view->setVar('collection_url', caNavUrl($this->request, '', 'Detail', 'collections/'.(int)$collection->getPrimaryKey()));
         $this->view->setVar('download_url', caNavUrl($this->request, '', 'CollectionFindingAid', 'Download', ['collection_id' => (int)$collection->getPrimaryKey()]));
         $this->render('Details/finding_aid_html.php', false);
     }

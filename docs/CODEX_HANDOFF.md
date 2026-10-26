@@ -5,6 +5,12 @@ Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
 
+Text finding aids use a descriptive Finding aid: [collection name] page title
+through the native metadata manager. Return to collection and Download PDF buttons
+sit beneath the heading/identifier and wrap on phones. Return uses the checked
+requested collection's native detail route, including direct series requests;
+it adds no catalogue queries, stored navigation state or JavaScript requirement.
+
 A shared bottom-right Back to top control appears only beyond one viewport of
 page scrolling. It returns focus to the header and scrolls smoothly unless reduced
 motion is requested. Scroll updates use a passive listener and one queued animation
