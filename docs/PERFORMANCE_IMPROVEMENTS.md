@@ -1,7 +1,8 @@
 # Catalogue performance improvements
 
-Updated October 23, 2026. Includes the shared result-data cache added after
-implementation commit `d0c9d4e` and removal of synchronous detail-page view tracking.
+Updated October 26, 2026. Includes the shared result-data cache added after
+implementation commit `d0c9d4e`, removal of synchronous detail-page view tracking,
+and batched finding-aid description reads.
 
 The performance work reduced repeated database queries, cache requests, media
 decoding and thumbnail rendering. The latest warm native application profiles
@@ -90,6 +91,38 @@ Legacy result-export requests for PDF, Excel and PowerPoint now receive HTTP 410
 before native result processing starts. Crawlers following old export URLs
 therefore cannot trigger those expensive exports. Individual media downloads and
 finding aids remain available. Implementation: [export guards](../helpers/result_exports.php).
+
+## Large finding aids
+
+The finding-aid generator previously loaded a collection model, queried children
+and expanded every configured descriptive field for each archival unit. Even a
+cached PDF had to wait for this full description rebuild. Bounded scalar hierarchy
+reads now retain current record/type/source/ACL checks; native template expansion,
+intrinsic fields and creator relationships run in batches of at most 500 IDs.
+A fresh attribute-presence lookup skips missing fields while preserving populated
+values, native formatting, type applicability and fallback order. Complete branches,
+descriptions and equivalent accessible HTML remain intact. There are no object
+queries or catalogue writes.
+
+Serial read-only native CLI comparisons preserved exact canonical data and PDF
+input hashes, excluding the generation timestamp:
+
+| Finding-aid description | Before | After | SQL queries before / after |
+| --- | ---: | ---: | ---: |
+| 1,739 visible archival units | 28.3 s | 2.0–2.1 s | 34,836 / 212 |
+| 57 visible archival units | 1.0 s | 0.12 s | 1,214 / 66 |
+
+These timings isolate description construction. The large document's cold Dompdf
+layout still took about 18 seconds for 291 pages. Existing immutable PDF caching
+avoids repeat layout after current descriptions and permissions are checked.
+Binary entries now use a bounded base64 envelope because the native file backend
+JSON-encodes values and cannot preserve arbitrary raw PDF bytes. Redis remains
+supported. No permission decision or page HTML is cached. Cache errors retain
+normal generation, and artifacts larger than 8 MiB are not retained.
+
+The changes need no new dependency, database index, core patch, service restart
+or cache purge. Source changes are not a deployed HTTP latency guarantee.
+See [finding aids](FINDING_AIDS.md) for configuration and focused regressions.
 
 ## Changes to media filtering
 

@@ -163,17 +163,30 @@ parent IDs, relative depths and cycle protection preserve the tree without
 interleaving identically named branches or imposing a first-page cutoff.
 
 The export uses the Dompdf supplied by Pawtucket. Remote resources, embedded PHP
-and JavaScript are disabled. Every request rebuilds the current readable descriptive data. Identical data can
+and JavaScript are disabled. Every request rebuilds the current readable descriptive data.
+Hierarchy membership, intrinsic fields, creator relationships and metadata are read
+in batches of at most 500 IDs, with fresh native visibility checks. A scoped
+attribute-presence lookup avoids expanding fields absent from a unit; populated
+values still use native templates, type applicability and bundle permissions.
+There is no per-unit model load, object inventory or database write.
+Identical data can
 reuse immutable PDF bytes through the configured native cache (Redis, files, etc.)
 for at most one day. The key includes every access-filtered field/hierarchy value
 and the template/helper/renderer identity; generation time is excluded so a reused
 PDF retains its actual creation timestamp. Changed metadata or permissions change
 the key. No page HTML or permission decisions are cached, and artifacts over 8 MiB
 are not retained. Set `pdf_cache_timeout = 0` in `conf/finding_aid.conf` to disable
-this optimization. Cache failures fall back to rendering. An unavailable renderer or generation failure returns a readable HTTP 503.
+this optimization. Cached binary bytes use a bounded base64 envelope so native
+JSON file-cache encoders preserve them correctly as well as Redis. Cache failures
+fall back to rendering. An unavailable renderer or generation failure returns a readable HTTP 503.
 PHP execution limits are raised to at least 180 seconds where configured;
 infrastructure timeouts still apply. Very large descriptive hierarchies may
-ultimately need background exports, but no work scales with linked-object counts.
+ultimately need background exports: the measured 291-page document still needed
+about 18 seconds for a cold Dompdf layout, although identical subsequent exports
+reuse those bytes after current permissions and metadata are checked. The same
+large hierarchy's description reads fell from about 28 seconds to 2 seconds.
+These are native CLI measurements, not deployed HTTP guarantees. No work scales
+with linked-object counts.
 
 The layout uses US Letter portrait, 0.75-inch margins and 10.5-point body text.
 Long fields flow across pages, with a heading kept with the start of its fields.
@@ -187,6 +200,13 @@ cover a folder with a physical extent and no object records, all descriptive
 levels, missing/custom mappings, private branches, denied language labels,
 root-link resolution, selected-subunit exports, identical branch names, cycles
 and 200 siblings.
+`php tests/finding_aid_batch_test.php` compares the batched output to the original
+single-record traversal, including more than 1,200 units, type-specific elements,
+creator privacy/order, nested containers, blank fallback fields and changed
+permissions. It checks bounded queries and avoids per-unit model loads.
+`php tests/finding_aid_cache_test.php` covers exact binary reuse through JSON
+encoding, metadata/visibility invalidation, malformed or oversized cache entries,
+disabled caching and cache failures.
 Object queries and models throw in the fixture, including for a root seeded with
 4,105 linked IDs: those IDs must have no effect on the document.
 

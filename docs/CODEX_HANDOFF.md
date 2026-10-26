@@ -5,6 +5,24 @@ Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
 
+Large finding aids now batch hierarchy, intrinsic fields, metadata templates and
+creator relationships rather than loading a model and expanding every configured
+field for each unit. Fresh, scoped `ca_attributes` presence skips absent fields;
+native formatting, type applicability, fallback order and all record/bundle/ACL
+checks remain. The original single-record path is retained for compatibility and
+canonical comparison. Binary PDF cache entries use a bounded base64 envelope for
+native JSON file backends as well as Redis. No core change, schema change,
+database write, service change or cache purge is required.
+
+Read-only native A/B checks on a 1,739-visible-unit hierarchy preserved exact
+canonical descriptions and PDF input: data reads fell from 28.3s / 34,836 queries
+to about 2.0s / 212 queries. A 57-unit aid fell from 1.0s / 1,214 queries to
+0.12s / 66 queries. The large aid's cold 291-page Dompdf layout still took about
+18s; identical PDFs reuse the existing byte cache after rebuilding checked data.
+These are CLI measurements; source push is separate from deployment and live
+HTTP timing. The new `tests/finding_aid_batch_test.php` checks canonical output,
+permissions, nested containers and more than 1,200 units with bounded queries.
+
 Finding-aid text now normalizes CRLF/CR and whitespace-only lines, and caps repeated
 paragraph breaks at one blank line. Empty rich-text editor blocks previously became
 large vertical gaps through `nl2br()`. Ordinary single line breaks remain, and the
