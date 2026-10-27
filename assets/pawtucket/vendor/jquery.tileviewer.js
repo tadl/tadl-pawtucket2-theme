@@ -2287,7 +2287,7 @@ var methods = {
 								view.draw();
 								
 								if (options.sliderZooming) {
-									jQuery("#" + options.id + "ZoomSlider").slider({value: view.current_zoom() * 100});
+									view.sync_zoom_slider();
 								}
 						
 								jQuery(this).css("opacity", 0.5).removeClass('tileviewerControlSelected');
@@ -2447,10 +2447,15 @@ var methods = {
 									view.minZoom = t;
 								}
 								view.minZoom *= 0.8;
-					
-								jQuery("#" + options.id + "ZoomSlider").slider({ min: view.minZoom * 100, max: 100, slide: function(e, ui) {
-									var w = jQuery($this).width();
-									var h = jQuery($this).height();
+								// Small images may already fit above 100%, or even above
+								// the configured cap. Keep the range valid and match the engine.
+								view.minZoom = Math.min(view.minZoom, view.current_zoom());
+								view.maxZoom = Math.max(options.maximumPixelsize, view.current_zoom());
+								view.zoomSlider = jQuery("#" + options.id + "ZoomSlider");
+								view.zoomSlider.slider({ min: view.minZoom * 100, max: view.maxZoom * 100,
+									step: 0.01, value: view.current_zoom() * 100, slide: function(e, ui) {
+									var w = jQuery(view.canvas).width();
+									var h = jQuery(view.canvas).height();
 									view.zoom(ui.value/100, w/2, h/2);
 								}});
 							}
@@ -2459,8 +2464,8 @@ var methods = {
 							jQuery("#" + options.id + "ControlZoomIn, #" + options.id + "ControlZoomInImage").mousedown(function() {
 								view.mousedown = true;
 						
-								var w = jQuery($this).width();
-								var h = jQuery($this).height();
+								var w = jQuery(view.canvas).width();
+								var h = jQuery(view.canvas).height();
 						
 								jQuery('#' + options.id + "ControlZoomIn, #" + options.id + "ControlZoomInImage").css("opacity", 1.0).addClass('tileviewerControlSelected');
 								jQuery('#' + options.id + "ControlZoomOut, #" + options.id + "ControlZoomOutImage").css("opacity", 0.5).removeClass('tileviewerControlSelected');
@@ -2479,8 +2484,8 @@ var methods = {
 							jQuery("#" + options.id + "ControlZoomOut, #" + options.id + "ControlZoomOutImage").mousedown(function() {
 								view.mousedown = true;
 						
-								var w = jQuery($this).width();
-								var h = jQuery($this).height();
+								var w = jQuery(view.canvas).width();
+								var h = jQuery(view.canvas).height();
 						
 								jQuery('#' + options.id + "ControlZoomIn, #" + options.id + "ControlZoomInImage").css("opacity", 0.5).removeClass('tileviewerControlSelected');
 								jQuery('#' + options.id + "ControlZoomOut, #" + options.id + "ControlZoomOutImage").css("opacity", 1.0).addClass('tileviewerControlSelected');
@@ -2891,12 +2896,9 @@ var methods = {
 					},
 
 					zoom: function(zoom, x, y) {
-						var maxZoom = options.maximumPixelsize;
+						var maxZoom = view.maxZoom || options.maximumPixelsize;
 						if (zoom < 0) { return; }
 						if (zoom > maxZoom) { return; }
-						
-						var w = jQuery(view.canvas).width();
-						var h = jQuery(view.canvas).height();
 						
 						var targetWidth = layer.info.width * zoom;	// effective width we want
 						
@@ -2911,27 +2913,34 @@ var methods = {
 						if (l > 0) { l--; s *= 2; }
 						var f = targetWidth/s;
 						
-						//*before* changing tilesize, adjust offset so that we will zoom into where the cursor is
-                        
-                        var dist_from_x0 = x - layer.xpos;
-                        var dist_from_y0 = y - layer.ypos;
-                        
-                        var delta_zoom = zoom - (view.current_zoom());
-                        var lw = (layer.tilesize * layer.xtilenum) + layer.tilesize_xlast;
-                        var lh = (layer.tilesize * layer.ytilenum) + layer.tilesize_ylast;
-                        var dlw = layer.info.width * delta_zoom;
-                        var dlh = layer.info.height * delta_zoom;
-                        
-                        layer.xpos -= (dist_from_x0/lw) * dlw;
-                        layer.ypos -= (dist_from_y0/lh) * dlh;
+                        // Preserve the image point under the zoom anchor across
+                        // levels, including images with partially filled edge tiles.
+                        var ratio = zoom / view.current_zoom();
+                        layer.xpos = x - (x - layer.xpos) * ratio;
+                        layer.ypos = y - (y - layer.ypos) * ratio;
                         
 						layer.level = l;
 						layer.tilesize = layer.info.tilesize * f;
 						view.recalc_viewparams();
 						
                         
-						jQuery("#" + options.id + "ZoomSlider").slider({value: view.current_zoom() * 100});
+						view.sync_zoom_slider();
                         view.needdraw = true;
+					},
+
+					sync_zoom_slider: function() {
+						if (!view.zoomSlider) { return; }
+						var zoom = view.current_zoom();
+						// Fit after resizing can move outside the original range.
+						if (zoom > view.maxZoom) {
+							view.maxZoom = zoom;
+							view.zoomSlider.slider('option', 'max', zoom * 100);
+						}
+						if (zoom < view.minZoom) {
+							view.minZoom = zoom;
+							view.zoomSlider.slider('option', 'min', zoom * 100);
+						}
+						view.zoomSlider.slider('value', zoom * 100);
 					},
 					
 					current_zoom: function() {
@@ -2954,7 +2963,7 @@ var methods = {
 						var cypos = layer.ypos;
                         
                         //ignore if we've reached min/max zoom
-                        if(layer.level == 0 && layer.tilesize+delta > layer.info.tilesize*options.maximumPixelsize) { return false; }
+                        if(layer.level == 0 && layer.tilesize+delta > layer.info.tilesize*(view.maxZoom || options.maximumPixelsize)) { return false; }
 						
 						// Don't allow zooming smaller than window
 						var ts = ((layer.tilesize + delta) > 16) ? layer.tilesize + delta : layer.tilesize;
@@ -3010,7 +3019,7 @@ var methods = {
 							}
 						}
 
-						jQuery("#" + options.id + "ZoomSlider").slider({value: view.current_zoom() * 100});
+						view.sync_zoom_slider();
                         view.needdraw = true;
                     },
 

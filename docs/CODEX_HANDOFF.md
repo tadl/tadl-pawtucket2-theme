@@ -1,9 +1,21 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-26. This document carries the recent coding context to another
+Updated: 2026-10-27. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
+
+Image zoom no longer caps the slider at 100% while the native engine permits
+400%. Small images fitting above 100% previously produced reversed widget limits
+and a jQuery UI `toggleClass` exception when grabbing the handle. The theme's
+adapted TileViewer initializes the actual scale, uses valid fractional bounds
+covering the engine maximum and current fit, and synchronizes button/keyboard/Fit
+changes through the widget's value API. Larger fits after resizing extend the
+shared bounds. Slider and button anchors use canvas coordinates; absolute slider
+zoom preserves the centered image point across partial tiles and zoom levels.
+The committed native browser regression drags the handle itself in small/large/
+tall desktop/mobile cases and runs in Theme checks. Upstream reference files,
+catalogue data and installed dependencies remain unchanged.
 
 Expanded long metadata now places Read less after the complete value. The opening
 native summary is hidden while expanded; the ending button collapses the field

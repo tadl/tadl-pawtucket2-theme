@@ -48,6 +48,8 @@ jobs:
           echo "TADL_REFERENCE_ROOT=$browser_reference" >> "$GITHUB_ENV"
       - name: Accessibility browser regressions
         run: node tests/accessibility_browser_test.js
+      - name: Image zoom browser regressions
+        run: node tests/tileviewer_zoom_browser_test.js
       - name: Thumbnail grid browser regressions
         run: node tests/thumbnail_grid_browser_test.js
       - name: Display preference browser regressions

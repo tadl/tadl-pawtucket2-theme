@@ -222,6 +222,8 @@ TADL_REFERENCE_ROOT=/path/to/pawtucket2 \
   node tests/accessibility_browser_test.js
 TADL_REFERENCE_ROOT=/path/to/pawtucket2 \
   node tests/display_preferences_browser_test.js
+TADL_REFERENCE_ROOT=/path/to/pawtucket2 \
+  node tests/tileviewer_zoom_browser_test.js
 ```
 
 Use `NODE_PATH` if the tools are installed in a separate directory, `TADL_AXE_PATH`

@@ -1900,7 +1900,7 @@ div.tadl-document-controls .nextPreviousLinks a:last-child { text-align: right; 
     top: 50%;
     margin-left: -12px;
     transform: translateY(-50%);
-    border: 1px solid #fff;
+    border: 0;
     border-radius: 50%;
     background: #fff;
     cursor: grab;
