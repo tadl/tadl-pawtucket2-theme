@@ -60,13 +60,13 @@
 					<a class="tadl-section-link" href="https://www.tadl.org/posts?field_bl_type_target_id%5B295%5D=295&amp;field_bl_tags_target_id%5B414%5D=414">View More</a>
 				</div>
 				<div class="tadl-blog-grid" id="tadl-recent-writing">
-					<a class="tadl-blog-card" href="https://www.tadl.org/posts/traverse-city-psychiatrist-makes-history-shocking-career-dr-paul-h-wilcox">
-						<span class="tadl-blog-image"><img src="https://www.tadl.org/sites/default/files/styles/post_gallery_teaser/public/2026-02/ArticleThumbnail.png?itok=t_f2Rgl3" alt="Traverse City Psychiatrist Makes History: The Shocking Career of Dr. Paul H. Wilcox"></span>
-						<span class="tadl-blog-title">Traverse City Psychiatrist Makes History: The "Shocking" Career of Dr. Paul H. Wilcox</span>
+					<a class="tadl-blog-card" href="https://www.tadl.org/localhistorysearch">
+						<span class="tadl-blog-image"><img src="https://www.tadl.org/sites/default/files/styles/post_gallery_teaser/public/2026-10/newCMS-2026%20%281%29.png?itok=8HizTm7m" alt="" loading="lazy" decoding="async"></span>
+						<span class="tadl-blog-title">Your Local History Search Just Got an Upgrade!</span>
 					</a>
-					<a class="tadl-blog-card" href="https://www.tadl.org/posts/dont-miss-northwestern-michigan-fair-first-half-twentieth-century">
-						<span class="tadl-blog-image"><img src="https://www.tadl.org/sites/default/files/styles/post_gallery_teaser/public/2025-08/Northwestern%20Michigan%20Fair%20Square%20%281%29.png?itok=jOYf4UE8" alt="Don't Miss the Northwestern Michigan Fair: The First Half of the Twentieth Century"></span>
-						<span class="tadl-blog-title">"Don't Miss the Northwestern Michigan Fair:" The First Half of the Twentieth Century</span>
+					<a class="tadl-blog-card" href="https://www.tadl.org/lhccamproy-el">
+						<span class="tadl-blog-image"><img src="https://www.tadl.org/sites/default/files/styles/post_gallery_teaser/public/2026-10/camproyel-logos.png?itok=gSk51h_9" alt="" loading="lazy" decoding="async"></span>
+						<span class="tadl-blog-title">The Camp Roy-El Project</span>
 					</a>
 				</div>
 			</section>

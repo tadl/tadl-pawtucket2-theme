@@ -1709,7 +1709,11 @@ and quick links directly. The FAQ and research-request sections remain.
 **Recent blog posts** progressively replaces its two fallback cards
 with the latest two entries from
 `https://feeds.tools.tadl.org/local_history_posts.json?limit=2`. `View More` retains
-the source's type 295/tag 414 filters. The companion `TADLFeeds` source repository
+the source's type 295/tag 414 filters. Eligibility follows those taxonomy filters,
+including short/custom article aliases outside `/posts/`; both the feed scraper
+and client accept those aliases on the checked TADL HTTPS origin. The October 27
+fallback refresh uses the latest catalogue-search upgrade and Camp Roy-El posts.
+The companion `TADLFeeds` source repository
 adds a separate cache/job using those fixed filters and the existing 15-minute
 background refresh pattern; news `/posts.json` remains independent. Deploy that
 app first: its existing `feeds:refresh` postdeploy warmup includes this feed.
@@ -1717,8 +1721,8 @@ Deploying or pushing theme source does not deploy TADLFeeds.
 
 The client loads through `conf/assets.conf` but fetches only when the home-page
 grid exists. It omits credentials/referrers, limits the request to eight seconds,
-renders titles as text, and accepts article/image URLs only on HTTPS
-`www.tadl.org` under `/posts/` and `/sites/`. It preserves fallback cards on errors,
+renders titles as text, and accepts article URLs only on HTTPS `www.tadl.org`;
+images must additionally be under `/sites/`. It preserves fallback cards on errors,
 empty/malformed data or disabled JavaScript. A cold-cache 503 gets one retry after
 60 seconds. The feed refreshes on subsequent visits, rather than scraping Drupal
 on the Pawtucket request path. `tests/recent_writing_test.php` checks the actual

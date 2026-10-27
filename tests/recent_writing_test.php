@@ -41,8 +41,16 @@ async function fixture(responses, {present=true, loading=false}={}) {
  assert.equal(f.grid.children[0].children[0].children[0].alt,'');
  assert.equal(f.calls[0].url,'https://feeds.tools.tadl.org/local_history_posts.json?limit=2');
  assert.equal(f.calls[0].options.credentials,'omit');assert.equal(f.calls[0].options.referrerPolicy,'no-referrer');assert.equal(f.timers.size,0);
+ const aliases=[good('Latest history','unused-one'),good('Earlier history','unused-two')];
+ aliases[0].post_url='/synthetic-history-feature';aliases[1].post_url='https://www.tadl.org/research/synthetic-history-project';
+ f=await fixture([{ok:true,status:200,json:async()=>aliases}]);
+ assert.equal(f.grid.children.length,2);
+ assert.deepEqual(f.grid.children.map(card=>card.href),['https://www.tadl.org/synthetic-history-feature','https://www.tadl.org/research/synthetic-history-project']);
  const unsafe=[null,good('Bad','bad')];unsafe[1].post_url='javascript:alert(1)';
  const external=good('External','external');external.post_url='https://example.com/posts/external';unsafe.push(external);
+ for(const url of ['http://www.tadl.org/synthetic-history','https://www.tadl.org:444/synthetic-history','https://user:password@www.tadl.org/synthetic-history','https://www.tadl.org.example.com/synthetic-history']){
+  const invalid=good('Unsafe alias','unused');invalid.post_url=url;unsafe.push(invalid);
+ }
  const image=good('Valid without unsafe image','safe');image.featured_image_urls.thumbnail='https://example.com/track.png';unsafe.push(image);
  f=await fixture([{ok:true,status:200,json:async()=>unsafe}]);
  assert.equal(f.grid.children.length,1);assert.equal(f.grid.children[0].children[0].children.length,0);

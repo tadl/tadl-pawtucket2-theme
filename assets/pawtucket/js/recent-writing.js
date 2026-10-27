@@ -12,7 +12,7 @@
 
     function writingCard(post) {
         const title = post?.title?.rendered;
-        const href = writingURL(post?.post_url, '/posts/');
+        const href = writingURL(post?.post_url, '/');
         if (typeof title !== 'string' || !title.trim() || !href) { return null; }
 
         const card = document.createElement('a');
