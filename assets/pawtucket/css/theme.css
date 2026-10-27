@@ -1834,8 +1834,10 @@ div.tadl-document-controls .nextPreviousLinks a:last-child { text-align: right; 
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
+    top: 50%;
+    transform: translateY(-50%);
     box-sizing: border-box;
     border: 1px solid rgba(255, 255, 255, 0.75);
     border-radius: 3px;
@@ -1843,15 +1845,20 @@ div.tadl-document-controls .nextPreviousLinks a:last-child { text-align: right; 
     /* Native zoom handlers set inline opacity; keep both buttons legible. */
     opacity: 1 !important;
     color: #fff;
-    font-size: 28px;
+    font-size: 22px;
     font-weight: 600;
     line-height: 1;
+    text-decoration: none;
 }
+
+.tileviewer .tileviewerControlZoomOut { left: 6px; }
+.tileviewer .tileviewerControlZoomIn { right: 6px; }
 
 .tileviewer .tileviewerControlZoomIn:is(:hover, :focus-visible),
 .tileviewer .tileviewerControlZoomOut:is(:hover, :focus-visible) {
     background: #111;
     color: #fff;
+    text-decoration: none;
 }
 
 .tileviewerControlZoomIn i,
@@ -1868,6 +1875,8 @@ div.tadl-document-controls .nextPreviousLinks a:last-child { text-align: right; 
 .tileviewer .tileviewerToolbarZoom {
     height: 44px;
     max-width: calc(100% - 96px);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, .75);
     /* Override the native fixed-500px centering on narrow viewports. */
     left: 50% !important;
     transform: translateX(-50%);
@@ -1879,11 +1888,28 @@ div.tadl-document-controls .nextPreviousLinks a:last-child { text-align: right; 
     top: 50%;
     transform: translateY(-50%);
     width: calc(100% - 116px);
+    height: 6px;
+    border: 0;
+    border-radius: 3px;
+    background: #999;
+}
+
+.tileviewer .tileviewerToolbarZoomSlider .ui-slider-handle {
+    width: 24px;
+    height: 24px;
+    top: 50%;
+    margin-left: -12px;
+    transform: translateY(-50%);
+    border: 1px solid #fff;
+    border-radius: 50%;
+    background: #fff;
+    cursor: grab;
 }
 
 .tileviewer .tileviewerControl:focus-visible,
 .tileviewer .tileviewerControlZoomIn:focus-visible,
-.tileviewer .tileviewerControlZoomOut:focus-visible {
+.tileviewer .tileviewerControlZoomOut:focus-visible,
+.tileviewer .tileviewerToolbarZoomSlider .ui-slider-handle:focus-visible {
     outline: 3px solid #fff;
     outline-offset: 2px;
 }

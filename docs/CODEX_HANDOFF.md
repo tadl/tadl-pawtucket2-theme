@@ -1539,10 +1539,13 @@ below retain implementation details and historical verification evidence.
   overlay request resolves its current object, including both ID URL forms.
   Its tooltip uses the native jQuery UI tooltip styling and positioning. Fixed
   padding reserves its toolbar space so opening the menu cannot shift Rotate,
-  Fit or Help. The zoom buttons have opaque dark squares, centered on the slider,
-  with visible white symbols even when native handlers change their opacity.
-  The slider track is inset from both buttons so its handle clears them at the
-  minimum and maximum zoom positions.
+  Fit or Help. Zoom uses one dark 44px strip: 32px square buttons with 22px white
+  symbols, a 6px track and a 24px round handle, all vertically centered. The buttons
+  remain opaque when native handlers change their opacity. The inset track keeps
+  the handle clear of both buttons at its endpoints; keyboard focus is visible.
+  Scoped CSS preserves native zoom behavior. A synthetic native TileViewer preview
+  verified button zoom, canvas keyboard zoom, pointer slider movement, focus,
+  endpoint clearance and layout at 320/390/737/1280px.
   `conf/assets.conf` loads `image-downloads.js` site-wide. Its delegated capture
   handler closes open download menus on outside clicks, including canvas clicks
   and AJAX-loaded content. Escape closes menus before the viewer; Tab remains a
