@@ -152,6 +152,38 @@ async function dragHandle(page, fraction) {
         }
         console.log(label + ': full range, actual handle drags, both endpoints, repeated zoom/Fit, synchronization and layout passed');
     }
+    // A rapid double-click used to overwrite the shared interval ID. The older
+    // timer then kept zooming in after release, pinning subsequent actions at max.
+    await page.setViewportSize({width:1280,height:900});
+    await page.goto(origin + '/?image=small');
+    await page.locator('#syntheticZoomSlider .ui-slider-handle').waitFor();
+    await dragHandle(page,1);
+    await page.getByRole('link',{name:'Zoom in',exact:true}).dblclick({delay:5});
+    await page.getByRole('link',{name:'Zoom out',exact:true}).click();
+    await page.waitForTimeout(180);
+    let released = await readZoom(page);
+    assert(released.actual < released.maximum - .02,'Minus must leave maximum zoom after rapid plus clicks: ' + JSON.stringify(released));
+    await page.waitForTimeout(180);
+    assert(Math.abs((await readZoom(page)).actual - released.actual) < .00011,'Zoom must stop changing after mouse release');
+    await dragHandle(page,.4); released = await readZoom(page);
+    await page.waitForTimeout(180);
+    assert(Math.abs((await readZoom(page)).actual - released.actual) < .00011,'A released zoom-in timer must not pull a dragged handle back to maximum');
+    synchronized(released,'Drag away from maximum after rapid clicks');
+    await page.getByRole('link',{name:'Zoom out',exact:true}).dblclick({delay:5});
+    released = await readZoom(page); await page.waitForTimeout(180);
+    assert(Math.abs((await readZoom(page)).actual - released.actual) < .00011,'Rapid minus clicks must not leave a zoom-out timer running either');
+    await page.getByRole('link',{name:'Zoom in',exact:true}).hover(); await page.mouse.down();
+    await page.waitForFunction(() => {
+        const view = jQuery('#synthetic').data('view');
+        return view.current_zoom() >= view.maxZoom - .1;
+    });
+    const strip = await page.locator('.tileviewerToolbarZoom').boundingBox();
+    await page.mouse.move(strip.x + strip.width / 2,strip.y + strip.height / 2);
+    await page.mouse.up(); released = await readZoom(page); await page.waitForTimeout(180);
+    assert(Math.abs((await readZoom(page)).actual - released.actual) < .00011,'Releasing a held plus button outside the button must stop zooming immediately');
+    await dragHandle(page,.4); released = await readZoom(page); await page.waitForTimeout(180);
+    assert(Math.abs((await readZoom(page)).actual - released.actual) < .00011,'Dragging away from maximum after a held press must remain stable');
+    console.log('Maximum zoom recovery: rapid plus/minus clicks, held plus, release outside the button, minus, actual handle drag and stable scale after release passed');
     assert.deepEqual(errors,[], 'Native image-viewer errors');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
     if (browser) { await browser.close(); }

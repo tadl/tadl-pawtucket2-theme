@@ -2462,6 +2462,7 @@ var methods = {
 					
 							// Handle toolbar and slider zoom controls
 							jQuery("#" + options.id + "ControlZoomIn, #" + options.id + "ControlZoomInImage").mousedown(function() {
+								clearInterval(view.interval);
 								view.mousedown = true;
 						
 								var w = jQuery(view.canvas).width();
@@ -2470,18 +2471,21 @@ var methods = {
 								jQuery('#' + options.id + "ControlZoomIn, #" + options.id + "ControlZoomInImage").css("opacity", 1.0).addClass('tileviewerControlSelected');
 								jQuery('#' + options.id + "ControlZoomOut, #" + options.id + "ControlZoomOutImage").css("opacity", 0.5).removeClass('tileviewerControlSelected');
 						
+								view.change_zoom(20, w/2, h/2);
 								view.interval = setInterval(function() {
 									if (!view.mousedown) { 
 										clearInterval(view.interval);
 								
 										jQuery('#' + options.id + "ControlZoomIn, #" + options.id + "ControlZoomInImage").css("opacity", 0.5).removeClass('tileviewerControlSelected');
 										jQuery('#' + options.id + "ControlZoomOut, #" + options.id + "ControlZoomOutImage").css("opacity", 0.5).removeClass('tileviewerControlSelected');
+										return;
 									}
 									view.change_zoom(20, w/2, h/2);
 								}, 50);
 							});
 					
 							jQuery("#" + options.id + "ControlZoomOut, #" + options.id + "ControlZoomOutImage").mousedown(function() {
+								clearInterval(view.interval);
 								view.mousedown = true;
 						
 								var w = jQuery(view.canvas).width();
@@ -2490,12 +2494,14 @@ var methods = {
 								jQuery('#' + options.id + "ControlZoomIn, #" + options.id + "ControlZoomInImage").css("opacity", 0.5).removeClass('tileviewerControlSelected');
 								jQuery('#' + options.id + "ControlZoomOut, #" + options.id + "ControlZoomOutImage").css("opacity", 1.0).addClass('tileviewerControlSelected');
 						
+								view.change_zoom(-20, w/2, h/2);
 								view.interval = setInterval(function() {
 									if (!view.mousedown) { 
 										clearInterval(view.interval);
 																		
 										jQuery('#' + options.id + "ControlZoomIn, #" + options.id + "ControlZoomInImage").css("opacity", 0.5).removeClass('tileviewerControlSelected');
 										jQuery('#' + options.id + "ControlZoomOut, #" + options.id + "ControlZoomOutImage").css("opacity", 0.5).removeClass('tileviewerControlSelected');
+										return;
 									}
 									view.change_zoom(-20, w/2, h/2);
 								}, 50);
@@ -3407,6 +3413,7 @@ var methods = {
 // End ANNOTATIONS: mousedown handler
 // 
 
+                    clearInterval(view.interval);
                     view.mousedown = true;
 
                     //mode specific extra info
@@ -3418,17 +3425,21 @@ var methods = {
 							document.body.style.cursor="move";
 							break;
 						case "zoom_in":
+							view.change_zoom(30, x, y);
 							view.interval = setInterval(function() {
 								if (!view.mousedown) {
 									clearInterval(view.interval);
+									return;
 								}
 								view.change_zoom(30, x, y);
 							}, 50);
 							break;
 						case "zoom_out":
+							view.change_zoom(-30, x, y);
 							view.interval = setInterval(function() {
 								if (!view.mousedown) {
 									clearInterval(view.interval);
+									return;
 								}
 								view.change_zoom(-30, x, y);
 							}, 50);
@@ -3442,6 +3453,10 @@ var methods = {
                 $(document).mouseup(function(){
                     document.body.style.cursor="auto";
                     view.mousedown = false;
+                    // Stop before another press can overwrite this timer's ID.
+                    clearInterval(view.interval);
+                    view.interval = null;
+                    jQuery('#' + options.id + "ControlZoomIn, #" + options.id + "ControlZoomInImage, #" + options.id + "ControlZoomOut, #" + options.id + "ControlZoomOutImage").css("opacity", 0.5).removeClass('tileviewerControlSelected');
 //
 // Begin ANNOTATIONS: mouseup handler
 // 

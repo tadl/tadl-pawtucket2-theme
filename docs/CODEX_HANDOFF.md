@@ -5,6 +5,15 @@ Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
 
+Rapid zoom clicks no longer leave an orphaned repeat timer. Every new button or
+canvas zoom press cancels the previous timer; document mouseup stops it immediately
+and resets button highlighting. A quick click applies one step on press, and a hold
+repeats until release. Previously an older timer could clear the newer timer's ID
+while continuing to zoom, pinning both minus and slider drags back at maximum with
+no console error. The native browser regression now exercises rapid plus/minus
+clicks at maximum, press-and-hold, release outside the button and stable zoom after
+release/drag. This remains confined to the theme's adapted viewer copy.
+
 Image zoom no longer caps the slider at 100% while the native engine permits
 400%. Small images fitting above 100% previously produced reversed widget limits
 and a jQuery UI `toggleClass` exception when grabbing the handle. The theme's
