@@ -79,6 +79,23 @@ $rows = array(
 	105 => objectMediaRow(105, 'application/pdf'),
 	106 => objectMediaRow(106, 'image/jpeg')
 );
+if (($argv[1] ?? '') === '--browser-fixtures') {
+	$photos = [];
+	foreach ([[900, 600], [900, 540], [600, 900]] as $i => [$width, $height]) {
+		$photos[] = objectMediaSlide(101 + $i, '<a href="#photo"><img src="/synthetic-photo-'.($i + 1).'.svg" width="'.$width.'" height="'.$height.'" alt="Synthetic photo '.($i + 1).'"></a>');
+	}
+	$viewer = (new ObjectMediaView(new ObjectMediaRequest(), [
+		'representation_count' => 3, 'representation_ids' => [101, 102, 103],
+		't_subject' => new ObjectMediaSubject([]), 'slide_list' => $photos, 'context' => 'synthetic'
+	]))->render();
+	$thumbnails = '<nav id="detailRepresentationThumbnails" aria-label="Object photos">';
+	foreach ([101, 102, 103] as $i => $id) {
+		$thumbnails .= '<a href="#photo" class="repThumb" id="repThumb_'.$i.'" data-representation_id="'.$id.'" onclick="setItem('.$i.');return false;">Photo '.($i + 1).'</a>';
+	}
+	$html = '<div class="detail tadl-object-detail"><div class="tadl-object-main"><div class="container tadl-object-content"><div class="row"><div class="tadl-object-media">'.$viewer.$thumbnails.'</nav></div><div class="tadl-object-info"><h1>Synthetic photo album</h1><p>Three uncropped photos with different proportions.</p></div></div></div></div></div>';
+	echo json_encode(['object-photos' => $html], JSON_THROW_ON_ERROR);
+	exit;
+}
 $fixtures = array(
 	array('name' => 'primary still then playable video', 'slides' => array($image, $video), 'expected' => 1),
 	array('name' => 'representation ID order differs from slides', 'slides' => array($image, $video), 'ids' => array(102, 101), 'expected' => 1),

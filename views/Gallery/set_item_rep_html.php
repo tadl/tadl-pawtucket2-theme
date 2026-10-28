@@ -10,16 +10,18 @@
 	$pn_row_id = $this->getVar("row_id");
 	$ps_table = $this->getVar("table");
 	$pn_rep_id = $this->getVar("representation_id");
+	$previous_shortcut = 'aria-keyshortcuts="ArrowLeft" title="'.htmlspecialchars(_t('Previous gallery item (Left arrow)'), ENT_QUOTES, 'UTF-8').'"';
+	$next_shortcut = 'aria-keyshortcuts="ArrowRight" title="'.htmlspecialchars(_t('Next gallery item (Right arrow)'), ENT_QUOTES, 'UTF-8').'"';
 	print "<div id='galleryDetailImageWrapper'><div class='tadl-gallery-media-stage'>";
 	if($pn_previous_item_id > 0){
-		print "<button type='button' class='galleryDetailPrevious' aria-label='"._t('Previous gallery item')."' onclick='caGalleryNav(\"previous\"); return false;'><i class='fa fa-chevron-left' aria-hidden='true'></i></button>";
+		print "<button type='button' class='galleryDetailPrevious' ".$previous_shortcut." aria-label='"._t('Previous gallery item')."' onclick='caGalleryNav(\"previous\"); return false;'><i class='fa fa-chevron-left' aria-hidden='true'></i></button>";
 	}else{
-		print "<button type='button' class='galleryDetailPrevious inactive' aria-label='"._t('Previous gallery item')."' disabled><i class='fa fa-chevron-left' aria-hidden='true'></i></button>";
+		print "<button type='button' class='galleryDetailPrevious inactive' ".$previous_shortcut." aria-label='"._t('Previous gallery item')."' disabled><i class='fa fa-chevron-left' aria-hidden='true'></i></button>";
 	}
 	if($pn_next_item_id > 0){
-		print "<button type='button' class='galleryDetailNext' aria-label='"._t('Next gallery item')."' onclick='caGalleryNav(\"next\"); return false;'><i class='fa fa-chevron-right' aria-hidden='true'></i></button>";
+		print "<button type='button' class='galleryDetailNext' ".$next_shortcut." aria-label='"._t('Next gallery item')."' onclick='caGalleryNav(\"next\"); return false;'><i class='fa fa-chevron-right' aria-hidden='true'></i></button>";
 	}else{
-		print "<button type='button' class='galleryDetailNext inactive' aria-label='"._t('Next gallery item')."' disabled><i class='fa fa-chevron-right' aria-hidden='true'></i></button>";
+		print "<button type='button' class='galleryDetailNext inactive' ".$next_shortcut." aria-label='"._t('Next gallery item')."' disabled><i class='fa fa-chevron-right' aria-hidden='true'></i></button>";
 	}
 	$vs_rep_toolbar = $this->getVar('repToolBar');
 	require_once(__DIR__.'/../../helpers/image_downloads.php');

@@ -1930,6 +1930,20 @@ div.tadl-document-controls .nextPreviousLinks a:last-child { text-align: right; 
     padding: 0 52px;
 }
 
+.tadl-object-detail .tadl-photo-frame {
+    /* Reserve the tallest fitted photo before any image loads or changes. */
+    width: 100%;
+    aspect-ratio: var(--tadl-media-aspect);
+    max-height: 500px;
+    display: flex;
+    align-items: center;
+}
+
+.tadl-object-detail .tadl-photo-frame > [data-representation_id] {
+    width: 100%;
+    min-width: 0;
+}
+
 .tadl-object-detail #detailRepNav {
     padding: 0;
 }
@@ -2021,6 +2035,10 @@ div.tadl-document-controls .nextPreviousLinks a:last-child { text-align: right; 
     }
 
     .tadl-object-detail .repViewerCont img:not(.vjs-poster) {
+        max-height: 650px;
+    }
+
+    .tadl-object-detail .tadl-photo-frame {
         max-height: 650px;
     }
 }

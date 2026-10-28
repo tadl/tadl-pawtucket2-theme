@@ -1,9 +1,29 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-27. This document carries the recent coding context to another
+Updated: 2026-10-28. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
+
+Inline object photo sequences reserve a common frame from the tallest fitted
+photo's existing rendered width/height attributes, capped at the existing 500px
+or 650px display limit. This keeps arrows, counter and scroll anchoring stable
+between landscape/portrait photos without cropping, preloading media or extra
+queries. The dimension-only helper parses checked slide copies and never changes
+native slide bytes. Mixed players/documents, missing dimensions and single slides
+retain their normal layout. Native initialization, active thumbnails, downloads,
+media counters and navigation boundaries remain unchanged.
+
+Left/Right shortcuts reuse the actual inline media or gallery Previous/Next
+buttons. Tooltips and aria-keyshortcuts expose them. The shared handler ignores
+modifiers, repeats, composing/handled events, editable fields, other interactive
+controls, busy galleries and modal viewers; the full image viewer still owns its
+canvas pan keys. No new asset request is added. `media_names_test.php` covers frame
+eligibility and `object_detail_media_test.php --browser-fixtures` supplies the
+actual bundle with synthetic photos. The accessibility browser suite checks
+stable pointer coordinates and page scroll across three proportions at 1280,
+768, 390 and 320px, plus keyboard boundaries, thumbnail synchronization, control
+exclusions and gallery shortcuts alongside its existing native player tests.
 
 Rapid zoom clicks no longer leave an orphaned repeat timer. Every new button or
 canvas zoom press cancels the previous timer; document mouseup stops it immediately

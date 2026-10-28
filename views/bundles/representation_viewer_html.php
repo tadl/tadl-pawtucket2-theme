@@ -49,17 +49,18 @@ if (method_exists($t_subject, 'getLabelForDisplay')) {
 }
 $initial_index = tadlObjectDetailInitialMediaIndex($this->request, $t_subject, $slide_list);
 $rendered_count = count((array)$slide_list);
+$photo_frame_ratio = tadlMediaPhotoFrameRatio((array)$slide_list);
 
 // Keep thumbnail callbacks available when native IDs outnumber rendered slides.
 if ($rendered_count > 1 || $representation_count > 1) {
 ?>
 <div class="repViewerWrapper tadl-representation-viewer">
 	<div<?= $rendered_count > 1 ? ' class="tadl-representation-stage"' : ''; ?>>
-		<div id="repViewerItemDisplay"></div>
+		<div id="repViewerItemDisplay"<?= $photo_frame_ratio !== null ? ' class="tadl-photo-frame" style="--tadl-media-aspect:'.json_encode($photo_frame_ratio).'"' : ''; ?>></div>
 		<?php if ($rendered_count > 1): ?>
 		<div id="detailRepNav">
-			<button type="button" id="detailRepNavPrev" aria-controls="repViewerItemDisplay" aria-label="<?= htmlspecialchars(_t('Previous media'), ENT_QUOTES, 'UTF-8'); ?>"><i class="fa fa-chevron-left" aria-hidden="true"></i></button>
-			<button type="button" id="detailRepNavNext" aria-controls="repViewerItemDisplay" aria-label="<?= htmlspecialchars(_t('Next media'), ENT_QUOTES, 'UTF-8'); ?>"><i class="fa fa-chevron-right" aria-hidden="true"></i></button>
+			<button type="button" id="detailRepNavPrev" aria-controls="repViewerItemDisplay" aria-keyshortcuts="ArrowLeft" title="<?= htmlspecialchars(_t('Previous media (Left arrow)'), ENT_QUOTES, 'UTF-8'); ?>" aria-label="<?= htmlspecialchars(_t('Previous media'), ENT_QUOTES, 'UTF-8'); ?>"><i class="fa fa-chevron-left" aria-hidden="true"></i></button>
+			<button type="button" id="detailRepNavNext" aria-controls="repViewerItemDisplay" aria-keyshortcuts="ArrowRight" title="<?= htmlspecialchars(_t('Next media (Right arrow)'), ENT_QUOTES, 'UTF-8'); ?>" aria-label="<?= htmlspecialchars(_t('Next media'), ENT_QUOTES, 'UTF-8'); ?>"><i class="fa fa-chevron-right" aria-hidden="true"></i></button>
 		</div>
 		<?php endif; ?>
 	</div>

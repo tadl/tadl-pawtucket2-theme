@@ -13,6 +13,9 @@ const axeSource = fs.readFileSync(axePath, 'utf8');
 const rendered = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'accessibility_test.php'), '--fixtures'], {encoding:'utf8'});
 assert.equal(rendered.status, 0, rendered.stderr || rendered.stdout);
 const fixtures = JSON.parse(rendered.stdout);
+const objectPhotos = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'object_detail_media_test.php'), '--browser-fixtures'], {encoding:'utf8'});
+assert.equal(objectPhotos.status, 0, objectPhotos.stderr || objectPhotos.stdout);
+Object.assign(fixtures, JSON.parse(objectPhotos.stdout));
 const collectionHeaders = spawnSync(process.env.PHP_BINARY || 'php', [path.join(__dirname, 'collection_detail_scripts_test.php'), '--staff-shortcut-fixtures'], {encoding:'utf8'});
 assert.equal(collectionHeaders.status, 0, collectionHeaders.stderr || collectionHeaders.stdout);
 Object.assign(fixtures, JSON.parse(collectionHeaders.stdout));
@@ -88,6 +91,13 @@ const server = http.createServer((request, response) => {
         response.end('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="600" height="400" fill="#49688e"/></svg>');
         return;
     }
+    const photo = url.pathname.match(/^\/synthetic-photo-([123])\.svg$/);
+    if (photo) {
+        const [width,height] = [[900,600],[900,540],[600,900]][Number(photo[1])-1];
+        response.setHeader('Content-Type', 'image/svg+xml');
+        response.end(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="#49688e"/><circle cx="50%" cy="50%" r="160" fill="#e5ebef"/></svg>`);
+        return;
+    }
     let base, relative;
     if (url.pathname.startsWith('/native/')) { base = path.join(reference, 'assets'); relative = url.pathname.slice(8); }
     if (url.pathname.startsWith('/themes/tadl/assets/')) { base = path.join(theme, 'assets'); relative = url.pathname.slice('/themes/tadl/assets/'.length); }
@@ -117,7 +127,7 @@ let browser;
     const reports = [];
     for (const width of [1280, 320]) {
         await page.setViewportSize({width, height:900});
-        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'lightbox-order', 'lightbox-menu', 'document-text', 'long-fields', 'finding-aid-text', 'featured', 'notifications', 'collection-staff', 'sort-results', 'object-return', 'object-return-only', 'back-to-top', ...Object.keys(authorityNavigationFixtures), ...Object.keys(objectCitations)]) {
+        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'object-photos', 'lightbox-order', 'lightbox-menu', 'document-text', 'long-fields', 'finding-aid-text', 'featured', 'notifications', 'collection-staff', 'sort-results', 'object-return', 'object-return-only', 'back-to-top', ...Object.keys(authorityNavigationFixtures), ...Object.keys(objectCitations)]) {
             await page.goto(origin + '/' + name);
             if (name === 'gallery') { await page.locator('.galleryDetailNext').waitFor(); }
             await page.evaluate(async () => {
@@ -771,13 +781,97 @@ let browser;
     await page.locator('summary.cookieCount').first().focus();
     await page.keyboard.press('Enter');
     assert(await page.locator('details.cookieByCategory').first().getAttribute('open') !== null);
+    // Actual object bundle: different photo proportions must not move the arrow
+    // or the page's scroll anchor, even when navigation starts on the short photo.
+    for (const width of [1280, 768, 390, 320]) {
+        await page.setViewportSize({width,height:900});
+        await page.goto(origin + '/object-photos');
+        await page.evaluate(async () => {
+            await document.fonts.ready;
+            await Promise.all(Array.from(document.images, image => image.decode().catch(() => {})));
+            window.scrollTo(0, 100);
+        });
+        const next = page.locator('#detailRepNavNext'), previous = page.locator('#detailRepNavPrev');
+        await page.locator('#main').focus(); await page.keyboard.press('ArrowLeft');
+        assert.equal(await page.locator('#detailRepCounter').innerText(), 'Media 1 of 3');
+        const arrow = await next.boundingBox();
+        const stage = await page.locator('.tadl-representation-stage').boundingBox();
+        assert(await page.locator('#repViewerItemDisplay').evaluate(frame => {
+            const stage = frame.parentElement, styles = getComputedStyle(stage);
+            return Math.abs(frame.getBoundingClientRect().width - (stage.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight))) < 1;
+        }), 'The reserved frame must keep the full available photo width even when its height is capped.');
+        const scroll = await page.evaluate(() => window.scrollY);
+        assert(await previous.isDisabled());
+        assert.equal(await next.getAttribute('aria-keyshortcuts'), 'ArrowRight');
+        for (const position of [2, 3]) {
+            await next.click();
+            await page.locator('#repViewerItemDisplay img').evaluate(image => image.decode());
+            assert.equal(await page.locator('#detailRepCounter').innerText(), `Media ${position} of 3`);
+            const current = await next.boundingBox();
+            assert(Math.abs(current.y - arrow.y) < 1, `Photo ${position}: arrow jumped at ${width}px.`);
+            assert.equal(await page.evaluate(() => window.scrollY), scroll, 'Photo changes must not move the page scroll anchor.');
+            const image = await page.locator('#repViewerItemDisplay img').boundingBox();
+            assert(image.height <= stage.height + 1 && image.y >= stage.y - 1 && image.y + image.height <= stage.y + stage.height + 1, 'Full photo must fit inside the reserved frame.');
+        }
+        assert(await next.isDisabled());
+        await page.locator('#main').focus(); await page.keyboard.press('ArrowRight');
+        assert.equal(await page.locator('#detailRepCounter').innerText(), 'Media 3 of 3');
+        await previous.focus(); await page.keyboard.press('ArrowLeft');
+        assert.equal(await page.locator('#detailRepCounter').innerText(), 'Media 2 of 3');
+        await page.keyboard.press('ArrowRight');
+        assert.equal(await page.locator('#detailRepCounter').innerText(), 'Media 3 of 3');
+        await page.locator('#repThumb_0').click();
+        assert.equal(await page.locator('#repThumb_0').getAttribute('aria-current'), 'true');
+        await page.locator('#main').focus(); await page.keyboard.press('ArrowRight');
+        assert.equal(await page.locator('#detailRepCounter').innerText(), 'Media 2 of 3');
+        if (artifacts) { await page.screenshot({path:path.join(artifacts, `object-photos-${width}.png`),fullPage:true}); }
+    }
+    // Keyboard arrows remain available to text entry, native players, sliders,
+    // menus and modal viewers. Modifier shortcuts and key repeat do not page.
+    await page.evaluate(() => {
+        const probes = document.createElement('div'); probes.id = 'keyboard-probes';
+        probes.innerHTML = '<input aria-label="Synthetic input" value="Text"><textarea aria-label="Synthetic text">Text</textarea><select aria-label="Synthetic select"><option>One</option><option>Two</option></select><div contenteditable="true" tabindex="0">Edit</div><input type="range" aria-label="Synthetic range"><button>Other button</button><details><summary>Other disclosure</summary>Text</details><video controls tabindex="0"></video><canvas tabindex="0"></canvas><div role="slider" tabindex="0" aria-label="Synthetic slider" aria-valuenow="1"></div>';
+        document.querySelector('#main').append(probes);
+    });
+    for (const probe of await page.locator('#keyboard-probes > *').all()) {
+        const control = await probe.evaluate(node => node.tagName);
+        await (control === 'DETAILS' ? probe.locator('summary') : probe).focus();
+        await page.keyboard.press('ArrowRight');
+        assert.equal(await page.locator('#detailRepCounter').innerText(), 'Media 2 of 3', `${control} must keep its own arrow keys.`);
+    }
+    await page.locator('#main').focus();
+    for (const key of ['Alt+ArrowRight', 'Shift+ArrowRight', 'Control+ArrowRight', 'Meta+ArrowRight']) {
+        // Alt+Right is browser history on some platforms: cancel that native
+        // default after the production handler, while still exercising its guard.
+        await page.evaluate(() => document.addEventListener('keydown', function stopHistory(event) {
+            if (event.key !== 'ArrowRight') { return; }
+            event.preventDefault(); document.removeEventListener('keydown', stopHistory);
+        }));
+        await page.keyboard.press(key);
+        assert.equal(await page.locator('#detailRepCounter').innerText(), 'Media 2 of 3');
+    }
+    await page.evaluate(() => {
+        document.dispatchEvent(new KeyboardEvent('keydown', {key:'ArrowRight',repeat:true,bubbles:true}));
+        const dialog = document.createElement('div'); dialog.id = 'synthetic-photo-dialog';
+        dialog.setAttribute('aria-modal', 'true'); dialog.setAttribute('aria-hidden', 'false');
+        document.body.append(dialog);
+    });
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await page.locator('#detailRepCounter').innerText(), 'Media 2 of 3', 'Modal viewers must own arrow keys.');
+    await page.locator('#synthetic-photo-dialog').evaluate(node => node.remove());
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await page.locator('#detailRepCounter').innerText(), 'Media 3 of 3');
+    console.log('Object photos: stable arrows and scroll anchors at desktop/tablet/phone widths; keyboard, thumbnails, bounds and control/dialog exclusions passed.');
+    await page.setViewportSize({width:1280,height:900});
     await page.goto(origin + '/gallery');
     await page.locator('.galleryDetailNext').waitFor();
     await page.locator('.galleryDetailNext').focus();
-    await page.keyboard.press('Enter');
+    await page.keyboard.press('ArrowRight');
     await page.waitForFunction(() => document.querySelector('#galleryIcon2').getAttribute('aria-current') === 'true' && document.querySelector('#galleryDetailImageArea').getAttribute('aria-busy') === 'false' && document.activeElement.classList.contains('galleryDetailNext'));
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => document.querySelector('#galleryIcon3').getAttribute('aria-current') === 'true' && document.activeElement.classList.contains('galleryDetailPrevious'));
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForFunction(() => document.querySelector('#galleryIcon2').getAttribute('aria-current') === 'true' && document.querySelector('#galleryDetailImageArea').getAttribute('aria-busy') === 'false');
     await page.locator('#moreLink').click();
     assert.equal(await page.locator(':focus').getAttribute('id'), 'galleryIcon13', 'Revealing items must move focus to the first new thumbnail.');
     await page.route('**/Gallery/getSetItem*', async route => {

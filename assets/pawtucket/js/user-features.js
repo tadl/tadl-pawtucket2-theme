@@ -247,3 +247,28 @@
         if (reducedMotion.addEventListener) { reducedMotion.addEventListener('change', updateMotion); }
     }
 })();
+
+/* Photo shortcuts reuse the visible controls, including native player callbacks. */
+(function () {
+    'use strict';
+    var navigation = '#detailRepNav button, .tadl-gallery-media-stage .galleryDetailPrevious, .tadl-gallery-media-stage .galleryDetailNext';
+    document.addEventListener('keydown', function (event) {
+        if (event.defaultPrevented || event.isComposing || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey
+            || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) { return; }
+        // Dialogs and the full image viewer own their keys (the canvas arrows pan).
+        if (document.querySelector('[aria-modal="true"][aria-hidden="false"], dialog[open]')) { return; }
+        var target = event.target;
+        if (!target || !target.closest) { return; }
+        if (!target.closest(navigation) && target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), video, audio, canvas, button, summary, [role="slider"], [role="tab"], [role="menu"], [role="listbox"], [role="tree"], [role="combobox"]')) { return; }
+        var previous = event.key === 'ArrowLeft';
+        var button = document.querySelector(previous ? '.tadl-object-detail #detailRepNavPrev' : '.tadl-object-detail #detailRepNavNext');
+        if (!button) {
+            var gallery = document.querySelector('.tadl-gallery-detail #galleryDetailImageArea');
+            if (!gallery || gallery.getAttribute('aria-busy') === 'true') { return; }
+            button = gallery.querySelector(previous ? '.galleryDetailPrevious' : '.galleryDetailNext');
+        }
+        if (!button || button.disabled || !button.getClientRects().length || button.closest('[inert], [aria-hidden="true"]')) { return; }
+        event.preventDefault();
+        button.click();
+    });
+})();

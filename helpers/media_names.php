@@ -12,3 +12,34 @@ function tadlMediaImageNames($html, $label) {
   return preg_replace_callback('~\s*(/?)>$~', static fn($end) => ' alt="'.$label.'"'.$end[1].'>', $tag);
  }, (string)$html);
 }
+
+/** Tallest photo's ratio, using only dimensions in the already checked slides. */
+function tadlMediaPhotoFrameRatio(array $slides): ?float {
+ if (count($slides) < 2) { return null; }
+ $ratio = null;
+ foreach ($slides as $slide) {
+  if (trim((string)$slide) === '') { return null; }
+  $document = new DOMDocument();
+  $errors = libxml_use_internal_errors(true);
+  try {
+   $document->loadHTML((string)$slide, LIBXML_NONET);
+  } finally {
+   libxml_clear_errors();
+   libxml_use_internal_errors($errors);
+  }
+  // Mixed players and documents retain their native layout and initialization.
+  foreach (['video', 'audio', 'object', 'embed', 'iframe', 'canvas'] as $tag) {
+   if ($document->getElementsByTagName($tag)->length) { return null; }
+  }
+  $images = $document->getElementsByTagName('img');
+  if ($images->length !== 1) { return null; }
+  $image = $images->item(0);
+  $width = $image->getAttribute('width');
+  $height = $image->getAttribute('height');
+  if (!preg_match('/^[1-9][0-9]*$/D', $width) || !preg_match('/^[1-9][0-9]*$/D', $height)) { return null; }
+  $image_ratio = (float)$width / (float)$height;
+  if (!is_finite($image_ratio) || $image_ratio <= 0) { return null; }
+  $ratio = $ratio === null ? $image_ratio : min($ratio, $image_ratio);
+ }
+ return $ratio;
+}
