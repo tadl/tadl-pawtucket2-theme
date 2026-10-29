@@ -39,6 +39,8 @@ File-format tags describe the accessible original representations attached to an
 
 Provenance stays in Providence. It is omitted from Pawtucket displays, page metadata, and text/PDF finding aids without changing stored catalogue data.
 
+Narrative metadata wraps naturally to the available width in short fields, previews and expanded descriptions. Single hard line breaks within prose become spaces; paragraph gaps, lists, links and emphasis remain. Structured addresses and repeated metadata entries retain their line breaks. Stored catalogue text is unchanged.
+
 The shared interface includes keyboard navigation, visible focus, reduced-motion support, and responsive reflow. A bottom-right **Back to top** control appears after scrolling one viewport, returning the page and keyboard focus to the header. See the [accessibility guide](docs/ACCESSIBILITY.md) for coverage and remaining manual checks; installing the theme does not establish whole-site WCAG conformance.
 
 ## Requirements before installing

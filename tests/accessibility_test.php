@@ -220,6 +220,21 @@ $relatedRows = [];
 foreach (range(1, 12) as $id) { $relatedRows[] = '<a href="/synthetic/people/'.$id.'">Synthetic person '.$id.' with a descriptive catalogue name</a> (creator)'; }
 $fixtures['long-fields'] = '<h1>Synthetic long metadata</h1><section><h2>Description</h2>'.tadlDetailExpandableValue($longBody, 'Description').'</section>'
 	.'<section><h2>Related people</h2>'.tadlDetailExpandableValue(join('<br>', $relatedRows), 'Related people', true).'</section>';
+$reflowStart = '<span data-tadl-flow="before">One</span>'."<br>\n".'<span data-tadl-flow="after">two</span> ';
+$reflowItem = new class($reflowStart) {
+	function __construct(private string $start) {}
+	function getWithTemplate($template, $options) {
+		if ($template === '^synthetic.short') {
+			return '<p>'.$this->start.'short notes with <strong>emphasis</strong> and a <a href="/synthetic/guide">guide link</a>.</p>'
+				.'<p>Second distinct paragraph.</p><ul><li>First list item</li><li>Second list item</li></ul>';
+		}
+		return $this->start.str_repeat('Synthetic archival prose with <em>recorded emphasis</em>. ', 30)
+			."<br>\n<br>\n".'Second paragraph with a <a href="/synthetic/guide">guide link</a>.';
+	}
+};
+$fixtures['metadata-reflow'] = '<h1>Synthetic metadata wrapping</h1><section><h2>Catalogue metadata</h2><div id="synthetic-short-note">'
+	.tadlDetailField(new A11yRequest(), $reflowItem, 'Scope and content', '^synthetic.short').'</div><div id="synthetic-long-note">'
+	.tadlDetailField(new A11yRequest(), $reflowItem, 'Description', '^synthetic.long').'</div></section>';
 $aidTitle = 'Synthetic "Archives" & Photograph Collection';
 $fixtures['finding-aid-text'] = (new A11yView([
 	'finding_aid' => ['title' => $aidTitle, 'identifier' => 'SYN.42', 'fields' => [

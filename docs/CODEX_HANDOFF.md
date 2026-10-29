@@ -1,9 +1,20 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-28. This document carries the recent coding context to another
+Updated: 2026-10-29. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
+
+Narrative detail metadata reflows isolated HTML br tags to spaces before either
+the excerpt or full value is rendered. Blank-line br runs, semantic paragraphs,
+lists, pre/code, tables, addresses, links and emphasis remain. Native unit templates
+retain explicit repeated-value separators, and separately rendered structured
+addresses and related-entry lists are unchanged. This is presentation-only: no
+catalogue changes, extra queries or core changes. `rich_text_test.php` covers
+protected markup and idempotence; `detail_read_more_test.php` reproduces the
+hard-wrap bug across collection/object/entity fields. The accessibility browser
+suite verifies actual short, collapsed and expanded fields at 1280px and 320px,
+including paragraph/list structure, inline formatting and working disclosures.
 
 Inline object photo sequences reserve a common frame from the tallest fitted
 photo's existing rendered width/height attributes, capped at the existing 500px

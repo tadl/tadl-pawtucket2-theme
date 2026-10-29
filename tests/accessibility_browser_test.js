@@ -127,7 +127,7 @@ let browser;
     const reports = [];
     for (const width of [1280, 320]) {
         await page.setViewportSize({width, height:900});
-        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'object-photos', 'lightbox-order', 'lightbox-menu', 'document-text', 'long-fields', 'finding-aid-text', 'featured', 'notifications', 'collection-staff', 'sort-results', 'object-return', 'object-return-only', 'back-to-top', ...Object.keys(authorityNavigationFixtures), ...Object.keys(objectCitations)]) {
+        for (const name of ['contact', 'contact-errors', 'password-recovery', 'new-password', 'cookies', 'gallery', 'gallery-index', 'object-photos', 'lightbox-order', 'lightbox-menu', 'document-text', 'long-fields', 'metadata-reflow', 'finding-aid-text', 'featured', 'notifications', 'collection-staff', 'sort-results', 'object-return', 'object-return-only', 'back-to-top', ...Object.keys(authorityNavigationFixtures), ...Object.keys(objectCitations)]) {
             await page.goto(origin + '/' + name);
             if (name === 'gallery') { await page.locator('.galleryDetailNext').waitFor(); }
             await page.evaluate(async () => {
@@ -285,6 +285,34 @@ let browser;
         await inserted.locator('.tadl-long-field-collapse').click();
         assert.equal(await inserted.locator('details').evaluate(node => node.open),false, 'Inserted gallery/metadata fragments must work without a separate initialization step.');
         reports.push(`Long metadata ${width}px: ending Read less, keyboard reading order, focus restoration, pointer controls, inserted fragments and expanded axe passed`);
+    }
+    for (const width of [1280,320]) {
+        await page.setViewportSize({width,height:900});
+        await page.goto(origin + '/metadata-reflow');
+        await page.evaluate(() => document.fonts.ready);
+        const sameLine = container => {
+            const before = container.querySelector('[data-tadl-flow="before"]').getBoundingClientRect();
+            const after = container.querySelector('[data-tadl-flow="after"]').getBoundingClientRect();
+            return Math.abs(before.top - after.top) < 1 && after.left > before.left;
+        };
+        const short = page.locator('#synthetic-short-note');
+        assert(await short.evaluate(sameLine), 'Short metadata must reflow single hard breaks at every viewport width.');
+        assert.equal(await short.locator('p').count(),2, 'Real paragraphs must remain separate.');
+        assert.equal(await short.locator('li').count(),2, 'Semantic lists must survive prose normalization.');
+        assert.equal(await short.locator('strong').innerText(),'emphasis');
+        const long = page.locator('#synthetic-long-note');
+        assert(await long.locator('.tadl-long-field-preview').evaluate(sameLine), 'The collapsed preview must use the reflowed prose.');
+        await long.locator('summary').click();
+        await long.locator('.tadl-long-field-collapse').waitFor({state:'visible'});
+        const full = long.locator('.tadl-long-field-full');
+        assert(await full.evaluate(sameLine), 'Expanded metadata must use the same reflowed prose.');
+        assert.equal(await full.locator('br').count(),2, 'The recorded blank paragraph break must remain.');
+        assert.equal(await full.locator('a').getAttribute('href'),'/synthetic/guide');
+        assert.equal(await full.locator('em').count(),30);
+        if (artifacts) { await page.screenshot({path:path.join(artifacts,`metadata-reflow-${width}.png`)}); }
+        await long.locator('.tadl-long-field-collapse').click();
+        assert.equal(await long.locator('details').evaluate(node => node.open),false);
+        reports.push(`Metadata prose ${width}px: natural wrapping in short, preview and expanded values; paragraphs, lists, emphasis, links and disclosure preserved`);
     }
     // Exercise the shared return control with real scrolling and native history.
     for (const width of [1280,320]) {

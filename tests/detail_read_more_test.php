@@ -113,6 +113,27 @@ checkReadMore($preview->getElementsByTagName('a')->item(0)->textContent === '<Sy
 $linkedProse = '<a href="/synthetic/guide">Synthetic guide</a> '.str_repeat('Long narrative context ', 40).'<br/>'.str_repeat('Another narrative paragraph ', 30).'<br/>Final paragraph.';
 checkReadMore(str_contains(tadlDetailExpandableValue($linkedProse, 'Description'), 'tadl-long-field-details'), 'Linked prose with line breaks must still get a bounded excerpt rather than become an uncollapsed association list.');
 
+$wrapped = '<strong>Synthetic notes:</strong> Records include correspondence from the staff' . "<br>\n"
+	.'and their families, account books and photographs of local buildings.' . "<br />\n"
+	.str_repeat('Additional synthetic archival context. ', 25)."<br>\n<br>\n"
+	.'A second paragraph with an <a href="/synthetic/guide">intact guide link</a> and <em>emphasis</em>.';
+foreach (['ca_collections.collection_scope_content', 'ca_objects.description', 'ca_entities.biography'] as $bundle) {
+	$item = new ReadMoreItem(['^'.$bundle => $wrapped]);
+	$xpath = readMoreDocument(tadlDetailField($request, $item, 'Description', '^'.$bundle));
+	$preview = $xpath->query('//div[contains(@class,"tadl-long-field-preview--rich")]')->item(0);
+	$full = $xpath->query('//div[@class="tadl-long-field-full"]')->item(0);
+	checkReadMore($preview->getElementsByTagName('br')->length === 0, $bundle.': preview must reflow hard-wrapped prose.');
+	checkReadMore($full->getElementsByTagName('br')->length === 2, $bundle.': only the blank line between paragraphs must remain.');
+	checkReadMore($full->getElementsByTagName('strong')->length === 1 && $full->getElementsByTagName('em')->length === 1
+		&& $full->getElementsByTagName('a')->item(0)->getAttribute('href') === '/synthetic/guide', $bundle.': reflow must retain emphasis and safe native links.');
+	checkReadMore(count($item->reads) === 1 && $item->reads[0][1]['checkAccess'] === [1, 2], $bundle.': reflow must not add reads or change permissions.');
+}
+$shortWrapped = 'A short note with a forced<br>line break.';
+checkReadMore(str_contains(tadlDetailField($request, new ReadMoreItem(['^note' => $shortWrapped]), 'Description', '^note'), 'forced line break.'), 'Short fields must reflow too.');
+$repeatedTemplate = '<unit relativeTo="ca_objects.language" delimiter="<br/>">^ca_objects.language</unit>';
+$repeatedItem = new ReadMoreItem([$repeatedTemplate => 'Synthetic language one<br/>Synthetic language two']);
+checkReadMore(str_contains(tadlDetailField($request, $repeatedItem, 'Languages', $repeatedTemplate), 'one<br/>Synthetic'), 'Repeated non-linked metadata entries must retain their row separators.');
+
 function caDetailLink($request, $text, $class, $table, $id) { return '<a href="/synthetic/record">'.$text.'</a>'; }
 $galleryView = new class($request, $linked) {
 	public $request; private $item;

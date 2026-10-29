@@ -120,6 +120,9 @@ if (!function_exists('tadlDetailField')) {
 
 		$value = trim(tadlPresentationHTML($item->getWithTemplate($template, $template_options)));
 		if (!tadlDetailHasContent($value)) { return ''; }
+		// Template units deliberately separate repeated values into distinct rows.
+		// Narrative attributes instead wrap to the current viewport in both states.
+		if (!preg_match('/<unit\b/i', $template)) { $value = tadlReflowProseHTML($value); }
 		// Repeated linked native units are entries, rather than paragraphs to cut mid-role.
 		$entries = preg_match('/<unit\b/i', $template) && preg_match('/<(?:l|a)\b/i', $template);
 		$value = tadlDetailExpandableValue($value, $label, $entries);

@@ -18,3 +18,25 @@ function tadlPresentationHTML($html) {
   }, $token[0]);
  }, $html);
 }
+
+/** Reflow prose's single hard breaks, retaining blank lines and structured HTML. */
+function tadlReflowProseHTML($html) {
+ $html = (string)$html;
+ if (stripos($html, '<br') === false) { return $html; }
+ $attributes = '(?:[^>\'\"]+|\'[^\']*\'|\"[^\"]*\")*';
+ $break = '<br\b'.$attributes.'>';
+ $protected_depth = 0;
+ // Tokenize tags, not their attribute strings or script literals. Preserve all
+ // other bytes so native links and semantic formatting are not reconstructed.
+ return preg_replace_callback('~<!--.*?-->|<(script|style|textarea)\b'.$attributes.'>.*?</\1\s*>|'
+  .$break.'(?:(?:\s|\x{00A0}|&nbsp;|&#160;|&#x0*a0;)*'.$break.')*|</?[a-z][a-z0-9:-]*'.$attributes.'>~isu',
+  static function ($token) use ($break, &$protected_depth) {
+   if (!preg_match('~^<(/?)([a-z][a-z0-9:-]*)\b~i', $token[0], $tag)) { return $token[0]; }
+   $name = strtolower($tag[2]);
+   if (in_array($name, ['pre', 'code', 'ul', 'ol', 'table', 'address'], true)) {
+    $protected_depth = max(0, $protected_depth + ($tag[1] === '/' ? -1 : 1));
+   }
+   if ($protected_depth || $name !== 'br') { return $token[0]; }
+   return preg_match_all('~'.$break.'~isu', $token[0]) > 1 ? $token[0] : ' ';
+  }, $html) ?? $html;
+}
