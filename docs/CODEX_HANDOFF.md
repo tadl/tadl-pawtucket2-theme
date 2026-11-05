@@ -5,6 +5,14 @@ Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
 
+The [Community Notes proposal](COMMUNITY_NOTES_PROPOSAL.md) is a draft for archives
+team discussion, not an implemented feature. It proposes invited contributors,
+moderation and personal contribution history, with each approved note and its
+contributor name stored together in repeatable object/collection metadata. It
+includes installation requirements and open editorial, attribution, notification,
+and retention decisions. No plugin, schema, account, role, or production changes
+are included in this documentation task.
+
 Narrative detail metadata reflows isolated HTML br tags to spaces before either
 the excerpt or full value is rendered. Blank-line br runs, semantic paragraphs,
 lists, pre/code, tables, addresses, links and emphasis remain. Native unit templates

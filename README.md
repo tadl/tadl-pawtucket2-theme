@@ -223,6 +223,7 @@ The supplied `support/deploy-theme.sh` is an rsync helper for the `/var/www/pawt
 | [Document text](docs/DOCUMENT_TEXT.md) | Extraction/transcription fallbacks, formatting, permissions, and indexing boundaries. |
 | [Image downloads](docs/IMAGE_DOWNLOADS.md) | Export formats, native processing requirements, private conversion cache, and limits. |
 | [Accounts](docs/USER_FEATURES.md) | Staff login, profiles, disabled item sets, staff tools, and FAQ presentation. |
+| [Community Notes proposal](docs/COMMUNITY_NOTES_PROPOSAL.md) | Draft contributor and moderation workflow, named attribution, catalogue storage, installation, and archives team decisions. |
 | [FAQ activation](docs/FAQ_SETUP.md) | Repeatable Providence editor/template registration and upgrade preservation. |
 | [Contact form](docs/CONTACT_FORM.md) | Mail settings, Reply-To, subject references, and Turnstile. |
 | [Thumbnail focus](docs/THUMBNAIL_FOCUS.md) | Manual focal points, offline detection, durable storage, and reusable package. |
