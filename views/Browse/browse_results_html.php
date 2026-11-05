@@ -38,6 +38,8 @@
 	}
 	$qr_res 			= $this->getVar('result');				// browse results (subclass of SearchResult)
 	tadlFilterMediaResult($this->request, $qr_res);
+	require_once(__DIR__.'/../../helpers/omeka_sort.php');
+	tadlOrderOmekaResult($qr_res, ((array)$this->getVar('sortBy'))[$this->getVar('sort')] ?? null, $this->getVar('sort_direction'));
 	$vs_media_preference = tadlMediaPreference($this->request);
 	$vs_find_type = ($this->getVar('find_type') ?: 'browse').($this->getVar('is_advanced') ? '_advanced' : '');
 	$va_facets 			= $this->getVar('facets');				// array of available browse facets

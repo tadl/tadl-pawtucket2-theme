@@ -1,6 +1,6 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-10-29. This document carries the recent coding context to another
+Updated: 2026-11-05. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
@@ -827,6 +827,24 @@ line numbers. Native application behavior can be inspected in the nearby
 `pawtucket2/app/` reference tree without editing it.
 
 ## Behavior and implementation contracts
+
+### Omeka item order
+
+Object Browse and Search results offer **Omeka ID**, mapped to the imported
+`ca_objects.omeka_id` metadata element. It starts ascending; selecting the active
+sort again reverses the direction through the existing sort control.
+`helpers/omeka_sort.php` orders positive integer or text IDs numerically and
+places records with empty, zero or absent Omeka IDs after populated IDs in
+either direction. This also corrects native ordering when repeated metadata
+contains both blank and populated values. Equal IDs and records without an ID
+retain their existing relative order. The shared
+result view applies this after media filtering, before pagination and result
+context storage, including collection and related-item results. Presence reads
+use only the retained result IDs in batches of 500; no additional cache or
+database write is introduced. `tests/omeka_sort_test.php` covers actual SQLite
+queries, native result boundaries, both directions and page/context ordering.
+The existing defaults and other sort choices remain in place; MultiSearch
+previews and Subject Browse are unchanged. This source change was not deployed.
 
 ### Browse ordering and detail navigation
 

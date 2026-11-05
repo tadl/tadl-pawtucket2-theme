@@ -529,7 +529,11 @@ let browser;
             && Math.abs(row.y-rows[0].y-Math.round(row.y-rows[0].y))<.01),
             'Sort rows must share a pixel alignment so Title and Relevance do not paint the same arrow at different vertical offsets.');
         assert.equal(await disclosure.locator('[aria-current=true]').getAttribute('aria-label'), 'Sort by Title. Currently Descending; activate for Ascending.');
-        assert.equal(await disclosure.locator('a').count(),5,'Each sort field must have one full-row link.');
+        assert.equal(await disclosure.locator('a').count(),6,'Each sort field must have one full-row link.');
+        const omekaChoice = disclosure.getByRole('link', {name: 'Sort by Omeka ID, Ascending', exact: true});
+        const omekaUrl = new URL(await omekaChoice.getAttribute('href'), origin);
+        assert.equal(omekaUrl.searchParams.get('sort'), 'Omeka ID');
+        assert.equal(omekaUrl.searchParams.get('direction'), 'asc');
         assert.equal(await disclosure.locator('.tadl-sort-direction .fa-arrow-down').count(),1);
         const arrowBox=await disclosure.locator('.tadl-sort-direction .fa').boundingBox();
         const badgeBox=await disclosure.locator('.tadl-sort-direction').boundingBox();

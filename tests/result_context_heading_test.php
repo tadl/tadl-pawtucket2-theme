@@ -510,7 +510,7 @@ if (($argv[1] ?? '') === '--filter-fixture') {
 	]))->render('Browse/browse_results_html.php');
 } elseif (($argv[1] ?? '') === '--sort-fixtures') {
 	print json_encode(['sort-results'=>(new ContextView(new ContextRequest('Search'), [], 163, [
-		'sortBy'=>['Identifier'=>'ca_objects.idno', 'Title'=>'ca_object_labels.name', 'Date'=>'ca_objects.date.dates_value', 'Relevance'=>'_natural', 'Entity'=>'ca_entity_labels.surname'],
+		'sortBy'=>['Identifier'=>'ca_objects.idno', 'Title'=>'ca_object_labels.name', 'Date'=>'ca_objects.date.dates_value', 'Relevance'=>'_natural', 'Entity'=>'ca_entity_labels.surname', 'Omeka ID'=>'ca_objects.omeka_id'],
 		'sort'=>'Title', 'sort_direction'=>'desc'
 	]))->render('Browse/browse_results_html.php')], JSON_THROW_ON_ERROR);
 } else {

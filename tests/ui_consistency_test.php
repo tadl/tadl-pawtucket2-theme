@@ -80,7 +80,7 @@ foreach (['browse'=>'browseTypes', 'search'=>'advancedSearchTypes'] as $file=>$g
 	}
 }
 uiCheck($sortMaps['browse'] === $sortMaps['search'], 'Basic and advanced object result options must use the same labels, order, fields and directions.');
-uiCheck($sortMaps['search']['sortBy'] === ['Identifier'=>'ca_objects.idno','Title'=>'ca_object_labels.name','Date'=>'ca_objects.date.dates_value','Relevance'=>'_natural','Entity'=>'ca_entity_labels.surname;ca_entity_labels.forename'], 'Object results must preserve native date/entity sorting and use one Title label.');
+uiCheck($sortMaps['search']['sortBy'] === ['Identifier'=>'ca_objects.idno','Title'=>'ca_object_labels.name','Date'=>'ca_objects.date.dates_value','Relevance'=>'_natural','Entity'=>'ca_entity_labels.surname;ca_entity_labels.forename','Omeka ID'=>'ca_objects.omeka_id'], 'Object results must preserve native date/entity sorting, use one Title label and offer Omeka ID sorting.');
 uiCheck(count(array_unique($sortMaps['search']['sortDirection'])) === 1 && $sortMaps['search']['sortDirection']['Relevance'] === 'asc', 'Object sort defaults must consistently use ascending direction.');
 // Change only the search form method, keeping hidden metadata and native scripts intact.
 $view = new UIFormView();
