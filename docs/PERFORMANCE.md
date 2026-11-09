@@ -61,6 +61,32 @@ The Browse, Detail and Site Page integrations are theme controller overrides bas
 on Pawtucket 2.0.10. Review them against the upstream controllers when upgrading
 Pawtucket.
 
+## Scope before sorting
+
+Object Browse adds the configured institution's object IDs through the native
+intrinsic result-filter API before execution. Previously the later theme guard
+could remove unrelated institutions only after the native metadata sorter had
+already expanded their fields. This was particularly expensive for Date sorting
+on a small institution sharing a much larger database.
+
+The controller supplies `_search = *` for an otherwise unfiltered Browse. This
+wildcard criteria path honors native result filters; the native engine's separate
+truly empty-criteria `showAll` branch does not. Retain the controller wildcard.
+
+The membership read contains scalar IDs, is reused only within the request, and
+still leaves publication, type/source restrictions and ACLs to native browse.
+Native sorting, pagination and result-context navigation keep their existing
+behavior. New requests observe imports and hierarchy moves without a membership
+TTL. The post-query scope guard remains. Keep native `cache_timeout = 0` as
+shipped; Redis alone does not make native cache entries permission/revision aware.
+
+In a bounded native CLI comparison, sorting the shared catalogue took about
+2.4 seconds while sorting the institution cohort took about 0.02–0.04 seconds.
+The early membership read took about 0.006 seconds. These isolate the native
+metadata sort, rather than predicting total HTTP response time or import/load
+contention. `tests/catalogue_browse_scope_test.php` checks the adapter's sort
+input and paging/access contracts using synthetic data.
+
 ## Freshness and cache controls
 
 Each participating request reads the native change-log count and greatest log ID,

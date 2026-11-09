@@ -27,35 +27,47 @@ function tadlCatalogueScope($request) {
     return $requests[$request] = $scope;
 }
 
+/** Read membership into the current request only; callers supply a supported material table. */
+function tadlLoadCatalogueIDs($scope, string $table, array $pending, bool $all): void {
+    $db = Datamodel::getInstanceByTableName('ca_collections', false)->getDb();
+    $joins = '';
+    $key = 'c.collection_id';
+    if ($table !== 'ca_collections') {
+        $joins = ' INNER JOIN ca_objects_x_collections oc ON oc.collection_id = c.collection_id
+            INNER JOIN ca_objects o ON o.object_id = oc.object_id AND o.deleted = 0';
+        $key = 'o.object_id';
+    }
+    if ($table === 'ca_object_representations') {
+        $joins .= ' INNER JOIN ca_objects_x_object_representations oxr ON oxr.object_id = o.object_id
+            INNER JOIN ca_object_representations r ON r.representation_id = oxr.representation_id AND r.deleted = 0';
+        $key = 'r.representation_id';
+    }
+    $rows = $db->query('SELECT DISTINCT '.$key.' scope_id FROM ca_collections c'.$joins.'
+        WHERE c.deleted = 0 AND c.hier_collection_id = ?'.($all ? '' : ' AND '.$key.' IN (?)'), $all ? [$scope->root] : [$scope->root, $pending]);
+    if (!$rows) { throw new RuntimeException('Catalogue membership unavailable.'); }
+    while ($rows->nextRow()) { $scope->ids[$table][(int)$rows->get('scope_id')] = true; }
+    foreach ($pending as $id) { $scope->checked[$table][$id] = true; }
+    $scope->complete[$table] = $all;
+}
+
 /** Batch requested IDs; large results read the cohort once. Reuse both hits and misses. */
 function tadlCatalogueIDs($request, string $table, array $ids): array {
     $tables = ['ca_collections' => 'collection_id', 'ca_objects' => 'object_id', 'ca_object_representations' => 'representation_id'];
     if (!isset($tables[$table]) || !($scope = tadlCatalogueScope($request))) { return $ids; }
     if (!$scope->root || !$ids) { return []; }
     $pending = array_values(array_filter(array_unique(array_map('intval', $ids)), static fn($id) => $id > 0 && !isset($scope->checked[$table][$id])));
-    if ($pending && empty($scope->complete[$table])) {
-        $db = Datamodel::getInstanceByTableName('ca_collections', false)->getDb();
-        $joins = '';
-        $key = 'c.collection_id';
-        if ($table !== 'ca_collections') {
-            $joins = ' INNER JOIN ca_objects_x_collections oc ON oc.collection_id = c.collection_id
-                INNER JOIN ca_objects o ON o.object_id = oc.object_id AND o.deleted = 0';
-            $key = 'o.object_id';
-        }
-        if ($table === 'ca_object_representations') {
-            $joins .= ' INNER JOIN ca_objects_x_object_representations oxr ON oxr.object_id = o.object_id
-                INNER JOIN ca_object_representations r ON r.representation_id = oxr.representation_id AND r.deleted = 0';
-            $key = 'r.representation_id';
-        }
-        $all = count($pending) > 2048;
-        $rows = $db->query('SELECT DISTINCT '.$key.' scope_id FROM ca_collections c'.$joins.'
-            WHERE c.deleted = 0 AND c.hier_collection_id = ?'.($all ? '' : ' AND '.$key.' IN (?)'), $all ? [$scope->root] : [$scope->root, $pending]);
-        if (!$rows) { throw new RuntimeException('Catalogue membership unavailable.'); }
-        while ($rows->nextRow()) { $scope->ids[$table][(int)$rows->get('scope_id')] = true; }
-        foreach ($pending as $id) { $scope->checked[$table][$id] = true; }
-        $scope->complete[$table] = $all;
-    }
+    if ($pending && empty($scope->complete[$table])) { tadlLoadCatalogueIDs($scope, $table, $pending, count($pending) > 2048); }
     return array_values(array_filter($ids, static fn($id) => isset($scope->ids[$table][(int)$id])));
+}
+
+/** Restrict native object sorting before it expands metadata across the shared catalogue. */
+function tadlCatalogueObjectIDs($request): ?array {
+    if (!$request || !($scope = tadlCatalogueScope($request))) { return null; }
+    if (!$scope->root) { return []; }
+    if (empty($scope->complete['ca_objects'])) { tadlLoadCatalogueIDs($scope, 'ca_objects', [], true); }
+    $ids = array_map('intval', array_keys($scope->ids['ca_objects'] ?? []));
+    sort($ids, SORT_NUMERIC);
+    return $ids;
 }
 
 function tadlCatalogueAllows($request, string $table, $id): bool {

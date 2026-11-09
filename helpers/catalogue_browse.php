@@ -23,6 +23,15 @@ class TadlObjectBrowse extends ObjectBrowse {
         $this->tadlResultIdentity = null;
         $this->tadlOrder = [];
         $options = (array)$options;
+        // Native getResults sorts before result templates apply their guard.
+        // Bound that work with fresh hierarchy membership while retaining the
+        // native publication, ACL, field ordering and result-context behavior.
+        if (($scopeIDs = tadlCatalogueObjectIDs($this->tadlRequest)) !== null) {
+            $filter = ['field'=>'object_id', 'operator'=>'in', 'value'=>join(',', $scopeIDs ?: [0])];
+            if (!in_array($filter, (array)$this->getResultFilters(), true)) {
+                $this->addResultFilter('ca_objects.object_id', 'in', $filter['value']);
+            }
+        }
         $this->tadlResultCache = !empty($options['user_id']) || !empty($options['noCache']) || !empty($options['no_cache'])
             ? null : tadlResultCache($this->tadlRequest);
         if (!$this->tadlResultCache) { return parent::execute($options); }

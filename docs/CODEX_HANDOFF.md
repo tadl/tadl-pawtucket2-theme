@@ -29,7 +29,18 @@ session state changes, not catalogue records.
 
 Membership is read-only and cached only within a request, including negative
 lookups. Small selections query the requested IDs in a batch; large result sets
-read the scalar membership cohort once per table. The shared result-data cache
+read the scalar membership cohort once per table. Object Browse now reads that
+cohort before native execution and adds an intrinsic object-ID result filter.
+Native Date sorting therefore sees the institution's results rather than the
+entire shared catalogue; native publication/ACL checks, ordering, existing result
+filters and result context remain in place. Missing/ambiguous roots use an
+impossible ID, and empty scope configuration keeps native behavior. The later
+theme result guard still applies. This does not add a persistent membership cache
+or relax the shipped native browse `cache_timeout = 0` freshness policy.
+Retain BrowseController's default `_search = *` criterion: native result filters
+apply to that path, while its separate truly empty-criteria `showAll` branch
+ignores them. The focused fixture explicitly exercises the wildcard path.
+The shared result-data cache
 already fingerprints configuration and hierarchy/relationship changes; it now
 also fingerprints the scope helper. No cache purge or persistent membership cache
 is needed. This is catalogue scoping, not a replacement for native access or
@@ -45,6 +56,12 @@ guards. Review this override alongside Browse/Detail/Default during core upgrade
 `catalogue_scope_test.php` uses real read-only membership SQL against synthetic
 SQLite, covering descendants, cross-root relationships, shared authorities,
 native visibility, both media modes, media identifiers, facets and root failures.
+`catalogue_browse_scope_test.php` runs the real theme adapter against synthetic
+native execution/sort boundaries, checking the early candidate set, 72-result
+paging in both directions, existing filters, native options and newly imported,
+moved or unpublished material on later requests. A bounded native CLI probe
+confirmed the intrinsic filter is applied before the actual metadata sorter;
+this is separate from full HTTP/browser performance verification.
 `catalogue_scope_gallery_test.php` dispatches actual gallery cover/info/media
 actions with mixed synthetic sets. `detail_view_count_test.php` now also verifies
 enabled scope, direct denial and cached navigation while retaining its optional
