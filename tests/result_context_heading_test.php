@@ -174,6 +174,14 @@ foreach ([['place_facet', 42, 'Synthetic Harbor'], ['entity_facet', 42, 'Synthet
 	checkContext(!str_contains($html, 'Native label must not be trusted'), $facet.': unsafe native label used.');
 	checkContext(str_contains($html, 'aria-label=\'Results pagination above results\'') && str_contains($html, 'Page 1 of 3'), $facet.': top pagination must retain page state and identify its position.');
 }
+$controlsDocument = new DOMDocument();
+$controlsDocument->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+$controlsXpath = new DOMXPath($controlsDocument);
+$viewControls = $controlsXpath->query('//div[@class="tadl-results-view-buttons" and @role="group" and @aria-label="Result display options"]');
+checkContext($viewControls->length === 1, 'Rendered result display controls must expose a named semantic group.');
+checkContext($controlsXpath->query('.//span[@aria-current="true"]', $viewControls->item(0))->length === 1
+	&& $controlsXpath->query('.//a[contains(@href,"view=list")]', $viewControls->item(0))->length === 1,
+	'Grouped display controls must retain their current Tiles state and working List link.');
 foreach (['entity_id:42' => 'Synthetic Person', 'place_id:42' => 'Synthetic Harbor', 'occurrence_id:42' => 'Synthetic Exhibition', 'collection_id:42' => 'Synthetic Collection', ' ca_places.place_id : 42 ' => 'Synthetic Harbor'] as $query => $label) {
 	$criteria = [contextCriterion('_search', $query, 'Raw display query: '.$query), contextCriterion('type_facet', 3, 'Synthetic type')];
 	$html = (new ContextView(new ContextRequest('Search'), $criteria))->render('Browse/browse_results_html.php');

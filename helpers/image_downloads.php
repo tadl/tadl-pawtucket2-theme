@@ -72,7 +72,15 @@ function tadlImageToolbar($request, $object, $representationID, $toolbar) {
 	// Keep the complete document; do not send it through single-image conversion.
 	if (!$isImage) {
 		$toolbar = preg_replace_callback('~(<a\b(?=[^>]*\bclass=[\'\"][^\'\"]*\bdlButton\b)[^>]*>)(.*?)(</a>)~is', static function ($match) {
-			return $match[1].$match[2].'<span>'.htmlspecialchars(_t('Download PDF'), ENT_QUOTES, 'UTF-8').'</span>'.$match[3];
+			$label = htmlspecialchars(_t('Download PDF'), ENT_QUOTES, 'UTF-8');
+			$link = preg_replace('~\s+(?:aria-label|title)\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]+)~i', '', $match[1]);
+			$link = substr($link, 0, -1).' aria-label="'.$label.'" title="'.$label.'">';
+			// The native icon's shorter name must not replace the visible PDF label.
+			$icons = preg_replace_callback('~<(?:span|i|svg)\b[^>]*>~i', static function ($icon) {
+				$tag = preg_replace('~\s+aria-hidden\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]+)~i', '', $icon[0]);
+				return substr($tag, 0, -1).' aria-hidden="true">';
+			}, $match[2]);
+			return $link.$icons.'<span>'.$label.'</span>'.$match[3];
 		}, $toolbar);
 	}
 	$toolbar = preg_replace_callback('~(<a\b(?=[^>]*\bclass=[\'\"][^\'\"]*\bzoomButton\b)[^>]*>)(.*?)(</a>)~is', static function ($match) {

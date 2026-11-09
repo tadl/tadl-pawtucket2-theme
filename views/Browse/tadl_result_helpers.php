@@ -139,7 +139,7 @@ if (!function_exists('tadlBrowseResultViewControls')) {
 			'list' => 'glyphicon-list'
 		);
 
-		$vs_output = "<div class='tadl-results-view-buttons' aria-label='"._t('Result display options')."'>";
+		$vs_output = "<div class='tadl-results-view-buttons' role='group' aria-label='"._t('Result display options')."'>";
 		foreach($va_view_labels as $vs_view => $vs_view_label) {
 			if (!isset($pa_views[$vs_view])) { continue; }
 

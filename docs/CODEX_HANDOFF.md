@@ -2364,3 +2364,23 @@ theme's dark blue, without external assets or a root-file installation step. Loc
 browser checks confirmed rendering at 32 and 128 pixels. The UI suite checks the
 header link and SVG parsing; all 35 suites and changed PHP lint passed. These
 console-cleanup source changes are separate commits and are not deployed by Codex.
+
+During KCL's November 9 WCAG review, the shared PDF toolbar's visible **Download
+PDF** label was found to retain the native **Download** accessible name. The PDF
+branch of `tadlImageToolbar()` now names the permission-checked native link and
+tooltip **Download PDF** and hides its decorative icon from assistive technology.
+The destination, callbacks, download guards and non-PDF controls remain intact.
+`tests/image_download_test.php` covers the actual native icon/name shape. This is
+a source dependency fix; it does not deploy the TADL instance.
+
+The shared viewer wrapper also uses the currently selected readable object title
+for PDF.js object/gallery overlays, escaping it and omitting the redundant PDF
+identifier/representation filename. Image overlays retain their identifier and
+conversion menu. PDF overlays keep their complete native PDF download controls;
+they never receive image conversion links. The focused download suite covers
+both object-ID parameter names and object/gallery contexts.
+
+The Tiles/List result controls now expose `role="group"` with their existing
+**Result display options** name. The actual result-rendering regression checks
+that named group together with the current Tiles state and working List link;
+this resolves the generic-container semantics flagged by live axe.

@@ -308,6 +308,13 @@ checkDownload(str_contains($pdfToolbar, 'tadl-image-toolbar') && str_contains($p
 checkDownload(str_contains($pdfToolbar, 'class="dlButton" href="/original"') && str_contains($pdfToolbar, 'Download PDF'), 'PDF must preserve its native complete-document download.');
 checkDownload(str_contains($pdfToolbar, 'class="dlButton" href="/original" rel="nofollow"'), 'Native PDF downloads must discourage crawler following.');
 checkDownload(!str_contains($pdfToolbar, 'setsButton') && !str_contains($pdfToolbar, '<details') && !str_contains($pdfToolbar, '/ImageDownload/'), 'PDF toolbar must not expose Lightbox or image conversions.');
+$namedPDFToolbar = tadlImageToolbar($request, $object, 101, '<div class="detailMediaToolbar"><a class="dlButton" href="/original" onclick="nativeDownload()" aria-label="Download" title="Download"><span role="graphics-document" aria-label="Download" title="Download"></span></a></div><!-- end detailMediaToolbar -->');
+$namedPDFDocument = new DOMDocument();
+$namedPDFDocument->loadHTML($namedPDFToolbar, LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_NONET);
+$namedPDFLink = $namedPDFDocument->getElementsByTagName('a')->item(0);
+checkDownload($namedPDFLink->getAttribute('aria-label') === 'Download PDF' && $namedPDFLink->getAttribute('title') === 'Download PDF', 'The PDF download accessible name must include its visible label.');
+checkDownload(trim($namedPDFLink->textContent) === 'Download PDF' && $namedPDFLink->getElementsByTagName('span')->item(0)->getAttribute('aria-hidden') === 'true', 'Native download icons must be decorative instead of supplying a shorter name.');
+checkDownload($namedPDFLink->getAttribute('href') === '/original' && $namedPDFLink->getAttribute('onclick') === 'nativeDownload()', 'PDF accessible naming must preserve native downloads and callbacks.');
 $restrictedPDFToolbar = tadlImageToolbar($request, $object, 101, str_replace('<a class="dlButton" href="/original">Download</a>', '', $toolbar));
 checkDownload(!str_contains($restrictedPDFToolbar, 'dlButton') && !str_contains($restrictedPDFToolbar, 'Download PDF') && str_contains($restrictedPDFToolbar, 'Media viewer'), 'PDF without native download permission must retain viewer but gain no download link.');
 $pdfSlide = '<div data-representation_id="101"><img src="/synthetic/pdf-preview.jpg">'.$toolbar.'</div>';
@@ -368,6 +375,29 @@ $object->readable = true;
 $request->params['context'] = 'places';
 $html = $renderOverlay->call($view);
 checkDownload(str_contains($html, 'Synthetic_filename.tiff') && !str_contains($html, 'tadl-image-viewer-controls'), 'Non-object media headers must keep their native context.');
+
+foreach (['objects', 'gallery'] as $pdfContext) {
+	foreach (['id', 'object_id'] as $idParameter) {
+		[$object, $rep, $request] = resetDownload();
+		$request->params = [$idParameter => 42, 'context' => $pdfContext];
+		$object->values['ca_objects.preferred_labels.name'] = 'Synthetic PDF & <script>literal title</script>';
+		$object->values['idno'] = 'opaque-repository-identifier.pdf';
+		$view = new DownloadView($request);
+		$view->values = ['viewer' => 'pdfjs', 'identifier' => 'representation:101', 'controls' => '<div class="objectInfo">http_repository_opaque_filename.pdf</div><div class="download"><form id="nativePDFDownload" onclick="nativePDFDownload()">Native PDF download</form></div>'];
+		$html = $renderOverlay->call($view);
+		$document = new DOMDocument();
+		$document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+		$xpath = new DOMXPath($document);
+		$heading = $xpath->query('//div[@class="objectInfo"]')->item(0);
+		checkDownload($heading && $heading->textContent === $object->values['ca_objects.preferred_labels.name'] && $heading->getAttribute('title') === $heading->textContent, 'PDF viewer headings must use the selected readable object title.');
+		checkDownload($heading->getElementsByTagName('script')->length === 0 && !str_contains($html, 'http_repository_opaque_filename.pdf') && !str_contains($html, 'opaque-repository-identifier.pdf'), 'PDF headings must escape titles and omit imported filenames and identifier clutter.');
+		checkDownload($xpath->query('//div[@class="download"]/form[@id="nativePDFDownload"]')->length === 1 && str_contains($html, 'onclick="nativePDFDownload()"'), 'PDF viewers must preserve native PDF download controls and callbacks.');
+		checkDownload(!str_contains($html, 'tadl-viewer-downloads') && !str_contains($html, '/ImageDownload/'), 'PDF viewers must not receive image conversion menus.');
+		$object->values['denied'] = ['preferred_labels', 'idno'];
+		$html = $renderOverlay->call($view);
+		checkDownload(str_contains($html, 'tadl-viewer-object-title">Object</span>') && !str_contains($html, 'literal title'), 'A PDF title must retain native metadata-bundle permissions.');
+	}
+}
 
 // Gallery AJAX replaces the entire actual media partial. Its toolbar and global
 // navigation callback must follow the new item rather than retain the first IDs.
