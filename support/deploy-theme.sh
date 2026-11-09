@@ -42,11 +42,6 @@ for theme in "$@"; do
 		kcl)
 			source_dir="$(dirname -- "${tadl_source_dir}")/kcl/"
 			remote_theme_dir='/var/www/kcl/themes/kcl'
-			# KCL inherits TADL's scoped runtime through sibling-relative links.
-			# Install that complete parent before the child; never update the
-			# independent TADL instance as a side effect of selecting KCL.
-			source_dirs+=("${tadl_source_dir}/")
-			destinations+=("${remote_host}:/var/www/kcl/themes/tadl/")
 			;;
 		*)
 			usage >&2

@@ -16,17 +16,14 @@ helper accepts one theme name. With no name, it deploys both themes:
 ./deploy --dry-run kcl
 ```
 
-This workstation wrapper supplies its local SSH target to the tracked
-`support/deploy-themes.sh` dispatcher. It uses the sibling `kcl/` checkout for
-KCL and this checkout for TADL. TADL targets
-`/var/www/pawtucket2/themes/tadl`. Selecting KCL first installs this complete
-TADL checkout as its inherited runtime in `/var/www/kcl/themes/tadl`, then
-copies KCL to `/var/www/kcl/themes/kcl`; it never updates the independent TADL
-instance as a side effect. Archive mode preserves KCL's sibling-relative
-`helpers`, `controllers` and `plugins` links.
+The workstation wrapper supplies its local SSH target. KCL selection dispatches
+directly to `kcl/support/deploy-theme.sh`, so no TADL checkout is required.
+TADL and both-theme selection use the tracked `support/deploy-themes.sh`
+dispatcher. TADL targets `/var/www/pawtucket2/themes/tadl`; standalone KCL targets
+only `/var/www/kcl/themes/kcl`. Each theme owns its runtime and regular files.
 Unknown/extra arguments, duplicate themes and incomplete source directories are
 rejected before any transfer. Both-theme deployment checks both local sources
-first, then transfers TADL, KCL's TADL parent, and KCL. A transfer failure stops that sequence;
+first, then transfers TADL and KCL separately. A transfer failure stops that sequence;
 it does not roll back an earlier successful transfer.
 
 From a standalone theme checkout, the original helper still deploys **only TADL**

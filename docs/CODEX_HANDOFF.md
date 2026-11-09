@@ -799,13 +799,13 @@ No deployment or production cache purge was performed for this source change.
 
 The enclosing `pawtucket2-theme/deploy` workstation wrapper now accepts `tadl`
 or `kcl`, defaults to both, and supports `--dry-run` before the selector. Tracked
-`support/deploy-themes.sh` owns dispatch; `support/deploy-theme.sh user@host`
+KCL selection calls its own standalone helper; TADL/both selection uses
+`support/deploy-themes.sh`. `support/deploy-theme.sh user@host`
 retains its existing TADL-only default and accepts explicit theme arguments for
 the dispatcher. The existing TADL destination is
-`/var/www/pawtucket2/themes/tadl`. KCL first receives the complete TADL parent
-at `/var/www/kcl/themes/tadl`, then its own source at `/var/www/kcl/themes/kcl`.
-This keeps its inherited scoped runtime and sibling-relative symlinks together;
-selecting KCL does not change the independent TADL instance.
+`/var/www/pawtucket2/themes/tadl`. KCL owns its runtime and copies only its own
+checkout to `/var/www/kcl/themes/kcl`, with no custom parent, symlink or sibling
+checkout required. Selecting KCL does not change the independent TADL instance.
 All arguments and selected local sources are checked before the first rsync.
 Multiple transfers stop on failure without automatic rollback. Archive mode,
 exclusions, no-delete behavior, cache/session preservation and the no-reload
