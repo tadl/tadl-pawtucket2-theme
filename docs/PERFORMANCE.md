@@ -238,3 +238,20 @@ format tags and thumbnail HTML matched. End-to-end timings varied with import
 activity and cache warmth; the samples do not establish a stable overall speedup.
 All 60 standalone PHP 8.3 suites passed. These source checks and private profiles
 do not establish production deployment.
+
+The operator subsequently approved deploying only the three fingerprint/cache/
+thumbnail helpers from `0c3a9c1`; GitHub checks `42715353623` passed. The active
+ordering helpers were retained. Serial public HTTP measurements used the same
+72-item Images page, Identifier ascending, and three requests per media mode:
+
+| Median time to first byte | Before | After |
+| --- | ---: | ---: |
+| All items | 1.964 s | 1.593 s |
+| Only items with media | 5.663 s | 5.095 s |
+
+All samples returned 72 cards with identical ordered record IDs. These include
+changing cache-fill states during import, so they describe the observed requests,
+not a universal speedup or a promise of consistently warm responses. The global
+revision still responds to other institutions' catalogue changes. Publication,
+access checks and the complete input snapshots remain in place. No service
+restart, cache purge, schema change or KCL deployment accompanied this rollout.

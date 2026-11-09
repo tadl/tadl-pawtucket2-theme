@@ -39,7 +39,19 @@ positional encoding (three alternating samples each). Four paired full browse
 samples preserved ordered page IDs, format tags and thumbnail HTML, but import
 activity and different cache fill states prevent a stable total-time claim.
 All 60 standalone PHP 8.3 suites and changed-helper lint passed. This checkpoint
-is source/private-probe validation; the live TADL helpers have not been replaced.
+also passed GitHub checks run `42715353623` at runtime commit `0c3a9c1`.
+
+After explicit operator approval, only `helpers/facet_snapshot.php`,
+`helpers/result_cache.php` and `helpers/object_thumbnails.php` were installed.
+Their final bytes, ownership and modes were verified. The existing ordering
+helpers stayed unchanged; KCL, core, schema, services and import were untouched.
+No cache purge was used. Three serial public 72-card HTTP requests per media mode
+before and after activation measured median TTFB 1.964 -> 1.593 seconds for
+All items, and 5.663 -> 5.095 seconds for Only items with media. All ordered page
+IDs matched. The cache-fill mix varied during import, so these are observed
+samples rather than an isolated overall performance guarantee. Outside-KCL and
+unknown details retained 404; valid detail and a 25-item descending-title List
+page remained available. Private operational evidence stays outside this repo.
 
 ## Checkpoint and product direction
 
