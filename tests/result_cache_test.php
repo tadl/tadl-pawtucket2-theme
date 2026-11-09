@@ -33,6 +33,7 @@ class Configuration { static function load($path) { return new ResultConfig(); }
 class ResultDb {
     public PDO $pdo; public bool $fail=false; public int $released=0;
     public bool $lockOwned=true; public $onLock=null; public int $mediaQueries=0;
+    public array $queries=[];
     function __construct() {
         $this->pdo=class_exists('Pdo\\Sqlite') ? new Pdo\Sqlite('sqlite::memory:') : new PDO('sqlite::memory:');
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
@@ -41,6 +42,7 @@ class ResultDb {
     }
     function getConfig() { return new ResultConfig(); }
     function query($sql,$params=[]) {
+        $this->queries[]=$sql;
         if ($this->fail) { throw new RuntimeException('Synthetic SQL outage'); }
         if (str_contains($sql,'information_schema')) { return new ResultRows([]); }
         if (str_contains($sql,'GET_LOCK')) {
@@ -243,8 +245,17 @@ try {
     resultCheck($contended->remember('another_worker',[],static function(){throw new RuntimeException('Duplicate native computation');},$valid)===[3,4],'A contending worker must reuse the owner\'s published entry.');
     $db->lockOwned=true; $db->onLock=null;
     $stale=new TadlResultCache($db,new ResultRequest()); $staleKey=$stale->key('during',[]);
-    $stale->remember('during',[],static fn()=>[3],$valid); $db->pdo->exec('INSERT INTO ca_change_log VALUES(10)'); $stale->flush();
+    $stale->remember('during',[],static fn()=>[3],$valid); $db->pdo->exec('INSERT INTO ca_change_log VALUES(10)');
+    $queryStart=count($db->queries); $released=$db->released; $stale->flush();
     resultCheck(!isset(ExternalCache::$values['tadlResultData'][$staleKey]),'A concurrent catalogue change must prevent publication.');
+    $reads=array_values(array_filter(array_slice($db->queries,$queryStart),static fn($sql)=>!str_contains($sql,'RELEASE_LOCK')));
+    resultCheck(count($reads)===1 && str_contains($reads[0],'COUNT(*) change_count, MAX(log_id)'), 'Changed native logs must reject a fill before rescanning catalogue inputs.');
+    resultCheck($db->released===$released+1,'A discarded fill must release its worker lock.');
+    $direct=new TadlResultCache($db,new ResultRequest()); $directKey=$direct->key('direct-during',[]);
+    $direct->remember('direct-during',[],static fn()=>[4],$valid);
+    $db->pdo->exec('UPDATE ca_objects SET access=0 WHERE object_id=4'); $direct->flush();
+    resultCheck(!isset(ExternalCache::$values['tadlResultData'][$directKey]),'Unchanged logs must still rescan and reject a direct SQL visibility change during computation.');
+    $db->pdo->exec('UPDATE ca_objects SET access=1 WHERE object_id=4');
     ExternalCache::$fail=true; $outage=new TadlResultCache($db,new ResultRequest());
     resultCheck($outage->remember('outage',[],static fn()=>[3],$valid)===[3],'Cache outages must return native results.'); $outage->flush(); ExternalCache::$fail=false;
     foreach (['user','privileged','access','acl','bundle','additional','database','disable_cache'] as $case) {

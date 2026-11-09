@@ -17,20 +17,38 @@ class ThumbnailPermissionConfig { function get($key) { return false; } }
 class Datamodel {
 	static function getInstanceByTableName($table, $cached) { return new self(); }
 	function getAppConfig() { return new ThumbnailPermissionConfig(); }
-	function getDb() {
-		return new class {
-			function query($sql, $params) {
-				checkObjectThumbnail(str_contains($sql, 'FROM ca_objects') && str_contains($sql, 'deleted = 0') && str_contains($sql, 'access IN (?)'), 'Bulk thumbnail owners need fresh native visibility SQL.');
-				return new class(str_contains($sql, 'oxr.is_primary') ? [] : $params[0]) {
-					private int $position = -1;
-					function __construct(private array $ids) {}
-					function nextRow() { return ++$this->position < count($this->ids); }
-					function get($key) { return $this->ids[$this->position]; }
-				};
-			}
-		};
+	function getDb() { return new ObjectThumbnailDB(); }
+}
+class ObjectThumbnailDB {
+	static PDO $pdo;
+	static array $queries = [], $tags = [];
+	function query($sql, $params) {
+		checkObjectThumbnail(str_starts_with($sql, 'SELECT') && str_contains($sql, 'deleted = 0') && str_contains($sql, 'access IN (?)'), 'Thumbnail reads need fresh native visibility SQL.');
+		self::$queries[] = $sql;
+		$values = []; $offset = 0;
+		$sql = preg_replace_callback('/\?/', static function () use ($params, &$offset, &$values) {
+			$batch = (array)$params[$offset++]; array_push($values, ...$batch);
+			return join(',', array_fill(0, count($batch), '?'));
+		}, $sql);
+		$statement = self::$pdo->prepare($sql); $statement->execute($values);
+		return new ObjectThumbnailRows($statement->fetchAll(PDO::FETCH_ASSOC));
 	}
 }
+class ObjectThumbnailRows {
+	private int $position = -1;
+	function __construct(private array $rows) {}
+	function nextRow() { return ++$this->position < count($this->rows); }
+	function get($key) { return $this->rows[$this->position][$key]; }
+	function getMediaTag($field, $version, $options) {
+		checkObjectThumbnail($options === ['alt'=>''], 'Batch media tags must not expand representation labels.');
+		return ObjectThumbnailDB::$tags[$this->get('representation_id')][$version] ?? '';
+	}
+}
+ObjectThumbnailDB::$pdo = new PDO('sqlite::memory:');
+ObjectThumbnailDB::$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+ObjectThumbnailDB::$pdo->exec('CREATE TABLE ca_objects (object_id INTEGER PRIMARY KEY, deleted INTEGER, access INTEGER);
+CREATE TABLE ca_object_representations (representation_id INTEGER PRIMARY KEY, deleted INTEGER, access INTEGER, media TEXT);
+CREATE TABLE ca_objects_x_object_representations (object_id INTEGER, representation_id INTEGER, is_primary INTEGER)');
 $GLOBALS['g_request'] = new stdClass();
 $assertions = 0;
 function checkObjectThumbnail($condition, $message) {
@@ -38,8 +56,8 @@ function checkObjectThumbnail($condition, $message) {
 	if (!$condition) { throw new RuntimeException($message); }
 }
 class ca_objects {
-	static public array $media = [], $calls = [];
-	function __construct(private int $id = 0) {}
+	static public array $media = [], $calls = [], $loads = [];
+	function __construct(private int $id = 0) { self::$loads[] = $id; }
 	function getPrimaryKey() { return isset(self::$media[$this->id]) ? $this->id : null; }
 	function getRepresentations($versions, $sizes, $options) {
 		self::$calls[] = [$this->id, $versions, $sizes, $options];
@@ -58,6 +76,18 @@ function objectThumbnailMedia($id, $rank = 0, $primary = false, $access = 1, $ov
 		'tags' => ['medium' => '<img src="/synthetic/'.$id.'-medium.jpg" alt="Synthetic &amp; image">',
 			'small' => '<img src="/synthetic/'.$id.'-small.jpg" alt="Synthetic &amp; image">']
 	], $overrides);
+}
+function seedObjectThumbnails($id, array $representations, $access = 1, $deleted = 0) {
+	ca_objects::$media[$id] = $representations;
+	$db = ObjectThumbnailDB::$pdo;
+	$db->prepare('INSERT OR REPLACE INTO ca_objects VALUES (?,?,?)')->execute([$id,$deleted,$access]);
+	$db->prepare('DELETE FROM ca_objects_x_object_representations WHERE object_id=?')->execute([$id]);
+	foreach ($representations as $representation) {
+		$repID = $representation['representation_id'];
+		$db->prepare('INSERT OR REPLACE INTO ca_object_representations VALUES (?,?,?,?)')->execute([$repID,(int)$representation['deleted'],$representation['access'],'synthetic-descriptor']);
+		$db->prepare('INSERT INTO ca_objects_x_object_representations VALUES (?,?,?)')->execute([$id,$repID,(int)$representation['is_primary']]);
+		ObjectThumbnailDB::$tags[$repID] = $representation['tags'];
+	}
 }
 require dirname(__DIR__).'/helpers/object_thumbnails.php';
 checkObjectThumbnail(tadlObjectThumbnail(1, 'medium', [1], '<img src="/synthetic/primary.jpg">') === '<img src="/synthetic/primary.jpg">', 'Visible primary tag was replaced.');
@@ -85,6 +115,38 @@ checkObjectThumbnail(tadlObjectThumbnail(999, 'medium', [1]) === '', 'Missing ob
 $calls = count(ca_objects::$calls);
 checkObjectThumbnail(tadlObjectThumbnail(1, 'medium', []) === '' && tadlObjectThumbnail(0, 'medium', [1]) === '', 'Empty access mask or invalid object was accepted.');
 checkObjectThumbnail(count(ca_objects::$calls) === $calls, 'Invalid inputs reached native media lookup.');
+
+foreach (ca_objects::$media as $id => $representations) { seedObjectThumbnails($id, $representations); }
+$emptyIDs = range(1001,1072);
+foreach ($emptyIDs as $id) { seedObjectThumbnails($id, []); }
+ca_objects::$calls = ca_objects::$loads = [];
+$queries = count(ObjectThumbnailDB::$queries);
+$empty = tadlObjectThumbnails($GLOBALS['g_request'], $emptyIDs, 'medium', [1]);
+checkObjectThumbnail($empty === array_fill_keys($emptyIDs, ''), 'A 72-record metadata-only page must retain every ordered placeholder.');
+checkObjectThumbnail(ca_objects::$calls === [] && ca_objects::$loads === [], 'Proven-empty objects must not invoke per-card native model or representation lookups.');
+checkObjectThumbnail(count(ObjectThumbnailDB::$queries) - $queries === 2, 'A metadata-only page needs only the batched owner and relationship reads.');
+$queries = count(ObjectThumbnailDB::$queries);
+tadlObjectThumbnails($GLOBALS['g_request'], [1001], 'small', [1]);
+checkObjectThumbnail(count(ObjectThumbnailDB::$queries) - $queries === 2, 'Metadata-only query count must not grow with page size.');
+
+seedObjectThumbnails(6, [objectThumbnailMedia(60, 0, true)], 0);
+seedObjectThumbnails(7, [objectThumbnailMedia(70, 0, true)], 1, 1);
+seedObjectThumbnails(8, [objectThumbnailMedia(80, 0, true, 1, ['deleted'=>true])]);
+ca_objects::$calls = ca_objects::$loads = [];
+$denied = tadlObjectThumbnails($GLOBALS['g_request'], [6,7,8,2], 'medium', [1]);
+checkObjectThumbnail($denied === [8=>'',2=>''], 'Private/deleted owners must be absent and private/deleted-only representations must remain empty.');
+checkObjectThumbnail(ca_objects::$calls === [] && ca_objects::$loads === [], 'Private/deleted-only media must not enter native fallback.');
+
+ca_objects::$calls = [];
+$mixed = tadlObjectThumbnails($GLOBALS['g_request'], [5,1,3,4], 'medium', [1]);
+checkObjectThumbnail(array_keys($mixed) === [5,1,3,4], 'Media inventory must preserve the supplied page order.');
+checkObjectThumbnail(str_contains($mixed[1], '11-medium.jpg') && !str_contains($mixed[1], '10-medium.jpg'), 'A private primary must retain native public-secondary fallback.');
+checkObjectThumbnail($mixed[3] === '' && in_array(3,array_column(ca_objects::$calls,0),true), 'Public candidates must still use native fallback rather than bypassing its per-record denials.');
+checkObjectThumbnail(str_contains($mixed[4], '44-medium.jpg') && str_contains($mixed[5], '54-medium.jpg'), 'Primary precedence and unusable-derivative/rank fallback must remain intact.');
+checkObjectThumbnail(!in_array(4,array_column(ca_objects::$calls,0),true), 'A visible primary should retain the existing batched fast path.');
+seedObjectThumbnails(2, [objectThumbnailMedia(20,0,true,0),objectThumbnailMedia(21,1)]);
+$published = tadlObjectThumbnails($GLOBALS['g_request'], [2], 'small', [1]);
+checkObjectThumbnail(str_contains($published[2], '21-small.jpg'), 'A later inventory must observe newly public secondary media without a persistent empty-result cache.');
 
 function _t($text) { return $text; }
 function caGetOption($key, $options, $default = null) { return $options[$key] ?? $default; }
@@ -167,9 +229,10 @@ if (($argv[1] ?? '') === '--grid-fixtures') {
 		$tag = $gridMedia->get('ca_object_representations.media.medium');
 		ca_objects::$media[100 + $index] = [objectThumbnailMedia(100 + $index, 0, true, 1,
 			['tags'=>['medium'=>$tag,'small'=>$tag]])];
+		seedObjectThumbnails(100 + $index, ca_objects::$media[100 + $index]);
 	}
 	$view = new GridThumbnailView();
 	echo json_encode(['tiles' => $view->render('Browse/browse_results_images_html.php'), 'list' => $view->render('Browse/browse_results_list_html.php')], JSON_THROW_ON_ERROR);
 } else {
-	echo 'Object thumbnails passed: '.$assertions.' assertions (primary preference, access-aware fallback, deterministic selection and actual Tiles/List/search views).'.PHP_EOL;
+	echo 'Object thumbnails passed: '.$assertions.' assertions (synthetic SQLite inventory, bounded metadata-only pages, primary preference, access-aware fallback and actual Tiles/List/search views).'.PHP_EOL;
 }

@@ -56,6 +56,10 @@ making the entire application read-only is not the goal. See the
   fall back to native computation.
 - Visible-page thumbnails and format tags use batched lookups. Result pages
   contain their cards in the initial HTML and retain ordinary GET navigation.
+  The thumbnail relationship batch also establishes which objects have no
+  undeleted representation in the current access mask. Those metadata-only cards
+  skip native model/relationship fallback; objects with a candidate still use
+  the normal primary or permission-checked secondary thumbnail path.
 
 The Browse, Detail and Site Page integrations are theme controller overrides based
 on Pawtucket 2.0.10. Review them against the upstream controllers when upgrading
@@ -97,6 +101,13 @@ made directly in SQL. Source, configuration, criteria, exact result IDs/options,
 access mask, locale and media preference also identify each cache entry. View
 counters are excluded. The one-hour TTL is an expiry limit, not a permission delay.
 
+Scalar snapshots record each table's exact selected field order once, then hash
+typed row values in that order rather than repeating column names in every row.
+The fixed media-revision query uses the same positional encoding. SHA-256 still
+covers every value, NULL, binary byte and ordered row; this reduces serialization
+and hashing work without dropping freshness inputs. Source fingerprints separate
+the new encoding from previously stored entries.
+
 New entries are queued until request shutdown and published only if a second
 fresh snapshot matches the first. MySQL named locks coordinate missing entries;
 another worker waits up to two seconds per entry for a published value, then
@@ -104,6 +115,13 @@ falls back to computation. Locks are released at shutdown. Native browse-cache
 hydration uses public APIs and verifies the returned IDs before accepting them,
 since native browse keys do not include access scope. Normal ResultContext and
 Back/Previous/Next handling remain in the request.
+
+If the native change-log count or greatest ID already differs at publication,
+the fill is discarded before scanning all scalar/media inputs again. This avoids
+work that cannot produce a reusable entry during an active import. An unchanged
+log stamp still triggers the complete second snapshot, so direct SQL visibility
+or media edits remain checked; worker locks are released on either path. The
+shortcut does not make entries live longer or isolate institutions' revisions.
 
 Normal Providence model writes invalidate data through `ca_change_log`. Direct SQL
 edits to arbitrary attribute/sort fields that bypass those logs are not all
@@ -206,3 +224,17 @@ rendering still consume time even on fast hardware.
 
 No cache purge or service restart is required for these theme changes. Source
 updates change the relevant cache fingerprints; the new entries warm naturally.
+
+### November 9 snapshot follow-up
+
+A private native CLI comparison measured the cache-constructor revision check at
+a median 961 ms with associative row serialization and 797 ms with positional
+values, across three alternating samples of each. The media covering index was
+already active. This is a component measurement, not a live HTTP improvement.
+
+The focused three-helper candidate retained the installed ordering path. Across
+four alternating 72-card All items samples per variant, the displayed ordered IDs,
+format tags and thumbnail HTML matched. End-to-end timings varied with import
+activity and cache warmth; the samples do not establish a stable overall speedup.
+All 60 standalone PHP 8.3 suites passed. These source checks and private profiles
+do not establish production deployment.

@@ -9,16 +9,20 @@ function tadlObjectThumbnails($request, array $ids, $version, array $access) {
 	$ids = tadlReadableIDs($request, 'ca_objects', $ids, $access, 'ca_object_representations');
 	$images = []; $db = Datamodel::getInstanceByTableName('ca_objects', false)->getDb();
 	foreach (array_chunk($ids, 500) as $chunk) {
-		$candidates = $db->query('SELECT oxr.object_id, r.representation_id
+		$candidates = $db->query('SELECT oxr.object_id, r.representation_id, oxr.is_primary
 			FROM ca_objects_x_object_representations oxr
 			INNER JOIN ca_objects o ON o.object_id = oxr.object_id
 			INNER JOIN ca_object_representations r ON r.representation_id = oxr.representation_id
-			WHERE oxr.object_id IN (?) AND oxr.is_primary = 1
+			WHERE oxr.object_id IN (?)
 				AND o.deleted = 0 AND o.access IN (?) AND r.deleted = 0 AND r.access IN (?)
 			ORDER BY oxr.object_id, r.representation_id', [$chunk, $access, $access]);
-		if (!$candidates) { throw new RuntimeException('Unable to read primary thumbnail relationships.'); }
-		$rows = [];
-		while ($candidates->nextRow()) { $rows[] = ['object_id'=>(int)$candidates->get('object_id'), 'representation_id'=>(int)$candidates->get('representation_id')]; }
+		if (!$candidates) { throw new RuntimeException('Unable to read thumbnail relationships.'); }
+		$rows = []; $hasRepresentations = [];
+		while ($candidates->nextRow()) {
+			$id = (int)$candidates->get('object_id');
+			$hasRepresentations[$id] = true;
+			if ($candidates->get('is_primary')) { $rows[] = ['object_id'=>$id, 'representation_id'=>(int)$candidates->get('representation_id')]; }
+		}
 		$primary = []; $tags = [];
 		foreach (tadlReadableMediaRows($request, $rows, $access, true) as $row) { $primary[$row['object_id']] ??= $row['representation_id']; }
 		if ($primary) {
@@ -31,7 +35,10 @@ function tadlObjectThumbnails($request, array $ids, $version, array $access) {
 			}
 		}
 		foreach ($chunk as $id) {
-			$images[$id] = tadlObjectThumbnail($id, $version, $access, $tags[$primary[$id] ?? 0] ?? '', $request);
+			// No undeleted representation in this access mask can yield a fallback.
+			// Any candidate still uses the normal primary/permission-aware path.
+			$images[$id] = isset($hasRepresentations[$id])
+				? tadlObjectThumbnail($id, $version, $access, $tags[$primary[$id] ?? 0] ?? '', $request) : '';
 		}
 	}
 	return $images;

@@ -3,6 +3,44 @@
 Updated: 2026-11-09. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
+## 2026-11-09 object browse profiling follow-up
+
+Scalar and media revision streams serialize positional values in their explicit
+SQL column order, avoiding repeated field-name bytes. Scalar digest identities
+still contain the exact field schema; SHA-256, typed values, NULL/binary content,
+ordered rows and fresh pre/post checks remain intact. New regression cases cover
+schema identities, field permutations, NULL/empty/integer/string/binary values,
+swaps and row additions/deletions. Source hashing separates existing cache entries.
+
+The result cache now abandons a pending fill immediately when the native log
+count/MAX stamp has changed since construction. It still performs the full second
+scalar/media snapshot when the stamp is unchanged; direct SQL visibility edits
+remain detected and all worker locks are released. The result-cache regression
+covers bounded work for a changed log, lock release and a direct SQL access change
+with an unchanged log.
+
+The existing thumbnail relationship batch now inventories all undeleted
+representations in the current access mask, retaining its primary selection.
+Objects with no possible public representation skip native per-card model and
+relationship loading. Public secondary fallback, rank, native ACL/type/source
+restrictions and freshly published media retain their existing behavior. A
+72-record metadata-only fixture uses two batched reads and zero native model loads;
+actual Tiles/List/Search rendering remains covered. KCL owns a separate runtime
+and is not changed by these TADL fixes.
+
+Keep validation and deployment separate. Private CLI comparison uses the
+installed TADL ordering path: the earlier scope-before-sort source change is not
+yet installed there, and adding it changes native order among equal identifiers.
+Do not include that unrelated activation in a focused cache/thumbnail deployment.
+Native Identifier sorting has no explicit tie-breaker; changing its candidate
+set/query plan can change tied positions even when the field order is valid.
+Private CLI revision-constructor medians were 961 ms before and 797 ms after
+positional encoding (three alternating samples each). Four paired full browse
+samples preserved ordered page IDs, format tags and thumbnail HTML, but import
+activity and different cache fill states prevent a stable total-time claim.
+All 60 standalone PHP 8.3 suites and changed-helper lint passed. This checkpoint
+is source/private-probe validation; the live TADL helpers have not been replaced.
+
 ## Checkpoint and product direction
 
 The catalogue now defaults to the collection hierarchy identified by

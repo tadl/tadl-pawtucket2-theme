@@ -9,6 +9,7 @@ final class TadlResultCache {
     private array $locks = [];
     private array $local = [];
     private ?string $scope = null;
+    private ?array $changeStamp = null;
     public array $snapshots = [];
     public string $revision;
 
@@ -21,6 +22,14 @@ final class TadlResultCache {
         $version = $this->db->query('SELECT COUNT(*) change_count, MAX(log_id) last_change FROM ca_change_log');
         if (!$version || !$version->nextRow()) { throw new RuntimeException('Catalogue revision unavailable.'); }
         $stamp = $version->getRow();
+        // An active import may have already invalidated this fill. Avoid another
+        // full input scan when the cheap native log stamp proves it cannot publish.
+        // Unchanged logs still require every scalar/media check below (including
+        // direct SQL visibility changes that do not create native log entries).
+        if ($this->changeStamp !== null && $this->changeStamp !== $stamp) {
+            throw new RuntimeException('Catalogue changed during cache computation.');
+        }
+        $this->changeStamp = $stamp;
         // Count plus maximum also notices transactions committing log IDs out of order.
         $tables = ['ca_objects'=>['object_id','access','deleted','type_id','source_id','parent_id','hier_object_id','hier_left','hier_right','is_deaccessioned'],
             'ca_object_labels'=>null, 'ca_lists'=>null, 'ca_list_item_labels'=>null, 'ca_locales'=>null,
@@ -45,7 +54,8 @@ final class TadlResultCache {
             FROM ca_object_representations '.($indexed ? 'FORCE INDEX (i_tadl_media_identity)' : '').' ORDER BY representation_id');
         if (!$rows) { throw new RuntimeException('Media revision unavailable.'); }
         $media = hash_init('sha256');
-        while ($rows->nextRow()) { hash_update($media, serialize($rows->getRow())); }
+        // This fixed SELECT order identifies every value; repeated key names add no input.
+        while ($rows->nextRow()) { hash_update($media, serialize(array_values($rows->getRow()))); }
         $this->snapshots = $known;
         return hash('sha256', serialize([$stamp, $scalar, hash_final($media)]));
     }

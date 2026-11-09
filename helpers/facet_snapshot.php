@@ -65,7 +65,9 @@ function tadlFacetSnapshot($db, array $tables, array &$known) {
                 $hash = hash_init('sha256');
                 $rows = $db->query('SELECT '.join(',', array_map(static fn($field) => '`'.$field.'`', $fields)).' FROM '.$table.' ORDER BY '.$model->primaryKey());
                 if (!$rows) { return null; }
-                while ($rows->nextRow()) { hash_update($hash, serialize($rows->getRow())); }
+                // The identity already records the exact SELECT column order.
+                // Keep all typed values without repeating column names per row.
+                while ($rows->nextRow()) { hash_update($hash, serialize(array_values($rows->getRow()))); }
                 $known[$identity] = hash_final($hash);
             }
             $digests[$identity] = $known[$identity];

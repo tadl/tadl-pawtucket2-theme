@@ -180,4 +180,30 @@ ObjectBrowse::$availabilityOverride=true;
 $empty=facetBrowse();
 facetCheck($empty->getFacet('entity',$options) === [] && $empty->getFacet('entity',$options+['checkAvailabilityOnly'=>true]) === true, 'Native availability must not be derived from empty full content.');
 facetCheck(facetBrowse()->getFacet('entity',$options+['checkAvailabilityOnly'=>true]) === true, 'Cached empty groups must preserve the independent native availability boolean.');
+
+// Exercise the fingerprint boundary with real SQL values, independent of facets.
+Datamodel::$definitions['snapshot_fixture'] = array_fill_keys(['row_id','left_value','right_value'], ['FIELD_TYPE'=>'synthetic']);
+$db->pdo->exec('CREATE TABLE snapshot_fixture (row_id INTEGER PRIMARY KEY, left_value, right_value); INSERT INTO snapshot_fixture VALUES(1,NULL,NULL)');
+$snapshot = static function (array $fields) use ($db) {
+    $known=[]; return tadlFacetSnapshot($db,['snapshot_fixture'=>$fields],$known);
+};
+facetCheck($snapshot(['left_value']) !== $snapshot(['right_value']), 'Field identities must distinguish equal value streams from different columns.');
+facetCheck($snapshot(['right_value','left_value']) === $snapshot(['left_value','right_value']), 'Caller field order must normalize to the exact selected schema.');
+$digests=[];
+foreach ([null,'',0,'0',"a\0b",'ab'] as $value) {
+    $update=$db->pdo->prepare('UPDATE snapshot_fixture SET left_value=? WHERE row_id=1');
+    $update->bindValue(1,$value,$value===null ? PDO::PARAM_NULL : (is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR));
+    $update->execute();
+    $digests[]=$snapshot(['row_id','left_value','right_value']);
+}
+facetCheck(count(array_unique($digests))===count($digests), 'NULL, empty text, integer/string zero and binary text must retain distinct fingerprints.');
+$db->pdo->exec("UPDATE snapshot_fixture SET left_value='left',right_value='right'");
+$before=$snapshot(['left_value','right_value']);
+$db->pdo->exec('UPDATE snapshot_fixture SET left_value=right_value,right_value=left_value');
+facetCheck($snapshot(['left_value','right_value'])!==$before, 'Swapping values across named columns must change the fingerprint.');
+$before=$snapshot(['row_id','left_value','right_value']);
+$db->pdo->exec('INSERT INTO snapshot_fixture VALUES(2,NULL,NULL)');
+facetCheck($snapshot(['row_id','left_value','right_value'])!==$before, 'An additional row must change the fingerprint.');
+$db->pdo->exec('DELETE FROM snapshot_fixture WHERE row_id=2');
+facetCheck($snapshot(['row_id','left_value','right_value'])===$before, 'Removing a row must restore the original ordered value stream.');
 echo json_encode(['status'=>'passed','assertions'=>$assertions,'records'=>'synthetic SQLite only']),"\n";
