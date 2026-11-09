@@ -109,7 +109,8 @@ Unassigned objects and material belonging only to another root are excluded.
 
 This applies to search/browse counts and paging, related results, collection
 hierarchies, featured objects, galleries, finding aids, direct details and the
-theme's media/download routes. Previous/Next also filters older session results.
+theme's media/download routes. Legacy collection listings and image comparison
+requests are scoped too. Previous/Next and comparisons also filter older session results.
 Shared authority records remain available. Native publication, bundle, type,
 source and record ACL checks still apply; the structural root can stay private.
 

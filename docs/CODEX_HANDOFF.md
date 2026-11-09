@@ -22,6 +22,10 @@ native template units, hierarchy HTML/JSON, map popups, direct details, document
 text, downloads, annotations and media identifiers also check membership. Detail
 and overlay navigation rechecks stored result IDs. Native identifier parsing
 retains checkAccess. Finding-aid creator checks use the actual authority table.
+Legacy Listing collection results use the same pre-render filter. The small
+Compare controller shim checks incoming media identifiers and removes outside
+images/labels from old comparison sessions before native dispatch; only browser
+session state changes, not catalogue records.
 
 Membership is read-only and cached only within a request, including negative
 lookups. Small selections query the requested IDs in a batch; large result sets

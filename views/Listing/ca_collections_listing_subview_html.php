@@ -36,6 +36,7 @@
  
 	foreach($va_lists as $vn_type_id => $qr_list) {
 		if(!$qr_list) { continue; }
+		tadlFilterMediaResult($this->request, $qr_list);
 		
 		print "<h2>{$va_listing_info['displayName']}</h2>\n";
 		

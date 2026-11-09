@@ -75,6 +75,22 @@ function tadlRequireCatalogueMediaIdentifier($request, string $identifier): void
     if ($info['type'] === 'representation') { tadlRequireCatalogueRecord($request, 'ca_object_representations', $info['id']); }
 }
 
+/** Scope new comparisons and old session entries before native rendering. */
+function tadlGuardCatalogueCompareRequest($request): void {
+    if (tadlCatalogueRootCode($request) === '' || strcasecmp((string)$request->getController(), 'Compare') !== 0) { return; }
+    tadlRequireCatalogueMediaIdentifier($request, (string)$request->getParameter('id', pString));
+    $items = (array)Session::getVar('comparison_list');
+    $kept = [];
+    foreach ($items as $item) {
+        if (!is_array($item) || empty($item['id']) || empty($item['resolved_id'])) { continue; }
+        try {
+            foreach (array_unique([$item['id'], $item['resolved_id']]) as $identifier) { tadlRequireCatalogueMediaIdentifier($request, $identifier); }
+        } catch (TadlPublicNotFoundException $error) { continue; }
+        $kept[] = $item;
+    }
+    if ($items !== $kept) { Session::setVar('comparison_list', $kept); }
+}
+
 /** Native template units keep their normal ACL, label, locale and role handling. */
 function tadlCatalogueTemplate($request, string $template, $item = null): string {
     if (!tadlCatalogueRootCode($request)) { return $template; }

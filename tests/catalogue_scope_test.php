@@ -69,7 +69,11 @@ function caParseMediaIdentifier($identifier, $options = []) {
         'attribute:9'=>['type'=>'attribute','id'=>9,'subject'=>'ca_objects','subject_id'=>200]
     ][$identifier] ?? null;
 }
-class Session { static function getVar($key) { return $GLOBALS['scopePreference'] ?? 'all'; } }
+class Session {
+    static public array $comparisonList = [];
+    static function getVar($key) { return $key === 'comparison_list' ? self::$comparisonList : ($GLOBALS['scopePreference'] ?? 'all'); }
+    static function setVar($key, $value) { scopeCheck($key === 'comparison_list', 'Scope guards must only update their own session state.'); self::$comparisonList = $value; }
+}
 class SearchResult {
     function __construct(public array $ids, private string $table) {}
     function tableName() { return $this->table; }
@@ -148,6 +152,26 @@ $sharedCreator = new class {
     function isReadable($request) { return true; }
 };
 scopeCheck(tadlFindingAidReadable($request, $sharedCreator), 'Finding-aid creators remain shared even when their numeric ID matches an outside object.');
+$compareRequest = new class extends ScopeRequest { function getController() { return 'Compare'; } };
+$allowedComparison = ['id'=>'representation:1000','resolved_id'=>'representation:1000','display'=>'Synthetic allowed image'];
+Session::$comparisonList = [['id'=>'representation:2000','resolved_id'=>'representation:2000','display'=>'Synthetic outside image'], $allowedComparison];
+tadlGuardCatalogueCompareRequest($compareRequest);
+scopeCheck(Session::$comparisonList === [$allowedComparison], 'Old comparison sessions must drop outside images and labels.');
+$compareRequest->params['id'] = 'representation:2000';
+try { tadlGuardCatalogueCompareRequest($compareRequest); scopeCheck(false, 'New outside comparison was allowed.'); }
+catch (TadlPublicNotFoundException $error) { scopeCheck(true, 'Outside comparison requests fail before native dispatch.'); }
+$listingResult = new class([20,10], 'ca_collections') extends SearchResult {
+    private int $position = -1;
+    function nextHit() { return isset($this->ids[++$this->position]); }
+    function getWithTemplate($template) { return 'Synthetic collection '.$this->ids[$this->position]; }
+};
+$listingView = new class($request, $listingResult) {
+    function __construct(public $request, private $result) {}
+    function getVar($key) { return ['lists'=>[1=>$this->result], 'typeInfo'=>[], 'listingInfo'=>['displayName'=>'Synthetic collections']][$key]; }
+    function render() { ob_start(); include dirname(__DIR__).'/views/Listing/ca_collections_listing_subview_html.php'; return ob_get_clean(); }
+};
+$listing = $listingView->render();
+scopeCheck(str_contains($listing, 'Synthetic collection 10') && !str_contains($listing, 'Synthetic collection 20'), 'Legacy listings must render only scoped collection links.');
 try { tadlRequireCatalogueRecord($request, 'ca_objects', 200); scopeCheck(false, 'Direct outside record was allowed.'); }
 catch (TadlPublicNotFoundException $error) { scopeCheck(tadlPublicErrorStatus($error) === 404, 'Direct outside records need the normal not-found response.'); }
 scopeCheck(preg_match('/^tadl_catalogue_root_idno\s*=\s*tadl\s*$/m', file_get_contents(dirname(__DIR__).'/conf/app.conf')), 'The shipped TADL theme must enable its institution boundary.');
