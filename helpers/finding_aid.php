@@ -5,6 +5,7 @@ require_once(__DIR__.'/collection_contents.php');
 function tadlFindingAidReadable($request, $record) {
 	$access = array_map('intval', (array)caGetUserAccessValues($request));
 	return $record && $record->getPrimaryKey() && !$record->get('deleted')
+		&& (tadlCatalogueRootCode($request) === '' || tadlCatalogueAllows($request, $record->tableName(), $record->getPrimaryKey()))
 		&& in_array((int)$record->get('access'), $access, true)
 		&& $record->isReadable($request)
 		&& (!caACLIsEnabled($record, ['forPawtucket' => true])

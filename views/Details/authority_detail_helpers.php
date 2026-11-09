@@ -114,6 +114,8 @@ function tadlAuthorityRelatedGroups($request, $item, $table) {
 		if (caGetBundleAccessLevel($table, $related_table) < __CA_BUNDLE_ACCESS_READONLY__
 			|| caGetBundleAccessLevel($related_table, 'preferred_labels') < __CA_BUNDLE_ACCESS_READONLY__) { continue; }
 		$rows = (array)$item->getRelatedItems($related_table, ['checkAccess' => $access]);
+		$scoped = array_fill_keys(tadlCatalogueIDs($request, $related_table, array_column($rows, $definition['key'])), true);
+		$rows = array_filter($rows, static fn($row) => isset($scoped[(int)($row[$definition['key']] ?? 0)]));
 		if ($rows && caACLIsEnabled($related_table, ['forPawtucket' => true])) {
 			// Native relationships check back-end ACLs; also honor front-end-only ACLs.
 			$target = Datamodel::getInstance($related_table, true);

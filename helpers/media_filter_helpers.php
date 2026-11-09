@@ -269,20 +269,27 @@ function tadlFamilyMediaEligibleIDs($request, array $candidateIDs) {
  * Native browse caches remain untouched; this runs before theme pagination.
  */
 function tadlFilterMediaResult($request, $result, $type = null) {
-	if (!($result instanceof SearchResult) || (tadlMediaPreference($request) !== 'only')) {
+	$only = tadlMediaPreference($request) === 'only';
+	$scoped = tadlCatalogueRootCode($request) !== '';
+	if (!($result instanceof SearchResult) || (!$only && !$scoped)) {
 		return $result;
 	}
 	$table = $result->tableName();
-	$allObjectIDs = $table === 'ca_objects' ? $result->getPrimaryKeyValues() : null;
-	if ($table === tadlMediaAuthorityBrowseTable($request, $type)) {
+	if (!$only && !in_array($table, ['ca_objects', 'ca_collections'], true)) { return $result; }
+	$originalIDs = $result->getPrimaryKeyValues();
+	$scopeIDs = tadlCatalogueIDs($request, $table, $originalIDs);
+	$allObjectIDs = $table === 'ca_objects' ? $originalIDs : null;
+	if (!$only) {
+		$ids = $scopeIDs;
+	} elseif ($table === tadlMediaAuthorityBrowseTable($request, $type)) {
 		$type = $type ?: ($request->getParameter('browseType', pString) ?: $request->getAction());
 		$ids = $type === 'families' ? tadlFamilyMediaEligibleIDs($request, $result->getPrimaryKeyValues())
 			: ($type === 'places' ? tadlPlaceMediaEligibleIDs($request, $result->getPrimaryKeyValues())
 				: tadlAuthorityMediaEligibleIDs($request, $table, $result->getPrimaryKeyValues()));
 	} elseif (in_array($table, ['ca_objects', 'ca_collections'], true)) {
-		$compute = static fn() => tadlMediaEligibleIDs($table, $allObjectIDs ?? $result->getPrimaryKeyValues(), (array)caGetUserAccessValues($request), $request);
+		$compute = static fn() => tadlMediaEligibleIDs($table, $scopeIDs, (array)caGetUserAccessValues($request), $request);
 		$cache = $table === 'ca_objects' && count($allObjectIDs) >= 128 ? tadlResultCache($request) : null;
-		$ids = $cache ? $cache->remember('media_ids', [$allObjectIDs], $compute,
+		$ids = $cache ? $cache->remember('media_ids', [$scopeIDs], $compute,
 			static fn($ids) => tadlCachedIDsValid($ids)
 				&& array_map('intval', array_values(array_intersect($allObjectIDs, $ids))) === array_map('intval', $ids)) : $compute();
 	} else {
@@ -299,7 +306,8 @@ function tadlFilterMediaResult($request, $result, $type = null) {
 
 /** Count object facets in the current media scope; suppress unfiltered counts elsewhere. */
 function tadlMediaFacetItems($request, $items, $info, $browse = null, $facetName = null) {
-	if (!is_array($items) || (tadlMediaPreference($request) !== 'only')) {
+	$only = tadlMediaPreference($request) === 'only';
+	if (!is_array($items) || (!$only && tadlCatalogueRootCode($request) === '')) {
 		return $items;
 	}
 	$subjectTable = $info['tadl_subject_table'] ?? null;
@@ -308,12 +316,23 @@ function tadlMediaFacetItems($request, $items, $info, $browse = null, $facetName
 		$browseInfo = caGetInfoForBrowseType($browseType);
 		$subjectTable = $browseInfo['table'] ?? null;
 	}
+	$facetTable = $info['table'] ?? (in_array($info['type'] ?? null, ['label', 'hierarchy'], true) ? $subjectTable : null);
+	if (in_array($facetTable, ['ca_objects', 'ca_collections'], true)
+		&& in_array($info['type'] ?? null, ['authority', 'label', 'hierarchy'], true)) {
+		$choices = [];
+		foreach ($items as $key => $item) {
+			if (is_array($item)) { $choices[$key] = $item['id'] ?? $item['item_id'] ?? $key; }
+		}
+		$allowedChoices = array_fill_keys(tadlCatalogueIDs($request, $facetTable, array_values($choices)), true);
+		foreach ($choices as $key => $id) { if (!isset($allowedChoices[(int)$id])) { unset($items[$key]); } }
+	}
+	$hasScopedCounts = false;
 	if ($subjectTable === 'ca_objects') {
 		$counted = tadlMediaCountedFacet($request, $items, $info, $browse ?? ($info['tadl_browse'] ?? null), $facetName ?? ($info['tadl_facet_name'] ?? null));
-		if ($counted !== null) { return $counted; }
+		if ($counted !== null) { $items = $counted; $hasScopedCounts = true; }
 	}
 	if ($subjectTable && $subjectTable === tadlMediaAuthorityBrowseTable($request)) {
-		foreach ($items as &$item) { if (is_array($item)) { unset($item['content_count']); } }
+		if ($only) { foreach ($items as &$item) { if (is_array($item)) { unset($item['content_count']); } } }
 		unset($item);
 		return $items;
 	}
@@ -326,7 +345,7 @@ function tadlMediaFacetItems($request, $items, $info, $browse = null, $facetName
 	$ids = [];
 	foreach ($items as $key => &$item) {
 		if (!is_array($item)) { continue; }
-		unset($item['content_count']);
+		if ($only && !$hasScopedCounts) { unset($item['content_count']); }
 		$id = $item['id'] ?? $item['item_id'] ?? $key;
 		if ($restrict && (is_int($id) || (is_string($id) && ctype_digit($id)))) {
 			$ids[$key] = (int)$id;
@@ -334,7 +353,8 @@ function tadlMediaFacetItems($request, $items, $info, $browse = null, $facetName
 	}
 	unset($item);
 	if (!$restrict || !$ids) { return $items; }
-	$eligible = array_fill_keys(tadlMediaEligibleIDs($table, array_values($ids), (array)caGetUserAccessValues($request), $request), true);
+	$scopeIDs = tadlCatalogueIDs($request, $table, array_values($ids));
+	$eligible = array_fill_keys($only ? tadlMediaEligibleIDs($table, $scopeIDs, (array)caGetUserAccessValues($request), $request) : $scopeIDs, true);
 	foreach ($ids as $key => $id) {
 		if (!isset($eligible[$id])) { unset($items[$key]); }
 	}

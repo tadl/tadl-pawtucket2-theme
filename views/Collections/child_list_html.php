@@ -5,6 +5,7 @@
 	$vs_desc_template = $o_collections_config->get("description_template");
 	$t_item = $this->getVar("item");
 	$vn_collection_id = $this->getVar("collection_id");
+	tadlRequireCatalogueRecord($this->request, 'ca_collections', $vn_collection_id);
 	$va_exclude_collection_type_ids = $this->getVar("exclude_collection_type_ids");
 	$va_non_linkable_collection_type_ids = $this->getVar("non_linkable_collection_type_ids");
 	$va_collection_type_icons = $this->getVar("collection_type_icons");

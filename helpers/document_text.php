@@ -1,8 +1,10 @@
 <?php
+require_once(__DIR__.'/catalogue_scope.php');
 
 /** Text follows the same record, bundle and Pawtucket ACL boundaries as its PDF. */
 function tadlDocumentTextReadable($request, $record, array $access, $bundle = null) {
 	return $record && $record->getPrimaryKey() && !$record->get('deleted')
+		&& (tadlCatalogueRootCode($request) === '' || tadlCatalogueAllows($request, $record->tableName(), $record->getPrimaryKey()))
 		&& in_array((int)$record->get('access'), $access, true)
 		&& $record->isReadable($request, $bundle)
 		&& (!caACLIsEnabled($record, ['forPawtucket' => true])

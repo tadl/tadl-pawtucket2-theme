@@ -35,6 +35,7 @@ require_once(__CA_APP_DIR__."/controllers/FindController.php");
 require_once(__CA_APP_DIR__."/helpers/printHelpers.php");
 require_once(__CA_APP_DIR__."/helpers/exportHelpers.php");
 require_once(__CA_LIB_DIR__.'/Parsers/ZipStream.php');
+require_once(__DIR__.'/../helpers/catalogue_scope.php');
 
 class DetailController extends FindController {
 	# -------------------------------------------------------
@@ -98,6 +99,12 @@ class DetailController extends FindController {
 		}
 
 		caSetPageCSSClasses(array("detail"));
+		if (tadlCatalogueRootCode($this->request) !== '' && ($rep = (int)$this->request->getParameter('representation_id', pInteger)) > 0) {
+			tadlRequireCatalogueRecord($this->request, 'ca_object_representations', $rep);
+		}
+		if (tadlCatalogueRootCode($this->request) !== '') {
+			tadlRequireCatalogueMediaIdentifier($this->request, (string)$this->request->getParameter('identifier', pString));
+		}
 	}
 	# -------------------------------------------------------
 	/**
@@ -170,6 +177,7 @@ class DetailController extends FindController {
 			// invalid id - throw error
 			throw new ApplicationException("Invalid id");
 		}
+		tadlRequireCatalogueRecord($this->request, $table, $t_subject->getPrimaryKey());
 		$t_subject->autoConvertLineBreaks(true);
 
 		//
@@ -281,6 +289,11 @@ class DetailController extends FindController {
 			}
 		}
 
+		if (tadlCatalogueRootCode($this->request) !== '') {
+			$old_ids = (array)$o_context->getResultList();
+			$scoped_ids = tadlCatalogueIDs($this->request, $table, $old_ids);
+			if ($scoped_ids !== $old_ids) { $o_context->setResultList($scoped_ids); }
+		}
 		$this->view->setVar('previousID', $vn_previous_id = $o_context->getPreviousID($t_subject->getPrimaryKey()));
 		$this->view->setVar('nextID', $vn_next_id = $o_context->getNextID($t_subject->getPrimaryKey()));
 		$this->view->setVar('previousURL', caDetailUrl($this->request, $table, $vn_previous_id));
@@ -567,6 +580,7 @@ class DetailController extends FindController {
 	public function GetTimebasedRepresentationAnnotationList() {
 		$id 					= $this->request->getParameter('id', pInteger);
 		$representation_id 		= $this->request->getParameter('representation_id', pInteger);
+		tadlRequireCatalogueRecord($this->request, 'ca_object_representations', $representation_id);
 		$detail_type			= $this->request->getParameter('context', pString);
 		$default_annotation_id 	= $this->request->getParameter('default_annotation_id', pInteger);
 		$start_timecode 		= $this->request->getParameter('start_timecode', pString);
@@ -620,6 +634,7 @@ class DetailController extends FindController {
 	 */
 	public function SearchWithinMedia() {
 		$representation_id = $this->request->getParameter('representation_id', pInteger);
+		tadlRequireCatalogueRecord($this->request, 'ca_object_representations', $representation_id);
 		$q = $this->request->getParameter('q', pString);
 
 		$results = MediaContentLocationIndexer::SearchWithinMedia($q, 'ca_object_representations', $representation_id, 'media');
@@ -650,6 +665,7 @@ class DetailController extends FindController {
 		if ($pn_value_id) {
 			return $this->DownloadAttributeMedia();
 		}
+		tadlRequireCatalogueRecord($this->request, 'ca_objects', $pn_object_id);
 		$t_object = new ca_objects($pn_object_id);
 		if (!($vn_object_id = $t_object->getPrimaryKey())) { return; }
 		if(sizeof($this->opa_access_values) && (!in_array($t_object->get("access"), $this->opa_access_values))){
@@ -685,6 +701,7 @@ class DetailController extends FindController {
 		// Allow plugins to modify object_id list
 		$va_child_ids =  $o_app_plugin_manager->hookDetailDownloadMediaObjectIDs($va_child_ids);
 		$va_child_ids = array_unique($va_child_ids);
+		$va_child_ids = tadlCatalogueIDs($this->request, 'ca_objects', $va_child_ids);
 
 		foreach($va_child_ids as $vn_object_id) {
 			$t_child_object = new ca_objects($vn_object_id);
@@ -773,6 +790,7 @@ class DetailController extends FindController {
 		if (!$t_instance->isLoaded()) {
 			throw new ApplicationException(_t('Cannot download media'));
 		}
+		tadlRequireCatalogueRecord($this->request, $va_context['table'], $t_instance->getPrimaryKey());
 		if(sizeof($this->opa_access_values) && (!in_array($t_instance->get("access"), $this->opa_access_values))){
 			return;
 		}
@@ -1015,6 +1033,7 @@ class DetailController extends FindController {
 		$t_attr_val = new ca_attribute_values($value_id);
 		if (!$t_attr_val->getPrimaryKey()) { return; }
 		$t_attr = new ca_attributes($t_attr_val->get('attribute_id'));
+		tadlRequireCatalogueRecord($this->request, Datamodel::getTableName($t_attr->get('table_num')), $t_attr->get('row_id'));
 
 		$table_num = Datamodel::getTableNum($this->ops_table_name);
 		if ($t_attr->get('table_num') !=  $table_num) {
@@ -1068,6 +1087,7 @@ class DetailController extends FindController {
 		$t_attr_val = new ca_attribute_values($value_id);
 		if (!$t_attr_val->getPrimaryKey()) { return; }
 		$t_attr = new ca_attributes($t_attr_val->get('attribute_id'));
+		tadlRequireCatalogueRecord($this->request, Datamodel::getTableName($t_attr->get('table_num')), $t_attr->get('row_id'));
 
 		$t_element = new ca_metadata_elements($t_attr->get('element_id'));
 		$table = $this->request->getParameter('table', pString);
@@ -1131,6 +1151,7 @@ class DetailController extends FindController {
 	 */
 	public function GetAnnotations() {
 		$representation_id = $this->request->getParameter('representation_id', pInteger);
+		tadlRequireCatalogueRecord($this->request, 'ca_object_representations', $representation_id);
 		$t_rep = new ca_object_representations($representation_id);
 
 		$annotations_raw = array_map(function($v) { $v['locked'] = 1; return $v; }, $t_rep->getAnnotations());
@@ -1246,13 +1267,14 @@ class DetailController extends FindController {
 		if (!$pt_subject->isReadable($this->request)) {
 			throw new ApplicationException(_t('Cannot view media'));
 		}
+		tadlRequireCatalogueRecord($this->request, $pt_subject->tableName(), $pt_subject->getPrimaryKey());
 
 		$merged_options = array_merge($local_options, $options, ['noOverlay' => true, 'showAnnotations' => true, 'checkAccess' => $this->opa_access_values]);
 		if($merged_options['inline']){
 			$merged_options['noOverlay'] = false;
 		}
 
-		$merged_options['resultList'] = $o_context->getResultList();
+		$merged_options['resultList'] = tadlCatalogueIDs($this->request, $pt_subject->tableName(), (array)$o_context->getResultList());
 
 		$this->response->addContent(caGetMediaViewerHTML($this->request, caGetMediaIdentifier($this->request), $pt_subject, $merged_options));
 	}
@@ -1297,6 +1319,7 @@ class DetailController extends FindController {
 		if (!$pt_subject->isReadable($this->request)) {
 			throw new ApplicationException(_t('Cannot view media'));
 		}
+		tadlRequireCatalogueRecord($this->request, $pt_subject->tableName(), $pt_subject->getPrimaryKey());
 
 		$this->response->addContent(caGetMediaViewerData($this->request, caGetMediaIdentifier($this->request), $pt_subject, ['display' => $display_type, 'context' => $context_str, 'checkAccess' => $this->opa_access_values]));
 	}
@@ -1334,6 +1357,7 @@ class DetailController extends FindController {
 		if (!$pt_subject->isReadable($this->request)) {
 			throw new ApplicationException(_t('Cannot view media'));
 		}
+		tadlRequireCatalogueRecord($this->request, $pt_subject->tableName(), $pt_subject->getPrimaryKey());
 
 		$this->response->addContent(caSearchMediaData($this->request, caGetMediaIdentifier($this->request), $pt_subject, ['display' => $display_type, 'context' => $context_str]));
 	}
@@ -1344,6 +1368,12 @@ class DetailController extends FindController {
 	 * binary (for GLTF .bin buffer data)
 	 */
 	public function GetMediaSidecarData() {
+		if (tadlCatalogueRootCode($this->request) !== '') {
+			$rows = Datamodel::getInstanceByTableName('ca_object_representations', false)->getDb()->query(
+				'SELECT representation_id FROM ca_object_representation_sidecars WHERE sidecar_id = ?', [(int)$this->request->getParameter('sidecar_id', pInteger)]);
+			if (!$rows || !$rows->nextRow()) { throw new TadlPublicNotFoundException('Page not found'); }
+			tadlRequireCatalogueRecord($this->request, 'ca_object_representations', $rows->get('representation_id'));
+		}
 		caReturnMediaSidecarData($this->request->getParameter('sidecar_id', pInteger), $this->request->user);
 	}
 	# -------------------------------------------------------
@@ -1380,6 +1410,7 @@ class DetailController extends FindController {
 		if (!$pt_subject->isReadable($this->request)) {
 			throw new ApplicationException(_t('Cannot view media'));
 		}
+		tadlRequireCatalogueRecord($this->request, $pt_subject->tableName(), $pt_subject->getPrimaryKey());
 
 		$this->response->addContent(caMediaDataAutocomplete($this->request, caGetMediaIdentifier($this->request), $pt_subject, ['display' => $ps_display_type, 'context' => $this->request->getParameter('context', pString)]));
 	}

@@ -1,9 +1,11 @@
 <?php
 require_once(__DIR__.'/crawler_policy.php');
+require_once(__DIR__.'/catalogue_scope.php');
 /** Resolve an attached image through native record, bundle, ACL and download checks. */
 function tadlImageDownloadSource($request, $object, $representationID) {
 	if ($request->config->get('pawtucket_requires_login') && !$request->isLoggedIn()) { return null; }
 	if (!$object || $object->tableName() !== 'ca_objects' || !$object->getPrimaryKey()
+		|| !tadlCatalogueAllows($request, 'ca_objects', $object->getPrimaryKey())
 		|| $object->get('deleted') || !$object->isReadable($request, 'ca_object_representations')
 		|| (caACLIsEnabled($object, ['forPawtucket' => true])
 			&& $object->checkACLAccessForUser($request->user) < __CA_ACL_READONLY_ACCESS__)) { return null; }

@@ -56,10 +56,10 @@ class AssetLoadManager {
 }
 $root = dirname(__DIR__);
 $directory = sys_get_temp_dir().'/tadl-hardening-'.bin2hex(random_bytes(8));
-mkdir($directory.'/models', 0700, true); mkdir($directory.'/controllers', 0700);
-define('__CA_MODELS_DIR__', $directory.'/models'); define('__CA_APP_DIR__', $directory);
-foreach (['ca_sets', 'ca_lists'] as $model) { file_put_contents($directory.'/models/'.$model.'.php', '<?php'); }
-file_put_contents($directory.'/controllers/GalleryController.php', '<?php $GLOBALS["nativeGalleryLoaded"] = true;');
+mkdir($directory.'/models', 0700, true); mkdir($directory.'/lib/pawtucket', 0700, true);
+define('__CA_MODELS_DIR__', $directory.'/models'); define('__CA_APP_DIR__', $directory); define('__CA_LIB_DIR__', $directory.'/lib');
+foreach (['ca_sets', 'ca_lists', 'ca_objects', 'ca_object_representations'] as $model) { file_put_contents($directory.'/models/'.$model.'.php', '<?php'); }
+file_put_contents($directory.'/lib/pawtucket/BasePawtucketController.php', '<?php class BasePawtucketController {}');
 $GLOBALS['galleryType'] = 'public_presentation';
 $GLOBALS['galleryLoadCount'] = 0;
 $GLOBALS['sets'] = [42 => ['type_id' => 8, 'access' => 1, 'deleted' => 0, 'readable' => true]];
@@ -67,21 +67,23 @@ require $root.'/helpers/gallery_access.php';
 require $root.'/helpers/export_diagnostics.php';
 $process = null;
 try {
-	// Native ResultContext includes this shim from Detail to call the static
+	// Native ResultContext includes this controller from Detail to call the static
 	// return-to-gallery helper. No Gallery action is being dispatched there.
+	AppController::$request = new HardeningRequest('objects', [], [1], 'Detail');
+	require $root.'/controllers/GalleryController.php';
 	foreach (['Detail'=>'objects', 'Search'=>'objects', 'Lightbox'=>'Index'] as $controller=>$action) {
 		AppController::$request = new HardeningRequest($action, [], [1], $controller);
-		require $root.'/controllers/GalleryController.php';
-		hardeningCheck(!empty($GLOBALS['nativeGalleryLoaded']) && $GLOBALS['galleryLoadCount'] === 0, 'Including Gallery for '.$controller.' navigation must load native helpers without treating the current object as a gallery set.');
+		tadlGuardGalleryRequest(AppController::$request);
+		hardeningCheck(class_exists('GalleryController', false) && $GLOBALS['galleryLoadCount'] === 0, 'Including Gallery for '.$controller.' navigation must load native helpers without treating the current object as a gallery set.');
 	}
 	foreach (['42', 'getSetInfo', 'getSetInfoAsJSON', 'getSetItemRep', 'getSetItemInfo', 'ajaxGetMapItem'] as $action) {
 		AppController::$request = new HardeningRequest($action, ['set_id' => 42]);
-		require $root.'/controllers/GalleryController.php';
-		hardeningCheck(!empty($GLOBALS['nativeGalleryLoaded']), $action.': public presentations must retain the native controller.');
+		tadlGuardGalleryRequest(AppController::$request);
+		hardeningCheck(class_exists('GalleryController', false), $action.': public presentations must retain the native controller.');
 		foreach (['type_id' => 9, 'access' => 0, 'deleted' => 1, 'readable' => false] as $field => $value) {
 			$before = $GLOBALS['sets'][42]; $GLOBALS['sets'][42][$field] = $value;
 			$denied = false;
-			try { require $root.'/controllers/GalleryController.php'; }
+			try { tadlGuardGalleryRequest(AppController::$request); }
 			catch (TadlPublicNotFoundException $error) { $denied = true; }
 			hardeningCheck($denied, $action.': '.$field.' must deny before native action dispatch.');
 			$GLOBALS['sets'][42] = $before;

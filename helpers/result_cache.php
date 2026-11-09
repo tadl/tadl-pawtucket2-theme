@@ -57,6 +57,7 @@ final class TadlResultCache {
         $source ??= hash('sha256', join('', array_map(static fn($file) => hash_file('sha256', $file), [
             __FILE__, __DIR__.'/catalogue_browse.php', __DIR__.'/media_filter_helpers.php', __DIR__.'/media_facet_counts.php',
             __DIR__.'/facet_snapshot.php', __DIR__.'/record_access.php', __DIR__.'/media_usability.php', __DIR__.'/media_identity.php',
+            __DIR__.'/catalogue_scope.php',
             __CA_LIB_DIR__.'/Browse/ObjectBrowse.php', __CA_LIB_DIR__.'/Browse/BrowseEngine.php', __CA_LIB_DIR__.'/BaseFindEngine.php',
             __CA_LIB_DIR__.'/Search/SearchEngine.php', __CA_APP_DIR__.'/helpers/utilityHelpers.php', __CA_APP_DIR__.'/helpers/displayHelpers.php'
         ])));

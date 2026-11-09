@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__.'/catalogue_scope.php');
 
 /** Bulk visibility checks for theme SQL, using the native restriction and ACL APIs. */
 function tadlReadableIDs($request, $table, array $ids, array $access, $bundle = null) {
@@ -46,7 +47,7 @@ function tadlReadableIDs($request, $table, array $ids, array $access, $bundle = 
 		$readable = $browse->filterHitsByACL($readable, $model->tableNum(), $request->getUserID());
 	}
 	$allowed = array_fill_keys($readable, true);
-	return array_values(array_filter($ids, static fn($id) => isset($allowed[$id])));
+	return tadlCatalogueIDs($request, $table, array_values(array_filter($ids, static fn($id) => isset($allowed[$id]))));
 }
 
 /** Whether fresh access/deletion SQL needs additional native row restrictions. */
@@ -68,6 +69,8 @@ function tadlReadableMediaRows($request, array $rows, array $access, $visibility
 	foreach (['ca_objects' => ['object_id', 'ca_object_representations'], 'ca_object_representations' => ['representation_id', 'media']] as $table => [$field, $bundle]) {
 		if (!$rows) { break; }
 		if (caGetBundleAccessLevel($table, $bundle) < __CA_BUNDLE_ACCESS_READONLY__) { return []; }
+		$scoped = array_fill_keys(tadlCatalogueIDs($request, $table, array_column($rows, $field)), true);
+		$rows = array_filter($rows, static fn($row) => isset($scoped[(int)$row[$field]]));
 		if ($visibilityChecked && !tadlHasAdditionalRecordRestrictions($table)) { continue; }
 		$allowed = array_fill_keys(tadlReadableIDs($request, $table, array_column($rows, $field), $access, $bundle), true);
 		$rows = array_filter($rows, static fn($row) => isset($allowed[$row[$field]]));

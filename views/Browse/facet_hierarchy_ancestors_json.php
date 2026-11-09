@@ -26,5 +26,6 @@
  * ----------------------------------------------------------------------
  */
  
-	print json_encode($this->getVar('ancestors'));
+	$info = tadlMediaHierarchyFacetInfo($this->request, $this->getVar('browse_type'), $this->getVar('facet_name'));
+	print json_encode(tadlCatalogueAncestorRows($this->request, (array)$this->getVar('ancestors'), $info));
 ?>

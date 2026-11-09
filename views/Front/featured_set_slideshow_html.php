@@ -4,8 +4,10 @@
  * ----------------------------------------------------------------------
  */
 require_once(__DIR__.'/../../helpers/media_names.php');
+require_once(__DIR__.'/../../helpers/catalogue_scope.php');
 $va_access_values = $this->getVar("access_values");
 $va_item_ids = $this->getVar('featured_set_item_ids');
+$va_item_ids = tadlCatalogueIDs($this->request, 'ca_objects', (array)$va_item_ids);
 $va_slides = [];
 
 if (is_array($va_item_ids) && sizeof($va_item_ids)) {

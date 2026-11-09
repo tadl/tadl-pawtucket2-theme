@@ -21,6 +21,11 @@ also applies when the theme is cloned without the surrounding workspace.
 
 ## Contracts to preserve
 
+- `tadl_catalogue_root_idno = tadl` bounds collections, objects and their media
+  to that root hierarchy. Native permissions still apply. Shared people,
+  organizations/families, places, events and terms stay shared; their related
+  object/collection displays use the same boundary. Never replace a missing or
+  ambiguous configured root with an unrestricted catalogue.
 - The media preference defaults to **All items**, persists in a
   cookie and stays out of ordinary URLs. It controls display, not authorization.
 - Keep native record access, representation access, bundle permissions and ACLs.

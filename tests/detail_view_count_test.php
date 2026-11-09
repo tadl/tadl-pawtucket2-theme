@@ -81,15 +81,35 @@ class DetailViewRepresentation {
 	function get($name) { return 31; }
 	function getMediaInfo($field, $version, $name) { return 'image/jpeg'; }
 }
-class Datamodel { static public $loads = 0; static function getInstance($table, $cached = false) { self::$loads++; return new $table(); } }
+class DetailScopeRows {
+	private int $position = -1;
+	function __construct(private array $rows) {}
+	function nextRow() { return isset($this->rows[++$this->position]); }
+	function getRow() { return $this->rows[$this->position]; }
+	function get($key) { return $this->getRow()[$key]; }
+}
+class DetailScopeDB {
+	function query($sql, $params) {
+		if (str_contains($sql, 'WHERE idno = ?')) { return new DetailScopeRows([['collection_id'=>1, 'parent_id'=>null, 'hier_collection_id'=>1]]); }
+		return new DetailScopeRows(array_map(static fn($id)=>['scope_id'=>$id], $GLOBALS['detailScopeIDs'] ?? [13,14]));
+	}
+}
+class Datamodel {
+	static public $loads = 0;
+	static function getInstance($table, $cached = false) { self::$loads++; return new $table(); }
+	static function getInstanceByTableName($table, $cached = false) { return new class { function getDb() { return new DetailScopeDB(); } }; }
+}
 class AssetLoadManager { static function register($name) {} }
 class MetaTagManager { static function setWindowTitle($title) {} }
 class ResultContext {
+	private array $ids = [13,14,15];
 	static function getResultContextForLastFind($request, $table) { return new self(); }
+	function getResultList() { return $this->ids; }
+	function setResultList($ids) { $this->ids = $ids; }
 	function getResultDesc() { return []; }
 	function findType() { return 'browse'; }
-	function getPreviousID($id) { return 13; }
-	function getNextID($id) { return 15; }
+	function getPreviousID($id) { return $this->ids[array_search($id, $this->ids) - 1] ?? null; }
+	function getNextID($id) { return $this->ids[array_search($id, $this->ids) + 1] ?? null; }
 	static function getResultsLinkForLastFind($request, $table, $label, $class, $params, $attributes) { return '<a href="/Browse/objects/s/18">Back to results</a>'; }
 	static function getResultsUrlForLastFind($request, $table, $params) { return '/Browse/objects/s/18'; }
 }
@@ -121,7 +141,7 @@ foreach ($nativeFiles as $file) {
 define('__CA_APP_DIR__', $directory); define('__CA_LIB_DIR__', $directory.'/lib');
 $theme = dirname(__DIR__);
 require $theme.'/controllers/DetailController.php';
-function detailViewDispatch($type, $tracking, $loggedIn = false) {
+function detailViewDispatch($type, $tracking, $loggedIn = false, $root = '') {
 	$values = ['detailTypes' => []];
 	foreach (['objects','collections','entities','places'] as $name) {
 		$values['detailTypes'][$name] = ['table' => 'ca_'.$name, 'disableRelatedItemsBrowse' => true,
@@ -130,6 +150,7 @@ function detailViewDispatch($type, $tracking, $loggedIn = false) {
 	if ($tracking !== null) { $values['record_detail_views'] = $tracking; }
 	$GLOBALS['detailConfig'] = new DetailViewConfig($values);
 	$request = new DetailViewRequest($type, [], $loggedIn); $response = new DetailViewResponse();
+	$request->config->values['tadl_catalogue_root_idno'] = $root;
 	$controller = new DetailController($request, $response);
 	$controller->$type();
 	return [$controller, $response];
@@ -137,7 +158,7 @@ function detailViewDispatch($type, $tracking, $loggedIn = false) {
 try {
 	// Optional native parity checks all retained catalogue/media paths. The only
 	// permitted changes remove usage writes, reject mutation/summary-export actions,
-	// and avoid deleting original media during ZIP cleanup.
+	// avoid deleting original media during ZIP cleanup, and add catalogue scope gates.
 	if ($reference = getenv('TADL_NATIVE_DETAIL_CONTROLLER')) {
 		detailViewCheck(is_file($reference) && is_readable($reference), 'Native parity reference must be a readable source file.');
 		$native = file_get_contents($reference);
@@ -155,6 +176,15 @@ try {
 		detailViewCheck($count === 1, 'Native parity removes only the retired arbitrary-field PDF summary branch.');
 		$theme_source = preg_replace('/\n\t\tif \(\$this->request->getParameter\(\'view\', pString\) === \'pdf\'\) \{.*?\n\t\t\}[ \t]*\n/s', '', file_get_contents($theme.'/controllers/DetailController.php'), -1, $count);
 		detailViewCheck($count === 1, 'Native parity permits exactly one early PDF-summary rejection.');
+		$theme_source = str_replace("require_once(__DIR__.'/../helpers/catalogue_scope.php');", '', $theme_source, $count);
+		detailViewCheck($count === 1, 'Native parity permits one shared scope helper.');
+		$theme_source = preg_replace('/\n\t\tif \(tadlCatalogueRootCode\(\$this->request\) !== \'\'(?: && [^\n]*)?\) \{.*?\n\t\t\}/s', '', $theme_source, -1, $count);
+		detailViewCheck($count === 4, 'Native parity permits only the four explicit constructor/context/sidecar scope blocks.');
+		$theme_source = preg_replace('/^\t\ttadlRequireCatalogueRecord\([^\n]*\);\n/m', '', $theme_source);
+		$theme_source = str_replace("\t\t\$va_child_ids = tadlCatalogueIDs(\$this->request, 'ca_objects', \$va_child_ids);\n", '', $theme_source, $count);
+		detailViewCheck($count === 1, 'Native parity permits one bulk-download scope filter.');
+		$theme_source = str_replace("tadlCatalogueIDs(\$this->request, \$pt_subject->tableName(), (array)\$o_context->getResultList())", '$o_context->getResultList()', $theme_source, $count);
+		detailViewCheck($count === 1, 'Native parity permits one media-navigation scope filter.');
 		$tokens = static function ($source) {
 			$tokens = token_get_all($source); $values = [];
 			$mutation = false; $function = false; $depth = 0;
@@ -201,6 +231,21 @@ try {
 				detailViewCheck($response->status === 410 && $response->headers['Cache-Control'] === 'private, no-store' && $response->headers['X-Robots-Tag'] === 'noindex, nofollow', 'Anonymous and staff summary-export requests must be rejected without cache reuse.');
 				detailViewCheck(Datamodel::$loads === $loads && $controller->rendered === null && $response->body === 'Catalogue record exports are disabled.', 'Summary exports must stop before catalogue reads, dynamic field selection, cached PDFs or usage writes.');
 			}
+		}
+	}
+	foreach (['objects','collections','entities','places'] as $type) {
+		DetailViewModel::$access = 1;
+		$GLOBALS['detailScopeIDs'] = [13,14];
+		[$controller] = detailViewDispatch($type, null, false, 'alpha');
+		detailViewCheck($controller->rendered !== null, 'An in-scope or shared detail must still render through the actual controller.');
+		$next = $controller->view->getVar('nextID');
+		detailViewCheck(in_array($type, ['entities','places'], true) ? $next === 15 : !$next, 'Cached Previous/Next must exclude outside material while shared authorities keep normal navigation.');
+		if (in_array($type, ['objects','collections'], true)) {
+			$GLOBALS['detailScopeIDs'] = [];
+			$request = new DetailViewRequest($type); $request->config->values['tadl_catalogue_root_idno'] = 'alpha';
+			$response = new DetailViewResponse(); $controller = new DetailController($request, $response);
+			try { $controller->$type(); detailViewCheck(false, 'Outside direct detail was allowed.'); }
+			catch (TadlPublicNotFoundException $error) { detailViewCheck($controller->rendered === null, 'Outside details must fail before rendering.'); }
 		}
 	}
 	foreach ([false, true] as $loggedIn) {

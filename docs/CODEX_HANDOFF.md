@@ -1,9 +1,52 @@
 # TADL Pawtucket handoff
 
-Updated: 2026-11-05. This document carries the recent coding context to another
+Updated: 2026-11-09. This document carries the recent coding context to another
 Codex chat or workstation. Read it alongside `AGENTS.md` and current source.
 
 ## Checkpoint and product direction
+
+The catalogue now defaults to the collection hierarchy identified by
+`tadl_catalogue_root_idno = tadl` in `conf/app.conf`. Resolve exactly one undeleted
+top-level collection; missing, duplicate and non-root matches deny material rather
+than broadening the scope. A private structural root is supported. Collections
+must belong to that hierarchy; objects must have a relationship to one of those
+collections, and representations must belong to an eligible object. Objects
+linked to both roots remain eligible. Unassigned objects do not. The user chose
+to keep people, organizations/families, places, events and terms shared. Related
+objects/collections and collection links on shared records still use the boundary.
+
+`helpers/catalogue_scope.php` supplements native publication, bundle, type/source
+and ACL checks. Result IDs are restricted before theme counts, paging and context
+storage in both media modes. Collection traversal, finding aids, featured media,
+native template units, hierarchy HTML/JSON, map popups, direct details, document
+text, downloads, annotations and media identifiers also check membership. Detail
+and overlay navigation rechecks stored result IDs. Native identifier parsing
+retains checkAccess. Finding-aid creator checks use the actual authority table.
+
+Membership is read-only and cached only within a request, including negative
+lookups. Small selections query the requested IDs in a batch; large result sets
+read the scalar membership cohort once per table. The shared result-data cache
+already fingerprints configuration and hierarchy/relationship changes; it now
+also fingerprints the scope helper. No cache purge or persistent membership cache
+is needed. This is catalogue scoping, not a replacement for native access or
+web-server controls over directly served files.
+
+`controllers/GalleryController.php` is now a native Pawtucket 2.0.10-derived
+override rather than a shim: its private native item resolvers cannot be
+overridden. It restricts native set row IDs before limits, covers, media, counters
+and navigation, rejects outside-only sets/items, and applies the configured
+object-only gallery policy to direct URLs too. Retain native publication/type
+guards. Review this override alongside Browse/Detail/Default during core upgrades.
+
+`catalogue_scope_test.php` uses real read-only membership SQL against synthetic
+SQLite, covering descendants, cross-root relationships, shared authorities,
+native visibility, both media modes, media identifiers, facets and root failures.
+`catalogue_scope_gallery_test.php` dispatches actual gallery cover/info/media
+actions with mixed synthetic sets. `detail_view_count_test.php` now also verifies
+enabled scope, direct denial and cached navigation while retaining its optional
+`TADL_NATIVE_DETAIL_CONTROLLER` token-parity check. Read-only checks against the
+installed native parser/template implementation also passed. Source changes do
+not deploy the theme or alter publication settings.
 
 The [Community Notes proposal](COMMUNITY_NOTES_PROPOSAL.md) is a draft for archives
 team discussion, not an implemented feature. It proposes invited contributors,

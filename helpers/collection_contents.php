@@ -11,6 +11,7 @@ function tadlCollectionContentsMode($request) {
 /** Keep collection traversal within native record, bundle and Pawtucket ACL access. */
 function tadlCollectionContentsReadable($request, $collection, array $access) {
 	return $collection && $collection->getPrimaryKey() && !$collection->get('deleted')
+		&& tadlCatalogueAllows($request, 'ca_collections', $collection->getPrimaryKey())
 		&& in_array((int)$collection->get('access'), $access, true)
 		&& $collection->isReadable($request)
 		&& (!caACLIsEnabled($collection, ['forPawtucket' => true])

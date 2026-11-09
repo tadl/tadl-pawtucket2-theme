@@ -84,7 +84,10 @@
 				<?= tadlDetailNavigation($this); ?>
 				<header class="tadl-record-header">
 				<div class="tadl-record-heading">
-				<H1>{{{<unit relativeTo="ca_collections" delimiter="<br/>"><l>^ca_collections.preferred_labels.name</l></unit><ifcount min="1" code="ca_collections"><br/></ifcount>}}}<span class="tadl-object-title">{{{ca_objects.preferred_labels.name}}}</span></H1>
+				<H1><?php if (tadlCatalogueRootCode($this->request) !== '') {
+					$collection_heading = trim($t_object->getWithTemplate(tadlCatalogueTemplate($this->request, '<unit relativeTo="ca_collections" delimiter="<br/>"><l>^ca_collections.preferred_labels.name</l></unit>'), ['checkAccess'=>caGetUserAccessValues($this->request)]));
+					if ($collection_heading !== '') { print $collection_heading.'<br/>'; }
+				} else { ?>{{{<unit relativeTo="ca_collections" delimiter="<br/>"><l>^ca_collections.preferred_labels.name</l></unit><ifcount min="1" code="ca_collections"><br/></ifcount>}}}<?php } ?><span class="tadl-object-title">{{{ca_objects.preferred_labels.name}}}</span></H1>
 				<H2>{{{<unit>^ca_objects.type_id</unit>}}}</H2>
 				</div>
 				</header>

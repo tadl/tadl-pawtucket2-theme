@@ -28,5 +28,9 @@
  	// other vars: 
  	// 		ids = list of items associated with this map location
  	//		table = primary table for results in current browse
+	require_once(__DIR__.'/../../helpers/catalogue_scope.php');
+	foreach ((array)$this->getVar('ids') as $id) {
+		tadlRequireCatalogueRecord($this->request, (string)$this->getVar('table'), $id);
+	}
  	print $this->getVar('heading');
 	print $this->getVar('contentTemplate');

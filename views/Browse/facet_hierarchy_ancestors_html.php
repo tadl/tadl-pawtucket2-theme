@@ -32,6 +32,8 @@ $primary_key = 		$this->getVar("primary_key");
 $key = 				$this->getVar("key");
 $browse_type = 		$this->getVar("browse_type");
 $is_nav = 			(bool)$this->getVar('isNav');
+$info = tadlMediaHierarchyFacetInfo($this->request, $browse_type, $facet_name);
+$ancestors = tadlCatalogueAncestorRows($this->request, (array)$ancestors, $info);
 
 if(is_array($ancestors) && sizeof($ancestors)){
 	if (sizeof($ancestors) > 1) {

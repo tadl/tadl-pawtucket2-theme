@@ -10,6 +10,7 @@ This repository contains the complete `tadl` theme. Install it in an existing Pa
 | --- | --- |
 | Responsive catalogue | Compact logo/header, image tiles and list views with square file-format tags stacked to the right of object titles, consistent 3:2 search/grid thumbnails, collapsible filter sidebars, mobile navigation, and expandable long descriptions that preserve links and formatting, with **Read less** after the expanded content. |
 | Collection browsing | A flat list of everything in a collection and its readable descendants, with an optional hierarchy view, bold titles for branches containing digitized media, alphabetical ordering, sorting, and pagination. Subsequent item pages omit repeated descriptive metadata. |
+| Institution scope | Collections, objects and their media belong to the configured TADL hierarchy. People, organizations, families, places, events and vocabulary remain shared; their related material follows the catalogue boundary. |
 | Featured galleries | Large, uncropped photos beside object metadata, with Previous/Next controls, a thumbnail strip, and media-viewer/download actions beneath the photo. The layout stacks on phones. |
 | Connected records | Browse people, organizations, families, places, and events. Place results include descendant places; family results include objects linked to directly related people and organizations. |
 | Media preference | A compact dropdown beneath search shows the current choice: **All items** or **Only items with media**. The choice is remembered and applies before result counts and pagination. New visitors start with All items. |
@@ -96,6 +97,31 @@ Adapt the branding, field/type mappings, contact address, and institutional link
 | Automatic thumbnail focus | A separate Python 3.11+ environment with the pinned OpenCV dependencies, verified YuNet model/license, PHP CLI with `proc_open`, existing JPEG derivatives, and a writable durable cache outside the application and web roots. Run the detector explicitly; no processing service or scheduler is installed. Manual **Set center** works without this setup. See [thumbnail focus](docs/THUMBNAIL_FOCUS.md). |
 | Shared result-data caching | Uses Pawtucket's configured cache backend; Redis is optional. This optimization requires the `mysqli` database driver; unsupported contexts use native computation. The optional MySQL 8 covering index is a separate administrator-applied schema change, not an installation step. See [performance setup](docs/PERFORMANCE.md). |
 | Site-wide crawler policy | Review, merge, and install the supplied `robots.txt` at the site root separately. A theme directory cannot install the root policy. See [crawler setup](docs/CRAWLER_POLICY.md). |
+
+### Catalogue hierarchy boundary
+
+`conf/app.conf` sets `tadl_catalogue_root_idno = tadl`. The identifier must resolve
+to exactly one undeleted top-level collection. Its descendants define the
+catalogue: objects need a collection relationship within that hierarchy, and
+representations need an in-scope object. Material linked to both institutions
+qualifies through its TADL membership; unrelated collection links are omitted.
+Unassigned objects and material belonging only to another root are excluded.
+
+This applies to search/browse counts and paging, related results, collection
+hierarchies, featured objects, galleries, finding aids, direct details and the
+theme's media/download routes. Previous/Next also filters older session results.
+Shared authority records remain available. Native publication, bundle, type,
+source and record ACL checks still apply; the structural root can stay private.
+
+A missing, duplicated or non-root identifier fails closed for material. Other
+institutions must set their own root identifier; an explicitly empty value
+disables the additional institution boundary. No database changes, plugin
+installation, service or core patch is needed. Membership reads use batches and
+request-local reuse, with no catalogue writes or persistent membership cache.
+
+This controls catalogue presentation and application routes, not access to files
+served directly from shared media storage. Keep native access settings and any
+storage/web-server policy appropriate for the underlying material.
 
 ## Make it your own
 
@@ -203,7 +229,7 @@ Review upstream changes and merge them into your maintained fork or branch. Depl
 git -C /path/to/pawtucket2/themes/tadl pull --ff-only
 ```
 
-The theme includes Browse, Detail and Default controller overrides based on Pawtucket 2.0.10. When upgrading Pawtucket itself, review compatibility of those overrides, the native APIs, and the configuration mappings before deploying the application upgrade.
+The theme includes Browse, Detail, Default and Gallery controller overrides based on Pawtucket 2.0.10. Gallery retains native set/media behavior while applying catalogue membership before covers, counts, limits and navigation. When upgrading Pawtucket itself, review compatibility of those overrides, the native APIs, and the configuration mappings before deploying the application upgrade.
 
 Local CSS and JavaScript URLs include content hashes, so visitors can use normal Reload after an update. Routine theme deployment preserves application caches and sessions and does not require clearing Redis, deleting `app/tmp`, or restarting Apache. PHP updates rely on your web runtime checking file timestamps: review `opcache.validate_timestamps` and `opcache.revalidate_freq`. Installations with timestamp checks disabled need their own bytecode-invalidation procedure.
 

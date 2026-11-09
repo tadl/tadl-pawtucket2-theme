@@ -4,6 +4,7 @@
 	$vb_only_media = (tadlMediaPreference($this->request) === 'only');
 	$o_collections_config = $this->getVar("collections_config");
 	$t_item = $this->getVar("item");
+	tadlRequireCatalogueRecord($this->request, 'ca_collections', $t_item->getPrimaryKey());
 	$va_exclude_collection_type_ids = $this->getVar("exclude_collection_type_ids");
 	$va_non_linkable_collection_type_ids = $this->getVar("non_linkable_collection_type_ids");
 	$va_collection_type_icons = $this->getVar("collection_type_icons");

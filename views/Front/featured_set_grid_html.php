@@ -31,6 +31,7 @@
  */
 	$va_access_values = $this->getVar("access_values");
 	$qr_res = $this->getVar('featured_set_items_as_search_result');
+	tadlFilterMediaResult($this->request, $qr_res);
 	$o_config = $this->getVar("config");
 	$vs_caption_template = $o_config->get("front_page_set_item_caption_template");
 	if(!$vs_caption_template){

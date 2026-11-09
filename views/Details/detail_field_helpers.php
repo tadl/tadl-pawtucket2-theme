@@ -2,6 +2,7 @@
 require_once(dirname(__DIR__, 2).'/helpers/browse_navigation.php');
 require_once(__DIR__.'/detail_preview_helpers.php');
 require_once(dirname(__DIR__, 2).'/helpers/rich_text.php');
+require_once(dirname(__DIR__, 2).'/helpers/catalogue_scope.php');
 
 /** Label the existing native link without changing its destination or contents. */
 function tadlDetailNavigationLink($html, $label) {
@@ -118,7 +119,7 @@ if (!function_exists('tadlDetailField')) {
 			$template_options['checkAccess'] = caGetUserAccessValues($request);
 		}
 
-		$value = trim(tadlPresentationHTML($item->getWithTemplate($template, $template_options)));
+		$value = trim(tadlPresentationHTML($item->getWithTemplate(tadlCatalogueTemplate($request, $template, $item), $template_options)));
 		if (!tadlDetailHasContent($value)) { return ''; }
 		// Template units deliberately separate repeated values into distinct rows.
 		// Narrative attributes instead wrap to the current viewport in both states.
