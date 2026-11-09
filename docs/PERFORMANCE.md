@@ -255,3 +255,8 @@ not a universal speedup or a promise of consistently warm responses. The global
 revision still responds to other institutions' catalogue changes. Publication,
 access checks and the complete input snapshots remain in place. No service
 restart, cache purge, schema change or KCL deployment accompanied this rollout.
+
+The final access check confirmed outside-institution 404 responses and valid
+details. It also identified a pre-existing error-mapping issue: nonexistent
+record IDs yield a generic 500. This was reproduced with the original helpers
+and unchanged Detail controller, and was not changed by the performance rollout.

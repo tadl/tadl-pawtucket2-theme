@@ -49,9 +49,13 @@ No cache purge was used. Three serial public 72-card HTTP requests per media mod
 before and after activation measured median TTFB 1.964 -> 1.593 seconds for
 All items, and 5.663 -> 5.095 seconds for Only items with media. All ordered page
 IDs matched. The cache-fill mix varied during import, so these are observed
-samples rather than an isolated overall performance guarantee. Outside-KCL and
-unknown details retained 404; valid detail and a 25-item descending-title List
-page remained available. Private operational evidence stays outside this repo.
+samples rather than an isolated overall performance guarantee. Outside-KCL details
+retained 404; valid detail and a 25-item descending-title List page remained
+available. Nonexistent IDs return a generic 500: a private read-only probe using
+the original three helpers and unchanged Detail controller reproduced its native
+`ApplicationException` for an invalid ID. This pre-existing missing-record error
+mapping remains separate work; no exception details enter the public page.
+Private operational evidence stays outside this repo.
 
 ## Checkpoint and product direction
 
