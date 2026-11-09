@@ -778,6 +778,25 @@ stop completion. Tests and documentation match this copy-only workflow.
 See [Deployment](DEPLOYMENT.md) for the operator workflow and maintenance scope.
 No deployment or production cache purge was performed for this source change.
 
+### 2026-11-09 workspace theme selectors
+
+The enclosing `pawtucket2-theme/deploy` workstation wrapper now accepts `tadl`
+or `kcl`, defaults to both, and supports `--dry-run` before the selector. Tracked
+`support/deploy-themes.sh` owns dispatch; `support/deploy-theme.sh user@host`
+retains its existing TADL-only default and accepts explicit theme arguments for
+the dispatcher. The existing TADL destination is
+`/var/www/pawtucket2/themes/tadl`. KCL first receives the complete TADL parent
+at `/var/www/kcl/themes/tadl`, then its own source at `/var/www/kcl/themes/kcl`.
+This keeps its inherited scoped runtime and sibling-relative symlinks together;
+selecting KCL does not change the independent TADL instance.
+All arguments and selected local sources are checked before the first rsync.
+Multiple transfers stop on failure without automatic rollback. Archive mode,
+exclusions, no-delete behavior, cache/session preservation and the no-reload
+policy are unchanged. There are no remote shell commands or new backup/restore
+steps. The synthetic deployment suite covers selection, dry runs, invalid input,
+source validation, transfer order and failures; Bash syntax checks cover both
+tracked scripts. This helper change itself performs no deployment.
+
 ### 2026-10-09 About page copy
 
 `views/About/Index.php` contains the supplied replacement About text, with one

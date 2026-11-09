@@ -8,35 +8,33 @@ function deployCheck($condition, $message) {
 }
 $fixture = sys_get_temp_dir().'/tadl-deploy-test-'.bin2hex(random_bytes(8));
 mkdir($fixture, 0700);
-$checkout = $fixture.'/Theme checkout with spaces';
+$workspace = $fixture.'/Theme workspace with spaces';
+$checkout = $workspace.'/tadl';
 foreach (['/support', '/conf', '/views'] as $directory) { mkdir($checkout.$directory, 0700, true); }
+foreach (['/conf', '/views'] as $directory) { mkdir($workspace.'/kcl'.$directory, 0700, true); }
 mkdir($fixture.'/bin', 0700);
 mkdir($fixture.'/elsewhere', 0700);
 copy(dirname(__DIR__).'/support/deploy-theme.sh', $checkout.'/support/deploy-theme.sh');
+copy(dirname(__DIR__).'/support/deploy-themes.sh', $checkout.'/support/deploy-themes.sh');
 file_put_contents($checkout.'/conf/app.conf', '# Synthetic theme configuration');
+file_put_contents($workspace.'/kcl/conf/app.conf', '# Synthetic KCL configuration');
 $mock = <<<'PHP'
 #!/usr/bin/env php
 <?php
 $tool = basename($argv[0]);
 file_put_contents(getenv('TADL_DEPLOY_TEST_TRACE'), json_encode([$tool, array_slice($argv, 1)]).PHP_EOL, FILE_APPEND);
-if ($tool === 'ssh') {
-	// Run the actual remote command locally, with only synthetic Apache tools.
-	$process = proc_open(['bash', '-c', $argv[2]], [0 => STDIN, 1 => STDOUT, 2 => STDERR], $pipes);
-	exit(proc_close($process));
+if ($tool !== 'rsync') { exit(91); }
+$calls = file(getenv('TADL_DEPLOY_TEST_TRACE'), FILE_IGNORE_NEW_LINES);
+if (count($calls) === (int)getenv('TADL_DEPLOY_TEST_FAIL_CALL')) {
+	exit((int)getenv('TADL_DEPLOY_TEST_TRANSFER_EXIT'));
 }
-$option = match ($tool) {
-	'rsync' => 'TADL_DEPLOY_TEST_TRANSFER_EXIT',
-	'apache2ctl' => 'TADL_DEPLOY_TEST_CONFIG_EXIT',
-	'systemctl' => 'TADL_DEPLOY_TEST_RELOAD_EXIT',
-	default => throw new RuntimeException('Unexpected synthetic command.'),
-};
-exit((int)getenv($option));
+exit(0);
 PHP;
 foreach (['rsync', 'ssh', 'apache2ctl', 'systemctl'] as $tool) {
 	file_put_contents($fixture.'/bin/'.$tool, $mock);
 	chmod($fixture.'/bin/'.$tool, 0700);
 }
-function runDeploy(array $arguments, array $failures = []) {
+function runDeploy(array $arguments, array $failures = [], string $script = 'deploy-theme.sh') {
 	global $fixture, $checkout;
 	$trace = $fixture.'/trace.jsonl';
 	file_put_contents($trace, '');
@@ -44,10 +42,9 @@ function runDeploy(array $arguments, array $failures = []) {
 		'PATH' => $fixture.'/bin:'.getenv('PATH'),
 		'TADL_DEPLOY_TEST_TRACE' => $trace,
 		'TADL_DEPLOY_TEST_TRANSFER_EXIT' => '0',
-		'TADL_DEPLOY_TEST_CONFIG_EXIT' => '0',
-		'TADL_DEPLOY_TEST_RELOAD_EXIT' => '0',
+		'TADL_DEPLOY_TEST_FAIL_CALL' => '1',
 	], $failures);
-	$process = proc_open(array_merge(['bash', $checkout.'/support/deploy-theme.sh'], $arguments),
+	$process = proc_open(array_merge(['bash', $checkout.'/support/'.$script], $arguments),
 		[0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $fixture.'/elsewhere', $environment);
 	if (!is_resource($process)) { throw new RuntimeException('Could not start synthetic deployment.'); }
 	$output = stream_get_contents($pipes[1]).stream_get_contents($pipes[2]);
@@ -66,15 +63,49 @@ try {
 	[$status, $output, $calls] = runDeploy(['root@catalog.example.org'], ['TADL_DEPLOY_TEST_TRANSFER_EXIT' => '23']);
 	deployCheck($status === 23 && !str_contains($output, 'Deployment complete'), 'A failed transfer must preserve its exit status and omit completion.');
 	deployCheck(array_column($calls, 0) === ['rsync'], 'A failed transfer must not run any later operation.');
+	[$status, $output, $calls] = runDeploy(['root@catalog.example.org', 'kcl']);
+	deployCheck($status === 0 && count($calls) === 2 && array_slice($calls[0][1], -2) === [$checkout.'/', 'root@catalog.example.org:/var/www/kcl/themes/tadl/'] && array_slice($calls[1][1], -2) === [$workspace.'/kcl/', 'root@catalog.example.org:/var/www/kcl/themes/kcl/'], 'KCL must install its scoped parent before its child, within its own instance only.');
+	[$status, $output, $calls] = runDeploy(['--dry-run', 'root@catalog.example.org', 'tadl', 'kcl']);
+	deployCheck($status === 0 && count($calls) === 3 && str_contains($output, 'Dry run complete') && !str_contains($output, 'Deployment complete'), 'Dry-run must cover both themes and KCL parent without reporting an actual deployment.');
+	foreach ($calls as $call) {
+		deployCheck($call[0] === 'rsync' && in_array('--dry-run', $call[1], true), 'Every dry-run transfer must carry the native rsync dry-run flag.');
+	}
+	[$status, $output, $calls] = runDeploy(['root@catalog.example.org'], [], 'deploy-themes.sh');
+	deployCheck($status === 0 && count($calls) === 3, 'Workspace dispatcher without a selector must deploy both themes and the KCL parent.');
+	deployCheck(array_slice($calls[0][1], -2) === [$checkout.'/', 'root@catalog.example.org:/var/www/pawtucket2/themes/tadl/'] && array_slice($calls[1][1], -2) === [$checkout.'/', 'root@catalog.example.org:/var/www/kcl/themes/tadl/'] && array_slice($calls[2][1], -2) === [$workspace.'/kcl/', 'root@catalog.example.org:/var/www/kcl/themes/kcl/'], 'Workspace targets must remain independent and ordered.');
+	foreach (['tadl', 'kcl'] as $theme) {
+		[$status, $output, $calls] = runDeploy(['root@catalog.example.org', $theme], [], 'deploy-themes.sh');
+		deployCheck($status === 0 && count($calls) === ($theme === 'kcl' ? 2 : 1) && str_ends_with($calls[count($calls) - 1][1][count($calls[count($calls) - 1][1]) - 1], '/themes/'.$theme.'/'), 'An explicit workspace selector must transfer only the selected theme and its dependency.');
+	}
+	[$status, $output, $calls] = runDeploy(['root@catalog.example.org', '--dry-run', 'kcl'], [], 'deploy-themes.sh');
+	deployCheck($status === 0 && count($calls) === 2 && in_array('--dry-run', $calls[0][1], true) && in_array('--dry-run', $calls[1][1], true), 'Workspace dry-run must cover the selected child and parent.');
+	[$status, $output, $calls] = runDeploy(['root@catalog.example.org'], ['TADL_DEPLOY_TEST_TRANSFER_EXIT' => '23'], 'deploy-themes.sh');
+	deployCheck($status === 23 && count($calls) === 1 && !str_contains($output, 'Deployment complete'), 'A failed first transfer must stop before the second theme.');
+	[$status, $output, $calls] = runDeploy(['root@catalog.example.org'], ['TADL_DEPLOY_TEST_TRANSFER_EXIT' => '23', 'TADL_DEPLOY_TEST_FAIL_CALL' => '2'], 'deploy-themes.sh');
+	deployCheck($status === 23 && count($calls) === 2 && !str_contains($output, 'Deployment complete'), 'A failed parent transfer must retain its failure status and omit child transfer and overall completion.');
+	[$status, $output, $calls] = runDeploy(['root@catalog.example.org', 'kcl'], ['TADL_DEPLOY_TEST_TRANSFER_EXIT' => '23'], 'deploy-themes.sh');
+	deployCheck($status === 23 && count($calls) === 1 && !str_contains($output, 'Deployment complete'), 'A failed KCL parent transfer must stop before child files are copied.');
 	foreach ([[], ['-oProxyCommand=unsafe'], ['root@catalog.example.org;unsafe'], ['root@catalog.example.org', 'unexpected']] as $invalid) {
 		[$status, $output, $calls] = runDeploy($invalid);
 		deployCheck($status !== 0 && !$calls && str_contains($output, 'Usage:'), 'Missing, unsafe and extra arguments must not start deployment.');
 	}
+	foreach ([['root@catalog.example.org', 'tadl', 'kcl'], ['root@catalog.example.org', '--unknown'], ['root@catalog.example.org', 'kcl;unsafe'], ['root@catalog.example.org', '../tadl']] as $invalid) {
+		[$status, $output, $calls] = runDeploy($invalid, [], 'deploy-themes.sh');
+		deployCheck($status !== 0 && !$calls && str_contains($output, 'Usage:'), 'The workspace dispatcher must reject invalid selectors before any transfer.');
+	}
+	[$status, $output, $calls] = runDeploy(['root@catalog.example.org', 'tadl', 'tadl']);
+	deployCheck($status !== 0 && !$calls && str_contains($output, 'more than once'), 'Duplicate themes must be rejected before any transfer.');
 	[$status, $output, $calls] = runDeploy(['--help']);
 	deployCheck($status === 0 && !$calls && str_contains($output, 'Usage:'), 'Help must never start deployment.');
+	unlink($workspace.'/kcl/conf/app.conf');
+	[$status, $output, $calls] = runDeploy(['root@catalog.example.org'], [], 'deploy-themes.sh');
+	deployCheck($status !== 0 && !$calls && str_contains($output, 'incomplete'), 'Missing KCL source must stop both-theme deployment before TADL is copied.');
+	file_put_contents($workspace.'/kcl/conf/app.conf', '# Synthetic KCL configuration');
 	unlink($checkout.'/conf/app.conf');
 	[$status, $output, $calls] = runDeploy(['root@catalog.example.org']);
 	deployCheck($status !== 0 && !$calls && str_contains($output, 'incomplete'), 'An incomplete theme source must not start deployment.');
+	[$status, $output, $calls] = runDeploy(['root@catalog.example.org', 'kcl']);
+	deployCheck($status !== 0 && !$calls && str_contains($output, 'incomplete'), 'An incomplete TADL parent must prevent KCL deployment before any transfer.');
 	echo 'Theme deployment passed: '.$assertions.' assertions (synthetic commands only).'.PHP_EOL;
 } finally {
 	$entries = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($fixture, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);

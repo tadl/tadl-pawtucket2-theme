@@ -31,6 +31,7 @@ jobs:
           git ls-files -z '*.php' | xargs -0 -n 1 php -l
           for script_file in assets/pawtucket/js/*.js; do node --check "$script_file"; done
           bash -n support/deploy-theme.sh
+          bash -n support/deploy-themes.sh
           git diff-tree --check HEAD
       - name: Standalone regressions
         run: |

@@ -6,19 +6,45 @@ times, and PHP OPcache must have timestamp validation enabled so changed PHP fil
 are picked up automatically. Routine deploys neither reload Apache nor clear caches.
 A cache purge would discard useful cached data and sessions.
 
-After the operator authorizes deployment, run the enclosing `deploy` helper, or
-from a standalone theme checkout:
+After the operator authorizes deployment, the enclosing workspace `deploy`
+helper accepts one theme name. With no name, it deploys both themes:
+
+```sh
+./deploy tadl
+./deploy kcl
+./deploy
+./deploy --dry-run kcl
+```
+
+This workstation wrapper supplies its local SSH target to the tracked
+`support/deploy-themes.sh` dispatcher. It uses the sibling `kcl/` checkout for
+KCL and this checkout for TADL. TADL targets
+`/var/www/pawtucket2/themes/tadl`. Selecting KCL first installs this complete
+TADL checkout as its inherited runtime in `/var/www/kcl/themes/tadl`, then
+copies KCL to `/var/www/kcl/themes/kcl`; it never updates the independent TADL
+instance as a side effect. Archive mode preserves KCL's sibling-relative
+`helpers`, `controllers` and `plugins` links.
+Unknown/extra arguments, duplicate themes and incomplete source directories are
+rejected before any transfer. Both-theme deployment checks both local sources
+first, then transfers TADL, KCL's TADL parent, and KCL. A transfer failure stops that sequence;
+it does not roll back an earlier successful transfer.
+
+From a standalone theme checkout, the original helper still deploys **only TADL**
+unless explicit theme arguments are supplied:
 
 ```sh
 bash support/deploy-theme.sh root@catalog.example.org
+bash support/deploy-theme.sh --dry-run root@catalog.example.org
 ```
 
 Replace the synthetic SSH target with the operator's host. The script uses the
 existing `/var/www/pawtucket2/themes/tadl` layout and requires permission to write
 there. Its source directory comes
 from the script's location, so it works independently of the caller's working
-directory. The enclosing workstation helper supplies its local SSH target and
-delegates to this tracked implementation.
+directory. For a workspace containing both checkouts, the tracked dispatcher can
+also be called directly as `bash support/deploy-themes.sh user@host [--dry-run]
+[tadl|kcl]`. Dry runs use rsync's native `--dry-run`; they still connect to the
+selected host to inspect the destination.
 
 The script retains the existing rsync exclusions and does not use `--delete`.
 Inspect server-local overrides before deployment: matching theme files are still
@@ -51,4 +77,5 @@ Local regression check, with synthetic `rsync` and `ssh` executables only:
 ```sh
 php tests/theme_deploy_test.php
 bash -n support/deploy-theme.sh
+bash -n support/deploy-themes.sh
 ```

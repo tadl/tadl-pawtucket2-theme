@@ -234,7 +234,7 @@ The theme includes Browse, Detail, Default and Gallery controller overrides base
 
 Local CSS and JavaScript URLs include content hashes, so visitors can use normal Reload after an update. Routine theme deployment preserves application caches and sessions and does not require clearing Redis, deleting `app/tmp`, or restarting Apache. PHP updates rely on your web runtime checking file timestamps: review `opcache.validate_timestamps` and `opcache.revalidate_freq`. Installations with timestamp checks disabled need their own bytecode-invalidation procedure.
 
-The supplied `support/deploy-theme.sh` is an rsync helper for the `/var/www/pawtucket2/themes/tadl` layout. Review its target path and exclusions before using it elsewhere; it is not a general application installer. See [deployment](docs/DEPLOYMENT.md) and the [post-deployment checks](docs/PRODUCTION_CHECKS.md).
+The supplied `support/deploy-theme.sh` is an rsync helper for the `/var/www/pawtucket2/themes/tadl` layout; its default remains TADL only. The enclosing workspace `deploy` wrapper accepts `tadl` or `kcl`, defaults to both, and supports `--dry-run` before the theme name. It delegates to tracked `support/deploy-themes.sh`. Selecting KCL installs this complete parent theme at `/var/www/kcl/themes/tadl`, then the sibling KCL checkout at `/var/www/kcl/themes/kcl`, preserving its runtime links without changing the independent TADL instance. Review target paths and exclusions before using these helpers elsewhere; they are not general application installers. See [deployment](docs/DEPLOYMENT.md) and the [post-deployment checks](docs/PRODUCTION_CHECKS.md).
 
 ## Feature guides
 
